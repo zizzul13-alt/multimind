@@ -136,20 +136,53 @@ def render_sidebar():
                 st.session_state.current_session = None
                 st.rerun()
         
-        else:
-            # Login section
-            st.subheader("🔐 Login")
-            # GANTI JADI INPUT TEXT:
-            user = st.text_input("Username", placeholder="Masukkan username...")
-
-            if st.button("Login"):
-                    if user:
-                    st.session_state.user = user
-                    st.session_state.user_id = user.lower()
-                    st.rerun()
             else:
-                    st.warning("Isi username dulu!")
+# ============================================
+# LOGIN SYSTEM (FIXED - NO INDENTATION ERROR)
+# ============================================
+if "user" not in st.session_state:
+    st.session_state.user = None
+    st.session_state.user_id = None
 
+if st.session_state.user is None:
+    st.title("🤖 MultiMind AI")
+    st.markdown("### Multi-Agent AI Debate System")
+    st.divider()
+    
+    st.subheader("🔐 Silakan Login")
+    
+    username = st.text_input(
+        "Username",
+        placeholder="Ketik username bebas...",
+        key="login_input"
+    )
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🚀 Masuk", type="primary", use_container_width=True):
+            if username and username.strip():
+                st.session_state.user = username.strip()
+                st.session_state.user_id = username.strip().lower()
+                st.rerun()
+            else:
+                st.error("Username tidak boleh kosong!")
+    
+    with col2:
+        if st.button("🔄 Reset", use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
+    
+    st.divider()
+    st.info(
+        "💡 **Info:**\n"
+        "- Masukkan username bebas (Ali, Budi, atau nama lain)\n"
+        "- Data kamu PRIVASI & terpisah dari user lain\n"
+        "- API keys diatur oleh admin (tidak perlu diisi user)"
+    )
+    
+    # PENTING: Stop eksekusi di sini!
+    st.stop()
 # ============================================
 # MAIN CONTENT
 # ============================================
