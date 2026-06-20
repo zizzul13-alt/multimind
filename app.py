@@ -139,12 +139,16 @@ def render_sidebar():
         else:
             # Login section
             st.subheader("🔐 Login")
-            user = st.selectbox("Select User", ["Ali", "Budi"])
-            
-            if st.button("Login", type="primary", use_container_width=True):
-                st.session_state.user = user
-                st.session_state.user_id = user.lower()
-                st.rerun()
+            # GANTI JADI INPUT TEXT:
+            user = st.text_input("Username", placeholder="Masukkan username...")
+
+            if st.button("Login"):
+                    if user:
+                    st.session_state.user = user
+                    st.session_state.user_id = user.lower()
+                    st.rerun()
+            else:
+                    st.warning("Isi username dulu!")
 
 # ============================================
 # MAIN CONTENT
