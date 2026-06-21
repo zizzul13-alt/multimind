@@ -301,17 +301,18 @@ def process_chat(prompt, uploaded_files, context_mode):
         return
     
     with st.spinner("🤖 Agents debating..."):
-        # Compress prompt
+        # Step 1: Compress prompt (if enabled)
+        compressed = None
         final_prompt = prompt
-        if st.session_state.compressor_enabled and gemini and prompt:
-        try:
-             compression = PromptCompressor.compress(prompt, gemini)
-             final_prompt = compression.get("compressed", prompt)
-        except:
-             # Compressor error? Pakai original aja
-             final_prompt = prompt
-        pass
-
+        
+        if st.session_state.get("compressor_enabled", True) and gemini and prompt:
+            try:
+                compression = PromptCompressor.compress(prompt, gemini)
+                final_prompt = compression["compressed"]
+                compressed = compression
+            except:
+                final_prompt = prompt
+                compressed = None
         
         # Process files
         file_context = ""
