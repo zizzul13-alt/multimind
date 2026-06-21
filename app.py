@@ -80,10 +80,10 @@ def show_login_page():
     username = st.text_input(
         "Username",
         placeholder="Ketik username bebas...",
-        key="login_input"
+        key="login_username_input"  # UNIQUE KEY!
     )
     
-    if st.button("🚀 Masuk", type="primary", use_container_width=True):
+    if st.button("🚀 Masuk", type="primary", key="login_button"):
         if username and username.strip():
             st.session_state.user = username.strip()
             st.session_state.user_id = username.strip().lower()
