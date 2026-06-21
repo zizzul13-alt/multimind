@@ -304,8 +304,14 @@ def process_chat(prompt, uploaded_files, context_mode):
         # Compress prompt
         final_prompt = prompt
         if st.session_state.compressor_enabled and gemini and prompt:
-            compression = PromptCompressor.compress(prompt, gemini)
-            final_prompt = compression["compressed"]
+        try:
+             compression = PromptCompressor.compress(prompt, gemini)
+             final_prompt = compression.get("compressed", prompt)
+        except:
+             # Compressor error? Pakai original aja
+             final_prompt = prompt
+        pass
+
         
         # Process files
         file_context = ""
