@@ -404,6 +404,19 @@ def main():
             - 🧠 Session memory (continue or standalone)
             - 👥 Multi-user with separate databases
             """)
-
+    # DEBUG MODE - Lihat apa yang terjadi
+    if st.session_state.user:
+        with st.sidebar:
+            with st.expander("🔧 Debug Info"):
+                st.write("User:", st.session_state.user_id)
+                agents = get_agents(st.session_state.user_id)
+                st.write("Gemini:", "✅" if agents.get("gemini") else "❌")
+                st.write("DeepSeek:", "✅" if agents.get("deepseek") else "❌")
+    
+    # Show login if not logged in
+    if st.session_state.user is None:
+        show_login_page()
+    else:
+        show_sidebar()
 if __name__ == "__main__":
     main()
