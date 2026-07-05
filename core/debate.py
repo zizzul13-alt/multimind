@@ -44,7 +44,7 @@ class DebateOrchestrator:
                     response = self.groq.generate(
                         prompt=full_prompt,
                         system_prompt=self._get_system_prompt(mode),
-                        max_tokens=1500
+                        max_tokens=4000
                     )
                     if response.get("status") == "success":
                         debate_log["responses"].append(response)
@@ -58,7 +58,7 @@ class DebateOrchestrator:
                     response = self.deepseek.generate(
                         prompt=full_prompt,
                         system_prompt=self._get_system_prompt(mode),
-                        max_tokens=1500
+                        max_tokens=4000
                     )
                     if response.get("status") == "success":
                         debate_log["responses"].append(response)
@@ -76,7 +76,7 @@ class DebateOrchestrator:
                     response = self.gemini.generate(
                         prompt=full_prompt,
                         system_prompt=self._get_system_prompt(mode),
-                        max_tokens=1500
+                        max_tokens=4000
                     )
                     response["agent"] = "Gemini (fallback)" if debate_log["fallback_used"] else "Gemini"
                     debate_log["responses"].append(response)
