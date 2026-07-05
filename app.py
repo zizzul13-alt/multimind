@@ -115,8 +115,12 @@ def show_sidebar():
         db = get_db_manager(st.session_state.user_id)
         sessions = db.get_sessions()
         
-        for s in sessions:
-            if st.button(f"📝 {s['name']}", key=f"sess_{s['id']}"):
+        # Gunakan counter untuk key unik
+        for i, s in enumerate(sessions):
+            # Key UNIK: pakai index + id + name
+            unique_key = f"sidebar_session_{i}_{s['id'][:8]}"
+            
+            if st.button(f"📝 {s['name']}", key=unique_key):
                 st.session_state.current_session = s
                 if s['id'] not in st.session_state.memories:
                     st.session_state.memories[s['id']] = SessionMemory()
@@ -124,9 +128,17 @@ def show_sidebar():
         
         # New session
         with st.expander("➕ New Session"):
-            new_name = st.text_input("Name", placeholder="Project API...")
-            new_mode = st.selectbox("Mode", ["coding", "research", "thinking"])
-            if st.button("Create", use_container_width=True):
+            new_name = st.text_input(
+                "Name", 
+                placeholder="Project API...",
+                key="sidebar_new_session_name"
+            )
+            new_mode = st.selectbox(
+                "Mode", 
+                ["coding", "research", "thinking"],
+                key="sidebar_new_session_mode"
+            )
+            if st.button("Create", key="sidebar_create_session_btn", use_container_width=True):
                 if new_name:
                     session_id = str(uuid.uuid4())
                     db.create_session(session_id, new_name, new_mode)
@@ -137,18 +149,28 @@ def show_sidebar():
         
         # Settings
         with st.expander("⚙️ Settings"):
-            st.session_state.compressor_enabled = st.toggle("🗜️ Compressor", value=True)
-            st.session_state.debate_rounds = st.slider("Debate Rounds", 1, 5, 3)
+            st.session_state.compressor_enabled = st.toggle(
+                "🗜️ Compressor", 
+                value=st.session_state.get("compressor_enabled", False),
+                key="sidebar_toggle_compressor"
+            )
+            st.session_state.debate_rounds = st.slider(
+                "Debate Rounds", 
+                1, 5, 
+                st.session_state.get("debate_rounds", 1),
+                key="sidebar_slider_rounds"
+            )
             st.session_state.active_agents = st.multiselect(
                 "Agents",
                 ["deepseek", "gemini"],
-                default=["deepseek", "gemini"]
+                default=st.session_state.get("active_agents", ["gemini"]),
+                key="sidebar_multiselect_agents"
             )
         
         st.divider()
         
         # Logout
-        if st.button("🚪 Logout", use_container_width=True):
+        if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
             st.session_state.user = None
             st.session_state.user_id = None
             st.session_state.current_session = None
