@@ -1,6 +1,6 @@
 """
 Multi-agent debate orchestrator
-Dengan fallback otomatis: DeepSeek → Gemini
+Dengan fallback otomatis: Groq → DeepSeek → Gemini
 """
 import time
 from datetime import datetime
@@ -16,7 +16,7 @@ class DebateOrchestrator:
         self.groq = groq_agent
 
     def debate(self, prompt, context="", mode="coding", rounds=1, agents=None):
-        """Run debate - otomatis fallback ke Gemini kalau DeepSeek error"""
+        """Run debate - otomatis fallback kalau agent error"""
         if not agents:
             agents = ["gemini"]
 
@@ -38,7 +38,6 @@ class DebateOrchestrator:
             if context:
                 full_prompt = f"CONTEXT:\n{context}\n\nTASK:\n{prompt}"
 
-            # ===== ROUND 1: COBA DEEPSEEK DULU =====
             # ===== ROUND 1: COBA GROQ DULU (PALING CEPAT!) =====
             if "groq" in agents and self.groq:
                 try:
@@ -51,72 +50,42 @@ class DebateOrchestrator:
                         debate_log["responses"].append(response)
                         debate_log["total_tokens"] += response.get("tokens", 0)
                 except:
-                    pass  # Fallback ke agent lain
-                    if "deepseek" in agents and self.deepseek:
+                    pass
+
+            # ===== ROUND 2: COBA DEEPSEEK =====
+            if "deepseek" in agents and self.deepseek:
                 try:
                     response = self.deepseek.generate(
                         prompt=full_prompt,
                         system_prompt=self._get_system_prompt(mode),
                         max_tokens=1500
                     )
-
                     if response.get("status") == "success":
                         debate_log["responses"].append(response)
                         debate_log["total_tokens"] += response.get("tokens", 0)
                         debate_log["total_cost"] += response.get("cost", 0)
                     else:
-                        # DeepSeek error → fallback ke Gemini
                         raise Exception(response.get("text", "DeepSeek failed"))
-
                 except Exception as e:
-                    # FALLBACK KE GEMINI
                     error_logger.log("DEEPSEEK_FALLBACK", str(e))
                     debate_log["fallback_used"] = True
 
-                    if self.gemini:
-                        response = self.gemini.generate(
-                            prompt=full_prompt,
-                            system_prompt=self._get_system_prompt(mode),
-                            max_tokens=1500
-                        )
-                        response["agent"] = "Gemini (fallback from DeepSeek)"
-                        debate_log["responses"].append(response)
-                        debate_log["total_tokens"] += response.get("tokens", 0)
-
-            # ===== KALAU GA ADA DEEPSEEK, LANGSUNG GEMINI =====
-            elif self.gemini:
-                response = self.gemini.generate(
-                    prompt=full_prompt,
-                    system_prompt=self._get_system_prompt(mode),
-                    max_tokens=1500
-                )
-                debate_log["responses"].append(response)
-                debate_log["total_tokens"] += response.get("tokens", 0)
-
-            # ===== ROUND 2 (OPTIONAL): REVIEW PAKAI GEMINI =====
-            if rounds >= 2 and self.gemini and debate_log["responses"]:
-                first_response = debate_log["responses"][0].get("text", "")
-                if first_response:
-                    try:
-                        review = self.gemini.generate(
-                            prompt=f"Original task:\n{full_prompt[:1000]}\n\nResponse to review:\n{first_response[:1500]}\n\nProvide a brief critique and suggest improvements:",
-                            max_tokens=500
-                        )
-                        review["agent"] = "Gemini (Reviewer)"
-                        debate_log["responses"].append(review)
-                        debate_log["total_tokens"] += review.get("tokens", 0)
-                    except:
-                        pass
+            # ===== ROUND 3: GEMINI (FALLBACK / PRIMARY) =====
+            if "gemini" in agents and self.gemini:
+                if not debate_log["responses"] or debate_log["fallback_used"]:
+                    response = self.gemini.generate(
+                        prompt=full_prompt,
+                        system_prompt=self._get_system_prompt(mode),
+                        max_tokens=1500
+                    )
+                    response["agent"] = "Gemini (fallback)" if debate_log["fallback_used"] else "Gemini"
+                    debate_log["responses"].append(response)
+                    debate_log["total_tokens"] += response.get("tokens", 0)
 
             # ===== SYNTHESIZE FINAL ANSWER =====
             if debate_log["responses"]:
-                final = debate_log["responses"][-1]  # Ambil response terakhir
+                final = debate_log["responses"][-1]
                 debate_log["final_answer"] = final.get("text", "No response generated")
-            elif self.gemini:
-                # Last resort: Gemini langsung
-                final = self.gemini.generate(prompt=full_prompt, max_tokens=1000)
-                debate_log["final_answer"] = final.get("text", "No response")
-                debate_log["responses"].append(final)
             else:
                 debate_log["final_answer"] = "No AI agent available. Please check API keys."
 
