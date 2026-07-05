@@ -23,25 +23,25 @@ class Config:
     COMPRESSOR_ENABLED = False
     COMPRESSOR_MODEL = "gemini-flash"
     
-    @classmethod
-    def get_api_keys(cls, user_id):
-        """Get API keys for user"""
-        try:
-            all_secrets = dict(st.secrets)
-            
-            if user_id in all_secrets:
-                return dict(st.secrets[user_id])
-            
-            if "default" in all_secrets:
-                return dict(st.secrets["default"])
-            
-            if "ali" in all_secrets:
-                return dict(st.secrets["ali"])
-            
-        except Exception as e:
-            pass
+@classmethod
+def get_api_keys(cls, user_id):
+    """Get API keys for user"""
+    try:
+        all_secrets = dict(st.secrets)
         
-        return {"gemini_key": "", "deepseek_key": ""}
+        if user_id in all_secrets:
+            return dict(st.secrets[user_id])
+        
+        if "default" in all_secrets:
+            return dict(st.secrets["default"])
+        
+        if "ali" in all_secrets:
+            return dict(st.secrets["ali"])
+        
+    except Exception as e:
+        pass
+    
+    return {"gemini_key": "", "deepseek_key": "", "groq_key": ""}
     
     @classmethod
     def get_db_path(cls, user_id):
