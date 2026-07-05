@@ -1,6 +1,6 @@
 """
 Multi-agent debate orchestrator
-Dengan fallback otomatis: Groq → DeepSeek → Gemini
+Pola: Groq/DeepSeek (draft) → Gemini (review & lengkapi)
 """
 import time
 from datetime import datetime
@@ -8,7 +8,7 @@ from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 
 class DebateOrchestrator:
-    """Orchestrate multi-agent debate dengan fallback"""
+    """Orchestrate multi-agent debate dengan pola Draft → Review"""
 
     def __init__(self, gemini_agent, deepseek_agent=None, groq_agent=None):
         self.gemini = gemini_agent
@@ -16,7 +16,7 @@ class DebateOrchestrator:
         self.groq = groq_agent
 
     def debate(self, prompt, context="", mode="coding", rounds=1, agents=None):
-        """Run debate - otomatis fallback kalau agent error"""
+        """Run debate - Draft (Groq/DeepSeek) → Review (Gemini)"""
         if not agents:
             agents = ["gemini"]
 
@@ -29,8 +29,7 @@ class DebateOrchestrator:
             "responses": [],
             "total_tokens": 0,
             "total_cost": 0.0,
-            "start_time": datetime.now().isoformat(),
-            "fallback_used": False
+            "start_time": datetime.now().isoformat()
         }
 
         try:
@@ -38,56 +37,87 @@ class DebateOrchestrator:
             if context:
                 full_prompt = f"CONTEXT:\n{context}\n\nTASK:\n{prompt}"
 
-            # ===== ROUND 1: COBA GROQ DULU (PALING CEPAT!) =====
+            draft_response = None
+            draft_agent = None
+
+            # ===== STEP 1: BUAT DRAFT =====
+            # Prioritas: Groq → DeepSeek → Gemini
+
             if "groq" in agents and self.groq:
                 try:
                     response = self.groq.generate(
                         prompt=full_prompt,
-                        system_prompt=self._get_system_prompt(mode),
-                        max_tokens=4000
+                        system_prompt=self._get_draft_prompt(mode),
+                        max_tokens=2048
                     )
                     if response.get("status") == "success":
+                        draft_response = response
+                        draft_agent = "Groq"
                         debate_log["responses"].append(response)
                         debate_log["total_tokens"] += response.get("tokens", 0)
                 except:
                     pass
 
-            # ===== ROUND 2: COBA DEEPSEEK =====
-            if "deepseek" in agents and self.deepseek:
+            if not draft_response and "deepseek" in agents and self.deepseek:
                 try:
                     response = self.deepseek.generate(
                         prompt=full_prompt,
-                        system_prompt=self._get_system_prompt(mode),
-                        max_tokens=4000
+                        system_prompt=self._get_draft_prompt(mode),
+                        max_tokens=2048
                     )
                     if response.get("status") == "success":
+                        draft_response = response
+                        draft_agent = "DeepSeek"
                         debate_log["responses"].append(response)
                         debate_log["total_tokens"] += response.get("tokens", 0)
                         debate_log["total_cost"] += response.get("cost", 0)
-                    else:
-                        raise Exception(response.get("text", "DeepSeek failed"))
-                except Exception as e:
-                    error_logger.log("DEEPSEEK_FALLBACK", str(e))
-                    debate_log["fallback_used"] = True
+                except:
+                    pass
 
-            # ===== ROUND 3: GEMINI (FALLBACK / PRIMARY) =====
-            if "gemini" in agents and self.gemini:
-                if not debate_log["responses"] or debate_log["fallback_used"]:
-                    response = self.gemini.generate(
-                        prompt=full_prompt,
-                        system_prompt=self._get_system_prompt(mode),
-                        max_tokens=4000
+            if not draft_response and "gemini" in agents and self.gemini:
+                response = self.gemini.generate(
+                    prompt=full_prompt,
+                    system_prompt=self._get_draft_prompt(mode),
+                    max_tokens=2048
+                )
+                draft_response = response
+                draft_agent = "Gemini"
+                debate_log["responses"].append(response)
+                debate_log["total_tokens"] += response.get("tokens", 0)
+
+            # ===== STEP 2: GEMINI REVIEW & LENGKAPI =====
+            if draft_response and "gemini" in agents and self.gemini:
+                draft_text = draft_response.get("text", "")
+                
+                if len(draft_text) > 50:
+                    review_prompt = f"""TASK: {full_prompt[:500]}
+
+DRAFT from {draft_agent}:
+{draft_text[:3000]}
+
+INSTRUCTIONS:
+1. Review the draft for errors or missing information
+2. Add anything important that was missed
+3. Improve clarity and structure
+4. Provide the COMPLETE final answer
+
+FINAL ANSWER:"""
+
+                    review = self.gemini.generate(
+                        prompt=review_prompt,
+                        max_tokens=4096
                     )
-                    response["agent"] = "Gemini (fallback)" if debate_log["fallback_used"] else "Gemini"
-                    debate_log["responses"].append(response)
-                    debate_log["total_tokens"] += response.get("tokens", 0)
-
-            # ===== SYNTHESIZE FINAL ANSWER =====
-            if debate_log["responses"]:
-                final = debate_log["responses"][-1]
-                debate_log["final_answer"] = final.get("text", "No response generated")
+                    review["agent"] = f"Gemini (reviewed {draft_agent})"
+                    debate_log["responses"].append(review)
+                    debate_log["total_tokens"] += review.get("tokens", 0)
+                    
+                    debate_log["final_answer"] = review.get("text", draft_text)
+                else:
+                    debate_log["final_answer"] = draft_text
+            elif draft_response:
+                debate_log["final_answer"] = draft_response.get("text", "")
             else:
-                debate_log["final_answer"] = "No AI agent available. Please check API keys."
+                debate_log["final_answer"] = "No AI agent available."
 
             debate_log["status"] = "success"
             debate_log["end_time"] = datetime.now().isoformat()
@@ -97,15 +127,15 @@ class DebateOrchestrator:
             error_logger.log("DEBATE_CRITICAL", str(e))
             debate_log["status"] = "error"
             debate_log["error"] = error_msg
-            debate_log["final_answer"] = f"Sorry, an error occurred: {error_msg}. Please try again."
+            debate_log["final_answer"] = f"Sorry, an error occurred: {error_msg}."
 
         return debate_log
 
-    def _get_system_prompt(self, mode):
-        """Get system prompt based on mode"""
+    def _get_draft_prompt(self, mode):
+        """Prompt buat draft (singkat & cepat)"""
         prompts = {
-            "coding": "You are an EXPERT CODER. Write clean, working code with brief explanation.",
-            "research": "You are a RESEARCHER. Provide comprehensive analysis with key points.",
-            "thinking": "You are a SYSTEMS THINKER. Break down problems step-by-step."
+            "coding": "Write code solution. Be brief. Focus on working code.",
+            "research": "Provide key analysis points. Be concise but informative.",
+            "thinking": "Break down step-by-step. Keep each step short."
         }
         return prompts.get(mode, prompts["coding"])
