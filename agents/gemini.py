@@ -45,12 +45,12 @@ class GeminiAgent:
             response = self.model.generate_content(full_prompt)
 
             return {
-                "status": "success",
-                "text": response.text or "No response",
-                "agent": self.name,
-                "tokens": 0,
-                "cost": 0
-            }
+    "status": "success",
+    "text": text,
+    "agent": self.name,
+    "tokens": len(text.split()),
+    "cost": 0
+}
         except Exception as e:
             return {
                 "status": "error",
