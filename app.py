@@ -350,7 +350,7 @@ def process_chat(prompt, uploaded_files, context_mode):
 
         # Step 4: Run debate
         session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
-        orchestrator = DebateOrchestrator(gemini, deepseek)
+        orchestrator = DebateOrchestrator(gemini, deepseek, groq)
 
         debate_result = orchestrator.debate(
             prompt=final_prompt,
