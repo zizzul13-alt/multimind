@@ -102,6 +102,8 @@ def show_login_page():
 # ============================================
 # SIDEBAR
 # ============================================
+import random
+
 def show_sidebar():
     """Show sidebar for logged-in user"""
     with st.sidebar:
@@ -115,10 +117,10 @@ def show_sidebar():
         db = get_db_manager(st.session_state.user_id)
         sessions = db.get_sessions()
         
-        # Gunakan counter untuk key unik
-        for i, s in enumerate(sessions):
-            # Key UNIK: pakai index + id + name
-            unique_key = f"sidebar_session_{i}_{s['id'][:8]}"
+        # Gunakan random key + id untuk JAMIN UNIK
+        for s in sessions:
+            # Gabungkan random, id, dan timestamp
+            unique_key = f"sidebar_sess_{s['id'][:8]}_{random.randint(1000, 9999)}"
             
             if st.button(f"📝 {s['name']}", key=unique_key):
                 st.session_state.current_session = s
@@ -131,14 +133,14 @@ def show_sidebar():
             new_name = st.text_input(
                 "Name", 
                 placeholder="Project API...",
-                key="sidebar_new_session_name"
+                key=f"new_sess_name_{random.randint(1000, 9999)}"
             )
             new_mode = st.selectbox(
                 "Mode", 
                 ["coding", "research", "thinking"],
-                key="sidebar_new_session_mode"
+                key=f"new_sess_mode_{random.randint(1000, 9999)}"
             )
-            if st.button("Create", key="sidebar_create_session_btn", use_container_width=True):
+            if st.button("Create", key=f"create_sess_{random.randint(1000, 9999)}", use_container_width=True):
                 if new_name:
                     session_id = str(uuid.uuid4())
                     db.create_session(session_id, new_name, new_mode)
@@ -152,30 +154,29 @@ def show_sidebar():
             st.session_state.compressor_enabled = st.toggle(
                 "🗜️ Compressor", 
                 value=st.session_state.get("compressor_enabled", False),
-                key="sidebar_toggle_compressor"
+                key=f"toggle_comp_{random.randint(1000, 9999)}"
             )
             st.session_state.debate_rounds = st.slider(
                 "Debate Rounds", 
                 1, 5, 
                 st.session_state.get("debate_rounds", 1),
-                key="sidebar_slider_rounds"
+                key=f"slider_rounds_{random.randint(1000, 9999)}"
             )
             st.session_state.active_agents = st.multiselect(
                 "Agents",
                 ["deepseek", "gemini"],
                 default=st.session_state.get("active_agents", ["gemini"]),
-                key="sidebar_multiselect_agents"
+                key=f"agents_select_{random.randint(1000, 9999)}"
             )
         
         st.divider()
         
         # Logout
-        if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
+        if st.button("🚪 Logout", key=f"logout_{random.randint(1000, 9999)}", use_container_width=True):
             st.session_state.user = None
             st.session_state.user_id = None
             st.session_state.current_session = None
             st.rerun()
-
 # ============================================
 # SESSION VIEW
 # ============================================
