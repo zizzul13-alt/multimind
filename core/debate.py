@@ -48,13 +48,20 @@ class DebateOrchestrator:
                         system_prompt=self._get_draft_prompt(mode),
                         max_tokens=2048
                     )
+                    debate_log["responses"].append(response)
+                    debate_log["total_tokens"] += response.get("tokens", 0)
+                    
                     if response.get("status") == "success":
                         draft_text = response.get("text", "")
                         draft_agent = "Groq"
-                        debate_log["responses"].append(response)
-                        debate_log["total_tokens"] += response.get("tokens", 0)
-                except:
-                    pass
+                except Exception as e:
+                    debate_log["responses"].append({
+                        "status": "error",
+                        "text": f"Groq error: {str(e)[:100]}",
+                        "agent": "Groq",
+                        "tokens": 0,
+                        "cost": 0
+                    })
 
             if not draft_text and "deepseek" in agents and self.deepseek:
                 try:
@@ -63,19 +70,25 @@ class DebateOrchestrator:
                         system_prompt=self._get_draft_prompt(mode),
                         max_tokens=2048
                     )
+                    debate_log["responses"].append(response)
+                    debate_log["total_tokens"] += response.get("tokens", 0)
+                    debate_log["total_cost"] += response.get("cost", 0)
+                    
                     if response.get("status") == "success":
                         draft_text = response.get("text", "")
                         draft_agent = "DeepSeek"
-                        debate_log["responses"].append(response)
-                        debate_log["total_tokens"] += response.get("tokens", 0)
-                        debate_log["total_cost"] += response.get("cost", 0)
-                except:
-                    pass
+                except Exception as e:
+                    debate_log["responses"].append({
+                        "status": "error",
+                        "text": f"DeepSeek error: {str(e)[:100]}",
+                        "agent": "DeepSeek",
+                        "tokens": 0,
+                        "cost": 0
+                    })
 
             # ===== STEP 2: GEMINI COMPLETE & IMPROVE =====
             if self.gemini:
                 if draft_text and len(draft_text) > 50:
-                    # Ada draft → Gemini lengkapi
                     complete_prompt = f"""Task: {full_prompt[:300]}
 
 Draft from {draft_agent} (may be incomplete):
@@ -92,7 +105,6 @@ Complete and improve into a comprehensive final answer:"""
                     debate_log["total_tokens"] += final.get("tokens", 0)
                     debate_log["final_answer"] = final.get("text", draft_text)
                 else:
-                    # Ga ada draft → Gemini langsung
                     response = self.gemini.generate(
                         prompt=full_prompt,
                         system_prompt=self._get_full_prompt(mode),
