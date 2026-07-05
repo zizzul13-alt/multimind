@@ -10,9 +10,10 @@ from utils.error_handler import error_logger
 class DebateOrchestrator:
     """Orchestrate multi-agent debate dengan fallback"""
 
-    def __init__(self, gemini_agent, deepseek_agent=None):
+    def __init__(self, gemini_agent, deepseek_agent=None, groq_agent=None):
         self.gemini = gemini_agent
         self.deepseek = deepseek_agent
+        self.groq = groq_agent
 
     def debate(self, prompt, context="", mode="coding", rounds=1, agents=None):
         """Run debate - otomatis fallback ke Gemini kalau DeepSeek error"""
@@ -38,7 +39,20 @@ class DebateOrchestrator:
                 full_prompt = f"CONTEXT:\n{context}\n\nTASK:\n{prompt}"
 
             # ===== ROUND 1: COBA DEEPSEEK DULU =====
-            if "deepseek" in agents and self.deepseek:
+            # ===== ROUND 1: COBA GROQ DULU (PALING CEPAT!) =====
+            if "groq" in agents and self.groq:
+                try:
+                    response = self.groq.generate(
+                        prompt=full_prompt,
+                        system_prompt=self._get_system_prompt(mode),
+                        max_tokens=1500
+                    )
+                    if response.get("status") == "success":
+                        debate_log["responses"].append(response)
+                        debate_log["total_tokens"] += response.get("tokens", 0)
+                except:
+                    pass  # Fallback ke agent lain
+                    if "deepseek" in agents and self.deepseek:
                 try:
                     response = self.deepseek.generate(
                         prompt=full_prompt,
