@@ -94,7 +94,7 @@ def show_login_page():
     st.divider()
     st.info(
         "💡 **Info:**\n\n"
-        "- Masukkan username bebas (Ali, Budi, atau nama lain)\n"
+        "- Masukkan username bebas (Izzul, Miko, atau nama lain)\n"
         "- Data kamu PRIVASI & terpisah dari user lain\n"
         "- API keys diatur oleh admin"
     )
@@ -433,4 +433,3 @@ def main():
 
 if __name__ == "__main__":
     main()
- 
