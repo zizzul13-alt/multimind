@@ -90,18 +90,18 @@ class DebateOrchestrator:
                 draft_text = draft_response.get("text", "")
                 
                 if len(draft_text) > 50:
-                    review_prompt = f"""TASK: {full_prompt[:500]}
+                    review_prompt = f"""TASK: {full_prompt[:300]}
 
-DRAFT from {draft_agent}:
-{draft_text[:3000]}
+DRAFT from {draft_agent} (may be truncated):
+{draft_text[:2000]}
 
-INSTRUCTIONS:
-1. Review the draft for errors or missing information
-2. Add anything important that was missed
-3. Improve clarity and structure
-4. Provide the COMPLETE final answer
+YOUR JOB:
+- Continue from where the draft stops
+- Complete ALL unfinished points
+- Add missing analysis
+- Provide ONE complete, well-structured final answer
 
-FINAL ANSWER:"""
+FINAL COMPLETE ANSWER:"""
 
                     review = self.gemini.generate(
                         prompt=review_prompt,
