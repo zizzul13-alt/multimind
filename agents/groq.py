@@ -52,12 +52,12 @@ class GroqAgent:
             text = response.choices[0].message.content
 
             return {
-                "status": "success",
-                "text": text,
-                "agent": self.name,
-                "tokens": response.usage.total_tokens if response.usage else 0,
-                "cost": 0  # GRATIS!
-            }
+    "status": "success",
+    "text": text,
+    "agent": self.name,
+    "tokens": response.usage.total_tokens if response.usage else len(text.split()),
+    "cost": 0
+}
 
         except Exception as e:
             error_msg = str(e)
