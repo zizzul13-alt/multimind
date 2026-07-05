@@ -16,25 +16,23 @@ class GeminiAgent:
         try:
             genai.configure(api_key=api_key)
             
-            # Coba model yang tersedia (urut dari yang paling direkomendasikan)
-            model_names = [
-                'gemini-1.5-flash',      # Standard
-                'gemini-1.5-flash-latest', # Latest
-                'gemini-2.0-flash-exp',   # Experimental baru
-                'gemini-1.5-pro',         # Lebih powerful
-                'gemini-pro',             # Legacy
-            ]
-            
-            self.model = None
-            for model_name in model_names:
-                try:
-                    self.model = genai.GenerativeModel(model_name)
-                    self.model_name = model_name
-                    print(f"✅ Using model: {model_name}")
-                    break
-                except Exception as e:
-                    print(f"⚠️ Model {model_name} not available: {e}")
-                    continue
+# GANTI JADI:
+model_names = [
+    'gemini-flash-latest',        # GRATIS (pasti)
+    'gemini-flash-lite-latest',   # GRATIS (ringan)
+    'gemini-2.0-flash-exp',       # GRATIS (experimental)
+    'gemini-1.5-flash',           # GRATIS (standar)
+    'models/gemini-1.5-flash',    # Full path
+]
+
+self.model = None
+for model_name in model_names:
+    try:
+        self.model = genai.GenerativeModel(model_name)
+        self.model_name = model_name
+        break
+    except Exception as e:
+        continue
             
             if self.model:
                 self.name = f"Gemini ({self.model_name})"
