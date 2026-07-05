@@ -15,16 +15,10 @@ class GeminiAgent:
 
         try:
             genai.configure(api_key=api_key)
-            
-            # ⚠️ GANTI MANUAL DI SINI ⚠️
-            # Pakai model yang tersedia di akun kamu:
             self.model = genai.GenerativeModel('gemini-flash-latest')
             self.model_name = 'gemini-flash-latest'
             self.name = "Gemini (gemini-flash-latest)"
-            print(f"✅ Using model: gemini-flash-latest")
-
         except Exception as e:
-            print(f"Init error: {e}")
             self.model = None
             self.name = "Gemini (init error)"
 
@@ -33,7 +27,7 @@ class GeminiAgent:
         if not self.model:
             return {
                 "status": "error",
-                "text": "Gemini model not loaded",
+                "text": "Gemini API not configured.",
                 "agent": self.name,
                 "tokens": 0,
                 "cost": 0
@@ -41,16 +35,16 @@ class GeminiAgent:
 
         try:
             full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-
             response = self.model.generate_content(full_prompt)
+            text = response.text if response.text else "No response"
 
             return {
-    "status": "success",
-    "text": text,
-    "agent": self.name,
-    "tokens": len(text.split()),
-    "cost": 0
-}
+                "status": "success",
+                "text": text,
+                "agent": self.name,
+                "tokens": len(text.split()),
+                "cost": 0
+            }
         except Exception as e:
             return {
                 "status": "error",
@@ -65,6 +59,6 @@ class GeminiAgent:
         return {
             "status": "success",
             "text": original_prompt,
-            "original_tokens": 0,
-            "compressed_tokens": 0
+            "original_tokens": TokenCounter.count(original_prompt),
+            "compressed_tokens": TokenCounter.count(original_prompt)
         }
