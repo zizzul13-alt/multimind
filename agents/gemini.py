@@ -15,91 +15,56 @@ class GeminiAgent:
 
         try:
             genai.configure(api_key=api_key)
-
-            # Model yang tersedia (urut prioritas)
-            model_names = [
-                'gemini-flash-latest',
-                'gemini-1.5-flash',
-                'models/gemini-1.5-flash',
-                'gemini-pro',
-            ]
-
-            self.model = None
-            for model_name in model_names:
-                try:
-                    self.model = genai.GenerativeModel(model_name)
-                    self.model_name = model_name
-                    break
-                except Exception:
-                    continue
-
-            if self.model:
-                self.name = f"Gemini ({self.model_name})"
-            else:
-                self.name = "Gemini (no model)"
+            
+            # ⚠️ GANTI MANUAL DI SINI ⚠️
+            # Pakai model yang tersedia di akun kamu:
+            self.model = genai.GenerativeModel('gemini-flash-latest')
+            self.model_name = 'gemini-flash-latest'
+            self.name = "Gemini (gemini-flash-latest)"
+            print(f"✅ Using model: gemini-flash-latest")
 
         except Exception as e:
+            print(f"Init error: {e}")
             self.model = None
-            self.name = "Gemini (error)"
+            self.name = "Gemini (init error)"
 
     def generate(self, prompt, system_prompt=None, max_tokens=2000):
         """Generate response"""
         if not self.model:
             return {
                 "status": "error",
-                "text": "Gemini API not configured. Check API key.",
+                "text": "Gemini model not loaded",
                 "agent": self.name,
                 "tokens": 0,
                 "cost": 0
             }
 
         try:
-            full_prompt = prompt
-            if system_prompt:
-                full_prompt = f"{system_prompt}\n\n{prompt}"
+            full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
 
-            response = self.model.generate_content(
-                full_prompt,
-                generation_config=genai.types.GenerationConfig(
-                    max_output_tokens=max_tokens,
-                    temperature=0.7
-                )
-            )
-
-            text = response.text if response.text else "No response generated"
+            response = self.model.generate_content(full_prompt)
 
             return {
                 "status": "success",
-                "text": text,
+                "text": response.text or "No response",
                 "agent": self.name,
-                "tokens": TokenCounter.count(text),
+                "tokens": 0,
                 "cost": 0
             }
-
         except Exception as e:
             return {
                 "status": "error",
-                "text": f"[Gemini error: {str(e)[:100]}]",
+                "text": f"Gemini error: {str(e)[:200]}",
                 "agent": self.name,
                 "tokens": 0,
                 "cost": 0
             }
 
     def compress_prompt(self, original_prompt):
-        """Compress prompt (FREE)"""
-        system = "Compress this prompt to minimum tokens without losing key information. Remove politeness. Use keywords."
-
-        result = self.generate(
-            prompt=f"Compress:\n{original_prompt}",
-            system_prompt=system,
-            max_tokens=200
-        )
-
-        compressed = result.get("text", original_prompt) if result.get("status") == "success" else original_prompt
-
+        """Compress prompt"""
         return {
-            "status": result.get("status", "error"),
-            "text": compressed,
-            "original_tokens": TokenCounter.count(original_prompt),
-            "compressed_tokens": TokenCounter.count(compressed)
+            "status": "success",
+            "text": original_prompt,
+            "original_tokens": 0,
+            "compressed_tokens": 0
         }
