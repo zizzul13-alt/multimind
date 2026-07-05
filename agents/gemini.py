@@ -15,32 +15,30 @@ class GeminiAgent:
 
         try:
             genai.configure(api_key=api_key)
-            
-# GANTI JADI:
-model_names = [
-    'gemini-flash-latest',        # GRATIS (pasti)
-    'gemini-flash-lite-latest',   # GRATIS (ringan)
-    'gemini-2.0-flash-exp',       # GRATIS (experimental)
-    'gemini-1.5-flash',           # GRATIS (standar)
-    'models/gemini-1.5-flash',    # Full path
-]
 
-self.model = None
-for model_name in model_names:
-    try:
-        self.model = genai.GenerativeModel(model_name)
-        self.model_name = model_name
-        break
-    except Exception as e:
-        continue
-            
+            # Model yang tersedia (urut prioritas)
+            model_names = [
+                'gemini-flash-latest',
+                'gemini-1.5-flash',
+                'models/gemini-1.5-flash',
+                'gemini-pro',
+            ]
+
+            self.model = None
+            for model_name in model_names:
+                try:
+                    self.model = genai.GenerativeModel(model_name)
+                    self.model_name = model_name
+                    break
+                except Exception:
+                    continue
+
             if self.model:
                 self.name = f"Gemini ({self.model_name})"
             else:
                 self.name = "Gemini (no model)"
-                
+
         except Exception as e:
-            print(f"Gemini init error: {e}")
             self.model = None
             self.name = "Gemini (error)"
 
@@ -75,15 +73,13 @@ for model_name in model_names:
                 "text": text,
                 "agent": self.name,
                 "tokens": TokenCounter.count(text),
-                "cost": 0  # GRATIS!
+                "cost": 0
             }
 
         except Exception as e:
-            error_msg = str(e)
-            print(f"Gemini error: {error_msg}")
             return {
                 "status": "error",
-                "text": f"[Gemini error: {error_msg[:100]}]",
+                "text": f"[Gemini error: {str(e)[:100]}]",
                 "agent": self.name,
                 "tokens": 0,
                 "cost": 0
