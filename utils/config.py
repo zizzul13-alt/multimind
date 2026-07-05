@@ -17,31 +17,28 @@ class Config:
     MAX_CONTEXT_TOKENS = 800
     
     DEFAULT_AGENTS = ["gemini"]
-    FALLBACK_AGENTS = ["gemini"]
+    FALLBACK_AGENTS = ["gemini", "groq"]
     DEBATE_ROUNDS_DEFAULT = 1
     
     COMPRESSOR_ENABLED = False
-    COMPRESSOR_MODEL = "gemini-flash"
+    COMPRESSOR_MODEL = "gemini-flash-latest"
     
-@classmethod
-def get_api_keys(cls, user_id):
-    """Get API keys for user"""
-    try:
-        all_secrets = dict(st.secrets)
+    @classmethod
+    def get_api_keys(cls, user_id):
+        """Get API keys for user"""
+        try:
+            all_secrets = dict(st.secrets)
+            
+            if user_id in all_secrets:
+                return dict(st.secrets[user_id])
+            
+            if "default" in all_secrets:
+                return dict(st.secrets["default"])
+            
+        except Exception:
+            pass
         
-        if user_id in all_secrets:
-            return dict(st.secrets[user_id])
-        
-        if "default" in all_secrets:
-            return dict(st.secrets["default"])
-        
-        if "ali" in all_secrets:
-            return dict(st.secrets["ali"])
-        
-    except Exception as e:
-        pass
-    
-    return {"gemini_key": "", "deepseek_key": "", "groq_key": ""}
+        return {"gemini_key": "", "deepseek_key": "", "groq_key": ""}
     
     @classmethod
     def get_db_path(cls, user_id):
