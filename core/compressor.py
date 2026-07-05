@@ -8,27 +8,21 @@ class PromptCompressor:
     
     @staticmethod
     def should_compress(prompt, config):
-        """Check if compression should be applied"""
         if not config.get("enabled", True):
             return False
-        
         words = len(prompt.split())
         if words < 15:
-            return False  # Already short
-        
+            return False
         return True
     
     @staticmethod
     def compress(prompt, gemini_agent):
-        """Compress prompt using Gemini (FREE)"""
         result = gemini_agent.compress_prompt(prompt)
-        
-        original_tokens = result["original_tokens"]
-        compressed_tokens = result["compressed_tokens"]
-        
+        original_tokens = result.get("original_tokens", 0)
+        compressed_tokens = result.get("compressed_tokens", 0)
         return {
             "original": prompt,
-            "compressed": result["compressed"],
+            "compressed": result.get("text", prompt),
             "original_tokens": original_tokens,
             "compressed_tokens": compressed_tokens,
             "saved_tokens": original_tokens - compressed_tokens,
@@ -37,14 +31,11 @@ class PromptCompressor:
     
     @staticmethod
     def get_compression_tips(prompt_tokens):
-        """Get tips for saving tokens"""
         tips = []
-        
         if prompt_tokens > 200:
             tips.append("💡 Prompt agak panjang, ringkas 50%")
         if "tolong" in prompt_tokens or "terima kasih" in prompt_tokens:
-            tips.append("✂️ Hapus kata basa-basi (tolong, terima kasih)")
+            tips.append("✂️ Hapus kata basa-basi")
         if len(prompt_tokens.split('.')) > 5:
             tips.append("📏 Pecah jadi poin-poin singkat")
-        
         return tips
