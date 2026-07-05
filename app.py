@@ -11,6 +11,7 @@ from datetime import datetime
 # Import custom modules
 from agents.gemini import GeminiAgent
 from agents.deepseek import DeepSeekAgent
+from agents.groq import GroqAgent
 from core.debate import DebateOrchestrator
 from core.compressor import PromptCompressor
 from core.memory import SessionMemory
@@ -55,7 +56,8 @@ def get_agents(user_id):
     api_keys = Config.get_api_keys(user_id)
     gemini = GeminiAgent(api_keys.get("gemini_key", "")) if api_keys.get("gemini_key") else None
     deepseek = DeepSeekAgent(api_keys.get("deepseek_key", "")) if api_keys.get("deepseek_key") else None
-    return {"gemini": gemini, "deepseek": deepseek}
+    groq = GroqAgent(api_keys.get("groq_key", "")) if api_keys.get("groq_key") else None
+    return {"gemini": gemini, "deepseek": deepseek, "groq": groq}
 
 # ============================================
 # DATABASE MANAGERS CACHE
@@ -151,7 +153,7 @@ def show_sidebar():
             )
             st.session_state.active_agents = st.multiselect(
                 "Agents",
-                ["deepseek", "gemini"],
+                ["gemini", "deepseek", "groq"],
                 default=st.session_state.active_agents,
                 key="settings_agents"
             )
@@ -401,6 +403,7 @@ def main():
                 agents = get_agents(st.session_state.user_id)
                 st.write("Gemini:", "✅" if agents.get("gemini") else "❌")
                 st.write("DeepSeek:", "✅" if agents.get("deepseek") else "❌")
+                st.write("Groq:", "✅" if agents.get("groq") else "❌")
 
     # Show login if not logged in
     if st.session_state.user is None:
