@@ -42,9 +42,9 @@ if "initialized" not in st.session_state:
     st.session_state.memories = {}
     st.session_state.new_chat = False
     st.session_state.chat_mode = "continue"
-    st.session_state.compressor_enabled = True
-    st.session_state.debate_rounds = 3
-    st.session_state.active_agents = ["deepseek", "gemini"]
+    st.session_state.compressor_enabled = False
+    st.session_state.debate_rounds = 1
+    st.session_state.active_agents = ["gemini"]
 
 # ============================================
 # API AGENTS CACHE
@@ -74,15 +74,15 @@ def show_login_page():
     st.title("🤖 MultiMind AI")
     st.markdown("### Multi-Agent AI Debate System")
     st.divider()
-    
+
     st.subheader("🔐 Silakan Login")
-    
+
     username = st.text_input(
         "Username",
         placeholder="Ketik username bebas...",
-        key="login_username_input"  # UNIQUE KEY!
+        key="login_username_input"
     )
-    
+
     if st.button("🚀 Masuk", type="primary", key="login_button"):
         if username and username.strip():
             st.session_state.user = username.strip()
@@ -90,7 +90,7 @@ def show_login_page():
             st.rerun()
         else:
             st.error("Username tidak boleh kosong!")
-    
+
     st.divider()
     st.info(
         "💡 **Info:**\n\n"
@@ -102,81 +102,69 @@ def show_login_page():
 # ============================================
 # SIDEBAR
 # ============================================
-import random
-
 def show_sidebar():
     """Show sidebar for logged-in user"""
     with st.sidebar:
         st.title("🤖 MultiMind")
         st.success(f"👤 {st.session_state.user}")
         st.divider()
-        
+
         # Session management
         st.subheader("📂 Sessions")
-        
+
         db = get_db_manager(st.session_state.user_id)
         sessions = db.get_sessions()
-        
-        # Gunakan random key + id untuk JAMIN UNIK
-        for s in sessions:
-            # Gabungkan random, id, dan timestamp
-            unique_key = f"sidebar_sess_{s['id'][:8]}_{random.randint(1000, 9999)}"
-            
+
+        for i, s in enumerate(sessions):
+            unique_key = f"sidebar_session_{i}_{s['id'][:8]}"
             if st.button(f"📝 {s['name']}", key=unique_key):
                 st.session_state.current_session = s
                 if s['id'] not in st.session_state.memories:
                     st.session_state.memories[s['id']] = SessionMemory()
                 st.rerun()
-        
+
         # New session
         with st.expander("➕ New Session"):
-            new_name = st.text_input(
-                "Name", 
-                placeholder="Project API...",
-                key=f"new_sess_name_{random.randint(1000, 9999)}"
-            )
-            new_mode = st.selectbox(
-                "Mode", 
-                ["coding", "research", "thinking"],
-                key=f"new_sess_mode_{random.randint(1000, 9999)}"
-            )
-            if st.button("Create", key=f"create_sess_{random.randint(1000, 9999)}", use_container_width=True):
+            new_name = st.text_input("Name", placeholder="Project API...", key="sidebar_new_session_name")
+            new_mode = st.selectbox("Mode", ["coding", "research", "thinking"], key="sidebar_new_session_mode")
+            if st.button("Create", key="sidebar_create_session_btn", use_container_width=True):
                 if new_name:
                     session_id = str(uuid.uuid4())
                     db.create_session(session_id, new_name, new_mode)
                     st.success("Created!")
                     st.rerun()
-        
+
         st.divider()
-        
+
         # Settings
         with st.expander("⚙️ Settings"):
             st.session_state.compressor_enabled = st.toggle(
-                "🗜️ Compressor", 
-                value=st.session_state.get("compressor_enabled", False),
-                key=f"toggle_comp_{random.randint(1000, 9999)}"
+                "🗜️ Compressor",
+                value=st.session_state.compressor_enabled,
+                key="settings_compressor"
             )
             st.session_state.debate_rounds = st.slider(
-                "Debate Rounds", 
-                1, 5, 
-                st.session_state.get("debate_rounds", 1),
-                key=f"slider_rounds_{random.randint(1000, 9999)}"
+                "Debate Rounds",
+                1, 5,
+                st.session_state.debate_rounds,
+                key="settings_rounds"
             )
             st.session_state.active_agents = st.multiselect(
                 "Agents",
                 ["deepseek", "gemini"],
-                default=st.session_state.get("active_agents", ["gemini"]),
-                key=f"agents_select_{random.randint(1000, 9999)}"
+                default=st.session_state.active_agents,
+                key="settings_agents"
             )
-        
+
         st.divider()
-        
+
         # Logout
-        if st.button("🚪 Logout", key=f"logout_{random.randint(1000, 9999)}", use_container_width=True):
+        if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
             st.session_state.user = None
             st.session_state.user_id = None
             st.session_state.current_session = None
             st.rerun()
+
 # ============================================
 # SESSION VIEW
 # ============================================
@@ -184,10 +172,10 @@ def show_session():
     """Show selected session"""
     session = st.session_state.current_session
     memory = st.session_state.memories.get(session['id'])
-    
+
     st.title(f"💬 {session['name']}")
     st.caption(f"Mode: {session['mode']} | Created: {session['created_at'][:10]}")
-    
+
     # Memory stats
     if memory:
         stats = memory.get_stats()
@@ -198,22 +186,22 @@ def show_session():
             st.metric("Short-term Chats", stats["short_term_chats"])
         with col3:
             st.metric("Free Space", f"{stats['free_percent']}%")
-    
+
     st.divider()
-    
+
     # Chat history
     db = get_db_manager(st.session_state.user_id)
     chats = db.get_session_chats(session['id'])
-    
+
     for chat in chats:
         with st.chat_message("user"):
             mode_badge = "🧵" if chat.get('mode') == 'continue' else "📌"
             st.caption(f"{mode_badge} {chat.get('mode', 'continue').upper()}")
             st.write(chat['prompt'][:500])
-        
+
         with st.chat_message("assistant"):
             st.write(chat.get('final_answer', 'No response')[:1000])
-            
+
             if chat.get('debate_data'):
                 with st.expander("🔍 Debate Details"):
                     try:
@@ -223,17 +211,17 @@ def show_session():
                             st.write(r.get('text', '')[:500])
                     except:
                         pass
-            
+
             col1, col2 = st.columns(2)
             with col1:
                 st.caption(f"🔤 {chat.get('tokens_used', 0)} tokens")
             with col2:
                 st.caption(f"💵 ${chat.get('cost', 0):.6f}")
-    
+
     st.divider()
-    
+
     # New chat button
-    if st.button("➕ New Chat", type="primary", use_container_width=True):
+    if st.button("➕ New Chat", type="primary", key="new_chat_btn", use_container_width=True):
         st.session_state.new_chat = True
         st.rerun()
 
@@ -243,43 +231,46 @@ def show_session():
 def show_new_chat():
     """Show new chat form"""
     st.subheader("💭 New Chat")
-    
+
     # Mode selection
     chat_mode = st.radio(
         "Chat Mode:",
         ["🧵 Continue (with history)", "📌 Standalone (fresh)"],
-        horizontal=True
+        horizontal=True,
+        key="chat_mode_radio"
     )
     context_mode = "continue" if "Continue" in chat_mode else "standalone"
-    
+
     if context_mode == "continue":
         st.info("AI will see previous chats in this session")
     else:
         st.success("AI starts fresh - no history (SAVES TOKENS!)")
-    
+
     # Prompt
-    prompt = st.text_area("Prompt:", height=150, placeholder="Ask anything...")
-    
+    prompt = st.text_area("Prompt:", height=150, placeholder="Ask anything...", key="new_chat_prompt")
+
     # File upload
     uploaded_files = st.file_uploader(
         "📎 Files (optional)",
         accept_multiple_files=True,
         type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css',
-              'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx']
+              'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'],
+        key="new_chat_files"
     )
-    
+
     # Token estimation
     if prompt or uploaded_files:
         files_count = len(uploaded_files) if uploaded_files else 0
+        session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
         estimate = TokenCounter.estimate_total(
             prompt or "",
             files_count=files_count,
-            mode=st.session_state.current_session.get('mode', 'coding'),
+            mode=session_mode,
             rounds=st.session_state.debate_rounds,
             compressor_on=st.session_state.compressor_enabled
         )
         warning = TokenCounter.get_warning_level(estimate["total_estimate"])
-        
+
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("📝 Prompt", estimate["prompt_tokens"])
@@ -290,23 +281,23 @@ def show_new_chat():
         with col4:
             cost = TokenCounter.estimate_cost(estimate["total_estimate"])
             st.metric("💵 Est. Cost", f"${cost:.6f}")
-        
+
         if warning["level"] == "high":
             st.warning(f"🔴 {warning['icon']} High token usage! Consider compressor.")
         elif warning["level"] == "medium":
             st.info(f"🟡 {warning['icon']} Moderate token usage.")
-    
+
     # Submit
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🚀 Send", type="primary", use_container_width=True):
+        if st.button("🚀 Send", type="primary", key="send_chat_btn", use_container_width=True):
             if prompt or uploaded_files:
                 process_chat(prompt, uploaded_files, context_mode)
             else:
                 st.error("Please enter a prompt or upload files")
-    
+
     with col2:
-        if st.button("❌ Cancel", use_container_width=True):
+        if st.button("❌ Cancel", key="cancel_chat_btn", use_container_width=True):
             st.session_state.new_chat = False
             st.rerun()
 
@@ -318,76 +309,80 @@ def process_chat(prompt, uploaded_files, context_mode):
     agents = get_agents(st.session_state.user_id)
     gemini = agents.get("gemini")
     deepseek = agents.get("deepseek")
-    
+
     if not gemini and not deepseek:
         st.error("No AI agents configured! Check API keys in secrets.")
         return
-    
+
     with st.spinner("🤖 Agents debating..."):
         # Step 1: Compress prompt (if enabled)
-        compressed = None
         final_prompt = prompt
-        
-        if st.session_state.get("compressor_enabled", True) and gemini and prompt:
+
+        if st.session_state.compressor_enabled and gemini and prompt:
             try:
                 compression = PromptCompressor.compress(prompt, gemini)
                 final_prompt = compression["compressed"]
-                compressed = compression
             except:
                 final_prompt = prompt
-                compressed = None
-        
-        # Process files
+
+        # Step 2: Handle files
         file_context = ""
         if uploaded_files:
-            file_results = FileHandler.handle(uploaded_files, gemini)
-            for f in file_results.get("files", []):
-                if "content" in f:
-                    file_context += f"\n--- FILE: {f['filename']} ---\n{f['content']}\n"
-        
-        # Get context from memory
+            try:
+                file_results = FileHandler.handle(uploaded_files, gemini)
+                for f in file_results.get("files", []):
+                    if "content" in f:
+                        file_context += f"\n--- FILE: {f['filename']} ---\n{f['content']}\n"
+            except:
+                pass
+
+        # Step 3: Get context (memory)
         context = ""
-        if context_mode == "continue":
+        if context_mode == "continue" and st.session_state.current_session:
             memory = st.session_state.memories.get(st.session_state.current_session['id'])
             if memory:
                 context = memory.get_context()
-        
+
         if file_context:
             context = file_context + "\n" + context
-        
-        # Run debate
+
+        # Step 4: Run debate
+        session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
         orchestrator = DebateOrchestrator(gemini, deepseek)
+
         debate_result = orchestrator.debate(
             prompt=final_prompt,
             context=context[:3000],
-            mode=st.session_state.current_session.get('mode', 'coding'),
+            mode=session_mode,
             rounds=st.session_state.debate_rounds,
             agents=st.session_state.active_agents
         )
-        
-        # Save to memory
-        memory = st.session_state.memories.get(st.session_state.current_session['id'])
-        if not memory:
-            memory = SessionMemory()
-            st.session_state.memories[st.session_state.current_session['id']] = memory
-        memory.add_chat(prompt, debate_result.get("final_answer", ""))
-        
-        # Save to database
-        db = get_db_manager(st.session_state.user_id)
-        chat_data = {
-            "id": str(uuid.uuid4()),
-            "prompt": prompt,
-            "prompt_compressed": json.dumps({"compressed": final_prompt}) if final_prompt != prompt else "",
-            "mode": context_mode,
-            "context_mode": context_mode,
-            "final_answer": debate_result.get("final_answer", ""),
-            "debate_data": json.dumps(debate_result),
-            "tokens_used": debate_result.get("total_tokens", 0),
-            "cost": debate_result.get("total_cost", 0)
-        }
-        db.save_chat(st.session_state.current_session['id'], chat_data)
-        
-        # Reset
+
+        # Step 5: Save to memory
+        if st.session_state.current_session:
+            memory = st.session_state.memories.get(st.session_state.current_session['id'])
+            if not memory:
+                memory = SessionMemory()
+                st.session_state.memories[st.session_state.current_session['id']] = memory
+            memory.add_chat(prompt, debate_result.get("final_answer", ""))
+
+        # Step 6: Save to database
+        if st.session_state.current_session:
+            db = get_db_manager(st.session_state.user_id)
+            chat_data = {
+                "id": str(uuid.uuid4()),
+                "prompt": prompt,
+                "prompt_compressed": json.dumps({"compressed": final_prompt}) if final_prompt != prompt else "",
+                "mode": context_mode,
+                "context_mode": context_mode,
+                "final_answer": debate_result.get("final_answer", ""),
+                "debate_data": json.dumps(debate_result),
+                "tokens_used": debate_result.get("total_tokens", 0),
+                "cost": debate_result.get("total_cost", 0)
+            }
+            db.save_chat(st.session_state.current_session['id'], chat_data)
+
+        # Reset new chat state
         st.session_state.new_chat = False
         st.success("✅ Debate complete!")
         st.rerun()
@@ -397,14 +392,22 @@ def process_chat(prompt, uploaded_files, context_mode):
 # ============================================
 def main():
     """Main application"""
-    
+
+    # Debug info
+    if st.session_state.user:
+        with st.sidebar:
+            with st.expander("🔧 Debug Info"):
+                st.write("User:", st.session_state.user_id)
+                agents = get_agents(st.session_state.user_id)
+                st.write("Gemini:", "✅" if agents.get("gemini") else "❌")
+                st.write("DeepSeek:", "✅" if agents.get("deepseek") else "❌")
+
     # Show login if not logged in
     if st.session_state.user is None:
         show_login_page()
     else:
-        # Show sidebar
         show_sidebar()
-        
+
         # Show main content
         if st.session_state.current_session:
             if st.session_state.new_chat:
@@ -419,7 +422,7 @@ def main():
             1. Create a **New Session** in the sidebar
             2. Choose mode: **coding**, **research**, or **thinking**
             3. Start chatting with AI agents!
-            
+
             ### Features:
             - 🤖 Multi-agent debate (DeepSeek + Gemini)
             - 💰 Token-efficient with compressor
@@ -427,19 +430,6 @@ def main():
             - 🧠 Session memory (continue or standalone)
             - 👥 Multi-user with separate databases
             """)
-    # DEBUG MODE - Lihat apa yang terjadi
-    if st.session_state.user:
-        with st.sidebar:
-            with st.expander("🔧 Debug Info"):
-                st.write("User:", st.session_state.user_id)
-                agents = get_agents(st.session_state.user_id)
-                st.write("Gemini:", "✅" if agents.get("gemini") else "❌")
-                st.write("DeepSeek:", "✅" if agents.get("deepseek") else "❌")
-    
-    # Show login if not logged in
-    if st.session_state.user is None:
-        show_login_page()
-    else:
-        show_sidebar()
+
 if __name__ == "__main__":
     main()
