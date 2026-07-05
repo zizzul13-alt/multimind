@@ -2,25 +2,66 @@
 Gemini API wrapper - GRATIS!
 """
 import google.generativeai as genai
-from utils.error_handler import APIError, RateLimitError, retry_with_backoff
 from utils.token_counter import TokenCounter
 
 class GeminiAgent:
-    """Gemini Flash agent (FREE)"""
-    
+    """Gemini agent (FREE)"""
+
     def __init__(self, api_key):
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
-        self.name = "Gemini"
-    
-    @retry_with_backoff(max_retries=3, delay=2)
+        if not api_key or api_key == "":
+            self.model = None
+            self.name = "Gemini (not configured)"
+            return
+
+        try:
+            genai.configure(api_key=api_key)
+            
+            # Coba model yang tersedia (urut dari yang paling direkomendasikan)
+            model_names = [
+                'gemini-1.5-flash',      # Standard
+                'gemini-1.5-flash-latest', # Latest
+                'gemini-2.0-flash-exp',   # Experimental baru
+                'gemini-1.5-pro',         # Lebih powerful
+                'gemini-pro',             # Legacy
+            ]
+            
+            self.model = None
+            for model_name in model_names:
+                try:
+                    self.model = genai.GenerativeModel(model_name)
+                    self.model_name = model_name
+                    print(f"✅ Using model: {model_name}")
+                    break
+                except Exception as e:
+                    print(f"⚠️ Model {model_name} not available: {e}")
+                    continue
+            
+            if self.model:
+                self.name = f"Gemini ({self.model_name})"
+            else:
+                self.name = "Gemini (no model)"
+                
+        except Exception as e:
+            print(f"Gemini init error: {e}")
+            self.model = None
+            self.name = "Gemini (error)"
+
     def generate(self, prompt, system_prompt=None, max_tokens=2000):
         """Generate response"""
+        if not self.model:
+            return {
+                "status": "error",
+                "text": "Gemini API not configured. Check API key.",
+                "agent": self.name,
+                "tokens": 0,
+                "cost": 0
+            }
+
         try:
             full_prompt = prompt
             if system_prompt:
                 full_prompt = f"{system_prompt}\n\n{prompt}"
-            
+
             response = self.model.generate_content(
                 full_prompt,
                 generation_config=genai.types.GenerationConfig(
@@ -28,9 +69,9 @@ class GeminiAgent:
                     temperature=0.7
                 )
             )
-            
-            text = response.text
-            
+
+            text = response.text if response.text else "No response generated"
+
             return {
                 "status": "success",
                 "text": text,
@@ -38,62 +79,33 @@ class GeminiAgent:
                 "tokens": TokenCounter.count(text),
                 "cost": 0  # GRATIS!
             }
-        
+
         except Exception as e:
-            error_msg = str(e).lower()
-            if "rate" in error_msg or "quota" in error_msg:
-                raise RateLimitError(f"Gemini rate limit: {e}")
-            else:
-                raise APIError(f"Gemini error: {e}")
-    
+            error_msg = str(e)
+            print(f"Gemini error: {error_msg}")
+            return {
+                "status": "error",
+                "text": f"[Gemini error: {error_msg[:100]}]",
+                "agent": self.name,
+                "tokens": 0,
+                "cost": 0
+            }
+
     def compress_prompt(self, original_prompt):
         """Compress prompt (FREE)"""
-        system = """You are PROMPT COMPRESSOR. Compress user prompt to minimum tokens 
-        without losing key information. Use keywords. Remove politeness."""
-        
+        system = "Compress this prompt to minimum tokens without losing key information. Remove politeness. Use keywords."
+
         result = self.generate(
-            prompt=f"Compress this:\n{original_prompt}",
+            prompt=f"Compress:\n{original_prompt}",
             system_prompt=system,
             max_tokens=200
         )
-        
+
+        compressed = result.get("text", original_prompt) if result.get("status") == "success" else original_prompt
+
         return {
-            "original": original_prompt,
-            "compressed": result["text"],
+            "status": result.get("status", "error"),
+            "text": compressed,
             "original_tokens": TokenCounter.count(original_prompt),
-            "compressed_tokens": TokenCounter.count(result["text"])
+            "compressed_tokens": TokenCounter.count(compressed)
         }
-    
-    def review_code(self, code, task):
-        """Review code (FREE)"""
-        system = """You are CODE REVIEWER. Find bugs, security issues, 
-        edge cases, and suggest improvements. Be concise."""
-        
-        result = self.generate(
-            prompt=f"Task: {task}\n\nCode:\n{code}\n\nReview:",
-            system_prompt=system,
-            max_tokens=500
-        )
-        
-        return result
-    
-    def analyze_image(self, image_file):
-        """Analyze image using Gemini Vision (FREE)"""
-        try:
-            image = genai.upload_file(image_file)
-            vision_model = genai.GenerativeModel('gemini-1.5-flash')
-            
-            response = vision_model.generate_content([
-                "Describe this image in detail. Extract all text if any.",
-                image
-            ])
-            
-            return {
-                "status": "success",
-                "text": response.text,
-                "tokens": TokenCounter.count(response.text),
-                "cost": 0  # GRATIS!
-            }
-        
-        except Exception as e:
-            raise APIError(f"Gemini Vision error: {e}")
