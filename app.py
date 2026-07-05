@@ -205,14 +205,30 @@ def show_session():
             st.write(chat.get('final_answer', 'No response')[:1000])
 
             if chat.get('debate_data'):
-                with st.expander("🔍 Debate Details"):
-                    try:
-                        debate = json.loads(chat['debate_data'])
-                        for i, r in enumerate(debate.get('responses', []), 1):
-                            st.caption(f"Round {i} - {r.get('agent', 'Unknown')}")
-                            st.write(r.get('text', '')[:500])
-                    except:
-                        pass
+    with st.expander("🔍 Debate Details"):
+        try:
+            debate = json.loads(chat['debate_data'])
+            responses = debate.get('responses', [])
+            
+            if responses:
+                for i, r in enumerate(responses, 1):
+                    agent = r.get('agent', 'Unknown')
+                    text = r.get('text', '')
+                    status = r.get('status', 'unknown')
+                    
+                    if status == "success":
+                        st.success(f"✅ Round {i} - {agent}")
+                    else:
+                        st.warning(f"⚠️ Round {i} - {agent}")
+                    
+                    if text:
+                        st.write(text[:500])
+                    else:
+                        st.caption("(empty response)")
+            else:
+                st.caption("No debate data available")
+        except Exception as e:
+            st.caption(f"Error parsing debate data: {e}")
 
             col1, col2 = st.columns(2)
             with col1:
