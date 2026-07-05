@@ -311,7 +311,8 @@ def process_chat(prompt, uploaded_files, context_mode):
     agents = get_agents(st.session_state.user_id)
     gemini = agents.get("gemini")
     deepseek = agents.get("deepseek")
-
+    groq = agents.get("groq")
+    
     if not gemini and not deepseek:
         st.error("No AI agents configured! Check API keys in secrets.")
         return
