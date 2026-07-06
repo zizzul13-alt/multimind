@@ -116,24 +116,25 @@ class DebateOrchestrator:
             # ===== GEMINI REVIEW =====
             if self.gemini:
                 if draft_text and len(draft_text) > 50:
-                    final = self.gemini.generate(
-                        prompt=f"Task: {full_prompt[:300]}\n\nDraft from {draft_agent}:\n{draft_text[:2000]}\n\nComplete and improve into final answer:",
+                    # ... (draft + review) ...
+                    pass
+                else:
+                    # Gemini Direct
+                    response = self.gemini.generate(
+                        prompt=full_prompt,
+                        system_prompt=self._full_prompt(mode),
                         max_tokens=8192
                     )
-                    final["agent"] = f"🔍 Gemini (reviewed {draft_agent})"
-                    debate_log["responses"].append(final)
-                    debate_log["total_tokens"] += final.get("tokens", 0)
-                    
-                    final_text = final.get("text", draft_text)
-                    debate_log["final_answer"] = f"""## 🎯 FINAL ANSWER (Collaboration)
-
-> **Draft by:** {draft_agent}
-> **Reviewed & Completed by:** 🔍 Gemini
+                    response["agent"] = "🔍 Gemini (Direct)"
+                    debate_log["responses"].append(response)  # ← WAJIB ADA!
+                    debate_log["total_tokens"] += response.get("tokens", 0)
+        
+                    final_text = response.get("text", "")
+                    debate_log["final_answer"] = f"""## 🤖 Gemini Direct Answer
 
 ---
 
-{final_text}
-
+{final_text}"""
 ---
 *Answer generated through MultiMind AI collaboration*"""
                 else:
