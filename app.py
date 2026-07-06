@@ -227,7 +227,44 @@ def process_chat(prompt, uploaded_files, context_mode):
     groq = agents.get("groq")
     cloudflare = agents.get("cloudflare")
     openrouter = agents.get("openrouter")
-
+    coze = agents.get("coze")
+    use_coze = st.session_state.get("use_coze", False)
+    
+    # ===== CEK: COZE AKTIF? =====
+    if coze and use_coze:
+        
+        # Deteksi seberapa susah prompt-nya (1-5)
+        complexity = coze.detect_complexity(prompt)
+        
+        # ===== KALAU TUGAS BERAT (4-5) =====
+        if complexity >= 4:
+            st.warning(f"🧠 Tugas kompleks! (Level {complexity}/5)")
+            st.write("Model yang akan dipakai: GPT-4o atau Claude")
+            st.write("Biaya: 1-2 credits")
+            
+            # Tombol konfirmasi
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("✅ Pakai Coze (1-2 credits)"):
+                    # User setuju → lanjut
+                    st.session_state.coze_confirmed = True
+                    st.rerun()
+            with col2:
+                if st.button("❌ Pakai Agent Biasa"):
+                    # User tolak → pakai Groq/Gemini aja
+                    st.session_state.coze_confirmed = False
+                    st.session_state.use_coze = False
+                    st.rerun()
+            
+            # Kalau belum ada konfirmasi, STOP dulu
+            if not st.session_state.get("coze_confirmed"):
+                return  # Jangan lanjut debat
+        
+        # ===== KALAU TUGAS RINGAN (1-3) =====
+        else:
+            # Langsung aja, ga perlu konfirmasi
+            # Karena pakai GPT-4o mini (AMAN! 100x/hari)
+            st.session_state.coze_confirmed = True
     if not gemini and not deepseek and not groq and not cloudflare and not openrouter:
         st.error("No AI agents configured! Check API keys in secrets.")
         return
