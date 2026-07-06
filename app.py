@@ -12,6 +12,7 @@ from agents.gemini import GeminiAgent
 from agents.deepseek import DeepSeekAgent
 from agents.groq import GroqAgent
 from agents.cloudflare import CloudflareAgent
+from agents.openrouter import OpenRouterAgent
 from core.debate import DebateOrchestrator
 from core.compressor import PromptCompressor
 from core.memory import SessionMemory
@@ -41,22 +42,20 @@ if "initialized" not in st.session_state:
     st.session_state.debate_rounds = 1
     st.session_state.active_agents = ["gemini"]
 
-
 @st.cache_resource
 def get_agents(user_id):
     api_keys = Config.get_api_keys(user_id)
     gemini = GeminiAgent(api_keys.get("gemini_key", "")) if api_keys.get("gemini_key") else None
     deepseek = DeepSeekAgent(api_keys.get("deepseek_key", "")) if api_keys.get("deepseek_key") else None
     groq = GroqAgent(api_keys.get("groq_key", "")) if api_keys.get("groq_key") else None
-    cloudflare = CloudflareAgent(api_keys.get("cloudflare_key", "")) if api_keys.get("cloudflare_key") else None
-    return {"gemini": gemini, "deepseek": deepseek, "groq": groq, "cloudflare": cloudflare}
-
+    cloudflare = CloudflareAgent(api_keys.get("cloudflare_key", ""), api_keys.get("cloudflare_account_id", "")) if api_keys.get("cloudflare_key") else None
+    openrouter = OpenRouterAgent(api_keys.get("openrouter_key", "")) if api_keys.get("openrouter_key") else None
+    return {"gemini": gemini, "deepseek": deepseek, "groq": groq, "cloudflare": cloudflare, "openrouter": openrouter}
 
 @st.cache_resource
 def get_db_manager(user_id):
     db_path = Config.get_db_path(user_id)
     return DatabaseManager(db_path)
-
 
 def show_login_page():
     st.title("🤖 MultiMind AI")
@@ -73,7 +72,6 @@ def show_login_page():
             st.error("Username tidak boleh kosong!")
     st.divider()
     st.info("💡 **Info:**\n\n- Masukkan username bebas (Izzul, Miko, atau nama lain)\n- Data kamu PRIVASI & terpisah dari user lain\n- API keys diatur oleh admin")
-
 
 def show_sidebar():
     with st.sidebar:
@@ -103,14 +101,13 @@ def show_sidebar():
         with st.expander("⚙️ Settings"):
             st.session_state.compressor_enabled = st.toggle("🗜️ Compressor", value=st.session_state.compressor_enabled, key="settings_compressor")
             st.session_state.debate_rounds = st.slider("Debate Rounds", 1, 5, st.session_state.debate_rounds, key="settings_rounds")
-            st.session_state.active_agents = st.multiselect("Agents", ["gemini", "deepseek", "groq", "cloudflare"], default=st.session_state.active_agents, key="settings_agents")
+            st.session_state.active_agents = st.multiselect("Agents", ["gemini", "deepseek", "groq", "cloudflare", "openrouter"], default=st.session_state.active_agents, key="settings_agents")
         st.divider()
         if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
             st.session_state.user = None
             st.session_state.user_id = None
             st.session_state.current_session = None
             st.rerun()
-
 
 def show_session():
     session = st.session_state.current_session
@@ -168,7 +165,6 @@ def show_session():
         st.session_state.new_chat = True
         st.rerun()
 
-
 def show_new_chat():
     st.subheader("💭 New Chat")
     chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
@@ -210,14 +206,14 @@ def show_new_chat():
             st.session_state.new_chat = False
             st.rerun()
 
-
 def process_chat(prompt, uploaded_files, context_mode):
     agents = get_agents(st.session_state.user_id)
     gemini = agents.get("gemini")
     deepseek = agents.get("deepseek")
     groq = agents.get("groq")
     cloudflare = agents.get("cloudflare")
-    if not gemini and not deepseek and not groq and not cloudflare:
+    openrouter = agents.get("openrouter")
+    if not gemini and not deepseek and not groq and not cloudflare and not openrouter:
         st.error("No AI agents configured! Check API keys in secrets.")
         return
     with st.spinner("🤖 Agents debating..."):
@@ -245,7 +241,7 @@ def process_chat(prompt, uploaded_files, context_mode):
         if file_context:
             context = file_context + "\n" + context
         session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
-        orchestrator = DebateOrchestrator(gemini, deepseek, groq, cloudflare)
+        orchestrator = DebateOrchestrator(gemini, deepseek, groq, cloudflare, openrouter)
         debate_result = orchestrator.debate(prompt=final_prompt, context=context[:3000], mode=session_mode, rounds=st.session_state.debate_rounds, agents=st.session_state.active_agents)
         if st.session_state.current_session:
             memory = st.session_state.memories.get(st.session_state.current_session['id'])
@@ -271,7 +267,6 @@ def process_chat(prompt, uploaded_files, context_mode):
         st.success("✅ Debate complete!")
         st.rerun()
 
-
 def main():
     if st.session_state.user:
         with st.sidebar:
@@ -282,6 +277,7 @@ def main():
                 st.write("DeepSeek:", "✅" if agents.get("deepseek") else "❌")
                 st.write("Groq:", "✅" if agents.get("groq") else "❌")
                 st.write("Cloudflare:", "✅" if agents.get("cloudflare") else "❌")
+                st.write("OpenRouter:", "✅" if agents.get("openrouter") else "❌")
     if st.session_state.user is None:
         show_login_page()
     else:
@@ -301,13 +297,12 @@ def main():
             3. Start chatting with AI agents!
 
             ### Features:
-            - 🤖 Multi-agent debate (Cloudflare + Groq + DeepSeek + Gemini)
+            - 🤖 Multi-agent debate (Groq + Cloudflare + OpenRouter + Gemini)
             - 💰 Token-efficient with compressor
             - 📎 File upload (PDF, Excel, Images, Code)
             - 🧠 Session memory (continue or standalone)
             - 👥 Multi-user with separate databases
             """)
-
 
 if __name__ == "__main__":
     main()
