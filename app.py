@@ -130,9 +130,9 @@ def show_session():
         with st.chat_message("user"):
             mode_badge = "🧵" if chat.get('mode') == 'continue' else "📌"
             st.caption(f"{mode_badge} {chat.get('mode', 'continue').upper()}")
-            st.write(chat['prompt'][:500])
+            st.write(chat['prompt'])
         with st.chat_message("assistant"):
-            st.write(chat.get('final_answer', 'No response')[:1000])
+            st.markdown(chat.get('final_answer', 'No response'))
             if chat.get('debate_data'):
                 with st.expander("🔍 Debate Details"):
                     try:
@@ -148,7 +148,7 @@ def show_session():
                                 else:
                                     st.warning(f"⚠️ Round {i} - {agent}")
                                 if text:
-                                    st.write(text[:500])
+                                    st.markdown(text)
                                 else:
                                     st.caption("(empty response)")
                         else:
