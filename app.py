@@ -105,6 +105,18 @@ def show_sidebar():
             st.session_state.debate_rounds = st.slider("Debate Rounds", 1, 5, st.session_state.debate_rounds, key="settings_rounds")
             st.session_state.active_agents = st.multiselect("Agents", ["gemini", "deepseek", "groq", "cloudflare", "openrouter"], default=st.session_state.active_agents, key="settings_agents")
         st.divider()
+        st.caption("🧠 Premium AI (Credit-based)")
+    
+    # Ini toggle ON/OFF
+        st.session_state.use_coze = st.toggle(
+                "Aktifkan Coze (GPT-4o/Claude/GPT-5)",
+                value=st.session_state.get("use_coze", False),
+                help="Hanya untuk tugas PENTING! Kredit terbatas 10/hari."
+        )
+    
+    # Kalau toggle ON, kasih peringatan
+        if st.session_state.use_coze:       
+            st.warning("⚠️ Coze AKTIF! Credit terpakai untuk tugas kompleks.")
         if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
             st.session_state.user = None
             st.session_state.user_id = None
