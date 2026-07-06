@@ -1,21 +1,21 @@
 """
 Multi-agent debate orchestrator
-Pola: Cloudflare/Groq/DeepSeek (draft) → Gemini (complete & improve)
+Pola: Groq/Cloudflare/DeepSeek/OpenRouter (draft) → Gemini (complete & improve)
 """
 import time
 from datetime import datetime
 from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 
-
 class DebateOrchestrator:
     """Orchestrate multi-agent debate"""
 
-    def __init__(self, gemini_agent, deepseek_agent=None, groq_agent=None, cloudflare_agent=None):
+    def __init__(self, gemini_agent, deepseek_agent=None, groq_agent=None, cloudflare_agent=None, openrouter_agent=None):
         self.gemini = gemini_agent
         self.deepseek = deepseek_agent
         self.groq = groq_agent
         self.cloudflare = cloudflare_agent
+        self.openrouter = openrouter_agent
 
     def debate(self, prompt, context="", mode="coding", rounds=1, agents=None):
         if not agents:
@@ -33,53 +33,46 @@ class DebateOrchestrator:
             draft_text = ""
             draft_agent = ""
 
-            # Cloudflare (kuota paling besar)
-            if "cloudflare" in agents and self.cloudflare:
+            # Step 1: Groq
+            if "groq" in agents and self.groq:
                 try:
-                    response = self.cloudflare.generate(
-                        prompt=full_prompt,
-                        system_prompt=self._draft_prompt(mode),
-                        max_tokens=2048,
-                        mode=mode
-                    )
-                    debate_log["responses"].append(response)
-                    debate_log["total_tokens"] += response.get("tokens", 0)
-                    if response.get("status") == "success":
-                        draft_text = response.get("text", "")
-                        draft_agent = "Cloudflare"
-                except Exception as e:
-                    debate_log["responses"].append({
-                        "status": "error", "text": str(e)[:100],
-                        "agent": "Cloudflare", "tokens": 0, "cost": 0
-                    })
-
-            # Groq (paling cepat)
-            if not draft_text and "groq" in agents and self.groq:
-                try:
-                    response = self.groq.generate(
-                        prompt=full_prompt,
-                        system_prompt=self._draft_prompt(mode),
-                        max_tokens=2048
-                    )
+                    response = self.groq.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), max_tokens=2048)
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
                     if response.get("status") == "success":
                         draft_text = response.get("text", "")
                         draft_agent = "Groq"
                 except Exception as e:
-                    debate_log["responses"].append({
-                        "status": "error", "text": str(e)[:100],
-                        "agent": "Groq", "tokens": 0, "cost": 0
-                    })
+                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "Groq", "tokens": 0, "cost": 0})
 
-            # DeepSeek
+            # Step 2: Cloudflare
+            if not draft_text and "cloudflare" in agents and self.cloudflare:
+                try:
+                    response = self.cloudflare.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=2048)
+                    debate_log["responses"].append(response)
+                    debate_log["total_tokens"] += response.get("tokens", 0)
+                    if response.get("status") == "success":
+                        draft_text = response.get("text", "")
+                        draft_agent = "Cloudflare"
+                except Exception as e:
+                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "Cloudflare", "tokens": 0, "cost": 0})
+
+            # Step 3: OpenRouter
+            if not draft_text and "openrouter" in agents and self.openrouter:
+                try:
+                    response = self.openrouter.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=2048)
+                    debate_log["responses"].append(response)
+                    debate_log["total_tokens"] += response.get("tokens", 0)
+                    if response.get("status") == "success":
+                        draft_text = response.get("text", "")
+                        draft_agent = "OpenRouter"
+                except Exception as e:
+                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "OpenRouter", "tokens": 0, "cost": 0})
+
+            # Step 4: DeepSeek
             if not draft_text and "deepseek" in agents and self.deepseek:
                 try:
-                    response = self.deepseek.generate(
-                        prompt=full_prompt,
-                        system_prompt=self._draft_prompt(mode),
-                        max_tokens=2048
-                    )
+                    response = self.deepseek.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), max_tokens=2048)
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
                     debate_log["total_cost"] += response.get("cost", 0)
@@ -87,12 +80,9 @@ class DebateOrchestrator:
                         draft_text = response.get("text", "")
                         draft_agent = "DeepSeek"
                 except Exception as e:
-                    debate_log["responses"].append({
-                        "status": "error", "text": str(e)[:100],
-                        "agent": "DeepSeek", "tokens": 0, "cost": 0
-                    })
+                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "DeepSeek", "tokens": 0, "cost": 0})
 
-            # Gemini (complete & improve)
+            # Step 5: Gemini
             if self.gemini:
                 if draft_text and len(draft_text) > 50:
                     final = self.gemini.generate(
@@ -136,6 +126,6 @@ class DebateOrchestrator:
         prompts = {
             "coding": "You are an EXPERT CODER. Write clean, working code with explanation.",
             "research": "You are a RESEARCHER. Provide comprehensive analysis.",
-            "thinking": "You are a SYSTEMS THINKER. Break down problems step-by-step."
+            "thinking": "You are a SYSTEMS THINKER. Break down problems step-by-step. Be thorough and complete."
         }
         return prompts.get(mode, prompts["coding"])
