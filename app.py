@@ -13,6 +13,7 @@ from agents.deepseek import DeepSeekAgent
 from agents.groq import GroqAgent
 from agents.cloudflare import CloudflareAgent
 from agents.openrouter import OpenRouterAgent
+from agents.coze import CozeAgent
 from core.debate import DebateOrchestrator
 from core.compressor import PromptCompressor
 from core.memory import SessionMemory
@@ -50,7 +51,8 @@ def get_agents(user_id):
     groq = GroqAgent(api_keys.get("groq_key", "")) if api_keys.get("groq_key") else None
     cloudflare = CloudflareAgent(api_keys.get("cloudflare_key", ""), api_keys.get("cloudflare_account_id", "")) if api_keys.get("cloudflare_key") else None
     openrouter = OpenRouterAgent(api_keys.get("openrouter_key", "")) if api_keys.get("openrouter_key") else None
-    return {"gemini": gemini, "deepseek": deepseek, "groq": groq, "cloudflare": cloudflare, "openrouter": openrouter}
+    coze = CozeAgent(api_keys.get("coze_key", "")) if api_keys.get("coze_key") else None
+    return {"gemini": gemini, "deepseek": deepseek, "groq": groq, "cloudflare": cloudflare, "openrouter": openrouter, "coze": coze}
 
 @st.cache_resource
 def get_db_manager(user_id):
@@ -213,6 +215,7 @@ def process_chat(prompt, uploaded_files, context_mode):
     groq = agents.get("groq")
     cloudflare = agents.get("cloudflare")
     openrouter = agents.get("openrouter")
+
     if not gemini and not deepseek and not groq and not cloudflare and not openrouter:
         st.error("No AI agents configured! Check API keys in secrets.")
         return
