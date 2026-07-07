@@ -17,7 +17,7 @@ class Config:
     MAX_CONTEXT_TOKENS = 800
     
     DEFAULT_AGENTS = ["gemini"]
-    FALLBACK_AGENTS = ["gemini", "groq", "cloudflare", "openrouter"]
+    FALLBACK_AGENTS = ["gemini", "groq", "cloudflare", "openrouter", "huggingface"]
     DEBATE_ROUNDS_DEFAULT = 1
     
     COMPRESSOR_ENABLED = False
@@ -44,7 +44,8 @@ class Config:
             "groq_key": "",
             "cloudflare_key": "",
             "cloudflare_account_id": "",
-            "openrouter_key": ""
+            "openrouter_key": "",
+            "huggingface_key": ""
         }
     
     @classmethod
