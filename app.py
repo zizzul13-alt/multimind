@@ -193,9 +193,9 @@ def show_new_chat():
             cost = TokenCounter.estimate_cost(estimate["total_estimate"])
             st.metric("💵 Est. Cost", f"${cost:.6f}")
         if warning["level"] == "high":
-            st.warning(f"🔴 {warning['icon']} High token usage! Consider compressor.")
+            st.warning(f"🔴 High token usage! Consider compressor.")
         elif warning["level"] == "medium":
-            st.info(f"🟡 {warning['icon']} Moderate token usage.")
+            st.info(f"🟡 Moderate token usage.")
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🚀 Send", type="primary", key="send_chat_btn", use_container_width=True):
@@ -216,9 +216,7 @@ def process_chat(prompt, uploaded_files, context_mode):
     cloudflare = agents.get("cloudflare")
     openrouter = agents.get("openrouter")
     huggingface = agents.get("huggingface")
-    if not gemini and not deepseek and not groq and not cloudflare and not openrouter and not huggingface:
-        st.error("No AI agents configured! Check API keys in secrets.")
-        return
+
     with st.spinner("🤖 Agents debating..."):
         final_prompt = prompt
         if st.session_state.compressor_enabled and gemini and prompt:
@@ -227,6 +225,7 @@ def process_chat(prompt, uploaded_files, context_mode):
                 final_prompt = compression["compressed"]
             except:
                 final_prompt = prompt
+
         file_context = ""
         if uploaded_files:
             try:
@@ -236,6 +235,7 @@ def process_chat(prompt, uploaded_files, context_mode):
                         file_context += f"\n--- FILE: {f['filename']} ---\n{f['content']}\n"
             except:
                 pass
+
         context = ""
         if context_mode == "continue" and st.session_state.current_session:
             memory = st.session_state.memories.get(st.session_state.current_session['id'])
@@ -243,15 +243,33 @@ def process_chat(prompt, uploaded_files, context_mode):
                 context = memory.get_context()
         if file_context:
             context = file_context + "\n" + context
+
         session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
-        orchestrator = DebateOrchestrator(gemini, deepseek, groq, cloudflare, openrouter, None, huggingface)
-        debate_result = orchestrator.debate(prompt=final_prompt, context=context[:3000], mode=session_mode, rounds=st.session_state.debate_rounds, agents=st.session_state.active_agents)
+
+        orchestrator = DebateOrchestrator(
+            gemini_agent=gemini,
+            deepseek_agent=deepseek,
+            groq_agent=groq,
+            cloudflare_agent=cloudflare,
+            openrouter_agent=openrouter,
+            huggingface_agent=huggingface
+        )
+
+        debate_result = orchestrator.debate(
+            prompt=final_prompt,
+            context=context[:3000],
+            mode=session_mode,
+            rounds=st.session_state.debate_rounds,
+            agents=st.session_state.active_agents
+        )
+
         if st.session_state.current_session:
             memory = st.session_state.memories.get(st.session_state.current_session['id'])
             if not memory:
                 memory = SessionMemory()
                 st.session_state.memories[st.session_state.current_session['id']] = memory
             memory.add_chat(prompt, debate_result.get("final_answer", ""))
+
         if st.session_state.current_session:
             db = get_db_manager(st.session_state.user_id)
             chat_data = {
@@ -266,6 +284,7 @@ def process_chat(prompt, uploaded_files, context_mode):
                 "cost": debate_result.get("total_cost", 0)
             }
             db.save_chat(st.session_state.current_session['id'], chat_data)
+
         st.session_state.new_chat = False
         st.success("✅ Debate complete!")
         st.rerun()
