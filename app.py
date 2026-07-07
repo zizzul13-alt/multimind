@@ -147,8 +147,16 @@ def show_session():
                                 status = r.get('status', 'unknown')
                                 if status == "success":
                                     st.success(f"✅ Round {i} - {agent}")
-                                else:
+                                elif status == "error":
+                                    st.error(f"❌ Round {i} - {agent}")
+                                else:                                
                                     st.warning(f"⚠️ Round {i} - {agent}")
+
+                                # Tampilkan text meskipun error
+                                if text:
+                                    st.markdown(text)
+                                else:
+                                    st.caption(f"(Status: {status})")
                                 if text:
                                     st.markdown(text)
                                 else:
