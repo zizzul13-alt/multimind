@@ -1,6 +1,6 @@
 """
 Multi-agent debate orchestrator
-Order: Cloudflare → OpenRouter → Groq → HuggingFace → DeepSeek → Gemini (fallback)
+Semua agent response digabungin + Gemini fallback terakhir
 """
 import time
 from datetime import datetime
@@ -38,12 +38,10 @@ class DebateOrchestrator:
             draft_text = ""
             draft_agent = ""
 
-            # ===== 1. CLOUDFLARE (RAJA!) =====
+            # ===== 1. CLOUDFLARE =====
             if "cloudflare" in agents and self.cloudflare:
                 try:
-                    print(f"DEBUG: Trying Cloudflare...")
                     response = self.cloudflare.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=4096)
-                    print(f"DEBUG Cloudflare: {response.get('status')}")
                     response["agent"] = "☁️ Cloudflare"
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
@@ -51,95 +49,92 @@ class DebateOrchestrator:
                         draft_text = response.get("text", "")
                         draft_agent = "☁️ Cloudflare"
                 except Exception as e:
-                    print(f"DEBUG Cloudflare FAIL: {e}")
                     debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "☁️ Cloudflare", "tokens": 0, "cost": 0})
 
             # ===== 2. OPENROUTER =====
-            if not draft_text and "openrouter" in agents and self.openrouter:
+            if "openrouter" in agents and self.openrouter:
                 try:
-                    print(f"DEBUG: Trying OpenRouter...")
                     response = self.openrouter.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=4096)
-                    print(f"DEBUG OpenRouter: {response.get('status')}")
                     response["agent"] = "🌐 OpenRouter"
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
-                    if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
                         draft_text = response.get("text", "")
                         draft_agent = "🌐 OpenRouter"
                 except Exception as e:
-                    print(f"DEBUG OpenRouter FAIL: {e}")
                     debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🌐 OpenRouter", "tokens": 0, "cost": 0})
 
             # ===== 3. GROQ =====
-            if not draft_text and "groq" in agents and self.groq:
+            if "groq" in agents and self.groq:
                 try:
-                    print(f"DEBUG: Trying Groq...")
                     response = self.groq.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), max_tokens=4096)
-                    print(f"DEBUG Groq: {response.get('status')}")
                     response["agent"] = "⚡ Groq"
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
-                    if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
                         draft_text = response.get("text", "")
                         draft_agent = "⚡ Groq"
                 except Exception as e:
-                    print(f"DEBUG Groq FAIL: {e}")
                     debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "⚡ Groq", "tokens": 0, "cost": 0})
 
             # ===== 4. HUGGINGFACE =====
-            if not draft_text and "huggingface" in agents and self.huggingface:
+            if "huggingface" in agents and self.huggingface:
                 try:
-                    print(f"DEBUG: Trying HuggingFace...")
                     response = self.huggingface.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=2048)
-                    print(f"DEBUG HuggingFace: {response.get('status')}")
                     response["agent"] = "🤗 HuggingFace"
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
-                    if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
                         draft_text = response.get("text", "")
                         draft_agent = "🤗 HuggingFace"
                 except Exception as e:
-                    print(f"DEBUG HuggingFace FAIL: {e}")
                     debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🤗 HuggingFace", "tokens": 0, "cost": 0})
 
             # ===== 5. DEEPSEEK =====
-            if not draft_text and "deepseek" in agents and self.deepseek:
+            if "deepseek" in agents and self.deepseek:
                 try:
-                    print(f"DEBUG: Trying DeepSeek...")
                     response = self.deepseek.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), max_tokens=4096)
-                    print(f"DEBUG DeepSeek: {response.get('status')}")
                     response["agent"] = "🐳 DeepSeek"
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
                     debate_log["total_cost"] += response.get("cost", 0)
-                    if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
                         draft_text = response.get("text", "")
                         draft_agent = "🐳 DeepSeek"
                 except Exception as e:
-                    print(f"DEBUG DeepSeek FAIL: {e}")
                     debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🐳 DeepSeek", "tokens": 0, "cost": 0})
 
-            # ===== 6. GEMINI (FALLBACK TERAKHIR) =====
-            if not draft_text and "gemini" in agents and self.gemini:
-                print(f"DEBUG: All agents failed, using Gemini fallback")
-                response = self.gemini.generate(prompt=full_prompt, system_prompt=self._full_prompt(mode), max_tokens=8192)
-                response["agent"] = "🔍 Gemini (Fallback)"
-                debate_log["responses"].append(response)
-                debate_log["total_tokens"] += response.get("tokens", 0)
-                debate_log["final_answer"] = response.get("text", "")
+            # ===== 6. GEMINI (FALLBACK) =====
+            if "gemini" in agents and self.gemini:
+                try:
+                    if not draft_text:
+                        response = self.gemini.generate(prompt=full_prompt, system_prompt=self._full_prompt(mode), max_tokens=8192)
+                        response["agent"] = "🔍 Gemini"
+                        debate_log["responses"].append(response)
+                        debate_log["total_tokens"] += response.get("tokens", 0)
+                        draft_text = response.get("text", "")
+                        draft_agent = "🔍 Gemini"
+                except Exception as e:
+                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🔍 Gemini", "tokens": 0, "cost": 0})
+
+            # ===== GABUNGIN SEMUA RESPONSE =====
+            all_texts = []
+            for r in debate_log["responses"]:
+                if r.get("status") == "success" and r.get("text") and len(r.get("text", "")) > 50:
+                    all_texts.append(f"### {r.get('agent', 'Unknown')}\n\n{r.get('text', '')}")
+
+            if all_texts:
+                debate_log["final_answer"] = "\n\n---\n\n".join(all_texts)
             elif draft_text and len(draft_text.strip()) > 50:
-                print(f"DEBUG: Using draft from {draft_agent}")
                 debate_log["final_answer"] = draft_text
             else:
-                print(f"DEBUG: All agents failed!")
-                debate_log["final_answer"] = "❌ Semua agent gagal. Coba lagi nanti."
+                debate_log["final_answer"] = "❌ Semua agent gagal merespons. Coba lagi nanti."
 
             debate_log["status"] = "success"
             debate_log["end_time"] = datetime.now().isoformat()
 
         except Exception as e:
             error_msg = str(e)[:200]
-            print(f"DEBUG CRITICAL: {error_msg}")
             error_logger.log("DEBATE_ERROR", str(e))
             debate_log["status"] = "error"
             debate_log["final_answer"] = f"Error: {error_msg}"
