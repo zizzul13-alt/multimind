@@ -124,19 +124,37 @@ class DebateOrchestrator:
                     debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "DeepSeek", "tokens": 0, "cost": 0})
 
             # ===== HASIL =====
-            if draft_text and len(draft_text) > 50:
+            if draft_text and len(draft_text.strip()) > 50:
+                # Ada draft → langsung pakai
                 print(f"DEBUG: Using draft from {draft_agent}")
                 debate_log["final_answer"] = draft_text
-            elif self.gemini:
-                print(f"DEBUG: All agents failed, using Gemini fallback")
+            
+            elif "gemini" in agents and self.gemini:
+                # Gemini dicentang + agent lain gagal → fallback
+                print(f"DEBUG: Agents failed, using Gemini fallback")
                 response = self.gemini.generate(prompt=full_prompt, system_prompt=self._full_prompt(mode), max_tokens=8192)
                 response["agent"] = "Gemini (Fallback)"
                 debate_log["responses"].append(response)
                 debate_log["total_tokens"] += response.get("tokens", 0)
                 debate_log["final_answer"] = response.get("text", "")
+            
             else:
-                print(f"DEBUG: No agent available!")
-                debate_log["final_answer"] = "No AI agent available. Please check API keys."
+                # Semua gagal + Gemini ga dicentang → error message
+                failed_agents = [a for a in agents if a != "gemini"]
+                print(f"DEBUG: All agents failed: {failed_agents}")
+                debate_log["final_answer"] = f"""❌ Semua agent gagal merespons.
+
+**Agent yang dicoba:** {', '.join(failed_agents) if failed_agents else 'Tidak ada'}
+
+**Kemungkinan penyebab:**
+- Rate limit (tunggu beberapa menit)
+- API key error (cek Settings → Debug Info)
+- Prompt terlalu panjang
+
+**Saran:**
+- Tunggu 1-5 menit lalu coba lagi
+- Cek Debug Info di sidebar
+- Coba agent lain di Settings"""
 
             debate_log["status"] = "success"
             debate_log["end_time"] = datetime.now().isoformat()
