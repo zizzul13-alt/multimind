@@ -13,7 +13,7 @@ from agents.deepseek import DeepSeekAgent
 from agents.groq import GroqAgent
 from agents.cloudflare import CloudflareAgent
 from agents.openrouter import OpenRouterAgent
-from agents.coze import CozeAgent
+from agents.huggingface import HuggingFaceAgent
 from core.debate import DebateOrchestrator
 from core.compressor import PromptCompressor
 from core.memory import SessionMemory
@@ -51,8 +51,8 @@ def get_agents(user_id):
     groq = GroqAgent(api_keys.get("groq_key", "")) if api_keys.get("groq_key") else None
     cloudflare = CloudflareAgent(api_keys.get("cloudflare_key", ""), api_keys.get("cloudflare_account_id", "")) if api_keys.get("cloudflare_key") else None
     openrouter = OpenRouterAgent(api_keys.get("openrouter_key", "")) if api_keys.get("openrouter_key") else None
-    coze = CozeAgent(api_keys.get("coze_key", "")) if api_keys.get("coze_key") else None
-    return {"gemini": gemini, "deepseek": deepseek, "groq": groq, "cloudflare": cloudflare, "openrouter": openrouter, "coze": coze}
+    huggingface = HuggingFaceAgent(api_keys.get("huggingface_key", "")) if api_keys.get("huggingface_key") else None
+    return {"gemini": gemini, "deepseek": deepseek, "groq": groq, "cloudflare": cloudflare, "openrouter": openrouter, "huggingface": huggingface}
 
 @st.cache_resource
 def get_db_manager(user_id):
@@ -103,20 +103,8 @@ def show_sidebar():
         with st.expander("⚙️ Settings"):
             st.session_state.compressor_enabled = st.toggle("🗜️ Compressor", value=st.session_state.compressor_enabled, key="settings_compressor")
             st.session_state.debate_rounds = st.slider("Debate Rounds", 1, 5, st.session_state.debate_rounds, key="settings_rounds")
-            st.session_state.active_agents = st.multiselect("Agents", ["gemini", "deepseek", "groq", "cloudflare", "openrouter"], default=st.session_state.active_agents, key="settings_agents")
+            st.session_state.active_agents = st.multiselect("Agents", ["gemini", "deepseek", "groq", "cloudflare", "openrouter", "huggingface"], default=st.session_state.active_agents, key="settings_agents")
         st.divider()
-        st.caption("🧠 Premium AI (Credit-based)")
-    
-    # Ini toggle ON/OFF
-        st.session_state.use_coze = st.toggle(
-                "Aktifkan Coze (GPT-4o/Claude/GPT-5)",
-                value=st.session_state.get("use_coze", False),
-                help="Hanya untuk tugas PENTING! Kredit terbatas 10/hari."
-        )
-    
-    # Kalau toggle ON, kasih peringatan
-        if st.session_state.use_coze:       
-            st.warning("⚠️ Coze AKTIF! Credit terpakai untuk tugas kompleks.")
         if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
             st.session_state.user = None
             st.session_state.user_id = None
@@ -227,45 +215,8 @@ def process_chat(prompt, uploaded_files, context_mode):
     groq = agents.get("groq")
     cloudflare = agents.get("cloudflare")
     openrouter = agents.get("openrouter")
-    coze = agents.get("coze")
-    use_coze = st.session_state.get("use_coze", False)
-    
-    # ===== CEK: COZE AKTIF? =====
-    if coze and use_coze:
-        
-        # Deteksi seberapa susah prompt-nya (1-5)
-        complexity = coze.detect_complexity(prompt)
-        
-        # ===== KALAU TUGAS BERAT (4-5) =====
-        if complexity >= 4:
-            st.warning(f"🧠 Tugas kompleks! (Level {complexity}/5)")
-            st.write("Model yang akan dipakai: GPT-4o atau Claude")
-            st.write("Biaya: 1-2 credits")
-            
-            # Tombol konfirmasi
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("✅ Pakai Coze (1-2 credits)"):
-                    # User setuju → lanjut
-                    st.session_state.coze_confirmed = True
-                    st.rerun()
-            with col2:
-                if st.button("❌ Pakai Agent Biasa"):
-                    # User tolak → pakai Groq/Gemini aja
-                    st.session_state.coze_confirmed = False
-                    st.session_state.use_coze = False
-                    st.rerun()
-            
-            # Kalau belum ada konfirmasi, STOP dulu
-            if not st.session_state.get("coze_confirmed"):
-                return  # Jangan lanjut debat
-        
-        # ===== KALAU TUGAS RINGAN (1-3) =====
-        else:
-            # Langsung aja, ga perlu konfirmasi
-            # Karena pakai GPT-4o mini (AMAN! 100x/hari)
-            st.session_state.coze_confirmed = True
-    if not gemini and not deepseek and not groq and not cloudflare and not openrouter:
+    huggingface = agents.get("huggingface")
+    if not gemini and not deepseek and not groq and not cloudflare and not openrouter and not huggingface:
         st.error("No AI agents configured! Check API keys in secrets.")
         return
     with st.spinner("🤖 Agents debating..."):
@@ -293,7 +244,7 @@ def process_chat(prompt, uploaded_files, context_mode):
         if file_context:
             context = file_context + "\n" + context
         session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
-        orchestrator = DebateOrchestrator(gemini, deepseek, groq, cloudflare, openrouter)
+        orchestrator = DebateOrchestrator(gemini, deepseek, groq, cloudflare, openrouter, None, huggingface)
         debate_result = orchestrator.debate(prompt=final_prompt, context=context[:3000], mode=session_mode, rounds=st.session_state.debate_rounds, agents=st.session_state.active_agents)
         if st.session_state.current_session:
             memory = st.session_state.memories.get(st.session_state.current_session['id'])
@@ -330,6 +281,7 @@ def main():
                 st.write("Groq:", "✅" if agents.get("groq") else "❌")
                 st.write("Cloudflare:", "✅" if agents.get("cloudflare") else "❌")
                 st.write("OpenRouter:", "✅" if agents.get("openrouter") else "❌")
+                st.write("HuggingFace:", "✅" if agents.get("huggingface") else "❌")
     if st.session_state.user is None:
         show_login_page()
     else:
@@ -349,7 +301,7 @@ def main():
             3. Start chatting with AI agents!
 
             ### Features:
-            - 🤖 Multi-agent debate (Groq + Cloudflare + OpenRouter + Gemini)
+            - 🤖 6 AI Agents (Gemini, Groq, Cloudflare, OpenRouter, HuggingFace, DeepSeek)
             - 💰 Token-efficient with compressor
             - 📎 File upload (PDF, Excel, Images, Code)
             - 🧠 Session memory (continue or standalone)
