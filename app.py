@@ -18,6 +18,7 @@ from core.debate import DebateOrchestrator
 from core.compressor import PromptCompressor
 from core.memory import SessionMemory
 from core.file_handler import FileHandler
+from core.release_gate import ReleaseGate
 from database.manager import DatabaseManager
 from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
@@ -139,6 +140,18 @@ def show_session():
                 with st.expander("🔍 Debate Details"):
                     try:
                         debate = json.loads(chat['debate_data'])
+                        
+                        # Gate score
+                        gate_score = debate.get('gate_score')
+                        if gate_score is not None:
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.caption(f"🎯 Gate Score: {gate_score}/10")
+                            with col2:
+                                st.caption(f"{ReleaseGate.get_badge(gate_score)}")
+                            st.divider()
+                        
+                        # Agent responses
                         responses = debate.get('responses', [])
                         if responses:
                             for i, r in enumerate(responses, 1):
@@ -149,18 +162,12 @@ def show_session():
                                     st.success(f"✅ Round {i} - {agent}")
                                 elif status == "error":
                                     st.error(f"❌ Round {i} - {agent}")
-                                else:                                
+                                else:
                                     st.warning(f"⚠️ Round {i} - {agent}")
-
-                                # Tampilkan text meskipun error
                                 if text:
                                     st.markdown(text)
                                 else:
                                     st.caption(f"(Status: {status})")
-                                if text:
-                                    st.markdown(text)
-                                else:
-                                    st.caption("(empty response)")
                         else:
                             st.caption("No debate data available")
                     except:
@@ -329,6 +336,7 @@ def main():
 
             ### Features:
             - 🤖 6 AI Agents (Gemini, Groq, Cloudflare, OpenRouter, HuggingFace, DeepSeek)
+            - 🎯 Release Gates (Quality check otomatis)
             - 💰 Token-efficient with compressor
             - 📎 File upload (PDF, Excel, Images, Code)
             - 🧠 Session memory (continue or standalone)
