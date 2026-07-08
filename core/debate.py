@@ -1,11 +1,13 @@
 """
 Multi-agent debate orchestrator
-Semua agent response digabungin + Gemini fallback terakhir
+Semua agent response digabungin + Release Gates + Gemini fallback terakhir
 """
 import time
 from datetime import datetime
 from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
+from core.release_gate import ReleaseGate
+
 
 class DebateOrchestrator:
     """Orchestrate multi-agent debate"""
@@ -124,12 +126,33 @@ class DebateOrchestrator:
                     all_texts.append(f"### {r.get('agent', 'Unknown')}\n\n{r.get('text', '')}")
 
             if all_texts:
-                debate_log["final_answer"] = "\n\n---\n\n".join(all_texts)
+                final_answer = "\n\n---\n\n".join(all_texts)
             elif draft_text and len(draft_text.strip()) > 50:
-                debate_log["final_answer"] = draft_text
+                final_answer = draft_text
             else:
-                debate_log["final_answer"] = "❌ Semua agent gagal merespons. Coba lagi nanti."
+                final_answer = "❌ Semua agent gagal merespons. Coba lagi nanti."
 
+            # ===== RELEASE GATE CHECK =====
+            if final_answer and "❌" not in final_answer[:5]:
+                passed, issues, score = ReleaseGate.check(final_answer, mode)
+                debate_log["gate_score"] = score
+                debate_log["gate_issues"] = issues
+                debate_log["gate_passed"] = passed
+
+                if not passed:
+                    final_answer = f"""⚠️ **Quality Warning** ({ReleaseGate.get_badge(score)})
+
+{final_answer}
+
+---
+**Issues Found:**
+{chr(10).join(issues)}"""
+                else:
+                    final_answer = f"""✅ **Quality Check Passed** ({ReleaseGate.get_badge(score)})
+
+{final_answer}"""
+
+            debate_log["final_answer"] = final_answer
             debate_log["status"] = "success"
             debate_log["end_time"] = datetime.now().isoformat()
 
@@ -138,28 +161,6 @@ class DebateOrchestrator:
             error_logger.log("DEBATE_ERROR", str(e))
             debate_log["status"] = "error"
             debate_log["final_answer"] = f"Error: {error_msg}"
-# ===== RELEASE GATE CHECK =====
-from core.release_gate import ReleaseGate
-
-final_text = debate_log.get("final_answer", "")
-if final_text:
-    passed, issues, score = ReleaseGate.check(final_text, mode)
-    debate_log["gate_score"] = score
-    debate_log["gate_issues"] = issues
-    debate_log["gate_passed"] = passed
-    
-    if not passed:
-        debate_log["final_answer"] = f"""⚠️ **Quality Warning** ({ReleaseGate.get_badge(score)})
-
-{final_text}
-
----
-**Issues Found:**
-{chr(10).join(issues)}"""
-    else:
-        debate_log["final_answer"] = f"""✅ **Quality Check Passed** ({ReleaseGate.get_badge(score)})
-
-{final_text}"""
 
         return debate_log
 
