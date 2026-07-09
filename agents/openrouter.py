@@ -71,11 +71,9 @@ class OpenRouterAgent:
             }
 
         except Exception as e:
-            error_msg = str(e)[:150]
-            print(f"OpenRouter error: {error_msg}")
             return {
                 "status": "error",
-                "text": f"OpenRouter error: {error_msg}",
+                "text": f"OpenRouter error: {str(e)[:150]}",
                 "agent": self.name,
                 "tokens": 0,
                 "cost": 0
