@@ -301,9 +301,15 @@ def process_chat(prompt, uploaded_files, context_mode):
 
         if st.session_state.current_session:
             db = get_db_manager(st.session_state.user_id)
-            # DEBUG (di luar chat_data!)
-            st.write("DEBUG: debate_result type:", type(debate_result))
-
+            # PAKSA HARDCODE BUAT TEST
+            debate_result = {
+                "responses": [
+                    {"agent": "TEST", "status": "success", "text": "Test", "tokens": 1, "cost": 0}
+                ],
+                "final_answer": "HARDCODE",
+                "total_tokens": 1,
+                "total_cost": 0
+            }
             chat_data = {
                 "id": str(uuid.uuid4()),
                 "prompt": prompt,
