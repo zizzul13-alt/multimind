@@ -19,6 +19,7 @@ from core.compressor import PromptCompressor
 from core.memory import SessionMemory
 from core.file_handler import FileHandler
 from core.release_gate import ReleaseGate
+from core.skills_manager import SkillsManager
 from database.manager import DatabaseManager
 from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
@@ -43,6 +44,7 @@ if "initialized" not in st.session_state:
     st.session_state.compressor_enabled = False
     st.session_state.debate_rounds = 1
     st.session_state.active_agents = ["gemini"]
+    st.session_state.selected_skill = "default"
 
 @st.cache_resource
 def get_agents(user_id):
@@ -59,6 +61,10 @@ def get_agents(user_id):
 def get_db_manager(user_id):
     db_path = Config.get_db_path(user_id)
     return DatabaseManager(db_path)
+
+@st.cache_resource
+def get_skills_manager():
+    return SkillsManager()
 
 def show_login_page():
     st.title("🤖 MultiMind AI")
@@ -104,6 +110,21 @@ def show_sidebar():
         with st.expander("⚙️ Settings"):
             st.session_state.compressor_enabled = st.toggle("🗜️ Compressor", value=st.session_state.compressor_enabled, key="settings_compressor")
             st.session_state.debate_rounds = st.slider("Debate Rounds", 1, 5, st.session_state.debate_rounds, key="settings_rounds")
+            
+            # ===== SKILL SELECTOR =====
+            skills_mgr = get_skills_manager()
+            skill_list = ["default"] + skills_mgr.list_skills()
+            current_skill = st.session_state.get("selected_skill", "default")
+            if current_skill not in skill_list:
+                current_skill = "default"
+            st.session_state.selected_skill = st.selectbox(
+                "🎯 Skill",
+                skill_list,
+                index=skill_list.index(current_skill),
+                key="settings_skill",
+                help="Pilih skill card untuk agent"
+            )
+            
             st.session_state.active_agents = st.multiselect("Agents", ["gemini", "deepseek", "groq", "cloudflare", "openrouter", "huggingface"], default=st.session_state.active_agents, key="settings_agents")
         st.divider()
         if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
@@ -271,7 +292,8 @@ def process_chat(prompt, uploaded_files, context_mode):
             context=context[:3000],
             mode=session_mode,
             rounds=st.session_state.debate_rounds,
-            agents=st.session_state.active_agents
+            agents=st.session_state.active_agents,
+            skill=st.session_state.get("selected_skill", "default")
         )
 
         if st.session_state.current_session:
@@ -328,10 +350,12 @@ def main():
             ### Getting Started:
             1. Create a **New Session** in the sidebar
             2. Choose mode: **coding**, **research**, or **thinking**
-            3. Start chatting with AI agents!
+            3. Pick a **Skill** (Code Reviewer, Researcher, Thinker)
+            4. Start chatting with AI agents!
 
             ### Features:
             - 🤖 6 AI Agents (Gemini, Groq, Cloudflare, OpenRouter, HuggingFace, DeepSeek)
+            - 🎯 Skills System (Code Reviewer, Researcher, Thinker, Teacher)
             - 🎯 Release Gates (Quality check otomatis)
             - 💰 Token-efficient with compressor
             - 📎 File upload (PDF, Excel, Images, Code)
