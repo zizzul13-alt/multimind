@@ -301,6 +301,9 @@ def process_chat(prompt, uploaded_files, context_mode):
 
         if st.session_state.current_session:
             db = get_db_manager(st.session_state.user_id)
+            # DEBUG (di luar chat_data!)
+            st.write("DEBUG: debate_result type:", type(debate_result))
+
             chat_data = {
                 "id": str(uuid.uuid4()),
                 "prompt": prompt,
@@ -309,15 +312,10 @@ def process_chat(prompt, uploaded_files, context_mode):
                 "context_mode": context_mode,
                 "final_answer": debate_result.get("final_answer", ""),
                 "debate_data": json.dumps(debate_result),
-                st.write("DEBUG: debate_result type:", type(debate_result))
-                st.write("DEBUG: debate_result:", debate_result)
-
-                # Kalau debate_result bukan dict, paksa jadi dict:
-                if not isinstance(debate_result, dict):
-                    debate_result = {"responses": [], "final_answer": str(debate_result)},
-                "tokens_used": debate_result.get("total_tokens", 0)
+                "tokens_used": debate_result.get("total_tokens", 0),
                 "cost": debate_result.get("total_cost", 0)
             }
+            
             db.save_chat(st.session_state.current_session['id'], chat_data)
 
         st.session_state.new_chat = False
