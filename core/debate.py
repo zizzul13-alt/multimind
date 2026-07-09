@@ -1,6 +1,6 @@
 """
 Multi-agent debate orchestrator
-Semua agent response digabungin + Release Gates + Gemini fallback terakhir
+Semua agent dijalankan + response digabungin + Release Gates + Gemini fallback
 """
 import time
 from datetime import datetime
@@ -109,11 +109,11 @@ class DebateOrchestrator:
             # ===== 6. GEMINI (FALLBACK) =====
             if "gemini" in agents and self.gemini:
                 try:
-                    if not draft_text:
-                        response = self.gemini.generate(prompt=full_prompt, system_prompt=self._full_prompt(mode), max_tokens=8192)
-                        response["agent"] = "🔍 Gemini"
-                        debate_log["responses"].append(response)
-                        debate_log["total_tokens"] += response.get("tokens", 0)
+                    response = self.gemini.generate(prompt=full_prompt, system_prompt=self._full_prompt(mode), max_tokens=8192)
+                    response["agent"] = "🔍 Gemini"
+                    debate_log["responses"].append(response)
+                    debate_log["total_tokens"] += response.get("tokens", 0)
+                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
                         draft_text = response.get("text", "")
                         draft_agent = "🔍 Gemini"
                 except Exception as e:
@@ -179,3 +179,4 @@ class DebateOrchestrator:
             "thinking": "You are a SYSTEMS THINKER. Break down problems step-by-step. Be thorough and complete."
         }
         return prompts.get(mode, prompts["coding"])
+    
