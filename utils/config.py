@@ -50,23 +50,7 @@ class Config:
     
     @classmethod
     def get_db_path(cls, user_id):
-        """Get database path for user"""
-        import streamlit as st
-    
-        turso_url = ""
-        turso_token = ""
-    
-        try:
-            secrets = dict(st.secrets.get("default", {}))
-            turso_url = secrets.get("turso_url", "")
-            turso_token = secrets.get("turso_token", "")
-        except:
-            pass
-    
-        if turso_url and turso_token:
-            return turso_url  # Turso URL
-    
-        # Fallback SQLite
+        """Get database path for user - SQLite only"""
         os.makedirs(f"{cls.DB_DIR}/users", exist_ok=True)
         return f"{cls.DB_DIR}/users/{user_id}.db"
     
