@@ -58,17 +58,13 @@ def get_agents(user_id):
 @st.cache_resource
 def get_db_manager(user_id):
     db_path = Config.get_db_path(user_id)
-    
-    import streamlit as st
     try:
         secrets = dict(st.secrets.get("default", {}))
         turso_token = secrets.get("turso_token", "")
-        
         if turso_token and db_path.startswith("libsql://"):
             return DatabaseManager(db_path, auth_token=turso_token)
     except:
         pass
-    
     return DatabaseManager(db_path)
 
 def show_login_page():
@@ -147,20 +143,10 @@ def show_session():
             st.write(chat['prompt'])
         with st.chat_message("assistant"):
             st.markdown(chat.get('final_answer', 'No response'))
-            
-            # ===== DEBUG: TAMPILKAN JUMLAH RESPONSES =====
-            if chat.get('debate_data'):
-                debate_test = json.loads(chat['debate_data'])
-                responses_test = debate_test.get('responses', [])
-                st.caption(f"🔍 DEBUG: {len(responses_test)} agent responses tersimpan")
-            
             if chat.get('debate_data'):
                 with st.expander("🔍 Debate Details"):
                     try:
                         debate = json.loads(chat['debate_data'])
-                        st.write("DEBUG: debate keys:", list(debate.keys()))
-                        st.write("DEBUG: responses:", debate.get('responses'))
-                        # Gate score
                         gate_score = debate.get('gate_score')
                         if gate_score is not None:
                             col1, col2 = st.columns(2)
@@ -169,8 +155,6 @@ def show_session():
                             with col2:
                                 st.caption(f"{ReleaseGate.get_badge(gate_score)}")
                             st.divider()
-                        
-                        # Agent responses
                         responses = debate.get('responses', [])
                         if responses:
                             for i, r in enumerate(responses, 1):
@@ -189,8 +173,8 @@ def show_session():
                                     st.caption(f"(Status: {status})")
                         else:
                             st.caption("No debate data available")
-                    except Exception as e:
-                        st.caption(f"Error loading debate details: {e}")
+                    except:
+                        st.caption("Error loading debate details")
             col1, col2 = st.columns(2)
             with col1:
                 st.caption(f"🔤 {chat.get('tokens_used', 0)} tokens")
@@ -200,7 +184,6 @@ def show_session():
     if st.button("➕ New Chat", type="primary", key="new_chat_btn", use_container_width=True):
         st.session_state.new_chat = True
         st.rerun()
-
 
 def show_new_chat():
     st.subheader("💭 New Chat")
@@ -298,22 +281,15 @@ def process_chat(prompt, uploaded_files, context_mode):
             agents=st.session_state.active_agents
         )
 
-        # ===== DEBUG: Tampilkan langsung =====
-        st.write("DEBUG DIRECT responses:", len(debate_result.get('responses', [])))
-        for r in debate_result.get('responses', []):
-            st.write(f"- {r.get('agent')}: {r.get('status')}")
-
         if st.session_state.current_session:
             memory = st.session_state.memories.get(st.session_state.current_session['id'])
             if not memory:
                 memory = SessionMemory()
                 st.session_state.memories[st.session_state.current_session['id']] = memory
-
             memory.add_chat(prompt, debate_result.get("final_answer", ""))
 
         if st.session_state.current_session:
             db = get_db_manager(st.session_state.user_id)
-
             chat_data = {
                 "id": str(uuid.uuid4()),
                 "prompt": prompt,
@@ -325,7 +301,6 @@ def process_chat(prompt, uploaded_files, context_mode):
                 "tokens_used": debate_result.get("total_tokens", 0),
                 "cost": debate_result.get("total_cost", 0)
             }
-            
             db.save_chat(st.session_state.current_session['id'], chat_data)
 
         st.session_state.new_chat = False
