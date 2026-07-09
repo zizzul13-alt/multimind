@@ -18,14 +18,14 @@ class GroqAgent:
                 api_key=api_key,
                 base_url="https://api.groq.com/openai/v1"
             )
-            self.model = "llama-3.1-70b-versatile"
-            self.name = "Groq (Llama 3.1 70B)"
+            self.model = "meta-llama/llama-4-scout-17b-16e-instruct"
+            self.name = "Groq (Llama 4 Scout)"
         except Exception as e:
             print(f"Groq init error: {e}")
             self.client = None
             self.name = "Groq (error)"
 
-    def generate(self, prompt, system_prompt=None, max_tokens=2000):
+    def generate(self, prompt, system_prompt=None, max_tokens=4096):
         """Generate response - SUPER CEPAT!"""
         if not self.client:
             return {
@@ -52,12 +52,12 @@ class GroqAgent:
             text = response.choices[0].message.content
 
             return {
-    "status": "success",
-    "text": text,
-    "agent": self.name,
-    "tokens": response.usage.total_tokens if response.usage else len(text.split()),
-    "cost": 0
-}
+                "status": "success",
+                "text": text,
+                "agent": self.name,
+                "tokens": response.usage.total_tokens if response.usage else len(text.split()),
+                "cost": 0
+            }
 
         except Exception as e:
             error_msg = str(e)
