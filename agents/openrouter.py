@@ -19,19 +19,19 @@ class OpenRouterAgent:
                 base_url="https://openrouter.ai/api/v1"
             )
             self.models = {
-                "coding": "deepseek/deepseek-chat",
-                "research": "meta-llama/llama-3.1-8b-instruct",
-                "thinking": "meta-llama/llama-3.1-8b-instruct",
-                "quick": "deepseek/deepseek-chat"
+                "coding": "qwen/qwen3-coder:free",
+                "research": "meta-llama/llama-3.3-70b-instruct:free",
+                "thinking": "nousresearch/hermes-3-llama-3.1-405b:free",
+                "quick": "meta-llama/llama-3.2-3b-instruct:free"
             }
-            self.name = "OpenRouter (Multi-Model)"
+            self.name = "OpenRouter (Multi-Model FREE)"
         except Exception as e:
             print(f"OpenRouter init error: {e}")
             self.client = None
             self.name = "OpenRouter (error)"
 
-    def generate(self, prompt, system_prompt=None, mode="coding", max_tokens=2048):
-        """Generate response - auto-pilih model sesuai mode"""
+    def generate(self, prompt, system_prompt=None, mode="coding", max_tokens=4096):
+        """Generate response - auto-pilih model gratis sesuai mode"""
         if not self.client:
             return {
                 "status": "error",
@@ -71,9 +71,11 @@ class OpenRouterAgent:
             }
 
         except Exception as e:
+            error_msg = str(e)[:150]
+            print(f"OpenRouter error: {error_msg}")
             return {
                 "status": "error",
-                "text": f"OpenRouter error: {str(e)[:150]}",
+                "text": f"OpenRouter error: {error_msg}",
                 "agent": self.name,
                 "tokens": 0,
                 "cost": 0
