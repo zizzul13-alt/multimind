@@ -21,18 +21,24 @@ class DebateOrchestrator:
         self.huggingface = huggingface_agent
         self.coze = coze_agent
 
-    def debate(self, prompt, context="", mode="coding", rounds=1, agents=None):
-        debate_log = {
-            "prompt": prompt, "responses": [
-                {"agent": "TEST Cloudflare", "status": "success", "text": "Ini test Cloudflare", "tokens": 3, "cost": 0},
-                {"agent": "TEST Gemini", "status": "success", "text": "Ini test Gemini", "tokens": 3, "cost": 0},
-            ],
-            "final_answer": "TEST FINAL ANSWER",
-            "total_tokens": 6,
-            "total_cost": 0.0
-        }
-        return debate_log
-
+def debate(self, prompt, context="", mode="coding", rounds=1, agents=None):
+    import streamlit as st
+    st.write("DEBUG: debate() CALLED!")
+    
+    result = {
+        "prompt": prompt,
+        "responses": [
+            {"agent": "HARDCODE Cloudflare", "status": "success", "text": "Test cloudflare", "tokens": 2, "cost": 0},
+            {"agent": "HARDCODE Gemini", "status": "success", "text": "Test gemini", "tokens": 2, "cost": 0},
+        ],
+        "final_answer": "HARDCODE FINAL ANSWER",
+        "total_tokens": 4,
+        "total_cost": 0.0,
+        "status": "success"
+    }
+    
+    st.write("DEBUG: debate() RETURN:", result.keys())
+    return result
         # DEBUG EKSTRIM
         print(f"DEBUG: Agents yang dicentang: {agents}")
         print(f"DEBUG: Cloudflare exists: {self.cloudflare is not None}")
