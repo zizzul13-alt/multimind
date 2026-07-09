@@ -303,6 +303,23 @@ def process_chat(prompt, uploaded_files, context_mode):
                 "context_mode": context_mode,
                 "final_answer": debate_result.get("final_answer", ""),
                 "debate_data": json.dumps(debate_result),
+                # Sebelum simpan
+                st.write("DEBUG SAVE: responses count:", len(debate_result.get('responses', [])))
+
+                # Simpan
+                chat_data = {
+                    ...
+                    "debate_data": json.dumps(debate_result),
+                    ...
+                }
+                db.save_chat(st.session_state.current_session['id'], chat_data)
+
+                # Setelah simpan, baca ulang
+                test_read = db.get_session_chats(st.session_state.current_session['id'])
+                if test_read:
+                    last = test_read[-1]
+                    test_debate = json.loads(last.get('debate_data', '{}'))
+                    st.write("DEBUG READ: responses count:", len(test_debate.get('responses', [])))
                 "tokens_used": debate_result.get("total_tokens", 0),
                 "cost": debate_result.get("total_cost", 0)
             }
