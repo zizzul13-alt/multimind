@@ -19,10 +19,10 @@ class OpenRouterAgent:
                 base_url="https://openrouter.ai/api/v1"
             )
             self.models = {
-                "coding": "qwen/qwen-2.5-7b-instruct",
-                "research": "mistralai/mistral-7b-instruct",
-                "thinking": "mistralai/mistral-7b-instruct",
-                "quick": "mistralai/mistral-7b-instruct"
+                "coding": "deepseek/deepseek-chat",
+                "research": "meta-llama/llama-3.1-8b-instruct",
+                "thinking": "meta-llama/llama-3.1-8b-instruct",
+                "quick": "deepseek/deepseek-chat"
             }
             self.name = "OpenRouter (Multi-Model)"
         except Exception as e:
