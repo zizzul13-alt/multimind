@@ -15,10 +15,10 @@ class HuggingFaceAgent:
 
         self.api_key = api_key
         self.models = {
-            "coding": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-            "research": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-            "thinking": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-            "quick": "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+            "coding": "Qwen/Qwen2.5-7B-Instruct",
+            "research": "Qwen/Qwen2.5-7B-Instruct",
+            "thinking": "Qwen/Qwen2.5-7B-Instruct",
+            "quick": "Qwen/Qwen2.5-7B-Instruct"
         }
         self.name = "HuggingFace (Multi-Model)"
 
