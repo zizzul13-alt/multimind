@@ -308,7 +308,13 @@ def process_chat(prompt, uploaded_files, context_mode):
                 "mode": context_mode,
                 "context_mode": context_mode,
                 "final_answer": debate_result.get("final_answer", ""),
-                "debate_data": json.dumps(debate_result),
+                "debate_data": json.dumps(debate_result)
+                st.write("DEBUG: debate_result type:", type(debate_result))
+                st.write("DEBUG: debate_result:", debate_result)
+
+                # Kalau debate_result bukan dict, paksa jadi dict:
+                if not isinstance(debate_result, dict):
+                    debate_result = {"responses": [], "final_answer": str(debate_result)},
                 "tokens_used": debate_result.get("total_tokens", 0),
                 "cost": debate_result.get("total_cost", 0)
             }
