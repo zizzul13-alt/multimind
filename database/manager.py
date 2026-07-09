@@ -70,43 +70,39 @@ class DatabaseManager:
             error_logger.log("DB_INIT_ERROR", str(e))
             raise DatabaseError(f"Failed to initialize database: {e}")
     
-    def save_chat(self, session_id, chat_data):
-        """Save chat to database"""
-        try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            cursor.execute("""
-                INSERT INTO chats 
-                (id, session_id, prompt, prompt_compressed, mode, context_mode,
-                 final_answer, debate_data, tokens_used, cost)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                chat_data["id"],
-                session_id,
-                chat_data["prompt"],
-                chat_data.get("prompt_compressed", ""),
-                chat_data.get("mode", "continue"),
-                chat_data.get("context_mode", "continue"),
-                chat_data.get("final_answer", ""),
-                json.dumps(chat_data.get("debate_log", {})),
-                chat_data.get("tokens_used", 0),
-                chat_data.get("cost", 0.0)
-            ))
-            
-            # Update session timestamp
-            cursor.execute("""
-                UPDATE sessions SET updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            """, (session_id,))
-            
-            conn.commit()
-            conn.close()
-            return True
+def save_chat(self, session_id, chat_data):
+    try:
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
         
-        except Exception as e:
-            error_logger.log("DB_SAVE_ERROR", str(e))
-            raise DatabaseError(f"Failed to save chat: {e}")
+        # DEBUG
+        print(f"DEBUG DB: debate_data type: {type(chat_data.get('debate_data'))}")
+        print(f"DEBUG DB: debate_data preview: {str(chat_data.get('debate_data', ''))[:200]}")
+        
+        cursor.execute("""
+            INSERT INTO chats 
+            (id, session_id, prompt, prompt_compressed, mode, context_mode,
+             final_answer, debate_data, tokens_used, cost)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            chat_data["id"],
+            session_id,
+            chat_data["prompt"],
+            chat_data.get("prompt_compressed", ""),
+            chat_data.get("mode", "continue"),
+            chat_data.get("context_mode", "continue"),
+            chat_data.get("final_answer", ""),
+            chat_data.get("debate_data", "{}"),  # ← INI YANG DISIMPAN
+            chat_data.get("tokens_used", 0),
+            chat_data.get("cost", 0.0)
+        ))
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"DEBUG DB ERROR: {e}")
+        return False
     
     def get_session_chats(self, session_id, limit=50):
         """Get chats for a session"""
