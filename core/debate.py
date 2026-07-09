@@ -7,6 +7,7 @@ from datetime import datetime
 from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 from core.release_gate import ReleaseGate
+from core.skills_manager import SkillsManager
 
 
 class DebateOrchestrator:
@@ -20,8 +21,9 @@ class DebateOrchestrator:
         self.openrouter = openrouter_agent
         self.huggingface = huggingface_agent
         self.coze = coze_agent
+        self.skills_manager = SkillsManager()
 
-    def debate(self, prompt, context="", mode="coding", rounds=1, agents=None):
+    def debate(self, prompt, context="", mode="coding", rounds=1, agents=None, skill=None):
         if not agents:
             agents = ["cloudflare"]
 
@@ -36,6 +38,12 @@ class DebateOrchestrator:
             full_prompt = prompt
             if context:
                 full_prompt = f"CONTEXT:\n{context}\n\nTASK:\n{prompt}"
+            
+            # ===== APPLY SKILL =====
+            if skill and skill != "default":
+                skill_prompt = self.skills_manager.get_skill(skill)
+                if skill_prompt:
+                    full_prompt = f"{skill_prompt}\n\nTASK:\n{full_prompt}"
 
             draft_text = ""
             draft_agent = ""
