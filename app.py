@@ -297,19 +297,11 @@ def process_chat(prompt, uploaded_files, context_mode):
             if not memory:
                 memory = SessionMemory()
                 st.session_state.memories[st.session_state.current_session['id']] = memory
-            memory.add_chat(prompt, debate_result.get("final_answer", ""))
+            memory.add_chat(prompt, .get("final_answer", ""))
 
         if st.session_state.current_session:
             db = get_db_manager(st.session_state.user_id)
-            # PAKSA HARDCODE BUAT TEST
-            debate_result = {
-                "responses": [
-                    {"agent": "TEST", "status": "success", "text": "Test", "tokens": 1, "cost": 0}
-                ],
-                "final_answer": "HARDCODE",
-                "total_tokens": 1,
-                "total_cost": 0
-            }
+
             chat_data = {
                 "id": str(uuid.uuid4()),
                 "prompt": prompt,
