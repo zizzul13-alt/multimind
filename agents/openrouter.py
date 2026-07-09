@@ -20,8 +20,8 @@ class OpenRouterAgent:
             )
             self.models = {
                 "coding": "qwen/qwen-2.5-7b-instruct",
-                "research": "google/gemini-flash-1.5",     # GRATIS via OpenRouter
-                "thinking": "google/gemini-flash-1.5",      # GRATIS via OpenRouter
+                "research": "mistralai/mistral-7b-instruct",
+                "thinking": "mistralai/mistral-7b-instruct",
                 "quick": "mistralai/mistral-7b-instruct"
             }
             self.name = "OpenRouter (Multi-Model)"
