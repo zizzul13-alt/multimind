@@ -308,7 +308,8 @@ def process_chat(prompt, uploaded_files, context_mode):
             if not memory:
                 memory = SessionMemory()
                 st.session_state.memories[st.session_state.current_session['id']] = memory
-            memory.add_chat(prompt, .get("final_answer", ""))
+
+            memory.add_chat(prompt, debate_result.get("final_answer", ""))
 
         if st.session_state.current_session:
             db = get_db_manager(st.session_state.user_id)
