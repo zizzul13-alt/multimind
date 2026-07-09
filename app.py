@@ -278,7 +278,7 @@ def process_chat(prompt, uploaded_files, context_mode):
             huggingface_agent=huggingface
         )
 
-                debate_result = orchestrator.debate(
+        debate_result = orchestrator.debate(
             prompt=final_prompt,
             context=context[:3000],
             mode=session_mode,
