@@ -136,6 +136,13 @@ def show_session():
             st.write(chat['prompt'])
         with st.chat_message("assistant"):
             st.markdown(chat.get('final_answer', 'No response'))
+            
+            # ===== DEBUG: TAMPILKAN JUMLAH RESPONSES =====
+            if chat.get('debate_data'):
+                debate_test = json.loads(chat['debate_data'])
+                responses_test = debate_test.get('responses', [])
+                st.caption(f"🔍 DEBUG: {len(responses_test)} agent responses tersimpan")
+            
             if chat.get('debate_data'):
                 with st.expander("🔍 Debate Details"):
                     try:
@@ -170,8 +177,8 @@ def show_session():
                                     st.caption(f"(Status: {status})")
                         else:
                             st.caption("No debate data available")
-                    except:
-                        st.caption("Error loading debate details")
+                    except Exception as e:
+                        st.caption(f"Error loading debate details: {e}")
             col1, col2 = st.columns(2)
             with col1:
                 st.caption(f"🔤 {chat.get('tokens_used', 0)} tokens")
@@ -181,6 +188,7 @@ def show_session():
     if st.button("➕ New Chat", type="primary", key="new_chat_btn", use_container_width=True):
         st.session_state.new_chat = True
         st.rerun()
+
 
 def show_new_chat():
     st.subheader("💭 New Chat")
