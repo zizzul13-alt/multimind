@@ -21,7 +21,6 @@ class DatabaseManager:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            # Sessions table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY,
@@ -33,7 +32,6 @@ class DatabaseManager:
                 )
             """)
             
-            # Chats table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS chats (
                     id TEXT PRIMARY KEY,
@@ -50,7 +48,6 @@ class DatabaseManager:
                 )
             """)
             
-            # Pool usage table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS pool_usage (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,39 +67,45 @@ class DatabaseManager:
             error_logger.log("DB_INIT_ERROR", str(e))
             raise DatabaseError(f"Failed to initialize database: {e}")
     
-def save_chat(self, session_id, chat_data):
-    try:
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+    def save_chat(self, session_id, chat_data):
+        """Save chat to database"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            debate_data = chat_data.get("debate_data", "{}")
+            
+            # DEBUG
+            print(f"DEBUG DB SAVE: debate_data type: {type(debate_data)}")
+            print(f"DEBUG DB SAVE: debate_data preview: {str(debate_data)[:200]}")
+            
+            cursor.execute("""
+                INSERT INTO chats 
+                (id, session_id, prompt, prompt_compressed, mode, context_mode,
+                 final_answer, debate_data, tokens_used, cost)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                chat_data["id"],
+                session_id,
+                chat_data["prompt"],
+                chat_data.get("prompt_compressed", ""),
+                chat_data.get("mode", "continue"),
+                chat_data.get("context_mode", "continue"),
+                chat_data.get("final_answer", ""),
+                debate_data,
+                chat_data.get("tokens_used", 0),
+                chat_data.get("cost", 0.0)
+            ))
+            
+            conn.commit()
+            conn.close()
+            print(f"DEBUG DB SAVE: SUCCESS")
+            return True
         
-        # DEBUG
-        print(f"DEBUG DB: debate_data type: {type(chat_data.get('debate_data'))}")
-        print(f"DEBUG DB: debate_data preview: {str(chat_data.get('debate_data', ''))[:200]}")
-        
-        cursor.execute("""
-            INSERT INTO chats 
-            (id, session_id, prompt, prompt_compressed, mode, context_mode,
-             final_answer, debate_data, tokens_used, cost)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            chat_data["id"],
-            session_id,
-            chat_data["prompt"],
-            chat_data.get("prompt_compressed", ""),
-            chat_data.get("mode", "continue"),
-            chat_data.get("context_mode", "continue"),
-            chat_data.get("final_answer", ""),
-            chat_data.get("debate_data", "{}"),  # ← INI YANG DISIMPAN
-            chat_data.get("tokens_used", 0),
-            chat_data.get("cost", 0.0)
-        ))
-        
-        conn.commit()
-        conn.close()
-        return True
-    except Exception as e:
-        print(f"DEBUG DB ERROR: {e}")
-        return False
+        except Exception as e:
+            print(f"DEBUG DB SAVE ERROR: {e}")
+            error_logger.log("DB_SAVE_ERROR", str(e))
+            return False
     
     def get_session_chats(self, session_id, limit=50):
         """Get chats for a session"""
@@ -119,10 +122,18 @@ def save_chat(self, session_id, chat_data):
             """, (session_id, limit))
             
             chats = [dict(row) for row in cursor.fetchall()]
+            
+            # DEBUG
+            if chats:
+                last = chats[-1]
+                print(f"DEBUG DB READ: debate_data type: {type(last.get('debate_data'))}")
+                print(f"DEBUG DB READ: debate_data preview: {str(last.get('debate_data', ''))[:200]}")
+            
             conn.close()
             return chats
         
         except Exception as e:
+            print(f"DEBUG DB READ ERROR: {e}")
             error_logger.log("DB_QUERY_ERROR", str(e))
             return []
     
