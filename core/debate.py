@@ -22,15 +22,16 @@ class DebateOrchestrator:
         self.coze = coze_agent
 
     def debate(self, prompt, context="", mode="coding", rounds=1, agents=None):
-        if not agents:
-            agents = ["cloudflare"]
-
         debate_log = {
-            "prompt": prompt, "context": context, "mode": mode,
-            "rounds": rounds, "agents": agents, "responses": [],
-            "total_tokens": 0, "total_cost": 0.0,
-            "start_time": datetime.now().isoformat()
+            "prompt": prompt, "responses": [
+                {"agent": "TEST Cloudflare", "status": "success", "text": "Ini test Cloudflare", "tokens": 3, "cost": 0},
+                {"agent": "TEST Gemini", "status": "success", "text": "Ini test Gemini", "tokens": 3, "cost": 0},
+            ],
+            "final_answer": "TEST FINAL ANSWER",
+            "total_tokens": 6,
+            "total_cost": 0.0
         }
+        return debate_log
 
         # DEBUG EKSTRIM
         print(f"DEBUG: Agents yang dicentang: {agents}")
