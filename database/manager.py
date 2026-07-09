@@ -1,27 +1,40 @@
 """
-Database manager for user history
+Database manager - Turso (SQLite Edge)
 """
-import sqlite3
 import os
 import json
 from datetime import datetime
+import libsql_experimental as libsql
 from utils.error_handler import DatabaseError, error_logger
 
 class DatabaseManager:
-    """SQLite database manager"""
-    
-    def __init__(self, db_path):
-        self.db_path = db_path
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    """Turso database manager"""
+
+    def __init__(self, db_path_or_url, auth_token=None):
+        self.db_url = db_path_or_url
+        self.auth_token = auth_token
+        
+        if auth_token and db_path_or_url.startswith("libsql://"):
+            # Turso mode
+            self.client = libsql.connect(
+                database=db_path_or_url,
+                auth_token=auth_token
+            )
+            self.is_turso = True
+        else:
+            # SQLite local fallback
+            import sqlite3
+            os.makedirs(os.path.dirname(db_path_or_url), exist_ok=True)
+            self.client = sqlite3.connect(db_path_or_url)
+            self.client.row_factory = sqlite3.Row
+            self.is_turso = False
+        
         self._init_db()
-    
+
     def _init_db(self):
         """Initialize database tables"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            cursor.execute("""
+            self.client.execute("""
                 CREATE TABLE IF NOT EXISTS sessions (
                     id TEXT PRIMARY KEY,
                     name TEXT,
@@ -32,7 +45,7 @@ class DatabaseManager:
                 )
             """)
             
-            cursor.execute("""
+            self.client.execute("""
                 CREATE TABLE IF NOT EXISTS chats (
                     id TEXT PRIMARY KEY,
                     session_id TEXT REFERENCES sessions(id),
@@ -48,7 +61,7 @@ class DatabaseManager:
                 )
             """)
             
-            cursor.execute("""
+            self.client.execute("""
                 CREATE TABLE IF NOT EXISTS pool_usage (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id TEXT,
@@ -60,26 +73,16 @@ class DatabaseManager:
                 )
             """)
             
-            conn.commit()
-            conn.close()
+            self.client.commit()
         
         except Exception as e:
             error_logger.log("DB_INIT_ERROR", str(e))
             raise DatabaseError(f"Failed to initialize database: {e}")
-    
+
     def save_chat(self, session_id, chat_data):
         """Save chat to database"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            debate_data = chat_data.get("debate_data", "{}")
-            
-            # DEBUG
-            print(f"DEBUG DB SAVE: debate_data type: {type(debate_data)}")
-            print(f"DEBUG DB SAVE: debate_data preview: {str(debate_data)[:200]}")
-            
-            cursor.execute("""
+            self.client.execute("""
                 INSERT INTO chats 
                 (id, session_id, prompt, prompt_compressed, mode, context_mode,
                  final_answer, debate_data, tokens_used, cost)
@@ -92,103 +95,107 @@ class DatabaseManager:
                 chat_data.get("mode", "continue"),
                 chat_data.get("context_mode", "continue"),
                 chat_data.get("final_answer", ""),
-                debate_data,
+                chat_data.get("debate_data", "{}"),
                 chat_data.get("tokens_used", 0),
                 chat_data.get("cost", 0.0)
             ))
             
-            conn.commit()
-            conn.close()
-            print(f"DEBUG DB SAVE: SUCCESS")
+            self.client.commit()
             return True
         
         except Exception as e:
-            print(f"DEBUG DB SAVE ERROR: {e}")
             error_logger.log("DB_SAVE_ERROR", str(e))
             return False
-    
+
     def get_session_chats(self, session_id, limit=50):
         """Get chats for a session"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            
-            cursor.execute("""
+            result = self.client.execute("""
                 SELECT * FROM chats 
                 WHERE session_id = ? 
                 ORDER BY created_at ASC 
                 LIMIT ?
             """, (session_id, limit))
             
-            chats = [dict(row) for row in cursor.fetchall()]
-            
-            # DEBUG
-            if chats:
-                last = chats[-1]
-                print(f"DEBUG DB READ: debate_data type: {type(last.get('debate_data'))}")
-                print(f"DEBUG DB READ: debate_data preview: {str(last.get('debate_data', ''))[:200]}")
-            
-            conn.close()
-            return chats
+            if self.is_turso:
+                rows = result.fetchall()
+                chats = []
+                for row in rows:
+                    chat = {
+                        "id": row[0],
+                        "session_id": row[1],
+                        "prompt": row[2],
+                        "prompt_compressed": row[3],
+                        "mode": row[4],
+                        "context_mode": row[5],
+                        "final_answer": row[6],
+                        "debate_data": row[7],
+                        "tokens_used": row[8],
+                        "cost": row[9],
+                        "created_at": row[10]
+                    }
+                    chats.append(chat)
+                return chats
+            else:
+                return [dict(row) for row in result.fetchall()]
         
         except Exception as e:
-            print(f"DEBUG DB READ ERROR: {e}")
             error_logger.log("DB_QUERY_ERROR", str(e))
             return []
-    
+
     def create_session(self, session_id, name, mode="coding", config=None):
         """Create new session"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            cursor.execute("""
+            self.client.execute("""
                 INSERT INTO sessions (id, name, mode, config)
                 VALUES (?, ?, ?, ?)
             """, (session_id, name, mode, json.dumps(config or {})))
             
-            conn.commit()
-            conn.close()
+            self.client.commit()
             return True
         
         except Exception as e:
             error_logger.log("DB_SESSION_ERROR", str(e))
             return False
-    
+
     def get_sessions(self):
         """Get all sessions"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            
-            cursor.execute("""
+            result = self.client.execute("""
                 SELECT * FROM sessions 
                 ORDER BY updated_at DESC
             """)
             
-            sessions = [dict(row) for row in cursor.fetchall()]
-            conn.close()
-            return sessions
+            if self.is_turso:
+                rows = result.fetchall()
+                sessions = []
+                for row in rows:
+                    session = {
+                        "id": row[0],
+                        "name": row[1],
+                        "mode": row[2],
+                        "config": row[3],
+                        "created_at": row[4],
+                        "updated_at": row[5]
+                    }
+                    sessions.append(session)
+                return sessions
+            else:
+                return [dict(row) for row in result.fetchall()]
         
         except Exception as e:
             error_logger.log("DB_QUERY_ERROR", str(e))
             return []
-    
+
     def log_pool_usage(self, user_id, api_owner, provider, tokens, cost):
         """Log API pool usage"""
         try:
-            conn = sqlite3.connect(self.db_path)
-            cursor = conn.cursor()
-            
-            cursor.execute("""
+            self.client.execute("""
                 INSERT INTO pool_usage (user_id, api_owner, provider, tokens, cost)
                 VALUES (?, ?, ?, ?, ?)
             """, (user_id, api_owner, provider, tokens, cost))
             
-            conn.commit()
-            conn.close()
+            self.client.commit()
         
         except Exception as e:
             error_logger.log("POOL_LOG_ERROR", str(e))
