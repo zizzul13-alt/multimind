@@ -58,13 +58,6 @@ def get_agents(user_id):
 @st.cache_resource
 def get_db_manager(user_id):
     db_path = Config.get_db_path(user_id)
-    try:
-        secrets = dict(st.secrets.get("default", {}))
-        turso_token = secrets.get("turso_token", "")
-        if turso_token and db_path.startswith("libsql://"):
-            return DatabaseManager(db_path, auth_token=turso_token)
-    except:
-        pass
     return DatabaseManager(db_path)
 
 def show_login_page():
