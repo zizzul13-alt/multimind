@@ -147,7 +147,8 @@ def show_session():
                 with st.expander("🔍 Debate Details"):
                     try:
                         debate = json.loads(chat['debate_data'])
-                        
+                        st.write("DEBUG: debate keys:", list(debate.keys()))
+                        st.write("DEBUG: responses:", debate.get('responses'))
                         # Gate score
                         gate_score = debate.get('gate_score')
                         if gate_score is not None:
