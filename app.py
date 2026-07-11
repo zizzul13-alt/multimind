@@ -7,7 +7,6 @@ import uuid
 import json
 import os
 from datetime import datetime
-
 from agents.gemini import GeminiAgent
 from agents.deepseek import DeepSeekAgent
 from agents.groq import GroqAgent
@@ -260,7 +259,20 @@ def show_new_chat():
         if result:
             default_prompt = result["prompt"]
     
-    prompt = st.text_area("Prompt:", height=150, value=default_prompt, placeholder="Ask anything...", key="new_chat_prompt")
+    # Ganti jadi:
+    if "prompt_text" not in st.session_state:
+        st.session_state.prompt_text = ""
+
+    # Update kalau template berubah
+    if selected_template and selected_template != "":
+        result = templates_mgr.apply_template(
+            selected_template,
+            st.session_state.get("template_variables", {})
+        )
+        if result:
+            st.session_state.prompt_text = result["prompt"]
+
+    prompt = st.text_area("Prompt:", height=150, key="new_chat_prompt")
     
     # ===== FILE UPLOAD =====
     uploaded_files = st.file_uploader("📎 Files (optional)", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
