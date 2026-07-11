@@ -435,6 +435,7 @@ def process_chat(prompt, uploaded_files, context_mode):
         st.session_state.new_chat = False
         st.success("✅ Debate complete!")
         st.rerun()
+        
 def main():
     if st.session_state.user:
         with st.sidebar:
