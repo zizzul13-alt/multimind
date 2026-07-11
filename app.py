@@ -223,7 +223,7 @@ def show_new_chat():
     )
     
     # Template variables + auto-fill 
-    default_ = ""
+    default_prompt = ""
     if selected_template and selected_template != "":
         template = templates_mgr.get_template(selected_template)
         if template:
@@ -248,6 +248,13 @@ def show_new_chat():
             )
             if result:
                 default_prompt = result["prompt"]
+            # Isi prompt hanya saat template berubah
+            if (
+                default_prompt
+                and st.session_state.get("selected_template") != selected_template
+            ):
+                st.session_state.prompt_text = default_prompt
+                st.session_state.selected_template = selected_template
     
     # ===== CHAT MODE =====
     chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
@@ -259,10 +266,12 @@ def show_new_chat():
     
     # ===== PROMPT =====
     # Kalau template dipilih, langsung pakai prompt-nya
-    if default_prompt:
-        prompt = st.text_area("Prompt:", height=150, value=default_prompt, key="template_prompt")
-    else:
-        prompt = st.text_area("Prompt:", height=150, placeholder="Ask anything...", key="free_prompt")
+    prompt = st.text_area(
+        "📝 Prompt",
+        key="prompt_text",
+        height=150,
+        placeholder="Ask anything..."
+    )
     
     
     # ===== FILE UPLOAD =====
