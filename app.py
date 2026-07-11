@@ -479,6 +479,23 @@ def main():
             with st.expander("🔧 Debug Info"):
                 st.write("User:", st.session_state.user_id)
                 agents = get_agents(st.session_state.user_id)
+                
+                unified = agents.get("unified")
+                
+                # Unified Agent Stats
+                if unified:
+                    st.subheader("📊 Agent Stats")
+                    stats = unified.get_stats()
+                    for name, data in stats.items():
+                        total = data["success"] + data["error"]
+                        if total > 0:
+                            success_rate = (data["success"] / total) * 100
+                            status = "🟢" if not data["rate_limited"] else "🔴"
+                            st.write(f"{status} {name}: {success_rate:.0f}% ({data['success']}/{total})")
+                        else:
+                            st.write(f"⚪ {name}: No data")
+                
+                st.divider()
                 st.write("Gemini:", "✅" if agents.get("gemini") else "❌")
                 st.write("DeepSeek:", "✅" if agents.get("deepseek") else "❌")
                 st.write("Groq:", "✅" if agents.get("groq") else "❌")
