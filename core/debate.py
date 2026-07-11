@@ -1,6 +1,6 @@
 """
 Multi-agent debate orchestrator
-Semua agent dijalankan + response digabungin + Release Gates + Gemini fallback
+Order: Cloudflare → Groq → OpenRouter → HuggingFace → DeepSeek → Gemini (fallback)
 """
 import time
 from datetime import datetime
@@ -48,7 +48,7 @@ class DebateOrchestrator:
             draft_text = ""
             draft_agent = ""
 
-            # ===== 1. CLOUDFLARE =====
+            # ===== 1. CLOUDFLARE (PALING RELIABLE - 10K/BLN) =====
             if "cloudflare" in agents and self.cloudflare:
                 try:
                     response = self.cloudflare.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=4096)
@@ -61,33 +61,42 @@ class DebateOrchestrator:
                 except Exception as e:
                     debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "☁️ Cloudflare", "tokens": 0, "cost": 0})
 
-            # ===== 2. OPENROUTER =====
-            if "openrouter" in agents and self.openrouter:
-                try:
-                    response = self.openrouter.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=4096)
-                    response["agent"] = "🌐 OpenRouter"
-                    debate_log["responses"].append(response)
-                    debate_log["total_tokens"] += response.get("tokens", 0)
-                except Exception as e:
-                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🌐 OpenRouter", "tokens": 0, "cost": 0})
-
-            # ===== 3. GROQ =====
+            # ===== 2. GROQ (PALING CEPAT - 100/HARI) =====
             if "groq" in agents and self.groq:
                 try:
                     response = self.groq.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), max_tokens=4096)
                     response["agent"] = "⚡ Groq"
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
+                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                        draft_text = response.get("text", "")
+                        draft_agent = "⚡ Groq"
                 except Exception as e:
                     debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "⚡ Groq", "tokens": 0, "cost": 0})
 
-            # ===== 4. HUGGINGFACE =====
+            # ===== 3. OPENROUTER (VARIATIF) =====
+            if "openrouter" in agents and self.openrouter:
+                try:
+                    response = self.openrouter.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=4096)
+                    response["agent"] = "🌐 OpenRouter"
+                    debate_log["responses"].append(response)
+                    debate_log["total_tokens"] += response.get("tokens", 0)
+                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                        draft_text = response.get("text", "")
+                        draft_agent = "🌐 OpenRouter"
+                except Exception as e:
+                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🌐 OpenRouter", "tokens": 0, "cost": 0})
+
+            # ===== 4. HUGGINGFACE (BACKUP) =====
             if "huggingface" in agents and self.huggingface:
                 try:
                     response = self.huggingface.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=2048)
                     response["agent"] = "🤗 HuggingFace"
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
+                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                        draft_text = response.get("text", "")
+                        draft_agent = "🤗 HuggingFace"
                 except Exception as e:
                     debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🤗 HuggingFace", "tokens": 0, "cost": 0})
 
@@ -99,18 +108,22 @@ class DebateOrchestrator:
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
                     debate_log["total_cost"] += response.get("cost", 0)
+                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                        draft_text = response.get("text", "")
+                        draft_agent = "🐳 DeepSeek"
                 except Exception as e:
                     debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🐳 DeepSeek", "tokens": 0, "cost": 0})
 
-            # ===== 6. GEMINI =====
+            # ===== 6. GEMINI (FALLBACK TERAKHIR) =====
             if "gemini" in agents and self.gemini:
                 try:
-                    response = self.gemini.generate(prompt=full_prompt, system_prompt=self._full_prompt(mode), max_tokens=8192)
-                    response["agent"] = "🔍 Gemini"
-                    debate_log["responses"].append(response)
-                    debate_log["total_tokens"] += response.get("tokens", 0)
-                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                    if not draft_text:
+                        response = self.gemini.generate(prompt=full_prompt, system_prompt=self._full_prompt(mode), max_tokens=8192)
+                        response["agent"] = "🔍 Gemini"
+                        debate_log["responses"].append(response)
+                        debate_log["total_tokens"] += response.get("tokens", 0)
                         draft_text = response.get("text", "")
+                        draft_agent = "🔍 Gemini"
                 except Exception as e:
                     debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🔍 Gemini", "tokens": 0, "cost": 0})
 
