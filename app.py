@@ -258,10 +258,20 @@ def show_new_chat():
         st.success("AI starts fresh - no history (SAVES TOKENS!)")
     
     # ===== PROMPT =====
-    if default_prompt:
-        st.session_state.prompt_text = default_prompt
-    
     prompt = st.text_area("Prompt:", height=150, key="new_chat_prompt")
+    
+    # Tombol copy template ke prompt
+    if default_prompt:
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("📋 Pakai Template", use_container_width=True):
+                st.session_state.prompt_text = default_prompt
+                st.rerun()
+        with col2:
+            st.caption("Klik untuk isi prompt dengan template")
+    
+    if st.session_state.get("prompt_text"):
+        prompt = st.text_area("Prompt:", height=150, value=st.session_state.prompt_text, key="new_chat_prompt_v2")
     
     # ===== FILE UPLOAD =====
     uploaded_files = st.file_uploader("📎 Files (optional)", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
