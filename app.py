@@ -260,18 +260,19 @@ def show_new_chat():
     # ===== PROMPT =====
     prompt = st.text_area("Prompt:", height=150, key="new_chat_prompt")
     
+    # ===== PROMPT =====
     # Tombol copy template ke prompt
     if default_prompt:
         col1, col2 = st.columns([1, 4])
         with col1:
-            if st.button("📋 Pakai Template", use_container_width=True):
+            if st.button("📋 Pakai Template", use_container_width=True, key="apply_template_btn"):
                 st.session_state.prompt_text = default_prompt
-                st.rerun()
         with col2:
             st.caption("Klik untuk isi prompt dengan template")
     
-    if st.session_state.get("prompt_text"):
-        prompt = st.text_area("Prompt:", height=150, value=st.session_state.prompt_text, key="new_chat_prompt_v2")
+    # Text area - pakai value dari prompt_text kalau ada
+    prompt_value = st.session_state.get("prompt_text", "")
+    prompt = st.text_area("Prompt:", height=150, value=prompt_value, key="main_prompt_input")
     
     # ===== FILE UPLOAD =====
     uploaded_files = st.file_uploader("📎 Files (optional)", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
