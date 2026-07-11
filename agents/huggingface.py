@@ -15,13 +15,14 @@ class HuggingFaceAgent:
             return
 
         self.api_key = api_key
+        # Model yang PASTI TERSEDIA di HuggingFace
         self.models = {
-            "coding": "Qwen/Qwen2.5-1.5B-Instruct",
-            "research": "Qwen/Qwen2.5-1.5B-Instruct",
-            "thinking": "Qwen/Qwen2.5-1.5B-Instruct",
-            "quick": "Qwen/Qwen2.5-1.5B-Instruct"
+            "coding": "Qwen/Qwen2.5-Coder-7B-Instruct",
+            "research": "meta-llama/Llama-3.1-8B-Instruct",
+            "thinking": "Qwen/Qwen3-4B-Thinking-2507",
+            "quick": "mistralai/Mistral-7B-Instruct-v0.3"
         }
-        self.name = "HuggingFace (Qwen 1.5B)"
+        self.name = "HuggingFace (Multi-Model)"
 
     def generate(self, prompt, system_prompt=None, mode="coding", max_tokens=2048):
         """Generate response - dengan retry"""
@@ -36,7 +37,6 @@ class HuggingFaceAgent:
 
         model = self.models.get(mode, self.models["quick"])
 
-        # Retry up to 3 kali
         for attempt in range(3):
             try:
                 headers = {"Authorization": f"Bearer {self.api_key}"}
@@ -56,7 +56,7 @@ class HuggingFaceAgent:
                     f"https://api-inference.huggingface.co/models/{model}",
                     headers=headers,
                     json=payload,
-                    timeout=15
+                    timeout=30
                 )
 
                 if response.status_code == 200:
@@ -75,12 +75,10 @@ class HuggingFaceAgent:
                             "cost": 0
                         }
                 
-                # Model loading? Tunggu & retry
                 if response.status_code == 503:
                     time.sleep(3)
                     continue
                 
-                # Rate limit? Tunggu
                 if response.status_code == 429:
                     time.sleep(5)
                     continue
