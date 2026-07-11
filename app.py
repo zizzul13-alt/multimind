@@ -14,6 +14,7 @@ from agents.groq import GroqAgent
 from agents.cloudflare import CloudflareAgent
 from agents.openrouter import OpenRouterAgent
 from agents.huggingface import HuggingFaceAgent
+from agents.unified_agent import UnifiedAgent
 from core.debate import DebateOrchestrator
 from core.compressor import PromptCompressor
 from core.memory import SessionMemory
@@ -53,15 +54,20 @@ if "initialized" not in st.session_state:
 @st.cache_resource
 def get_agents(user_id):
     api_keys = Config.get_api_keys(user_id)
-    gemini = GeminiAgent(api_keys.get("gemini_key", "")) if api_keys.get("gemini_key") else None
-    deepseek = DeepSeekAgent(api_keys.get("deepseek_key", "")) if api_keys.get("deepseek_key") else None
-    groq = GroqAgent(api_keys.get("groq_key", "")) if api_keys.get("groq_key") else None
-    cloudflare = CloudflareAgent(api_keys.get("cloudflare_key", ""), api_keys.get("cloudflare_account_id", "")) if api_keys.get("cloudflare_key") else None
-    openrouter = OpenRouterAgent(api_keys.get("openrouter_key", "")) if api_keys.get("openrouter_key") else None
-    huggingface = HuggingFaceAgent(api_keys.get("huggingface_key", "")) if api_keys.get("huggingface_key") else None
-    return {"gemini": gemini, "deepseek": deepseek, "groq": groq, "cloudflare": cloudflare, "openrouter": openrouter, "huggingface": huggingface}
-
-@st.cache_resource
+    
+    # Unified Agent (prioritas utama)
+    unified = UnifiedAgent(api_keys)
+    
+    return {
+        "unified": unified,
+        "gemini": GeminiAgent(api_keys.get("gemini_key", "")) if api_keys.get("gemini_key") else None,
+        "deepseek": DeepSeekAgent(api_keys.get("deepseek_key", "")) if api_keys.get("deepseek_key") else None,
+        "groq": GroqAgent(api_keys.get("groq_key", "")) if api_keys.get("groq_key") else None,
+        "cloudflare": CloudflareAgent(api_keys.get("cloudflare_key", ""), api_keys.get("cloudflare_account_id", "")) if api_keys.get("cloudflare_key") else None,
+        "openrouter": OpenRouterAgent(api_keys.get("openrouter_key", "")) if api_keys.get("openrouter_key") else None,
+        "huggingface": HuggingFaceAgent(api_keys.get("huggingface_key", "")) if api_keys.get("huggingface_key") else None,
+    }
+    
 def get_db_manager(user_id):
     db_path = Config.get_db_path(user_id)
     return DatabaseManager(db_path)
