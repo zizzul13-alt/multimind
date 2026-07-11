@@ -211,6 +211,10 @@ def show_new_chat():
     st.subheader("💭 New Chat")
     default_prompt = ""
     
+    # Setup state tracker agar tidak menimpa ketikan manual user
+    if "last_generated" not in st.session_state:
+        st.session_state.last_generated = ""
+    
     # ===== TEMPLATE SELECTOR =====
     templates_mgr = get_template_manager()
     template_list = [("", "No Template")] + templates_mgr.get_template_names()
@@ -218,7 +222,7 @@ def show_new_chat():
     selected_template = st.selectbox(
         "📋 Template (optional)",
         [t[0] for t in template_list],
-        format_func=lambda x: dict(template_list)[x],
+        format_func=lambda x: dict(template_list)[x] if x != "" else "No Template",
         key="template_selector",
         help="Pilih template untuk quick prompt"
     )
@@ -238,7 +242,8 @@ def show_new_chat():
                 cols = st.columns(min(len(variables), 3))
                 for i, var in enumerate(variables):
                     with cols[i % 3]:
-                        vars_dict[var] = st.text_input(f"{var}", key=f"var_{var}")
+                        # Gunakan key spesifik per template agar tidak tabrakan
+                        vars_dict[var] = st.text_input(f"{var}", key=f"var_{var}_{selected_template}")
                 st.session_state.template_variables = vars_dict
             
             # Auto-update prompt
@@ -246,16 +251,24 @@ def show_new_chat():
                 selected_template,
                 st.session_state.get("template_variables", {})
             )
+            
             if result:
-                st.session_state.generated_prompt = result["prompt"]
+                new_prompt = result["prompt"]
+                default_prompt = new_prompt # Perbaikan 1: Update default_prompt agar preview muncul
+                
+                # Perbaikan 2 & 3: Hanya inject ke text_area jika template/variabel benar-benar berubah
+                if new_prompt != st.session_state.last_generated:
+                    st.session_state.prompt_main = new_prompt
+                    st.session_state.last_generated = new_prompt
     
     # ===== SHOW TEMPLATE PREVIEW =====
     if selected_template and selected_template != "" and default_prompt:
         st.info(f"📋 **Template Preview:**\n\n{default_prompt}")
-        st.caption("👆 Copy template di atas, paste ke kolom prompt di bawah")
+        st.caption("👆 Prompt otomatis masuk ke kolom di bawah, bisa langsung diedit.")
     
     # ===== PROMPT =====
-    prompt = st.text_area("Prompt:", height=150, placeholder="Paste template atau tulis bebas...", key="prompt_main")    
+    # Streamlit otomatis membaca dan menulis ke st.session_state.prompt_main melalui key ini
+    prompt = st.text_area("Prompt:", height=150, placeholder="Paste template atau tulis bebas...", key="prompt_main") 
     # ===== CHAT MODE =====
     chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
     context_mode = "continue" if "Continue" in chat_mode else "standalone"
