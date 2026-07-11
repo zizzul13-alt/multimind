@@ -219,11 +219,11 @@ def show_new_chat():
         [t[0] for t in template_list],
         format_func=lambda x: dict(template_list)[x],
         key="template_selector",
-        help="Pilih template untuk quick prompt"
+        help="Pilih template untuk quick "
     )
     
-    # Template variables + auto-fill prompt
-    default_prompt = ""
+    # Template variables + auto-fill 
+    default_ = ""
     if selected_template and selected_template != "":
         template = templates_mgr.get_template(selected_template)
         if template:
