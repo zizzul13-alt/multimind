@@ -122,6 +122,46 @@ def show_sidebar():
                     st.rerun()
         st.divider()
         
+        # ===== SETTINGS =====
+        with st.expander("⚙️ Settings"):
+            st.session_state.compressor_enabled = st.toggle(
+                "🗜️ Compressor",
+                value=st.session_state.compressor_enabled,
+                key="settings_compressor"
+            )
+            st.session_state.debate_rounds = st.slider(
+                "Debate Rounds",
+                1, 5,
+                st.session_state.debate_rounds,
+                key="settings_rounds"
+            )
+            
+            # Skill Selector
+            skills_mgr = get_skills_manager()
+            skill_list = ["default"] + skills_mgr.list_skills()
+            current_skill = st.session_state.get("selected_skill", "default")
+            if current_skill not in skill_list:
+                current_skill = "default"
+            st.session_state.selected_skill = st.selectbox(
+                "🎯 Skill",
+                skill_list,
+                index=skill_list.index(current_skill),
+                key="settings_skill"
+            )
+            
+            # Agent Selector
+            st.session_state.active_agents = st.multiselect(
+                "Agents",
+                ["unified", "cloudflare", "groq", "gemini", "openrouter", "huggingface", "deepseek"],
+                default=st.session_state.active_agents,
+                key="settings_agents"
+            )
+        
+        st.divider()
+        
+        # ===== BACKUP/RESTORE =====
+        with st.expander("💾 Backup & Restore"):
+            ...        
         # ===== BACKUP/RESTORE =====
         with st.expander("💾 Backup & Restore"):
             st.caption("Database SQLite")
