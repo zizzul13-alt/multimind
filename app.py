@@ -223,7 +223,6 @@ def show_new_chat():
     )
     
     # Template variables
-    default_prompt = ""
     if selected_template and selected_template != "":
         template = templates_mgr.get_template(selected_template)
         if template:
@@ -241,13 +240,17 @@ def show_new_chat():
                         vars_dict[var] = st.text_input(f"{var}", key=f"var_{var}")
                 st.session_state.template_variables = vars_dict
             
-            # Siapkan prompt
+            # Auto-update prompt
             result = templates_mgr.apply_template(
                 selected_template,
                 st.session_state.get("template_variables", {})
             )
             if result:
-                default_prompt = result["prompt"]
+                st.session_state.generated_prompt = result["prompt"]
+    
+    # ===== PROMPT =====
+    prompt_value = st.session_state.get("generated_prompt", "")
+    prompt = st.text_area("Prompt:", height=150, value=prompt_value, key="prompt_main")
     
     # ===== CHAT MODE =====
     chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
@@ -256,12 +259,6 @@ def show_new_chat():
         st.info("AI will see previous chats in this session")
     else:
         st.success("AI starts fresh - no history (SAVES TOKENS!)")
-    
-    # ===== PROMPT =====
-    if default_prompt:
-        prompt = st.text_area("Prompt:", height=150, value=default_prompt, key="prompt_with_template")
-    else:
-        prompt = st.text_area("Prompt:", height=150, placeholder="Ask anything...", key="prompt_no_template")
     
     # ===== FILE UPLOAD =====
     uploaded_files = st.file_uploader(
