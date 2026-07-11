@@ -266,9 +266,6 @@ def show_new_chat():
         st.info(f"📋 **Template Preview:**\n\n{default_prompt}")
         st.caption("👆 Prompt otomatis masuk ke kolom di bawah, bisa langsung diedit.")
     
-    # ===== PROMPT =====
-    # Streamlit otomatis membaca dan menulis ke st.session_state.prompt_main melalui key ini
-    prompt = st.text_area("Prompt:", height=150, placeholder="Paste template atau tulis bebas...", key="prompt_main") 
     # ===== CHAT MODE =====
     chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
     context_mode = "continue" if "Continue" in chat_mode else "standalone"
@@ -276,7 +273,10 @@ def show_new_chat():
         st.info("AI will see previous chats in this session")
     else:
         st.success("AI starts fresh - no history (SAVES TOKENS!)")
-    
+
+    # ===== PROMPT =====
+    # Streamlit otomatis membaca dan menulis ke st.session_state.prompt_main melalui key ini
+    prompt = st.text_area("Prompt:", height=150, placeholder="Paste template atau tulis bebas...", key="prompt_main")
     # ===== FILE UPLOAD =====
     uploaded_files = st.file_uploader(
         "📎 Files (optional)",
