@@ -20,6 +20,7 @@ from core.memory import SessionMemory
 from core.file_handler import FileHandler
 from core.release_gate import ReleaseGate
 from core.skills_manager import SkillsManager
+from core.templates import TemplateManager
 from database.manager import DatabaseManager
 from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
@@ -45,6 +46,8 @@ if "initialized" not in st.session_state:
     st.session_state.debate_rounds = 1
     st.session_state.active_agents = ["gemini"]
     st.session_state.selected_skill = "default"
+    st.session_state.selected_template = None
+    st.session_state.template_variables = {}
 
 @st.cache_resource
 def get_agents(user_id):
@@ -65,6 +68,10 @@ def get_db_manager(user_id):
 @st.cache_resource
 def get_skills_manager():
     return SkillsManager()
+
+@st.cache_resource
+def get_template_manager():
+    return TemplateManager()
 
 def show_login_page():
     st.title("🤖 MultiMind AI")
@@ -201,14 +208,64 @@ def show_session():
 
 def show_new_chat():
     st.subheader("💭 New Chat")
+    
+    # ===== TEMPLATE SELECTOR =====
+    templates_mgr = get_template_manager()
+    template_list = [("", "No Template")] + templates_mgr.get_template_names()
+    
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        selected_template = st.selectbox(
+            "📋 Template (optional)",
+            [t[0] for t in template_list],
+            format_func=lambda x: dict(template_list)[x],
+            key="template_selector",
+            help="Pilih template untuk quick prompt"
+        )
+    
+    # Template variables (kalau ada)
+    if selected_template and selected_template != "":
+        template = templates_mgr.get_template(selected_template)
+        if template:
+            st.caption(f"📝 {template['description']}")
+            
+            # Deteksi variabel {{var}} di template
+            import re
+            variables = re.findall(r'\{\{(\w+)\}\}', template['prompt'])
+            if variables:
+                st.caption("🔧 Isi variabel:")
+                vars_dict = {}
+                cols = st.columns(min(len(variables), 3))
+                for i, var in enumerate(variables):
+                    with cols[i % 3]:
+                        vars_dict[var] = st.text_input(f"{var}", key=f"var_{var}")
+                st.session_state.template_variables = vars_dict
+    
+    # ===== CHAT MODE =====
     chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
     context_mode = "continue" if "Continue" in chat_mode else "standalone"
     if context_mode == "continue":
         st.info("AI will see previous chats in this session")
     else:
         st.success("AI starts fresh - no history (SAVES TOKENS!)")
-    prompt = st.text_area("Prompt:", height=150, placeholder="Ask anything...", key="new_chat_prompt")
+    
+    # ===== PROMPT =====
+    # Apply template kalau dipilih
+    default_prompt = ""
+    if selected_template and selected_template != "":
+        result = templates_mgr.apply_template(
+            selected_template, 
+            st.session_state.get("template_variables", {})
+        )
+        if result:
+            default_prompt = result["prompt"]
+    
+    prompt = st.text_area("Prompt:", height=150, value=default_prompt, placeholder="Ask anything...", key="new_chat_prompt")
+    
+    # ===== FILE UPLOAD =====
     uploaded_files = st.file_uploader("📎 Files (optional)", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
+    
+    # ===== TOKEN ESTIMATION =====
     if prompt or uploaded_files:
         files_count = len(uploaded_files) if uploaded_files else 0
         session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
@@ -228,6 +285,8 @@ def show_new_chat():
             st.warning(f"🔴 High token usage! Consider compressor.")
         elif warning["level"] == "medium":
             st.info(f"🟡 Moderate token usage.")
+    
+    # ===== SUBMIT =====
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🚀 Send", type="primary", key="send_chat_btn", use_container_width=True):
@@ -349,13 +408,15 @@ def main():
             st.markdown("""
             ### Getting Started:
             1. Create a **New Session** in the sidebar
-            2. Choose mode: **coding**, **research**, or **thinking**
-            3. Pick a **Skill** (Code Reviewer, Researcher, Thinker)
-            4. Start chatting with AI agents!
+            2. Pick a **Template** (optional) for quick prompts
+            3. Choose a **Skill** for agent behavior
+            4. Select mode: **coding**, **research**, or **thinking**
+            5. Start chatting with AI agents!
 
             ### Features:
             - 🤖 6 AI Agents (Gemini, Groq, Cloudflare, OpenRouter, HuggingFace, DeepSeek)
-            - 🎯 Skills System (Code Reviewer, Researcher, Thinker, Teacher)
+            - 📋 Prompt Templates (Debug, Research, Design, etc)
+            - 🎯 Skills System (Code Reviewer, Researcher, Thinker)
             - 🎯 Release Gates (Quality check otomatis)
             - 💰 Token-efficient with compressor
             - 📎 File upload (PDF, Excel, Images, Code)
