@@ -115,25 +115,34 @@ def show_sidebar():
                     st.success("Created!")
                     st.rerun()
         st.divider()
-        with st.expander("⚙️ Settings"):
-            st.session_state.compressor_enabled = st.toggle("🗜️ Compressor", value=st.session_state.compressor_enabled, key="settings_compressor")
-            st.session_state.debate_rounds = st.slider("Debate Rounds", 1, 5, st.session_state.debate_rounds, key="settings_rounds")
+        
+        # ===== BACKUP/RESTORE =====
+        with st.expander("💾 Backup & Restore"):
+            st.caption("Database SQLite")
             
-            # ===== SKILL SELECTOR =====
-            skills_mgr = get_skills_manager()
-            skill_list = ["default"] + skills_mgr.list_skills()
-            current_skill = st.session_state.get("selected_skill", "default")
-            if current_skill not in skill_list:
-                current_skill = "default"
-            st.session_state.selected_skill = st.selectbox(
-                "🎯 Skill",
-                skill_list,
-                index=skill_list.index(current_skill),
-                key="settings_skill",
-                help="Pilih skill card untuk agent"
-            )
+            db_path = Config.get_db_path(st.session_state.user_id)
             
-            st.session_state.active_agents = st.multiselect("Agents", ["gemini", "deepseek", "groq", "cloudflare", "openrouter", "huggingface"], default=st.session_state.active_agents, key="settings_agents")
+            # Download backup
+            if os.path.exists(db_path):
+                with open(db_path, "rb") as f:
+                    st.download_button(
+                        "📥 Download Backup",
+                        f,
+                        file_name=f"multimind_backup_{datetime.now():%Y%m%d}.db",
+                        mime="application/octet-stream",
+                        key="download_db_btn",
+                        use_container_width=True
+                    )
+            
+            # Upload restore
+            uploaded_db = st.file_uploader("📤 Restore Backup", type=["db"], key="restore_db_uploader")
+            if uploaded_db:
+                if st.button("🔄 Restore", key="restore_db_btn", use_container_width=True):
+                    with open(db_path, "wb") as f:
+                        f.write(uploaded_db.read())
+                    st.success("✅ Database restored! Refresh page.")
+                    st.rerun()
+        
         st.divider()
         if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
             st.session_state.user = None
