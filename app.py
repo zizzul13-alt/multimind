@@ -263,8 +263,12 @@ def show_new_chat():
         with col1:
             if st.button("📋 Generate Prompt", use_container_width=True, key="gen_prompt_btn"):
                 st.session_state.generated_prompt = default_prompt
+                st.write("DEBUG: Prompt generated!")  # ← DEBUG
         with col2:
             st.caption("Klik untuk generate prompt dari template")
+    
+    # DEBUG
+    st.write("DEBUG: generated_prompt:", st.session_state.get("generated_prompt", "")[:50])
     
     # ===== PROMPT =====
     prompt_value = st.session_state.get("generated_prompt", "")
