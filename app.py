@@ -209,6 +209,7 @@ def show_session():
 
 def show_new_chat():
     st.subheader("💭 New Chat")
+    default_prompt = ""
     
     # ===== TEMPLATE SELECTOR =====
     templates_mgr = get_template_manager()
