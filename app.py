@@ -336,6 +336,7 @@ def show_new_chat():
 
 def process_chat(prompt, uploaded_files, context_mode):
     agents = get_agents(st.session_state.user_id)
+    unified = agents.get("unified")
     gemini = agents.get("gemini")
     deepseek = agents.get("deepseek")
     groq = agents.get("groq")
@@ -371,25 +372,43 @@ def process_chat(prompt, uploaded_files, context_mode):
             context = file_context + "\n" + context
 
         session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
+        active = st.session_state.active_agents
 
-        orchestrator = DebateOrchestrator(
-            gemini_agent=gemini,
-            deepseek_agent=deepseek,
-            groq_agent=groq,
-            cloudflare_agent=cloudflare,
-            openrouter_agent=openrouter,
-            huggingface_agent=huggingface
-        )
+        # ===== AGENT ROUTING =====
+        if "unified" in active:
+            # Unified Agent (auto-failover semua)
+            response = unified.generate(
+                prompt=final_prompt,
+                system_prompt=None,
+                mode=session_mode
+            )
+            debate_result = {
+                "responses": [response],
+                "final_answer": response.get("text", ""),
+                "total_tokens": response.get("tokens", 0),
+                "total_cost": response.get("cost", 0),
+                "status": response.get("status", "error")
+            }
+        else:
+            # Agent individual (debate biasa)
+            orchestrator = DebateOrchestrator(
+                gemini_agent=gemini,
+                deepseek_agent=deepseek,
+                groq_agent=groq,
+                cloudflare_agent=cloudflare,
+                openrouter_agent=openrouter,
+                huggingface_agent=huggingface
+            )
+            debate_result = orchestrator.debate(
+                prompt=final_prompt,
+                context=context[:3000],
+                mode=session_mode,
+                rounds=st.session_state.debate_rounds,
+                agents=active,
+                skill=st.session_state.get("selected_skill", "default")
+            )
 
-        debate_result = orchestrator.debate(
-            prompt=final_prompt,
-            context=context[:3000],
-            mode=session_mode,
-            rounds=st.session_state.debate_rounds,
-            agents=st.session_state.active_agents,
-            skill=st.session_state.get("selected_skill", "default")
-        )
-
+        # ===== SAVE TO MEMORY =====
         if st.session_state.current_session:
             memory = st.session_state.memories.get(st.session_state.current_session['id'])
             if not memory:
@@ -397,6 +416,7 @@ def process_chat(prompt, uploaded_files, context_mode):
                 st.session_state.memories[st.session_state.current_session['id']] = memory
             memory.add_chat(prompt, debate_result.get("final_answer", ""))
 
+        # ===== SAVE TO DATABASE =====
         if st.session_state.current_session:
             db = get_db_manager(st.session_state.user_id)
             chat_data = {
@@ -415,7 +435,6 @@ def process_chat(prompt, uploaded_files, context_mode):
         st.session_state.new_chat = False
         st.success("✅ Debate complete!")
         st.rerun()
-
 def main():
     if st.session_state.user:
         with st.sidebar:
