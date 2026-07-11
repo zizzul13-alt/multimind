@@ -258,7 +258,11 @@ def show_new_chat():
         st.success("AI starts fresh - no history (SAVES TOKENS!)")
     
     # ===== PROMPT =====
-    prompt = st.text_area("Prompt:", height=150, key="new_chat_prompt")
+    # Kalau template dipilih, langsung pakai prompt-nya
+    if default_prompt:
+        prompt = st.text_area("Prompt:", height=150, value=default_prompt, key="template_prompt")
+    else:
+        prompt = st.text_area("Prompt:", height=150, placeholder="Ask anything...", key="free_prompt")
     
     # ===== PROMPT =====
     # Tombol copy template ke prompt
