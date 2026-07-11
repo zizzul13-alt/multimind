@@ -257,26 +257,11 @@ def show_new_chat():
     else:
         st.success("AI starts fresh - no history (SAVES TOKENS!)")
     
-    # ===== GENERATE PROMPT BUTTON =====
-    if default_prompt:
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            if st.button("📋 Generate Prompt", use_container_width=True, key="gen_prompt_btn"):
-                st.session_state.generated_prompt = default_prompt
-                st.write("DEBUG: Prompt generated!")  # ← DEBUG
-        with col2:
-            st.caption("Klik untuk generate prompt dari template")
-    
-    # DEBUG
-    st.write("DEBUG: generated_prompt:", st.session_state.get("generated_prompt", "")[:50])
-    
     # ===== PROMPT =====
-    prompt_value = st.session_state.get("generated_prompt", "")
-    prompt = st.text_area("Prompt:", height=150, value=prompt_value, key="main_prompt")
-    
-    # ===== FILE UPLOAD =====
-    uploaded_files = st.file_uploader("📎 Files (optional)", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
-    
+    if default_prompt:
+        prompt = st.text_area("Prompt:", height=150, value=default_prompt, key="prompt_with_template")
+    else:
+        prompt = st.text_area("Prompt:", height=150, placeholder="Ask anything...", key="prompt_no_template")
     # ===== TOKEN ESTIMATION =====
     if prompt or uploaded_files:
         files_count = len(uploaded_files) if uploaded_files else 0
