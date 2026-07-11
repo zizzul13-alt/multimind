@@ -248,9 +248,13 @@ def show_new_chat():
             if result:
                 st.session_state.generated_prompt = result["prompt"]
     
+    # ===== SHOW TEMPLATE PREVIEW =====
+    if default_prompt:
+        st.info(f"📋 **Template Preview:**\n\n{default_prompt}")
+        st.caption("👆 Copy template di atas, paste ke kolom prompt di bawah")
+    
     # ===== PROMPT =====
-    prompt_value = st.session_state.get("generated_prompt", "")
-    prompt = st.text_area("Prompt:", height=150, value=prompt_value, key="prompt_main")
+    prompt = st.text_area("Prompt:", height=150, placeholder="Paste template atau tulis bebas...", key="prompt_main")
     
     # ===== CHAT MODE =====
     chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
