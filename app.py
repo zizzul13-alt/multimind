@@ -7,6 +7,7 @@ import uuid
 import json
 import os
 from datetime import datetime
+
 from agents.gemini import GeminiAgent
 from agents.deepseek import DeepSeekAgent
 from agents.groq import GroqAgent
@@ -47,6 +48,7 @@ if "initialized" not in st.session_state:
     st.session_state.selected_skill = "default"
     st.session_state.selected_template = None
     st.session_state.template_variables = {}
+    st.session_state.prompt_text = ""
 
 @st.cache_resource
 def get_agents(user_id):
@@ -212,23 +214,22 @@ def show_new_chat():
     templates_mgr = get_template_manager()
     template_list = [("", "No Template")] + templates_mgr.get_template_names()
     
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        selected_template = st.selectbox(
-            "📋 Template (optional)",
-            [t[0] for t in template_list],
-            format_func=lambda x: dict(template_list)[x],
-            key="template_selector",
-            help="Pilih template untuk quick prompt"
-        )
+    selected_template = st.selectbox(
+        "📋 Template (optional)",
+        [t[0] for t in template_list],
+        format_func=lambda x: dict(template_list)[x],
+        key="template_selector",
+        help="Pilih template untuk quick prompt"
+    )
     
-    # Template variables (kalau ada)
+    # Template variables + auto-fill prompt
+    default_prompt = ""
     if selected_template and selected_template != "":
         template = templates_mgr.get_template(selected_template)
         if template:
             st.caption(f"📝 {template['description']}")
             
-            # Deteksi variabel {{var}} di template
+            # Deteksi variabel {{var}}
             import re
             variables = re.findall(r'\{\{(\w+)\}\}', template['prompt'])
             if variables:
@@ -239,6 +240,14 @@ def show_new_chat():
                     with cols[i % 3]:
                         vars_dict[var] = st.text_input(f"{var}", key=f"var_{var}")
                 st.session_state.template_variables = vars_dict
+            
+            # Auto-fill prompt
+            result = templates_mgr.apply_template(
+                selected_template,
+                st.session_state.get("template_variables", {})
+            )
+            if result:
+                default_prompt = result["prompt"]
     
     # ===== CHAT MODE =====
     chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
@@ -249,29 +258,9 @@ def show_new_chat():
         st.success("AI starts fresh - no history (SAVES TOKENS!)")
     
     # ===== PROMPT =====
-    # Apply template kalau dipilih
-    default_prompt = ""
-    if selected_template and selected_template != "":
-        result = templates_mgr.apply_template(
-            selected_template, 
-            st.session_state.get("template_variables", {})
-        )
-        if result:
-            default_prompt = result["prompt"]
+    if default_prompt:
+        st.session_state.prompt_text = default_prompt
     
-    # Ganti jadi:
-    if "prompt_text" not in st.session_state:
-        st.session_state.prompt_text = ""
-
-    # Update kalau template berubah
-    if selected_template and selected_template != "":
-        result = templates_mgr.apply_template(
-            selected_template,
-            st.session_state.get("template_variables", {})
-        )
-        if result:
-            st.session_state.prompt_text = result["prompt"]
-
     prompt = st.text_area("Prompt:", height=150, key="new_chat_prompt")
     
     # ===== FILE UPLOAD =====
