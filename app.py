@@ -219,10 +219,10 @@ def show_new_chat():
         [t[0] for t in template_list],
         format_func=lambda x: dict(template_list)[x],
         key="template_selector",
-        help="Pilih template untuk quick "
+        help="Pilih template untuk quick prompt"
     )
     
-    # Template variables + auto-fill 
+    # Template variables
     default_prompt = ""
     if selected_template and selected_template != "":
         template = templates_mgr.get_template(selected_template)
@@ -241,20 +241,13 @@ def show_new_chat():
                         vars_dict[var] = st.text_input(f"{var}", key=f"var_{var}")
                 st.session_state.template_variables = vars_dict
             
-            # Auto-fill prompt
+            # Siapkan prompt (tapi jangan auto-fill!)
             result = templates_mgr.apply_template(
                 selected_template,
                 st.session_state.get("template_variables", {})
             )
             if result:
                 default_prompt = result["prompt"]
-            # Isi prompt hanya saat template berubah
-            if (
-                default_prompt
-                and st.session_state.get("selected_template") != selected_template
-            ):
-                st.session_state.prompt_text = default_prompt
-                st.session_state.selected_template = selected_template
     
     # ===== CHAT MODE =====
     chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
@@ -264,15 +257,18 @@ def show_new_chat():
     else:
         st.success("AI starts fresh - no history (SAVES TOKENS!)")
     
-    # ===== PROMPT =====
-    # Kalau template dipilih, langsung pakai prompt-nya
-    prompt = st.text_area(
-        "📝 Prompt",
-        key="prompt_text",
-        height=150,
-        placeholder="Ask anything..."
-    )
+    # ===== GENERATE PROMPT BUTTON =====
+    if default_prompt:
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            if st.button("📋 Generate Prompt", use_container_width=True, key="gen_prompt_btn"):
+                st.session_state.generated_prompt = default_prompt
+        with col2:
+            st.caption("Klik untuk generate prompt dari template")
     
+    # ===== PROMPT =====
+    prompt_value = st.session_state.get("generated_prompt", "")
+    prompt = st.text_area("Prompt:", height=150, value=prompt_value, key="main_prompt")
     
     # ===== FILE UPLOAD =====
     uploaded_files = st.file_uploader("📎 Files (optional)", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
