@@ -158,10 +158,7 @@ def show_sidebar():
             )
         
         st.divider()
-        
-        # ===== BACKUP/RESTORE =====
-        with st.expander("💾 Backup & Restore"):
-            ...        
+       
         # ===== BACKUP/RESTORE =====
         with st.expander("💾 Backup & Restore"):
             st.caption("Database SQLite")
