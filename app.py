@@ -481,7 +481,7 @@ def main():
                 agents = get_agents(st.session_state.user_id)
                 
                 unified = agents.get("unified")
-                st.write("DEBUG unified:", unified)  # ← TAMBAHIN
+
                 # Unified Agent Stats
                 if unified:
                     st.subheader("📊 Agent Stats")
