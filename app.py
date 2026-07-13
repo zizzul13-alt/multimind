@@ -157,7 +157,7 @@ def show_sidebar():
             # Agent Selector
             st.session_state.active_agents = st.multiselect(
                 "Agents",
-                ["unified", "cloudflare", "groq", "gemini", "openrouter", "huggingface", "deepseek"],
+                ["unified", "remote", "cloudflare", "groq", "gemini", "openrouter", "huggingface", "deepseek"],
                 default=st.session_state.active_agents,
                 key="settings_agents"
             )
@@ -385,6 +385,7 @@ def process_chat(prompt, uploaded_files, context_mode):
     cloudflare = agents.get("cloudflare")
     openrouter = agents.get("openrouter")
     huggingface = agents.get("huggingface")
+    remote = agents.get("remote")
 
     with st.spinner("🤖 Agents debating..."):
         final_prompt = prompt
@@ -507,6 +508,7 @@ def main():
                 st.write("Cloudflare:", "✅" if agents.get("cloudflare") else "❌")
                 st.write("OpenRouter:", "✅" if agents.get("openrouter") else "❌")
                 st.write("HuggingFace:", "✅" if agents.get("huggingface") else "❌")
+                st.write("Remote:", "✅" if agents.get("remote") else "❌")
     if st.session_state.user is None:
         show_login_page()
     else:
