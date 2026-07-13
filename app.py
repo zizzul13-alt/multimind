@@ -379,13 +379,13 @@ def show_new_chat():
 def process_chat(prompt, uploaded_files, context_mode):
     agents = get_agents(st.session_state.user_id)
     unified = agents.get("unified")
+    remote = agents.get("remote")
     gemini = agents.get("gemini")
     deepseek = agents.get("deepseek")
     groq = agents.get("groq")
     cloudflare = agents.get("cloudflare")
     openrouter = agents.get("openrouter")
     huggingface = agents.get("huggingface")
-    remote = agents.get("remote")
 
     with st.spinner("🤖 Agents debating..."):
         final_prompt = prompt
@@ -419,12 +419,16 @@ def process_chat(prompt, uploaded_files, context_mode):
 
         # ===== AGENT ROUTING =====
         if "unified" in active:
-            # Unified Agent (auto-failover semua)
-            response = unified.generate(
-                prompt=final_prompt,
-                system_prompt=None,
-                mode=session_mode
-            )
+            response = unified.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
+            debate_result = {
+                "responses": [response],
+                "final_answer": response.get("text", ""),
+                "total_tokens": response.get("tokens", 0),
+                "total_cost": response.get("cost", 0),
+                "status": response.get("status", "error")
+            }
+        elif "remote" in active:
+            response = remote.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
             debate_result = {
                 "responses": [response],
                 "final_answer": response.get("text", ""),
@@ -433,24 +437,18 @@ def process_chat(prompt, uploaded_files, context_mode):
                 "status": response.get("status", "error")
             }
         else:
-            # Agent individual (debate biasa)
             orchestrator = DebateOrchestrator(
-                gemini_agent=gemini,
-                deepseek_agent=deepseek,
-                groq_agent=groq,
-                cloudflare_agent=cloudflare,
-                openrouter_agent=openrouter,
+                gemini_agent=gemini, deepseek_agent=deepseek, groq_agent=groq,
+                cloudflare_agent=cloudflare, openrouter_agent=openrouter,
                 huggingface_agent=huggingface
             )
             debate_result = orchestrator.debate(
-                prompt=final_prompt,
-                context=context[:3000],
-                mode=session_mode,
-                rounds=st.session_state.debate_rounds,
-                agents=active,
+                prompt=final_prompt, context=context[:3000], mode=session_mode,
+                rounds=st.session_state.debate_rounds, agents=active,
                 skill=st.session_state.get("selected_skill", "default")
             )
 
+        # Save to memory & database (existing code)...
         # ===== SAVE TO MEMORY =====
         if st.session_state.current_session:
             memory = st.session_state.memories.get(st.session_state.current_session['id'])
