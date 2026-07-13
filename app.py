@@ -14,6 +14,7 @@ from agents.groq import GroqAgent
 from agents.cloudflare import CloudflareAgent
 from agents.openrouter import OpenRouterAgent
 from agents.huggingface import HuggingFaceAgent
+from agents.remote_agent import RemoteAgent
 from agents.unified_agent import UnifiedAgent
 from core.debate import DebateOrchestrator
 from core.compressor import PromptCompressor
@@ -58,8 +59,13 @@ def get_agents(user_id):
     # Unified Agent (prioritas utama)
     unified = UnifiedAgent(api_keys)
     
+    # Remote Agent (PythonAnywhere)
+    remote_url = api_keys.get("remote_url", "")
+    remote = RemoteAgent(remote_url) if remote_url else None
+    
     return {
         "unified": unified,
+        "remote": remote,  # ← BARU!
         "gemini": GeminiAgent(api_keys.get("gemini_key", "")) if api_keys.get("gemini_key") else None,
         "deepseek": DeepSeekAgent(api_keys.get("deepseek_key", "")) if api_keys.get("deepseek_key") else None,
         "groq": GroqAgent(api_keys.get("groq_key", "")) if api_keys.get("groq_key") else None,
@@ -67,7 +73,6 @@ def get_agents(user_id):
         "openrouter": OpenRouterAgent(api_keys.get("openrouter_key", "")) if api_keys.get("openrouter_key") else None,
         "huggingface": HuggingFaceAgent(api_keys.get("huggingface_key", "")) if api_keys.get("huggingface_key") else None,
     }
-    
 def get_db_manager(user_id):
     db_path = Config.get_db_path(user_id)
     return DatabaseManager(db_path)
