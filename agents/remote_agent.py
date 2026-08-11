@@ -1,49 +1,19 @@
 """
-Remote Agent - Panggil PythonAnywhere API
+Remote Agent - Compatibility Adapter
 """
-import requests
+from providers.remote import RemoteProvider
 
-class RemoteAgent:
-    """Agent yang panggil API eksternal"""
+class RemoteAgent(RemoteProvider):
+    """Compatibility adapter for RemoteAgent, inheriting from RemoteProvider"""
+    def __init__(self, api_url: str):
+        super().__init__(api_url)
 
-    def __init__(self, api_url):
-        self.api_url = api_url
-
-    def generate(self, prompt, system_prompt=None, mode="coding", max_tokens=4096):
-        """Generate response via API"""
-        try:
-            response = requests.post(
-                f"{self.api_url}/chat",
-                json={
-                    "prompt": prompt,
-                    "mode": mode,
-                    "agent": "gemini"
-                },
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                return {
-                    "status": "success",
-                    "text": data.get("response", ""),
-                    "agent": f"Remote ({self.api_url})",
-                    "tokens": len(data.get("response", "").split()),
-                    "cost": 0
-                }
-            else:
-                return {
-                    "status": "error",
-                    "text": f"API error: {response.status_code}",
-                    "agent": "Remote",
-                    "tokens": 0,
-                    "cost": 0
-                }
-        except Exception as e:
-            return {
-                "status": "error",
-                "text": f"Remote error: {str(e)[:100]}",
-                "agent": "Remote",
-                "tokens": 0,
-                "cost": 0
-            }
+    def generate(self, prompt, system_prompt=None, mode="coding", max_tokens=4096, **kwargs):
+        """Maintains the exact original signature for backward compatibility"""
+        return super().generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            mode=mode,
+            max_tokens=max_tokens,
+            **kwargs
+        )
