@@ -1,6 +1,6 @@
 """
-Multi-agent debate orchestrator
-Order: Cloudflare → Groq → OpenRouter → HuggingFace → DeepSeek → Gemini (fallback)
+Multi-agent debate orchestrator - Decoupled Agent-Centric Implementation
+Order & Fallback: True RoleAgent -> ModelRouter -> Providers
 """
 import time
 from datetime import datetime
@@ -8,6 +8,8 @@ from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 from core.release_gate import ReleaseGate
 from core.skills_manager import SkillsManager
+from agents.role_agent import RoleAgent
+from agents.router import ModelRouter
 
 
 class DebateOrchestrator:
@@ -48,84 +50,94 @@ class DebateOrchestrator:
             draft_text = ""
             draft_agent = ""
 
-            # ===== 1. CLOUDFLARE (PALING RELIABLE - 10K/BLN) =====
-            if "cloudflare" in agents and self.cloudflare:
+            # ===== 1. PREPARE ALL CONFIGURED PROVIDERS =====
+            all_providers = []
+            if self.cloudflare:
+                all_providers.append(("cloudflare", "☁️ Cloudflare", self.cloudflare))
+            if self.groq:
+                all_providers.append(("groq", "⚡ Groq", self.groq))
+            if self.openrouter:
+                all_providers.append(("openrouter", "🌐 OpenRouter", self.openrouter))
+            if self.huggingface:
+                all_providers.append(("huggingface", "🤗 HuggingFace", self.huggingface))
+            if self.deepseek:
+                all_providers.append(("deepseek", "🐳 DeepSeek", self.deepseek))
+            if self.gemini:
+                all_providers.append(("gemini", "🔍 Gemini", self.gemini))
+
+            # ===== 2. BUILD TRUE ROLE AGENT INSTANCES WITH MODELROUTERS =====
+            active_role_agents = []
+            for idx, active_id in enumerate(agents):
+                # Locate the primary provider for this slot
+                primary_tuple = next((p for p in all_providers if p[0] == active_id), None)
+                if not primary_tuple:
+                    continue
+
+                # Prepare the providers sequence: starts with primary, followed by all other fallbacks
+                providers_for_router = [primary_tuple[2]]
+                for p in all_providers:
+                    if p[0] != active_id:
+                        providers_for_router.append(p[2])
+
+                # Instantiate ModelRouter with primary + fallback providers
+                router = ModelRouter(providers_for_router)
+
+                # Determine the true Agent Role name
+                role_name = self._get_role_name(mode, idx)
+
+                # Get standard role/skill instructions
+                system_prompt = self._draft_prompt(mode) if active_id != "gemini" else self._full_prompt(mode)
+
+                # Create genuine RoleAgent
+                role_agent = RoleAgent(
+                    role=role_name,
+                    skill=system_prompt,
+                    router=router
+                )
+
+                active_role_agents.append({
+                    "agent": role_agent,
+                    "id": active_id,
+                    "max_tokens": 8192 if active_id == "gemini" else (2048 if active_id == "huggingface" else 4096)
+                })
+
+            # ===== 3. AGENT DEBATE LOOP =====
+            for item in active_role_agents:
+                agent_inst = item["agent"]
+                max_tokens = item["max_tokens"]
+                agent_id = item["id"]
+
+                # Gemini is a fallback-only provider unless it is the only one in sequence
+                if agent_id == "gemini" and draft_text:
+                    continue
+
                 try:
-                    response = self.cloudflare.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=4096)
-                    response["agent"] = "☁️ Cloudflare"
+                    # Execute task generic Agent-centric way
+                    response = agent_inst.execute(
+                        task=full_prompt,
+                        mode=mode,
+                        max_tokens=max_tokens
+                    )
+
+                    provider_name = response.get("agent", "Unknown Provider")
+                    response["agent"] = f"{agent_inst.role} ({provider_name})"
+
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
+                    debate_log["total_cost"] += response.get("cost", 0.0)
+
                     if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
-                        draft_text = response.get("text", "")
-                        draft_agent = "☁️ Cloudflare"
+                        if not draft_text:
+                            draft_text = response.get("text", "")
+                            draft_agent = response["agent"]
                 except Exception as e:
-                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "☁️ Cloudflare", "tokens": 0, "cost": 0})
-
-            # ===== 2. GROQ (PALING CEPAT - 100/HARI) =====
-            if "groq" in agents and self.groq:
-                try:
-                    response = self.groq.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), max_tokens=4096)
-                    response["agent"] = "⚡ Groq"
-                    debate_log["responses"].append(response)
-                    debate_log["total_tokens"] += response.get("tokens", 0)
-                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
-                        draft_text = response.get("text", "")
-                        draft_agent = "⚡ Groq"
-                except Exception as e:
-                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "⚡ Groq", "tokens": 0, "cost": 0})
-
-            # ===== 3. OPENROUTER (VARIATIF) =====
-            if "openrouter" in agents and self.openrouter:
-                try:
-                    response = self.openrouter.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=4096)
-                    response["agent"] = "🌐 OpenRouter"
-                    debate_log["responses"].append(response)
-                    debate_log["total_tokens"] += response.get("tokens", 0)
-                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
-                        draft_text = response.get("text", "")
-                        draft_agent = "🌐 OpenRouter"
-                except Exception as e:
-                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🌐 OpenRouter", "tokens": 0, "cost": 0})
-
-            # ===== 4. HUGGINGFACE (BACKUP) =====
-            if "huggingface" in agents and self.huggingface:
-                try:
-                    response = self.huggingface.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), mode=mode, max_tokens=2048)
-                    response["agent"] = "🤗 HuggingFace"
-                    debate_log["responses"].append(response)
-                    debate_log["total_tokens"] += response.get("tokens", 0)
-                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
-                        draft_text = response.get("text", "")
-                        draft_agent = "🤗 HuggingFace"
-                except Exception as e:
-                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🤗 HuggingFace", "tokens": 0, "cost": 0})
-
-            # ===== 5. DEEPSEEK =====
-            if "deepseek" in agents and self.deepseek:
-                try:
-                    response = self.deepseek.generate(prompt=full_prompt, system_prompt=self._draft_prompt(mode), max_tokens=4096)
-                    response["agent"] = "🐳 DeepSeek"
-                    debate_log["responses"].append(response)
-                    debate_log["total_tokens"] += response.get("tokens", 0)
-                    debate_log["total_cost"] += response.get("cost", 0)
-                    if not draft_text and response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
-                        draft_text = response.get("text", "")
-                        draft_agent = "🐳 DeepSeek"
-                except Exception as e:
-                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🐳 DeepSeek", "tokens": 0, "cost": 0})
-
-            # ===== 6. GEMINI (FALLBACK TERAKHIR) =====
-            if "gemini" in agents and self.gemini:
-                try:
-                    if not draft_text:
-                        response = self.gemini.generate(prompt=full_prompt, system_prompt=self._full_prompt(mode), max_tokens=8192)
-                        response["agent"] = "🔍 Gemini"
-                        debate_log["responses"].append(response)
-                        debate_log["total_tokens"] += response.get("tokens", 0)
-                        draft_text = response.get("text", "")
-                        draft_agent = "🔍 Gemini"
-                except Exception as e:
-                    debate_log["responses"].append({"status": "error", "text": str(e)[:100], "agent": "🔍 Gemini", "tokens": 0, "cost": 0})
+                    debate_log["responses"].append({
+                        "status": "error",
+                        "text": str(e)[:100],
+                        "agent": f"{agent_inst.role} (Error)",
+                        "tokens": 0,
+                        "cost": 0.0
+                    })
 
             # ===== GABUNGIN SEMUA RESPONSE =====
             all_texts = []
@@ -171,6 +183,35 @@ class DebateOrchestrator:
             debate_log["final_answer"] = f"Error: {error_msg}"
 
         return debate_log
+
+    def _get_role_name(self, mode, index):
+        roles_map = {
+            "coding": [
+                "💻 Lead Developer",
+                "🏗️ Senior Architect",
+                "🔍 Code Reviewer",
+                "⚙️ DevOps Engineer"
+            ],
+            "research": [
+                "📚 Lead Researcher",
+                "📊 Subject Analyst",
+                "🔎 Fact Checker",
+                "📝 Scientific Writer"
+            ],
+            "thinking": [
+                "🧠 Systems Thinker",
+                "🧩 Logic Validator",
+                "🎯 Strategic Analyst",
+                "⚖️ Cognitive Analyst"
+            ]
+        }
+        roles = roles_map.get(mode, [
+            "🤖 Primary Expert",
+            "👥 Peer Reviewer",
+            "⚖️ Critical Critic",
+            "💡 Assistant"
+        ])
+        return roles[index % len(roles)]
 
     def _draft_prompt(self, mode):
         prompts = {
