@@ -18,9 +18,11 @@ class MockProvider(BaseProvider):
         self.rate_limit = rate_limit
         self.return_text = return_text
         self.call_count = 0
+        self.last_prompt = ""
 
     def generate(self, prompt, system_prompt=None, mode="coding", max_tokens=4096, **kwargs):
         self.call_count += 1
+        self.last_prompt = prompt
         if self.rate_limit:
             return {
                 "status": "error",
@@ -125,8 +127,8 @@ def test_legacy_adapters_signature_safety():
     assert response_coze["status"] == "error"
 
 def test_debate_orchestrator_agent_centric():
-    p_cf = MockProvider("Cloudflare", return_text="Response from Cloudflare provider")
-    p_groq = MockProvider("Groq", return_text="Response from Groq provider")
+    p_cf = MockProvider("Cloudflare", return_text="Response from Cloudflare provider that is long enough to pass length gate")
+    p_groq = MockProvider("Groq", return_text="Response from Groq provider that is also long enough to pass length gate")
 
     orchestrator = DebateOrchestrator(
         gemini_agent=None,
@@ -157,7 +159,6 @@ def test_debate_orchestrator_agent_centric():
     assert "Response from Groq provider" in resp_groq["text"]
 
 def test_role_agent_failover_and_fallback():
-    # Prove that one RoleAgent can use a router with multiple providers and perform fallback when the first provider fails
     p_failing = MockProvider("FailingPrimary", fail=True)
     p_healthy = MockProvider("HealthyBackup", return_text="Hello from backup provider")
 
@@ -171,11 +172,48 @@ def test_role_agent_failover_and_fallback():
 
     response = role_agent.execute("Write standard script")
 
-    # Assert successful fallback response
     assert response["status"] == "success"
     assert response["text"] == "Hello from backup provider"
     assert response["agent"] == "HealthyBackup"
 
-    # Assert call count verification
     assert p_failing.call_count == 1
     assert p_healthy.call_count == 1
+
+def test_debate_collaboration_pipeline():
+    # 3 mock providers to verify step-by-step context forwarding (Draft -> Review -> Improve)
+    p_a = MockProvider("Cloudflare", return_text="Pristine code block containing ```python\ndef hello(): pass\n``` that serves as our first draft response.")
+    p_b = MockProvider("Groq", return_text="This is a constructive critique identifying issues with performance and code styling.")
+    p_c = MockProvider("OpenRouter", return_text="An extremely polished final answer incorporating all the reviewer's critique on the draft and fixing style issues with ```python\ndef hello_final(): pass\n```.")
+
+    orchestrator = DebateOrchestrator(
+        gemini_agent=None,
+        cloudflare_agent=p_a,
+        groq_agent=p_b,
+        openrouter_agent=p_c
+    )
+
+    log = orchestrator.debate(
+        prompt="Analyze my design pattern",
+        agents=["cloudflare", "groq", "openrouter"],
+        mode="coding"
+    )
+
+    # 1. Verify Draft -> Review (Agent B gets Agent A's output as context)
+    assert p_b.call_count == 1
+    assert "Pristine code block" in p_b.last_prompt
+    assert "Analyze my design pattern" in p_b.last_prompt
+
+    # 2. Verify Review -> Improve (Agent C gets both Draft and Review as context)
+    assert p_c.call_count == 1
+    assert "Pristine code block" in p_c.last_prompt
+    assert "constructive critique" in p_c.last_prompt
+    assert "Analyze my design pattern" in p_c.last_prompt
+
+    # 3. Verify Candidate Improvement from Agent C
+    assert log["status"] == "success"
+    assert "An extremely polished final answer" in log["final_answer"]
+
+    # 4. Verify Release Gate executes on the final candidate
+    assert "gate_score" in log
+    assert log["gate_score"] is not None
+    assert log["gate_passed"] is True
