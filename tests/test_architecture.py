@@ -125,7 +125,6 @@ def test_legacy_adapters_signature_safety():
     assert response_coze["status"] == "error"
 
 def test_debate_orchestrator_agent_centric():
-    # Instantiate DebateOrchestrator with mock providers and verify dynamic RoleAgent fallback
     p_cf = MockProvider("Cloudflare", return_text="Response from Cloudflare provider")
     p_groq = MockProvider("Groq", return_text="Response from Groq provider")
 
@@ -135,7 +134,6 @@ def test_debate_orchestrator_agent_centric():
         groq_agent=p_groq
     )
 
-    # Run debate containing both active agents
     log = orchestrator.debate(
         prompt="Analyze my design pattern",
         agents=["cloudflare", "groq"],
@@ -145,14 +143,39 @@ def test_debate_orchestrator_agent_centric():
     assert log["status"] == "success"
     assert len(log["responses"]) == 2
 
-    # Verify response structures
     resp_cf = log["responses"][0]
     resp_groq = log["responses"][1]
 
     assert resp_cf["status"] == "success"
+    assert "Lead Developer" in resp_cf["agent"]
     assert "Cloudflare" in resp_cf["agent"]
     assert "Response from Cloudflare provider" in resp_cf["text"]
 
     assert resp_groq["status"] == "success"
+    assert "Senior Architect" in resp_groq["agent"]
     assert "Groq" in resp_groq["agent"]
     assert "Response from Groq provider" in resp_groq["text"]
+
+def test_role_agent_failover_and_fallback():
+    # Prove that one RoleAgent can use a router with multiple providers and perform fallback when the first provider fails
+    p_failing = MockProvider("FailingPrimary", fail=True)
+    p_healthy = MockProvider("HealthyBackup", return_text="Hello from backup provider")
+
+    router = ModelRouter([p_failing, p_healthy])
+
+    role_agent = RoleAgent(
+        role="Systems Engineer",
+        skill="Write efficient scripts.",
+        router=router
+    )
+
+    response = role_agent.execute("Write standard script")
+
+    # Assert successful fallback response
+    assert response["status"] == "success"
+    assert response["text"] == "Hello from backup provider"
+    assert response["agent"] == "HealthyBackup"
+
+    # Assert call count verification
+    assert p_failing.call_count == 1
+    assert p_healthy.call_count == 1
