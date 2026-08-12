@@ -1,6 +1,6 @@
 """
-Multi-agent debate orchestrator - Agent-Centric Implementation
-Order: Cloudflare → Groq → OpenRouter → HuggingFace → DeepSeek → Gemini (fallback)
+Multi-agent debate orchestrator - Decoupled Agent-Centric Implementation
+Order & Fallback: True RoleAgent -> ModelRouter -> Providers
 """
 import time
 from datetime import datetime
@@ -50,71 +50,58 @@ class DebateOrchestrator:
             draft_text = ""
             draft_agent = ""
 
-            # ===== DYNAMIC AGENT INSTANCE BUILDER =====
-            # Map legacy provider configuration to generic RoleAgent + ModelRouter instances
-            provider_definitions = [
-                {
-                    "id": "cloudflare",
-                    "name": "☁️ Cloudflare",
-                    "provider": self.cloudflare,
-                    "system_prompt": self._draft_prompt(mode),
-                    "max_tokens": 4096
-                },
-                {
-                    "id": "groq",
-                    "name": "⚡ Groq",
-                    "provider": self.groq,
-                    "system_prompt": self._draft_prompt(mode),
-                    "max_tokens": 4096
-                },
-                {
-                    "id": "openrouter",
-                    "name": "🌐 OpenRouter",
-                    "provider": self.openrouter,
-                    "system_prompt": self._draft_prompt(mode),
-                    "max_tokens": 4096
-                },
-                {
-                    "id": "huggingface",
-                    "name": "🤗 HuggingFace",
-                    "provider": self.huggingface,
-                    "system_prompt": self._draft_prompt(mode),
-                    "max_tokens": 2048
-                },
-                {
-                    "id": "deepseek",
-                    "name": "🐳 DeepSeek",
-                    "provider": self.deepseek,
-                    "system_prompt": self._draft_prompt(mode),
-                    "max_tokens": 4096
-                },
-                {
-                    "id": "gemini",
-                    "name": "🔍 Gemini",
-                    "provider": self.gemini,
-                    "system_prompt": self._full_prompt(mode),
-                    "max_tokens": 8192
-                }
-            ]
+            # ===== 1. PREPARE ALL CONFIGURED PROVIDERS =====
+            all_providers = []
+            if self.cloudflare:
+                all_providers.append(("cloudflare", "☁️ Cloudflare", self.cloudflare))
+            if self.groq:
+                all_providers.append(("groq", "⚡ Groq", self.groq))
+            if self.openrouter:
+                all_providers.append(("openrouter", "🌐 OpenRouter", self.openrouter))
+            if self.huggingface:
+                all_providers.append(("huggingface", "🤗 HuggingFace", self.huggingface))
+            if self.deepseek:
+                all_providers.append(("deepseek", "🐳 DeepSeek", self.deepseek))
+            if self.gemini:
+                all_providers.append(("gemini", "🔍 Gemini", self.gemini))
 
+            # ===== 2. BUILD TRUE ROLE AGENT INSTANCES WITH MODELROUTERS =====
             active_role_agents = []
-            for pdef in provider_definitions:
-                if pdef["id"] in agents and pdef["provider"]:
-                    # Bind the provider instance to a clean ModelRouter
-                    router = ModelRouter([pdef["provider"]])
-                    # Instantiate generic RoleAgent representing the actor role
-                    agent_inst = RoleAgent(
-                        role=pdef["name"],
-                        skill=pdef["system_prompt"],
-                        router=router
-                    )
-                    active_role_agents.append({
-                        "agent": agent_inst,
-                        "max_tokens": pdef["max_tokens"],
-                        "id": pdef["id"]
-                    })
+            for idx, active_id in enumerate(agents):
+                # Locate the primary provider for this slot
+                primary_tuple = next((p for p in all_providers if p[0] == active_id), None)
+                if not primary_tuple:
+                    continue
 
-            # ===== AGENT DEBATE LOOP =====
+                # Prepare the providers sequence: starts with primary, followed by all other fallbacks
+                providers_for_router = [primary_tuple[2]]
+                for p in all_providers:
+                    if p[0] != active_id:
+                        providers_for_router.append(p[2])
+
+                # Instantiate ModelRouter with primary + fallback providers
+                router = ModelRouter(providers_for_router)
+
+                # Determine the true Agent Role name
+                role_name = self._get_role_name(mode, idx)
+
+                # Get standard role/skill instructions
+                system_prompt = self._draft_prompt(mode) if active_id != "gemini" else self._full_prompt(mode)
+
+                # Create genuine RoleAgent
+                role_agent = RoleAgent(
+                    role=role_name,
+                    skill=system_prompt,
+                    router=router
+                )
+
+                active_role_agents.append({
+                    "agent": role_agent,
+                    "id": active_id,
+                    "max_tokens": 8192 if active_id == "gemini" else (2048 if active_id == "huggingface" else 4096)
+                })
+
+            # ===== 3. AGENT DEBATE LOOP =====
             for item in active_role_agents:
                 agent_inst = item["agent"]
                 max_tokens = item["max_tokens"]
@@ -132,7 +119,9 @@ class DebateOrchestrator:
                         max_tokens=max_tokens
                     )
 
-                    response["agent"] = agent_inst.role
+                    provider_name = response.get("agent", "Unknown Provider")
+                    response["agent"] = f"{agent_inst.role} ({provider_name})"
+
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
                     debate_log["total_cost"] += response.get("cost", 0.0)
@@ -140,12 +129,12 @@ class DebateOrchestrator:
                     if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
                         if not draft_text:
                             draft_text = response.get("text", "")
-                            draft_agent = agent_inst.role
+                            draft_agent = response["agent"]
                 except Exception as e:
                     debate_log["responses"].append({
                         "status": "error",
                         "text": str(e)[:100],
-                        "agent": agent_inst.role,
+                        "agent": f"{agent_inst.role} (Error)",
                         "tokens": 0,
                         "cost": 0.0
                     })
@@ -194,6 +183,35 @@ class DebateOrchestrator:
             debate_log["final_answer"] = f"Error: {error_msg}"
 
         return debate_log
+
+    def _get_role_name(self, mode, index):
+        roles_map = {
+            "coding": [
+                "💻 Lead Developer",
+                "🏗️ Senior Architect",
+                "🔍 Code Reviewer",
+                "⚙️ DevOps Engineer"
+            ],
+            "research": [
+                "📚 Lead Researcher",
+                "📊 Subject Analyst",
+                "🔎 Fact Checker",
+                "📝 Scientific Writer"
+            ],
+            "thinking": [
+                "🧠 Systems Thinker",
+                "🧩 Logic Validator",
+                "🎯 Strategic Analyst",
+                "⚖️ Cognitive Analyst"
+            ]
+        }
+        roles = roles_map.get(mode, [
+            "🤖 Primary Expert",
+            "👥 Peer Reviewer",
+            "⚖️ Critical Critic",
+            "💡 Assistant"
+        ])
+        return roles[index % len(roles)]
 
     def _draft_prompt(self, mode):
         prompts = {
