@@ -143,20 +143,8 @@ def test_debate_orchestrator_agent_centric():
     )
 
     assert log["status"] == "success"
-    assert len(log["responses"]) == 2
-
-    resp_cf = log["responses"][0]
-    resp_groq = log["responses"][1]
-
-    assert resp_cf["status"] == "success"
-    assert "Lead Developer" in resp_cf["agent"]
-    assert "Cloudflare" in resp_cf["agent"]
-    assert "Response from Cloudflare provider" in resp_cf["text"]
-
-    assert resp_groq["status"] == "success"
-    assert "Senior Architect" in resp_groq["agent"]
-    assert "Groq" in resp_groq["agent"]
-    assert "Response from Groq provider" in resp_groq["text"]
+    # Even if 2 agents selected, it executes all 3 stages of collaboration pipeline
+    assert len(log["responses"]) == 3
 
 def test_role_agent_failover_and_fallback():
     p_failing = MockProvider("FailingPrimary", fail=True)
@@ -180,7 +168,6 @@ def test_role_agent_failover_and_fallback():
     assert p_healthy.call_count == 1
 
 def test_debate_collaboration_pipeline():
-    # 3 mock providers to verify step-by-step context forwarding (Draft -> Review -> Improve)
     p_a = MockProvider("Cloudflare", return_text="Pristine code block containing ```python\ndef hello(): pass\n``` that serves as our first draft response.")
     p_b = MockProvider("Groq", return_text="This is a constructive critique identifying issues with performance and code styling.")
     p_c = MockProvider("OpenRouter", return_text="An extremely polished final answer incorporating all the reviewer's critique on the draft and fixing style issues with ```python\ndef hello_final(): pass\n```.")
@@ -209,11 +196,52 @@ def test_debate_collaboration_pipeline():
     assert "constructive critique" in p_c.last_prompt
     assert "Analyze my design pattern" in p_c.last_prompt
 
-    # 3. Verify Candidate Improvement from Agent C
+    # 3. Verify Candidate Improvement from Agent C is the ONLY final answer content
     assert log["status"] == "success"
     assert "An extremely polished final answer" in log["final_answer"]
+    assert "Pristine code block" not in log["final_answer"]  # Draft must not be concatenated
+    assert "constructive critique" not in log["final_answer"]  # Review must not be concatenated
 
     # 4. Verify Release Gate executes on the final candidate
     assert "gate_score" in log
     assert log["gate_score"] is not None
     assert log["gate_passed"] is True
+
+def test_collaboration_pipeline_with_various_provider_counts():
+    p_cf = MockProvider("Cloudflare", return_text="Draft code block containing ```python\ndef test(): pass\n``` to serve as our draft.")
+    p_groq = MockProvider("Groq", return_text="Critique of code style, naming, and indentation with suggestions.")
+    p_or = MockProvider("OpenRouter", return_text="Highly optimized code block containing ```python\ndef test_final(): pass\n``` integrating the feedback.")
+
+    # A. Test 1 Provider Selected
+    orchestrator_1 = DebateOrchestrator(
+        gemini_agent=None,
+        cloudflare_agent=p_cf
+    )
+    log_1 = orchestrator_1.debate(
+        prompt="Build code",
+        agents=["cloudflare"],
+        mode="coding"
+    )
+    # Even with 1 provider, 3 execution stages happen (each using cloudflare)
+    assert len(log_1["responses"]) == 3
+    assert p_cf.call_count == 3
+
+    # Reset call counts
+    p_cf.call_count = 0
+    p_groq.call_count = 0
+
+    # B. Test 2 Providers Selected
+    orchestrator_2 = DebateOrchestrator(
+        gemini_agent=None,
+        cloudflare_agent=p_cf,
+        groq_agent=p_groq
+    )
+    log_2 = orchestrator_2.debate(
+        prompt="Build code",
+        agents=["cloudflare", "groq"],
+        mode="coding"
+    )
+    # Executes exactly 3 collaboration stages
+    assert len(log_2["responses"]) == 3
+    assert p_cf.call_count == 2   # Slot 1 and Slot 3 (0 % 2 and 2 % 2)
+    assert p_groq.call_count == 1  # Slot 2 (1 % 2)
