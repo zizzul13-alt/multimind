@@ -8,6 +8,7 @@ from agents.gemini import GeminiAgent
 from agents.groq import GroqAgent
 from agents.cloudflare import CloudflareAgent
 from agents.coze import CozeAgent
+from core.debate import DebateOrchestrator
 
 # A mock provider for testing
 class MockProvider(BaseProvider):
@@ -115,7 +116,6 @@ def test_unified_agent_structure():
     assert stats["🔍 Gemini"]["rate_limited"] is False
 
 def test_legacy_adapters_signature_safety():
-    # Verify that CloudflareAgent and CozeAgent still execute generate correctly even with custom signatures
     cf = CloudflareAgent(api_key="")
     response_cf = cf.generate("prompt", "sys", 1000, "general")
     assert response_cf["status"] == "error"
@@ -123,3 +123,36 @@ def test_legacy_adapters_signature_safety():
     coze = CozeAgent(api_key="")
     response_coze = coze.generate("prompt", "sys", 3, 2000)
     assert response_coze["status"] == "error"
+
+def test_debate_orchestrator_agent_centric():
+    # Instantiate DebateOrchestrator with mock providers and verify dynamic RoleAgent fallback
+    p_cf = MockProvider("Cloudflare", return_text="Response from Cloudflare provider")
+    p_groq = MockProvider("Groq", return_text="Response from Groq provider")
+
+    orchestrator = DebateOrchestrator(
+        gemini_agent=None,
+        cloudflare_agent=p_cf,
+        groq_agent=p_groq
+    )
+
+    # Run debate containing both active agents
+    log = orchestrator.debate(
+        prompt="Analyze my design pattern",
+        agents=["cloudflare", "groq"],
+        mode="coding"
+    )
+
+    assert log["status"] == "success"
+    assert len(log["responses"]) == 2
+
+    # Verify response structures
+    resp_cf = log["responses"][0]
+    resp_groq = log["responses"][1]
+
+    assert resp_cf["status"] == "success"
+    assert "Cloudflare" in resp_cf["agent"]
+    assert "Response from Cloudflare provider" in resp_cf["text"]
+
+    assert resp_groq["status"] == "success"
+    assert "Groq" in resp_groq["agent"]
+    assert "Response from Groq provider" in resp_groq["text"]
