@@ -1,6 +1,7 @@
 """
-Multi-agent debate orchestrator - Decoupled Agent-Centric Collaboration Pipeline
-Draft (Agent A) -> Review (Agent B) -> Improved Answer (Agent C) -> Release Gate
+Multi-agent debate orchestrator - Decoupled Agent-Centric Collaboration Pipeline (Task 3.1)
+Draft (Agent A) -> Review (Agent B) -> Improve (Agent C) -> Release Gate
+Collaboration stages are independent of the number of selected providers.
 """
 import time
 from datetime import datetime
@@ -62,12 +63,20 @@ class DebateOrchestrator:
             if self.gemini:
                 all_providers.append(("gemini", "🔍 Gemini", self.gemini))
 
-            # ===== 2. BUILD TRUE ROLE AGENT INSTANCES WITH MODELROUTERS =====
+            if not all_providers:
+                raise ValueError("No providers configured on DebateOrchestrator")
+
+            # ===== 2. BUILD EXACTLY THREE COLLABORATION STAGES =====
+            # 3 stages: 0 = Draft, 1 = Review, 2 = Improve
+            # Decoupled from the count of chosen agents (uses modulo round-robin)
             active_role_agents = []
-            for idx, active_id in enumerate(agents):
+            for stage_idx in range(3):
+                active_id = agents[stage_idx % len(agents)]
+
                 primary_tuple = next((p for p in all_providers if p[0] == active_id), None)
                 if not primary_tuple:
-                    continue
+                    primary_tuple = all_providers[0]
+                    active_id = primary_tuple[0]
 
                 providers_for_router = [primary_tuple[2]]
                 for p in all_providers:
@@ -75,7 +84,7 @@ class DebateOrchestrator:
                         providers_for_router.append(p[2])
 
                 router = ModelRouter(providers_for_router)
-                role_name = self._get_role_name(mode, idx)
+                role_name = self._get_role_name(mode, stage_idx)
                 system_prompt = self._draft_prompt(mode) if active_id != "gemini" else self._full_prompt(mode)
 
                 role_agent = RoleAgent(
@@ -95,17 +104,17 @@ class DebateOrchestrator:
             review_text = ""
             improve_text = ""
 
-            for idx, item in enumerate(active_role_agents):
+            for stage_idx, item in enumerate(active_role_agents):
                 agent_inst = item["agent"]
                 max_tokens = item["max_tokens"]
                 agent_id = item["id"]
 
-                # Gemini fallback check for improved candidate
+                # Gemini fallback check
                 if agent_id == "gemini" and improve_text:
                     continue
 
                 try:
-                    if idx == 0 or (idx > 0 and not draft_text):
+                    if stage_idx == 0:
                         # --- STAGE 1: DRAFT ---
                         response = agent_inst.execute(
                             task=full_prompt,
@@ -118,7 +127,7 @@ class DebateOrchestrator:
                         if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
                             draft_text = response.get("text", "")
 
-                    elif idx == 1 or (idx > 1 and not review_text):
+                    elif stage_idx == 1:
                         # --- STAGE 2: REVIEW (Receives user task + draft) ---
                         task_for_agent_b = f"""You are a reviewer. Your task is to review and critique the draft response generated for the user task below.
 
@@ -182,20 +191,8 @@ Generate the best possible final response, resolving any identified issues and i
                         "cost": 0.0
                     })
 
-            # ===== GABUNGIN SEMUA RESPONSE =====
-            all_texts = []
-            for r in debate_log["responses"]:
-                if r.get("status") == "success" and r.get("text") and len(r.get("text", "")) > 50:
-                    all_texts.append(f"### {r.get('agent', 'Unknown')}\n\n{r.get('text', '')}")
-
-            if all_texts:
-                final_answer = "\n\n---\n\n".join(all_texts)
-            elif draft_text and len(draft_text.strip()) > 50:
-                final_answer = draft_text
-            else:
-                final_answer = "❌ Semua agent gagal merespons. Coba lagi nanti."
-
-            # ===== CANDIDATE FOR RELEASE GATE =====
+            # ===== GABUNGIN RESPONSES ONLY FOR BACKWARD LOGS/METADATA =====
+            # The final displayed answer must come solely from the improved candidate (if available) or draft (if fallback)
             candidate_for_gate = improve_text if improve_text else (draft_text if draft_text else "")
 
             # ===== RELEASE GATE CHECK =====
@@ -205,28 +202,17 @@ Generate the best possible final response, resolving any identified issues and i
                 debate_log["gate_issues"] = issues
                 debate_log["gate_passed"] = passed
 
-                if improve_text:
-                    gate_header = f"✅ **Quality Check Passed** ({ReleaseGate.get_badge(score)})" if passed else f"⚠️ **Quality Warning** ({ReleaseGate.get_badge(score)})"
+                gate_header = f"✅ **Quality Check Passed** ({ReleaseGate.get_badge(score)})" if passed else f"⚠️ **Quality Warning** ({ReleaseGate.get_badge(score)})"
 
-                    final_answer = f"""{gate_header}
+                # Final Answer strictly contains the improved candidate response
+                final_answer = f"""{gate_header}
 
-{improve_text}"""
+{candidate_for_gate}"""
 
-                    if not passed:
-                        final_answer += f"\n\n---\n**Issues Found:**\n" + "\n".join(issues)
-                else:
-                    if not passed:
-                        final_answer = f"""⚠️ **Quality Warning** ({ReleaseGate.get_badge(score)})
-
-{final_answer}
-
----
-**Issues Found:**
-{chr(10).join(issues)}"""
-                    else:
-                        final_answer = f"""✅ **Quality Check Passed** ({ReleaseGate.get_badge(score)})
-
-{final_answer}"""
+                if not passed:
+                    final_answer += f"\n\n---\n**Issues Found:**\n" + "\n".join(issues)
+            else:
+                final_answer = candidate_for_gate if candidate_for_gate else "❌ Semua agent gagal merespons. Coba lagi nanti."
 
             debate_log["final_answer"] = final_answer
             debate_log["status"] = "success"
