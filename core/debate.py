@@ -1,6 +1,6 @@
 """
-Multi-agent debate orchestrator - Decoupled Agent-Centric Implementation
-Order & Fallback: True RoleAgent -> ModelRouter -> Providers
+Multi-agent debate orchestrator - Decoupled Agent-Centric Collaboration Pipeline
+Draft (Agent A) -> Review (Agent B) -> Improved Answer (Agent C) -> Release Gate
 """
 import time
 from datetime import datetime
@@ -47,9 +47,6 @@ class DebateOrchestrator:
                 if skill_prompt:
                     full_prompt = f"{skill_prompt}\n\nTASK:\n{full_prompt}"
 
-            draft_text = ""
-            draft_agent = ""
-
             # ===== 1. PREPARE ALL CONFIGURED PROVIDERS =====
             all_providers = []
             if self.cloudflare:
@@ -68,27 +65,19 @@ class DebateOrchestrator:
             # ===== 2. BUILD TRUE ROLE AGENT INSTANCES WITH MODELROUTERS =====
             active_role_agents = []
             for idx, active_id in enumerate(agents):
-                # Locate the primary provider for this slot
                 primary_tuple = next((p for p in all_providers if p[0] == active_id), None)
                 if not primary_tuple:
                     continue
 
-                # Prepare the providers sequence: starts with primary, followed by all other fallbacks
                 providers_for_router = [primary_tuple[2]]
                 for p in all_providers:
                     if p[0] != active_id:
                         providers_for_router.append(p[2])
 
-                # Instantiate ModelRouter with primary + fallback providers
                 router = ModelRouter(providers_for_router)
-
-                # Determine the true Agent Role name
                 role_name = self._get_role_name(mode, idx)
-
-                # Get standard role/skill instructions
                 system_prompt = self._draft_prompt(mode) if active_id != "gemini" else self._full_prompt(mode)
 
-                # Create genuine RoleAgent
                 role_agent = RoleAgent(
                     role=role_name,
                     skill=system_prompt,
@@ -101,35 +90,89 @@ class DebateOrchestrator:
                     "max_tokens": 8192 if active_id == "gemini" else (2048 if active_id == "huggingface" else 4096)
                 })
 
-            # ===== 3. AGENT DEBATE LOOP =====
-            for item in active_role_agents:
+            # ===== 3. COLLABORATION PIPELINE =====
+            draft_text = ""
+            review_text = ""
+            improve_text = ""
+
+            for idx, item in enumerate(active_role_agents):
                 agent_inst = item["agent"]
                 max_tokens = item["max_tokens"]
                 agent_id = item["id"]
 
-                # Gemini is a fallback-only provider unless it is the only one in sequence
-                if agent_id == "gemini" and draft_text:
+                # Gemini fallback check for improved candidate
+                if agent_id == "gemini" and improve_text:
                     continue
 
                 try:
-                    # Execute task generic Agent-centric way
-                    response = agent_inst.execute(
-                        task=full_prompt,
-                        mode=mode,
-                        max_tokens=max_tokens
-                    )
+                    if idx == 0 or (idx > 0 and not draft_text):
+                        # --- STAGE 1: DRAFT ---
+                        response = agent_inst.execute(
+                            task=full_prompt,
+                            mode=mode,
+                            max_tokens=max_tokens
+                        )
+                        provider_name = response.get("agent", "Unknown Provider")
+                        response["agent"] = f"{agent_inst.role} ({provider_name})"
 
-                    provider_name = response.get("agent", "Unknown Provider")
-                    response["agent"] = f"{agent_inst.role} ({provider_name})"
+                        if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                            draft_text = response.get("text", "")
+
+                    elif idx == 1 or (idx > 1 and not review_text):
+                        # --- STAGE 2: REVIEW (Receives user task + draft) ---
+                        task_for_agent_b = f"""You are a reviewer. Your task is to review and critique the draft response generated for the user task below.
+
+--- ORIGINAL TASK ---
+{full_prompt}
+
+--- DRAFT RESPONSE TO REVIEW ---
+{draft_text}
+
+---
+Provide a constructive critique, identifying issues, security/performance concerns, and suggested improvements."""
+
+                        response = agent_inst.execute(
+                            task=task_for_agent_b,
+                            mode=mode,
+                            max_tokens=max_tokens
+                        )
+                        provider_name = response.get("agent", "Unknown Provider")
+                        response["agent"] = f"{agent_inst.role} ({provider_name})"
+
+                        if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                            review_text = response.get("text", "")
+
+                    else:
+                        # --- STAGE 3: IMPROVE (Receives user task + draft + review) ---
+                        task_for_agent_c = f"""You are an improver. Your task is to produce the final, polished, and significantly improved answer based on the original user task, the initial draft, and the peer critique provided below.
+
+--- ORIGINAL TASK ---
+{full_prompt}
+
+--- INITIAL DRAFT ---
+{draft_text}
+
+--- PEER CRITIQUE ---
+{review_text}
+
+---
+Generate the best possible final response, resolving any identified issues and incorporating improvements."""
+
+                        response = agent_inst.execute(
+                            task=task_for_agent_c,
+                            mode=mode,
+                            max_tokens=max_tokens
+                        )
+                        provider_name = response.get("agent", "Unknown Provider")
+                        response["agent"] = f"{agent_inst.role} ({provider_name})"
+
+                        if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                            improve_text = response.get("text", "")
 
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
                     debate_log["total_cost"] += response.get("cost", 0.0)
 
-                    if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
-                        if not draft_text:
-                            draft_text = response.get("text", "")
-                            draft_agent = response["agent"]
                 except Exception as e:
                     debate_log["responses"].append({
                         "status": "error",
@@ -152,23 +195,36 @@ class DebateOrchestrator:
             else:
                 final_answer = "❌ Semua agent gagal merespons. Coba lagi nanti."
 
+            # ===== CANDIDATE FOR RELEASE GATE =====
+            candidate_for_gate = improve_text if improve_text else (draft_text if draft_text else "")
+
             # ===== RELEASE GATE CHECK =====
-            if final_answer and "❌" not in final_answer[:5]:
-                passed, issues, score = ReleaseGate.check(final_answer, mode)
+            if candidate_for_gate and "❌" not in candidate_for_gate[:5]:
+                passed, issues, score = ReleaseGate.check(candidate_for_gate, mode)
                 debate_log["gate_score"] = score
                 debate_log["gate_issues"] = issues
                 debate_log["gate_passed"] = passed
 
-                if not passed:
-                    final_answer = f"""⚠️ **Quality Warning** ({ReleaseGate.get_badge(score)})
+                if improve_text:
+                    gate_header = f"✅ **Quality Check Passed** ({ReleaseGate.get_badge(score)})" if passed else f"⚠️ **Quality Warning** ({ReleaseGate.get_badge(score)})"
+
+                    final_answer = f"""{gate_header}
+
+{improve_text}"""
+
+                    if not passed:
+                        final_answer += f"\n\n---\n**Issues Found:**\n" + "\n".join(issues)
+                else:
+                    if not passed:
+                        final_answer = f"""⚠️ **Quality Warning** ({ReleaseGate.get_badge(score)})
 
 {final_answer}
 
 ---
 **Issues Found:**
 {chr(10).join(issues)}"""
-                else:
-                    final_answer = f"""✅ **Quality Check Passed** ({ReleaseGate.get_badge(score)})
+                    else:
+                        final_answer = f"""✅ **Quality Check Passed** ({ReleaseGate.get_badge(score)})
 
 {final_answer}"""
 
