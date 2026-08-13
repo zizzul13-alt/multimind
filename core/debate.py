@@ -1,6 +1,6 @@
 """
-Multi-agent debate orchestrator - Decoupled Agent-Centric Collaboration Pipeline (Task 3.1)
-Draft (Agent A) -> Review (Agent B) -> Improve (Agent C) -> Release Gate
+Multi-agent debate orchestrator - Decoupled Agent-Centric Collaboration Pipeline (Task 4: Judge)
+Draft (Agent A) -> Review (Agent B) -> Improve (Agent C) -> Judge (Agent D) -> Release Gate
 Collaboration stages are independent of the number of selected providers.
 """
 import time
@@ -66,11 +66,11 @@ class DebateOrchestrator:
             if not all_providers:
                 raise ValueError("No providers configured on DebateOrchestrator")
 
-            # ===== 2. BUILD EXACTLY THREE COLLABORATION STAGES =====
-            # 3 stages: 0 = Draft, 1 = Review, 2 = Improve
+            # ===== 2. BUILD EXACTLY FOUR COLLABORATION STAGES =====
+            # 4 stages: 0 = Draft, 1 = Review, 2 = Improve, 3 = Judge
             # Decoupled from the count of chosen agents (uses modulo round-robin)
             active_role_agents = []
-            for stage_idx in range(3):
+            for stage_idx in range(4):
                 active_id = agents[stage_idx % len(agents)]
 
                 primary_tuple = next((p for p in all_providers if p[0] == active_id), None)
@@ -103,6 +103,7 @@ class DebateOrchestrator:
             draft_text = ""
             review_text = ""
             improve_text = ""
+            judge_text = ""
 
             for stage_idx, item in enumerate(active_role_agents):
                 agent_inst = item["agent"]
@@ -110,7 +111,7 @@ class DebateOrchestrator:
                 agent_id = item["id"]
 
                 # Gemini fallback check
-                if agent_id == "gemini" and improve_text:
+                if agent_id == "gemini" and judge_text:
                     continue
 
                 try:
@@ -151,7 +152,7 @@ Provide a constructive critique, identifying issues, security/performance concer
                         if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
                             review_text = response.get("text", "")
 
-                    else:
+                    elif stage_idx == 2:
                         # --- STAGE 3: IMPROVE (Receives user task + draft + review) ---
                         task_for_agent_c = f"""You are an improver. Your task is to produce the final, polished, and significantly improved answer based on the original user task, the initial draft, and the peer critique provided below.
 
@@ -178,6 +179,37 @@ Generate the best possible final response, resolving any identified issues and i
                         if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
                             improve_text = response.get("text", "")
 
+                    else:
+                        # --- STAGE 4: JUDGE (Receives user task + draft + review + improve) ---
+                        task_for_judge = f"""You are a panel judge. Your task is to evaluate and produce the final, definitive response based on the original user task, initial draft, critique, and improved candidate provided below.
+
+--- ORIGINAL TASK ---
+{full_prompt}
+
+--- INITIAL DRAFT ---
+{draft_text}
+
+--- PEER CRITIQUE ---
+{review_text}
+
+--- IMPROVED CANDIDATE ---
+{improve_text}
+
+---
+Evaluate the quality of the improved candidate in terms of correctness, completeness, consistency, and relevance.
+Either accept the improved candidate as-is, or output the final, polished response resolving any remaining concerns."""
+
+                        response = agent_inst.execute(
+                            task=task_for_judge,
+                            mode=mode,
+                            max_tokens=max_tokens
+                        )
+                        provider_name = response.get("agent", "Unknown Provider")
+                        response["agent"] = f"{agent_inst.role} ({provider_name})"
+
+                        if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                            judge_text = response.get("text", "")
+
                     debate_log["responses"].append(response)
                     debate_log["total_tokens"] += response.get("tokens", 0)
                     debate_log["total_cost"] += response.get("cost", 0.0)
@@ -192,8 +224,8 @@ Generate the best possible final response, resolving any identified issues and i
                     })
 
             # ===== GABUNGIN RESPONSES ONLY FOR BACKWARD LOGS/METADATA =====
-            # The final displayed answer must come solely from the improved candidate (if available) or draft (if fallback)
-            candidate_for_gate = improve_text if improve_text else (draft_text if draft_text else "")
+            # The final displayed answer must come solely from the Judge candidate (if available) with falls
+            candidate_for_gate = judge_text if judge_text else (improve_text if improve_text else (draft_text if draft_text else ""))
 
             # ===== RELEASE GATE CHECK =====
             if candidate_for_gate and "❌" not in candidate_for_gate[:5]:
@@ -204,7 +236,6 @@ Generate the best possible final response, resolving any identified issues and i
 
                 gate_header = f"✅ **Quality Check Passed** ({ReleaseGate.get_badge(score)})" if passed else f"⚠️ **Quality Warning** ({ReleaseGate.get_badge(score)})"
 
-                # Final Answer strictly contains the improved candidate response
                 final_answer = f"""{gate_header}
 
 {candidate_for_gate}"""
@@ -227,31 +258,35 @@ Generate the best possible final response, resolving any identified issues and i
         return debate_log
 
     def _get_role_name(self, mode, index):
+        if index == 3:
+            judges_map = {
+                "coding": "⚖️ Code Judge",
+                "research": "⚖️ Research Referee",
+                "thinking": "⚖️ Logic Arbiter"
+            }
+            return judges_map.get(mode, "⚖️ Panel Judge")
+
         roles_map = {
             "coding": [
                 "💻 Lead Developer",
                 "🏗️ Senior Architect",
-                "🔍 Code Reviewer",
-                "⚙️ DevOps Engineer"
+                "🔍 Code Reviewer"
             ],
             "research": [
                 "📚 Lead Researcher",
                 "📊 Subject Analyst",
-                "🔎 Fact Checker",
-                "📝 Scientific Writer"
+                "🔎 Fact Checker"
             ],
             "thinking": [
                 "🧠 Systems Thinker",
                 "🧩 Logic Validator",
-                "🎯 Strategic Analyst",
-                "⚖️ Cognitive Analyst"
+                "🎯 Strategic Analyst"
             ]
         }
         roles = roles_map.get(mode, [
             "🤖 Primary Expert",
             "👥 Peer Reviewer",
-            "⚖️ Critical Critic",
-            "💡 Assistant"
+            "⚖️ Critical Critic"
         ])
         return roles[index % len(roles)]
 
