@@ -1,6 +1,6 @@
 """
-Multi-agent debate orchestrator - Decoupled Agent-Centric Collaboration Pipeline (Task 4: Judge)
-Draft (Agent A) -> Review (Agent B) -> Improve (Agent C) -> Judge (Agent D) -> Release Gate
+Multi-agent debate orchestrator - Decoupled Agent-Centric Collaboration Pipeline (Task 5: True Multi-Agent Candidates)
+Agent A (Slot 1), Agent B (Slot 2), Agent C (Slot 3) -> Parallel Independent Candidates -> Judge (Agent D) -> Release Gate
 Collaboration stages are independent of the number of selected providers.
 """
 import time
@@ -99,10 +99,8 @@ class DebateOrchestrator:
                     "max_tokens": 8192 if active_id == "gemini" else (2048 if active_id == "huggingface" else 4096)
                 })
 
-            # ===== 3. COLLABORATION PIPELINE =====
-            draft_text = ""
-            review_text = ""
-            improve_text = ""
+            # ===== 3. COLLABORATION PIPELINE (PARALLEL CANDIDATES) =====
+            candidates = []
             judge_text = ""
 
             for stage_idx, item in enumerate(active_role_agents):
@@ -115,8 +113,8 @@ class DebateOrchestrator:
                     continue
 
                 try:
-                    if stage_idx == 0:
-                        # --- STAGE 1: DRAFT ---
+                    if stage_idx < 3:
+                        # --- STAGE 1, 2, 3: INDEPENDENT PARALLEL CANDIDATES ---
                         response = agent_inst.execute(
                             task=full_prompt,
                             mode=mode,
@@ -126,78 +124,32 @@ class DebateOrchestrator:
                         response["agent"] = f"{agent_inst.role} ({provider_name})"
 
                         if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
-                            draft_text = response.get("text", "")
-
-                    elif stage_idx == 1:
-                        # --- STAGE 2: REVIEW (Receives user task + draft) ---
-                        task_for_agent_b = f"""You are a reviewer. Your task is to review and critique the draft response generated for the user task below.
-
---- ORIGINAL TASK ---
-{full_prompt}
-
---- DRAFT RESPONSE TO REVIEW ---
-{draft_text}
-
----
-Provide a constructive critique, identifying issues, security/performance concerns, and suggested improvements."""
-
-                        response = agent_inst.execute(
-                            task=task_for_agent_b,
-                            mode=mode,
-                            max_tokens=max_tokens
-                        )
-                        provider_name = response.get("agent", "Unknown Provider")
-                        response["agent"] = f"{agent_inst.role} ({provider_name})"
-
-                        if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
-                            review_text = response.get("text", "")
-
-                    elif stage_idx == 2:
-                        # --- STAGE 3: IMPROVE (Receives user task + draft + review) ---
-                        task_for_agent_c = f"""You are an improver. Your task is to produce the final, polished, and significantly improved answer based on the original user task, the initial draft, and the peer critique provided below.
-
---- ORIGINAL TASK ---
-{full_prompt}
-
---- INITIAL DRAFT ---
-{draft_text}
-
---- PEER CRITIQUE ---
-{review_text}
-
----
-Generate the best possible final response, resolving any identified issues and incorporating improvements."""
-
-                        response = agent_inst.execute(
-                            task=task_for_agent_c,
-                            mode=mode,
-                            max_tokens=max_tokens
-                        )
-                        provider_name = response.get("agent", "Unknown Provider")
-                        response["agent"] = f"{agent_inst.role} ({provider_name})"
-
-                        if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
-                            improve_text = response.get("text", "")
+                            candidates.append({
+                                "role": agent_inst.role,
+                                "provider": provider_name,
+                                "text": response.get("text")
+                            })
 
                     else:
-                        # --- STAGE 4: JUDGE (Receives user task + draft + review + improve) ---
-                        task_for_judge = f"""You are a panel judge. Your task is to evaluate and produce the final, definitive response based on the original user task, initial draft, critique, and improved candidate provided below.
+                        # --- STAGE 4: JUDGE (Evaluates multiple candidates) ---
+                        if not candidates:
+                            raise ValueError("No candidates succeeded for the Judge to evaluate")
+
+                        # Assemble a clean comparison string of all successful independent candidates
+                        candidates_str = ""
+                        for c_idx, c in enumerate(candidates, 1):
+                            candidates_str += f"\n--- CANDIDATE {c_idx} ({c['role']} - {c['provider']}) ---\n{c['text']}\n"
+
+                        task_for_judge = f"""You are a panel judge. Your task is to evaluate and produce the final, definitive response based on the original user task and the multiple independent candidate responses provided below.
 
 --- ORIGINAL TASK ---
 {full_prompt}
 
---- INITIAL DRAFT ---
-{draft_text}
-
---- PEER CRITIQUE ---
-{review_text}
-
---- IMPROVED CANDIDATE ---
-{improve_text}
+{candidates_str}
 
 ---
-Evaluate the quality of the improved candidate in terms of correctness, completeness, consistency, and relevance.
-Either accept the improved candidate as-is, or output the final, polished response resolving any remaining concerns."""
+Evaluate the quality of the candidates in terms of correctness, completeness, consistency, and relevance.
+Select the best candidate or generate a final, polished response resolving any remaining concerns."""
 
                         response = agent_inst.execute(
                             task=task_for_judge,
@@ -225,7 +177,8 @@ Either accept the improved candidate as-is, or output the final, polished respon
 
             # ===== GABUNGIN RESPONSES ONLY FOR BACKWARD LOGS/METADATA =====
             # The final displayed answer must come solely from the Judge candidate (if available) with falls
-            candidate_for_gate = judge_text if judge_text else (improve_text if improve_text else (draft_text if draft_text else ""))
+            fallback_candidate = candidates[0]["text"] if candidates else ""
+            candidate_for_gate = judge_text if judge_text else fallback_candidate
 
             # ===== RELEASE GATE CHECK =====
             if candidate_for_gate and "❌" not in candidate_for_gate[:5]:
