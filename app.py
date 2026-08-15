@@ -68,7 +68,7 @@ def get_agents(user_id):
     
     return {
         "unified": unified,
-        "remote": remote,
+        "remote": remote,  # ← BARU!
         "gemini": GeminiAgent(api_keys.get("gemini_key", "")) if api_keys.get("gemini_key") else None,
         "deepseek": DeepSeekAgent(api_keys.get("deepseek_key", "")) if api_keys.get("deepseek_key") else None,
         "groq": GroqAgent(api_keys.get("groq_key", "")) if api_keys.get("groq_key") else None,
@@ -282,6 +282,7 @@ def show_new_chat():
     st.subheader("💭 New Chat")
     default_prompt = ""
     
+    # Setup state tracker agar tidak menimpa ketikan manual user
     if "last_generated" not in st.session_state:
         st.session_state.last_generated = ""
     
@@ -303,6 +304,7 @@ def show_new_chat():
         if template:
             st.caption(f"📝 {template['description']}")
             
+            # Deteksi variabel {{var}}
             import re
             variables = re.findall(r'\{\{(\w+)\}\}', template['prompt'])
             if variables:
@@ -311,9 +313,11 @@ def show_new_chat():
                 cols = st.columns(min(len(variables), 3))
                 for i, var in enumerate(variables):
                     with cols[i % 3]:
+                        # Gunakan key spesifik per template agar tidak tabrakan
                         vars_dict[var] = st.text_input(f"{var}", key=f"var_{var}_{selected_template}")
                 st.session_state.template_variables = vars_dict
             
+            # Auto-update prompt
             result = templates_mgr.apply_template(
                 selected_template,
                 st.session_state.get("template_variables", {})
@@ -321,8 +325,9 @@ def show_new_chat():
             
             if result:
                 new_prompt = result["prompt"]
-                default_prompt = new_prompt
+                default_prompt = new_prompt # Perbaikan 1: Update default_prompt agar preview muncul
                 
+                # Perbaikan 2 & 3: Hanya inject ke text_area jika template/variabel benar-benar berubah
                 if new_prompt != st.session_state.last_generated:
                     st.session_state.prompt_main = new_prompt
                     st.session_state.last_generated = new_prompt
@@ -345,6 +350,7 @@ def show_new_chat():
         render_status_badge("AI starts fresh - no history (SAVES TOKENS!)", variant="success")
 
     # ===== PROMPT =====
+    # Streamlit otomatis membaca dan menulis ke st.session_state.prompt_main melalui key ini
     prompt = st.text_area("Prompt:", height=150, placeholder="Paste template atau tulis bebas...", key="prompt_main")
     # ===== FILE UPLOAD =====
     uploaded_files = st.file_uploader(
@@ -429,6 +435,7 @@ def process_chat(prompt, uploaded_files, context_mode):
         session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
         active = st.session_state.active_agents
 
+        # ===== AGENT ROUTING =====
         if "unified" in active:
             response = unified.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
             debate_result = {
@@ -459,6 +466,8 @@ def process_chat(prompt, uploaded_files, context_mode):
                 skill=st.session_state.get("selected_skill", "default")
             )
 
+        # Save to memory & database (existing code)...
+        # ===== SAVE TO MEMORY =====
         if st.session_state.current_session:
             memory = st.session_state.memories.get(st.session_state.current_session['id'])
             if not memory:
@@ -466,6 +475,7 @@ def process_chat(prompt, uploaded_files, context_mode):
                 st.session_state.memories[st.session_state.current_session['id']] = memory
             memory.add_chat(prompt, debate_result.get("final_answer", ""))
 
+        # ===== SAVE TO DATABASE =====
         if st.session_state.current_session:
             db = get_db_manager(st.session_state.user_id)
             chat_data = {
@@ -494,6 +504,7 @@ def main():
                 
                 unified = agents.get("unified")
 
+                # Unified Agent Stats
                 if unified:
                     st.subheader("📊 Agent Stats")
                     stats = unified.get_stats()
