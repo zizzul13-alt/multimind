@@ -1,4 +1,4 @@
-/* MultiMind AI - CSS Foundation Rules */
+/* MultiMind AI - CSS Foundation & Semantic Control Styling */
 
 /* Base Container Primitives */
 .mm-card {
@@ -8,6 +8,11 @@
   padding: var(--mm-space-md);
   margin-bottom: var(--mm-space-md);
   color: var(--mm-color-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mm-card:hover {
+  border-color: var(--mm-color-border-hover);
 }
 
 .mm-card-elevated {
@@ -17,6 +22,11 @@
   padding: var(--mm-space-lg);
   margin-bottom: var(--mm-space-md);
   color: var(--mm-color-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mm-card-elevated:hover {
+  border-color: var(--mm-color-border-hover);
 }
 
 .mm-card-muted {
@@ -66,4 +76,117 @@
 /* Text Utilities */
 .mm-text-muted {
   color: var(--mm-color-text-muted);
+}
+
+/* ==========================================
+   Streamlit Native Control Visual Enhancements
+   Targeted semantic overrides using tokens
+   ========================================== */
+
+/* Text Inputs & Text Areas */
+.stTextInput input,
+.stTextArea textarea {
+  border-radius: var(--mm-radius-md);
+  border: 1px solid var(--mm-color-border);
+  background-color: var(--mm-color-surface-input);
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stTextInput input:hover,
+.stTextArea textarea:hover {
+  border-color: var(--mm-color-border-hover);
+}
+
+.stTextInput input:focus,
+.stTextArea textarea:focus {
+  border-color: var(--mm-color-border-focus);
+  box-shadow: 0 0 0 3px var(--mm-color-focus-ring);
+  outline: none;
+}
+
+.stTextInput input:disabled,
+.stTextArea textarea:disabled {
+  color: var(--mm-color-text-disabled);
+  opacity: 0.6;
+}
+
+/* Selectbox */
+.stSelectbox [data-baseweb="select"] {
+  border-radius: var(--mm-radius-md);
+  border: 1px solid var(--mm-color-border);
+  background-color: var(--mm-color-surface-input);
+  color: var(--mm-color-text);
+}
+
+.stSelectbox [data-baseweb="select"]:hover {
+  border-color: var(--mm-color-border-hover);
+}
+
+.stSelectbox [data-baseweb="select"]:focus-within {
+  border-color: var(--mm-color-border-focus);
+  box-shadow: 0 0 0 3px var(--mm-color-focus-ring);
+}
+
+/* Buttons */
+.stButton > button {
+  border-radius: var(--mm-radius-md);
+  font-weight: 500;
+  font-family: var(--mm-font-base);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stButton > button:focus {
+  border-color: var(--mm-color-border-focus);
+  box-shadow: 0 0 0 3px var(--mm-color-focus-ring);
+  outline: none;
+}
+
+/* Primary Button */
+.stButton > button[kind="primary"] {
+  background-color: var(--mm-color-primary);
+  color: var(--mm-color-text);
+  border: 1px solid var(--mm-color-primary);
+}
+
+.stButton > button[kind="primary"]:hover {
+  background-color: var(--mm-color-primary-hover);
+  border-color: var(--mm-color-primary-hover);
+}
+
+.stButton > button[kind="primary"]:active {
+  background-color: var(--mm-color-primary-active);
+  border-color: var(--mm-color-primary-active);
+}
+
+/* Secondary / Default Button */
+.stButton > button[kind="secondary"],
+.stButton > button:not([kind="primary"]) {
+  background-color: var(--mm-color-surface);
+  color: var(--mm-color-text);
+  border: 1px solid var(--mm-color-border);
+}
+
+.stButton > button[kind="secondary"]:hover,
+.stButton > button:not([kind="primary"]):hover {
+  background-color: var(--mm-color-surface-hover);
+  border-color: var(--mm-color-border-hover);
+}
+
+/* Expanders */
+.stExpander {
+  border-radius: var(--mm-radius-md);
+  border: 1px solid var(--mm-color-border);
+  background-color: var(--mm-color-surface);
+}
+
+.stExpander summary {
+  font-weight: 500;
+  color: var(--mm-color-text);
+}
+
+.stExpander summary:focus {
+  outline: 2px solid var(--mm-color-border-focus);
+  outline-offset: 2px;
 }
