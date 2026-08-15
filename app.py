@@ -117,28 +117,42 @@ def show_login_page():
 
 def show_sidebar():
     with st.sidebar:
-        st.title("🤖 MultiMind")
-        render_status_badge(f"👤 {st.session_state.user}", variant="info")
-        st.divider()
-        st.subheader("📂 Sessions")
+        st.markdown(
+            f"<div style='display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--mm-space-sm);'>"
+            f"<span class='mm-typo-heading'>🤖 MultiMind</span>"
+            f"<span class='mm-badge mm-badge-info'>👤 {st.session_state.user}</span>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+
+        # Prominent New Session creation control at the top
+        with st.expander("➕ New Session", expanded=False):
+            new_name = st.text_input("Name", placeholder="Project API...", key="sidebar_new_session_name")
+            new_mode = st.selectbox("Mode", ["coding", "research", "thinking"], key="sidebar_new_session_mode")
+            if st.button("Create Session", type="primary", key="sidebar_create_session_btn", use_container_width=True):
+                if new_name:
+                    session_id = str(uuid.uuid4())
+                    db = get_db_manager(st.session_state.user_id)
+                    db.create_session(session_id, new_name, new_mode)
+                    st.success("Created!")
+                    st.rerun()
+
+        st.caption("📂 SESSIONS")
         db = get_db_manager(st.session_state.user_id)
         sessions = db.get_sessions()
+        curr_session_id = st.session_state.current_session['id'] if st.session_state.current_session else None
+
         for i, s in enumerate(sessions):
             unique_key = f"sidebar_session_{i}_{s['id'][:8]}"
-            if st.button(f"📝 {s['name']}", key=unique_key):
+            is_active = (s['id'] == curr_session_id)
+            label = f"📌 {s['name']}" if is_active else f"📝 {s['name']}"
+            btn_kind = "primary" if is_active else "secondary"
+            if st.button(label, key=unique_key, use_container_width=True, kind=btn_kind):
                 st.session_state.current_session = s
                 if s['id'] not in st.session_state.memories:
                     st.session_state.memories[s['id']] = SessionMemory()
                 st.rerun()
-        with st.expander("➕ New Session"):
-            new_name = st.text_input("Name", placeholder="Project API...", key="sidebar_new_session_name")
-            new_mode = st.selectbox("Mode", ["coding", "research", "thinking"], key="sidebar_new_session_mode")
-            if st.button("Create", key="sidebar_create_session_btn", use_container_width=True):
-                if new_name:
-                    session_id = str(uuid.uuid4())
-                    db.create_session(session_id, new_name, new_mode)
-                    st.success("Created!")
-                    st.rerun()
+
         st.divider()
         
         # ===== SETTINGS =====
@@ -215,12 +229,20 @@ def show_sidebar():
 def show_session():
     session = st.session_state.current_session
     memory = st.session_state.memories.get(session['id'])
-    st.title(f"💬 {session['name']}")
+
+    # Session Header Title & Metadata
     st.markdown(
-        f"<span class='mm-badge mm-badge-info'>Mode: {session['mode']}</span> "
-        f"<span class='mm-typo-caption mm-text-muted'>Created: {session['created_at'][:10]}</span>",
+        f"<div style='display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--mm-space-sm);'>"
+        f"  <div class='mm-typo-heading'>💬 {session['name']}</div>"
+        f"  <div>"
+        f"    <span class='mm-badge mm-badge-info'>Mode: {session['mode']}</span> "
+        f"    <span class='mm-typo-caption mm-text-muted' style='margin-left: var(--mm-space-xs);'>Created: {session['created_at'][:10]}</span>"
+        f"  </div>"
+        f"</div>",
         unsafe_allow_html=True
     )
+
+    # Memory Metrics Bar
     if memory:
         stats = memory.get_stats()
         col1, col2, col3 = st.columns(3)
@@ -230,7 +252,10 @@ def show_session():
             st.metric("Short-term Chats", stats["short_term_chats"])
         with col3:
             st.metric("Free Space", f"{stats['free_percent']}%")
+
     st.divider()
+
+    # Chat Feed
     db = get_db_manager(st.session_state.user_id)
     chats = db.get_session_chats(session['id'])
     for chat in chats:
@@ -273,38 +298,49 @@ def show_session():
                 st.caption(f"🔤 {chat.get('tokens_used', 0)} tokens")
             with col2:
                 st.caption(f"💵 ${chat.get('cost', 0):.6f}")
+
     st.divider()
     if st.button("➕ New Chat", type="primary", key="new_chat_btn", use_container_width=True):
         st.session_state.new_chat = True
         st.rerun()
 
 def show_new_chat():
-    st.subheader("💭 New Chat")
+    st.markdown("<div class='mm-typo-heading' style='margin-bottom: var(--mm-space-md);'>💭 New Chat</div>", unsafe_allow_html=True)
     default_prompt = ""
     
     # Setup state tracker agar tidak menimpa ketikan manual user
     if "last_generated" not in st.session_state:
         st.session_state.last_generated = ""
     
-    # ===== TEMPLATE SELECTOR =====
-    templates_mgr = get_template_manager()
-    template_list = [("", "No Template")] + templates_mgr.get_template_names()
+    # ===== CONTROLS ROW: TEMPLATE & MODE =====
+    ctrl_col1, ctrl_col2 = st.columns([1, 1])
     
-    selected_template = st.selectbox(
-        "📋 Template (optional)",
-        [t[0] for t in template_list],
-        format_func=lambda x: dict(template_list)[x] if x != "" else "No Template",
-        key="template_selector",
-        help="Pilih template untuk quick prompt"
-    )
+    with ctrl_col1:
+        templates_mgr = get_template_manager()
+        template_list = [("", "No Template")] + templates_mgr.get_template_names()
+
+        selected_template = st.selectbox(
+            "📋 Template (optional)",
+            [t[0] for t in template_list],
+            format_func=lambda x: dict(template_list)[x] if x != "" else "No Template",
+            key="template_selector",
+            help="Pilih template untuk quick prompt"
+        )
     
+    with ctrl_col2:
+        chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
+        context_mode = "continue" if "Continue" in chat_mode else "standalone"
+        if context_mode == "continue":
+            render_status_badge("AI will see previous chats in this session", variant="info")
+        else:
+            render_status_badge("AI starts fresh - no history (SAVES TOKENS!)", variant="success")
+
     # Template variables
     if selected_template and selected_template != "":
         template = templates_mgr.get_template(selected_template)
         if template:
             st.caption(f"📝 {template['description']}")
             
-            # Deteksi variabel {{var}}
             import re
             variables = re.findall(r'\{\{(\w+)\}\}', template['prompt'])
             if variables:
@@ -313,11 +349,9 @@ def show_new_chat():
                 cols = st.columns(min(len(variables), 3))
                 for i, var in enumerate(variables):
                     with cols[i % 3]:
-                        # Gunakan key spesifik per template agar tidak tabrakan
                         vars_dict[var] = st.text_input(f"{var}", key=f"var_{var}_{selected_template}")
                 st.session_state.template_variables = vars_dict
             
-            # Auto-update prompt
             result = templates_mgr.apply_template(
                 selected_template,
                 st.session_state.get("template_variables", {})
@@ -325,9 +359,8 @@ def show_new_chat():
             
             if result:
                 new_prompt = result["prompt"]
-                default_prompt = new_prompt # Perbaikan 1: Update default_prompt agar preview muncul
+                default_prompt = new_prompt
                 
-                # Perbaikan 2 & 3: Hanya inject ke text_area jika template/variabel benar-benar berubah
                 if new_prompt != st.session_state.last_generated:
                     st.session_state.prompt_main = new_prompt
                     st.session_state.last_generated = new_prompt
@@ -340,18 +373,10 @@ def show_new_chat():
             f"<div class='mm-typo-caption mm-text-muted'>👆 Prompt otomatis masuk ke kolom di bawah, bisa langsung diedit.</div>",
             variant="muted"
         )
-    
-    # ===== CHAT MODE =====
-    chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
-    context_mode = "continue" if "Continue" in chat_mode else "standalone"
-    if context_mode == "continue":
-        render_status_badge("AI will see previous chats in this session", variant="info")
-    else:
-        render_status_badge("AI starts fresh - no history (SAVES TOKENS!)", variant="success")
 
     # ===== PROMPT =====
-    # Streamlit otomatis membaca dan menulis ke st.session_state.prompt_main melalui key ini
     prompt = st.text_area("Prompt:", height=150, placeholder="Paste template atau tulis bebas...", key="prompt_main")
+
     # ===== FILE UPLOAD =====
     uploaded_files = st.file_uploader(
         "📎 Files (optional)",
@@ -360,31 +385,34 @@ def show_new_chat():
         key="new_chat_files"
     )
     
-    # ===== TOKEN ESTIMATION =====
+    # ===== TOKEN ESTIMATION METRICS =====
     if prompt or uploaded_files:
         files_count = len(uploaded_files) if uploaded_files else 0
         session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
         estimate = TokenCounter.estimate_total(prompt or "", files_count=files_count, mode=session_mode, rounds=st.session_state.debate_rounds, compressor_on=st.session_state.compressor_enabled)
         warning = TokenCounter.get_warning_level(estimate["total_estimate"])
+
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("📝 Prompt", estimate["prompt_tokens"])
+            st.metric("📝 Prompt Tokens", estimate["prompt_tokens"])
         with col2:
-            st.metric("📎 Files", estimate["file_tokens"])
+            st.metric("📎 File Tokens", estimate["file_tokens"])
         with col3:
             st.metric("📊 Est. Total", estimate["total_estimate"])
         with col4:
             cost = TokenCounter.estimate_cost(estimate["total_estimate"])
             st.metric("💵 Est. Cost", f"${cost:.6f}")
+
         if warning["level"] == "high":
             render_status_badge("🔴 High token usage! Consider compressor.", variant="danger")
         elif warning["level"] == "medium":
             render_status_badge("🟡 Moderate token usage.", variant="warning")
     
-    # ===== SUBMIT =====
-    col1, col2 = st.columns(2)
+    # ===== ACTION BUTTONS =====
+    st.markdown("<div style='margin-top: var(--mm-space-md);'></div>", unsafe_allow_html=True)
+    col1, col2 = st.columns([3, 1])
     with col1:
-        if st.button("🚀 Send", type="primary", key="send_chat_btn", use_container_width=True):
+        if st.button("🚀 Send Prompt", type="primary", key="send_chat_btn", use_container_width=True):
             if prompt or uploaded_files:
                 process_chat(prompt, uploaded_files, context_mode)
             else:
@@ -535,26 +563,40 @@ def main():
             else:
                 show_session()
         else:
-            st.title("🤖 Welcome, " + st.session_state.user + "!")
-            render_status_badge("👈 Select or create a session in the sidebar to start", variant="info")
-            st.markdown("""
-            ### Getting Started:
-            1. Create a **New Session** in the sidebar
-            2. Pick a **Template** (optional) for quick prompts
-            3. Choose a **Skill** for agent behavior
-            4. Select mode: **coding**, **research**, or **thinking**
-            5. Start chatting with AI agents!
-
-            ### Features:
-            - 🤖 6 AI Agents (Gemini, Groq, Cloudflare, OpenRouter, HuggingFace, DeepSeek)
-            - 📋 Prompt Templates (Debug, Research, Design, etc)
-            - 🎯 Skills System (Code Reviewer, Researcher, Thinker)
-            - 🎯 Release Gates (Quality check otomatis)
-            - 💰 Token-efficient with compressor
-            - 📎 File upload (PDF, Excel, Images, Code)
-            - 🧠 Session memory (continue or standalone)
-            - 👥 Multi-user with separate databases
-            """)
+            card_container(
+                f"<div class='mm-typo-display'>🤖 Welcome, {st.session_state.user}!</div>"
+                f"<div class='mm-typo-subheading mm-text-muted' style='margin-top: var(--mm-space-xs);'>"
+                f"Multi-Agent AI Debate & Collaboration Surface</div>"
+                f"<div style='margin-top: var(--mm-space-md);'>"
+                f"<span class='mm-badge mm-badge-info'>👈 Select or create a session in the sidebar to start</span>"
+                f"</div>",
+                variant="elevated"
+            )
+            col1, col2 = st.columns(2)
+            with col1:
+                card_container(
+                    "<div class='mm-typo-heading' style='margin-bottom: var(--mm-space-sm);'>🚀 Getting Started</div>"
+                    "<ol class='mm-typo-body-small mm-text-muted' style='margin-bottom:0; padding-left: 1.2rem; line-height: 1.7;'>"
+                    "<li>Create a <b>New Session</b> in the sidebar</li>"
+                    "<li>Pick a <b>Template</b> (optional) for quick prompts</li>"
+                    "<li>Choose a <b>Skill</b> for specialized agent behavior</li>"
+                    "<li>Select mode: <b>coding</b>, <b>research</b>, or <b>thinking</b></li>"
+                    "<li>Start chatting with multi-agent debate!</li>"
+                    "</ol>",
+                    variant="default"
+                )
+            with col2:
+                card_container(
+                    "<div class='mm-typo-heading' style='margin-bottom: var(--mm-space-sm);'>✨ Core Capabilities</div>"
+                    "<ul class='mm-typo-body-small mm-text-muted' style='margin-bottom:0; padding-left: 1.2rem; line-height: 1.7;'>"
+                    "<li>🤖 <b>6 AI Agents</b> (Gemini, Groq, Cloudflare, OpenRouter, HuggingFace, DeepSeek)</li>"
+                    "<li>📋 <b>Prompt Templates & Skills System</b></li>"
+                    "<li>🎯 <b>Release Gates</b> (Automated quality check)</li>"
+                    "<li>💰 <b>Token Compressor</b> & File Analysis</li>"
+                    "<li>🧠 <b>Session Memory</b> (Continue or Standalone)</li>"
+                    "</ul>",
+                    variant="default"
+                )
 
 if __name__ == "__main__":
     main()
