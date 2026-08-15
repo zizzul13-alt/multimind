@@ -27,6 +27,7 @@ from database.manager import DatabaseManager
 from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 from utils.config import Config
+from ui.foundation import load_css, render_status_badge, card_container
 
 st.set_page_config(
     page_title=Config.APP_NAME,
@@ -34,6 +35,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+load_css()
 
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
@@ -240,12 +243,8 @@ def show_session():
                                 agent = r.get('agent', 'Unknown')
                                 text = r.get('text', '')
                                 status = r.get('status', 'unknown')
-                                if status == "success":
-                                    st.success(f"✅ Round {i} - {agent}")
-                                elif status == "error":
-                                    st.error(f"❌ Round {i} - {agent}")
-                                else:
-                                    st.warning(f"⚠️ Round {i} - {agent}")
+                                badge_variant = "success" if status == "success" else ("danger" if status == "error" else "warning")
+                                render_status_badge(f"Round {i} - {agent} ({status})", variant=badge_variant)
                                 if text:
                                     st.markdown(text)
                                 else:
