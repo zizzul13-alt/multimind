@@ -190,3 +190,29 @@
   outline: 2px solid var(--mm-color-border-focus);
   outline-offset: 2px;
 }
+
+/* Layout & Spacing Helpers */
+.mm-flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--mm-space-sm);
+}
+
+.mm-list-styled {
+  margin-bottom: 0;
+  padding-left: 1.2rem;
+  line-height: 1.7;
+}
+
+.mm-spacer-md {
+  margin-top: var(--mm-space-md);
+}
+
+.mm-subtitle-margin {
+  margin-top: var(--mm-space-xs);
+}
+
+.mm-section-title {
+  margin-bottom: var(--mm-space-sm);
+}
