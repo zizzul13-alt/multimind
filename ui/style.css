@@ -80,96 +80,113 @@
 
 /* ==========================================
    Streamlit Native Control Visual Enhancements
-   Clean, non-intrusive semantic overrides using tokens
+   Targeted semantic overrides using tokens
    ========================================== */
 
-/* Text Inputs, Text Areas, Selectboxes */
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea,
-.stSelectbox > div > div > div {
-  border-radius: var(--mm-radius-md) !important;
-  border: 1px solid var(--mm-color-border) !important;
-  background-color: var(--mm-color-surface-input) !important;
-  color: var(--mm-color-text) !important;
-  font-family: var(--mm-font-base) !important;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+/* Text Inputs & Text Areas */
+.stTextInput input,
+.stTextArea textarea {
+  border-radius: var(--mm-radius-md);
+  border: 1px solid var(--mm-color-border);
+  background-color: var(--mm-color-surface-input);
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.stTextInput > div > div > input:hover,
-.stTextArea > div > div > textarea:hover,
-.stSelectbox > div > div > div:hover {
-  border-color: var(--mm-color-border-hover) !important;
+.stTextInput input:hover,
+.stTextArea textarea:hover {
+  border-color: var(--mm-color-border-hover);
 }
 
-.stTextInput > div > div > input:focus,
-.stTextArea > div > div > textarea:focus {
-  border-color: var(--mm-color-border-focus) !important;
-  box-shadow: 0 0 0 3px var(--mm-color-focus-ring) !important;
-  outline: none !important;
+.stTextInput input:focus,
+.stTextArea textarea:focus {
+  border-color: var(--mm-color-border-focus);
+  box-shadow: 0 0 0 3px var(--mm-color-focus-ring);
+  outline: none;
 }
 
-.stTextInput > div > div > input:disabled,
-.stTextArea > div > div > textarea:disabled {
-  color: var(--mm-color-text-disabled) !important;
-  opacity: 0.6 !important;
+.stTextInput input:disabled,
+.stTextArea textarea:disabled {
+  color: var(--mm-color-text-disabled);
+  opacity: 0.6;
+}
+
+/* Selectbox */
+.stSelectbox [data-baseweb="select"] {
+  border-radius: var(--mm-radius-md);
+  border: 1px solid var(--mm-color-border);
+  background-color: var(--mm-color-surface-input);
+  color: var(--mm-color-text);
+}
+
+.stSelectbox [data-baseweb="select"]:hover {
+  border-color: var(--mm-color-border-hover);
+}
+
+.stSelectbox [data-baseweb="select"]:focus-within {
+  border-color: var(--mm-color-border-focus);
+  box-shadow: 0 0 0 3px var(--mm-color-focus-ring);
 }
 
 /* Buttons */
 .stButton > button {
-  border-radius: var(--mm-radius-md) !important;
-  font-weight: 500 !important;
-  font-family: var(--mm-font-base) !important;
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+  border-radius: var(--mm-radius-md);
+  font-weight: 500;
+  font-family: var(--mm-font-base);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .stButton > button:focus {
-  border-color: var(--mm-color-border-focus) !important;
-  box-shadow: 0 0 0 3px var(--mm-color-focus-ring) !important;
-  outline: none !important;
+  border-color: var(--mm-color-border-focus);
+  box-shadow: 0 0 0 3px var(--mm-color-focus-ring);
+  outline: none;
 }
 
+/* Primary Button */
 .stButton > button[kind="primary"] {
-  background-color: var(--mm-color-primary) !important;
-  color: #ffffff !important;
-  border: 1px solid var(--mm-color-primary) !important;
+  background-color: var(--mm-color-primary);
+  color: var(--mm-color-text);
+  border: 1px solid var(--mm-color-primary);
 }
 
 .stButton > button[kind="primary"]:hover {
-  background-color: var(--mm-color-primary-hover) !important;
-  border-color: var(--mm-color-primary-hover) !important;
+  background-color: var(--mm-color-primary-hover);
+  border-color: var(--mm-color-primary-hover);
 }
 
 .stButton > button[kind="primary"]:active {
-  background-color: var(--mm-color-primary-active) !important;
-  border-color: var(--mm-color-primary-active) !important;
+  background-color: var(--mm-color-primary-active);
+  border-color: var(--mm-color-primary-active);
 }
 
+/* Secondary / Default Button */
 .stButton > button[kind="secondary"],
 .stButton > button:not([kind="primary"]) {
-  background-color: var(--mm-color-surface) !important;
-  color: var(--mm-color-text) !important;
-  border: 1px solid var(--mm-color-border) !important;
+  background-color: var(--mm-color-surface);
+  color: var(--mm-color-text);
+  border: 1px solid var(--mm-color-border);
 }
 
 .stButton > button[kind="secondary"]:hover,
 .stButton > button:not([kind="primary"]):hover {
-  background-color: var(--mm-color-surface-hover) !important;
-  border-color: var(--mm-color-border-hover) !important;
+  background-color: var(--mm-color-surface-hover);
+  border-color: var(--mm-color-border-hover);
 }
 
 /* Expanders */
 .stExpander {
-  border-radius: var(--mm-radius-md) !important;
-  border: 1px solid var(--mm-color-border) !important;
-  background-color: var(--mm-color-surface) !important;
+  border-radius: var(--mm-radius-md);
+  border: 1px solid var(--mm-color-border);
+  background-color: var(--mm-color-surface);
 }
 
 .stExpander summary {
-  font-weight: 500 !important;
-  color: var(--mm-color-text) !important;
+  font-weight: 500;
+  color: var(--mm-color-text);
 }
 
 .stExpander summary:focus {
-  outline: 2px solid var(--mm-color-border-focus) !important;
-  outline-offset: 2px !important;
+  outline: 2px solid var(--mm-color-border-focus);
+  outline-offset: 2px;
 }
