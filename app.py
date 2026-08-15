@@ -118,27 +118,26 @@ def show_login_page():
 def show_sidebar():
     with st.sidebar:
         st.markdown(
-            f"<div style='display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--mm-space-sm);'>"
+            f"<div class='mm-flex-between'>"
             f"<span class='mm-typo-heading'>🤖 MultiMind</span>"
             f"<span class='mm-badge mm-badge-info'>👤 {st.session_state.user}</span>"
             f"</div>",
             unsafe_allow_html=True
         )
+        db = get_db_manager(st.session_state.user_id)
 
         # Prominent New Session creation control at the top
         with st.expander("➕ New Session", expanded=False):
             new_name = st.text_input("Name", placeholder="Project API...", key="sidebar_new_session_name")
             new_mode = st.selectbox("Mode", ["coding", "research", "thinking"], key="sidebar_new_session_mode")
-            if st.button("Create Session", type="primary", key="sidebar_create_session_btn", use_container_width=True):
+            if st.button("Create", key="sidebar_create_session_btn", use_container_width=True):
                 if new_name:
                     session_id = str(uuid.uuid4())
-                    db = get_db_manager(st.session_state.user_id)
                     db.create_session(session_id, new_name, new_mode)
                     st.success("Created!")
                     st.rerun()
 
         st.caption("📂 SESSIONS")
-        db = get_db_manager(st.session_state.user_id)
         sessions = db.get_sessions()
         curr_session_id = st.session_state.current_session['id'] if st.session_state.current_session else None
 
@@ -232,11 +231,11 @@ def show_session():
 
     # Session Header Title & Metadata
     st.markdown(
-        f"<div style='display:flex; align-items:center; justify-content:space-between; margin-bottom: var(--mm-space-sm);'>"
+        f"<div class='mm-flex-between'>"
         f"  <div class='mm-typo-heading'>💬 {session['name']}</div>"
         f"  <div>"
         f"    <span class='mm-badge mm-badge-info'>Mode: {session['mode']}</span> "
-        f"    <span class='mm-typo-caption mm-text-muted' style='margin-left: var(--mm-space-xs);'>Created: {session['created_at'][:10]}</span>"
+        f"    <span class='mm-typo-caption mm-text-muted'>Created: {session['created_at'][:10]}</span>"
         f"  </div>"
         f"</div>",
         unsafe_allow_html=True
@@ -409,10 +408,10 @@ def show_new_chat():
             render_status_badge("🟡 Moderate token usage.", variant="warning")
     
     # ===== ACTION BUTTONS =====
-    st.markdown("<div style='margin-top: var(--mm-space-md);'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='mm-spacer-md'></div>", unsafe_allow_html=True)
     col1, col2 = st.columns([3, 1])
     with col1:
-        if st.button("🚀 Send Prompt", type="primary", key="send_chat_btn", use_container_width=True):
+        if st.button("🚀 Send", type="primary", key="send_chat_btn", use_container_width=True):
             if prompt or uploaded_files:
                 process_chat(prompt, uploaded_files, context_mode)
             else:
@@ -565,9 +564,9 @@ def main():
         else:
             card_container(
                 f"<div class='mm-typo-display'>🤖 Welcome, {st.session_state.user}!</div>"
-                f"<div class='mm-typo-subheading mm-text-muted' style='margin-top: var(--mm-space-xs);'>"
+                f"<div class='mm-typo-subheading mm-text-muted mm-subtitle-margin'>"
                 f"Multi-Agent AI Debate & Collaboration Surface</div>"
-                f"<div style='margin-top: var(--mm-space-md);'>"
+                f"<div class='mm-spacer-md'>"
                 f"<span class='mm-badge mm-badge-info'>👈 Select or create a session in the sidebar to start</span>"
                 f"</div>",
                 variant="elevated"
@@ -575,8 +574,8 @@ def main():
             col1, col2 = st.columns(2)
             with col1:
                 card_container(
-                    "<div class='mm-typo-heading' style='margin-bottom: var(--mm-space-sm);'>🚀 Getting Started</div>"
-                    "<ol class='mm-typo-body-small mm-text-muted' style='margin-bottom:0; padding-left: 1.2rem; line-height: 1.7;'>"
+                    "<div class='mm-typo-heading mm-section-title'>🚀 Getting Started</div>"
+                    "<ol class='mm-typo-body-small mm-text-muted mm-list-styled'>"
                     "<li>Create a <b>New Session</b> in the sidebar</li>"
                     "<li>Pick a <b>Template</b> (optional) for quick prompts</li>"
                     "<li>Choose a <b>Skill</b> for specialized agent behavior</li>"
@@ -587,8 +586,8 @@ def main():
                 )
             with col2:
                 card_container(
-                    "<div class='mm-typo-heading' style='margin-bottom: var(--mm-space-sm);'>✨ Core Capabilities</div>"
-                    "<ul class='mm-typo-body-small mm-text-muted' style='margin-bottom:0; padding-left: 1.2rem; line-height: 1.7;'>"
+                    "<div class='mm-typo-heading mm-section-title'>✨ Core Capabilities</div>"
+                    "<ul class='mm-typo-body-small mm-text-muted mm-list-styled'>"
                     "<li>🤖 <b>6 AI Agents</b> (Gemini, Groq, Cloudflare, OpenRouter, HuggingFace, DeepSeek)</li>"
                     "<li>📋 <b>Prompt Templates & Skills System</b></li>"
                     "<li>🎯 <b>Release Gates</b> (Automated quality check)</li>"
