@@ -4,7 +4,7 @@ Unit tests for MultiMind UI Foundation (Design Tokens, CSS Foundation, and Primi
 import os
 import unittest
 from unittest.mock import patch, MagicMock
-from ui.tokens import TYPOGRAPHY, SPACING, RADIUS, COLORS, SURFACES, BORDERS
+from ui.tokens import TYPOGRAPHY, SPACING, RADIUS, COLORS, SURFACES, BORDERS, generate_tokens_css
 from ui.foundation import load_css, card_container, render_status_badge, CSS_PATH
 
 
@@ -14,7 +14,7 @@ class TestUIFoundation(unittest.TestCase):
         """Test that essential design tokens exist and contain mandatory semantic roles."""
         # Typography
         self.assertIn("roles", TYPOGRAPHY)
-        expected_typo_roles = ["display", "heading", "body", "body_small", "caption", "label", "mono"]
+        expected_typo_roles = ["display", "heading", "subheading", "body", "body_small", "caption", "label", "mono"]
         for role in expected_typo_roles:
             self.assertIn(role, TYPOGRAPHY["roles"])
             self.assertIn("size", TYPOGRAPHY["roles"][role])
@@ -42,6 +42,15 @@ class TestUIFoundation(unittest.TestCase):
         self.assertIn("surface", SURFACES)
         self.assertIn("default", BORDERS)
 
+    def test_generate_tokens_css(self):
+        """Test that generate_tokens_css produces CSS custom properties and typography classes."""
+        css = generate_tokens_css()
+        self.assertIn(":root {", css)
+        self.assertIn("--mm-color-primary:", css)
+        self.assertIn("--mm-space-md:", css)
+        self.assertIn(".mm-typo-display {", css)
+        self.assertIn(".mm-typo-body-small {", css)
+
     def test_css_foundation_file_exists(self):
         """Test that the CSS foundation file exists at the expected path."""
         self.assertTrue(os.path.exists(CSS_PATH), f"CSS file not found at {CSS_PATH}")
@@ -54,16 +63,20 @@ class TestUIFoundation(unittest.TestCase):
         args, kwargs = mock_markdown.call_args
         self.assertTrue(args[0].startswith("<style>"))
         self.assertTrue(args[0].endswith("</style>"))
+        self.assertIn("--mm-color-primary:", args[0])
         self.assertTrue(kwargs.get("unsafe_allow_html"))
 
     @patch("streamlit.markdown")
     def test_card_container_rendering(self, mock_markdown):
         """Test card_container helper renders correct HTML wrapper classes."""
-        card_container("<span>Test Content</span>", elevated=False)
+        card_container("<span>Test Content</span>", variant="default")
         mock_markdown.assert_called_with('<div class="mm-card"><span>Test Content</span></div>', unsafe_allow_html=True)
 
-        card_container("<span>Elevated Content</span>", elevated=True)
+        card_container("<span>Elevated Content</span>", variant="elevated")
         mock_markdown.assert_called_with('<div class="mm-card-elevated"><span>Elevated Content</span></div>', unsafe_allow_html=True)
+
+        card_container("<span>Muted Content</span>", variant="muted")
+        mock_markdown.assert_called_with('<div class="mm-card-muted"><span>Muted Content</span></div>', unsafe_allow_html=True)
 
     @patch("streamlit.markdown")
     def test_render_status_badge(self, mock_markdown):
