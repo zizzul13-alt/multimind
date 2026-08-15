@@ -27,6 +27,7 @@ from database.manager import DatabaseManager
 from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 from utils.config import Config
+from ui.foundation import load_css, render_status_badge, card_container
 
 st.set_page_config(
     page_title=Config.APP_NAME,
@@ -34,6 +35,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+load_css()
 
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
@@ -73,6 +76,7 @@ def get_agents(user_id):
         "openrouter": OpenRouterAgent(api_keys.get("openrouter_key", "")) if api_keys.get("openrouter_key") else None,
         "huggingface": HuggingFaceAgent(api_keys.get("huggingface_key", "")) if api_keys.get("huggingface_key") else None,
     }
+
 def get_db_manager(user_id):
     db_path = Config.get_db_path(user_id)
     return DatabaseManager(db_path)
@@ -86,9 +90,11 @@ def get_template_manager():
     return TemplateManager()
 
 def show_login_page():
-    st.title("🤖 MultiMind AI")
-    st.markdown("### Multi-Agent AI Debate System")
-    st.divider()
+    card_container(
+        "<div class='mm-typo-display'>🤖 MultiMind AI</div>"
+        "<div class='mm-typo-subheading mm-text-muted'>Multi-Agent AI Debate System</div>",
+        variant="elevated"
+    )
     st.subheader("🔐 Silakan Login")
     username = st.text_input("Username", placeholder="Ketik username bebas...", key="login_username_input")
     if st.button("🚀 Masuk", type="primary", key="login_button"):
@@ -99,12 +105,20 @@ def show_login_page():
         else:
             st.error("Username tidak boleh kosong!")
     st.divider()
-    st.info("💡 **Info:**\n\n- Masukkan username bebas (Izzul, Miko, atau nama lain)\n- Data kamu PRIVASI & terpisah dari user lain\n- API keys diatur oleh admin")
+    card_container(
+        "<div class='mm-typo-label'>💡 Info:</div>"
+        "<ul class='mm-typo-body-small mm-text-muted' style='margin-bottom:0; padding-left: 1.2rem;'>"
+        "<li>Masukkan username bebas (Izzul, Miko, atau nama lain)</li>"
+        "<li>Data kamu PRIVASI & terpisah dari user lain</li>"
+        "<li>API keys diatur oleh admin</li>"
+        "</ul>",
+        variant="muted"
+    )
 
 def show_sidebar():
     with st.sidebar:
         st.title("🤖 MultiMind")
-        st.success(f"👤 {st.session_state.user}")
+        render_status_badge(f"👤 {st.session_state.user}", variant="info")
         st.divider()
         st.subheader("📂 Sessions")
         db = get_db_manager(st.session_state.user_id)
@@ -202,7 +216,11 @@ def show_session():
     session = st.session_state.current_session
     memory = st.session_state.memories.get(session['id'])
     st.title(f"💬 {session['name']}")
-    st.caption(f"Mode: {session['mode']} | Created: {session['created_at'][:10]}")
+    st.markdown(
+        f"<span class='mm-badge mm-badge-info'>Mode: {session['mode']}</span> "
+        f"<span class='mm-typo-caption mm-text-muted'>Created: {session['created_at'][:10]}</span>",
+        unsafe_allow_html=True
+    )
     if memory:
         stats = memory.get_stats()
         col1, col2, col3 = st.columns(3)
@@ -240,12 +258,8 @@ def show_session():
                                 agent = r.get('agent', 'Unknown')
                                 text = r.get('text', '')
                                 status = r.get('status', 'unknown')
-                                if status == "success":
-                                    st.success(f"✅ Round {i} - {agent}")
-                                elif status == "error":
-                                    st.error(f"❌ Round {i} - {agent}")
-                                else:
-                                    st.warning(f"⚠️ Round {i} - {agent}")
+                                badge_variant = "success" if status == "success" else ("danger" if status == "error" else "warning")
+                                render_status_badge(f"Round {i} - {agent} ({status})", variant=badge_variant)
                                 if text:
                                     st.markdown(text)
                                 else:
@@ -320,16 +334,20 @@ def show_new_chat():
     
     # ===== SHOW TEMPLATE PREVIEW =====
     if selected_template and selected_template != "" and default_prompt:
-        st.info(f"📋 **Template Preview:**\n\n{default_prompt}")
-        st.caption("👆 Prompt otomatis masuk ke kolom di bawah, bisa langsung diedit.")
+        card_container(
+            f"<div class='mm-typo-label'>📋 Template Preview:</div>"
+            f"<pre class='mm-typo-mono'>{default_prompt}</pre>"
+            f"<div class='mm-typo-caption mm-text-muted'>👆 Prompt otomatis masuk ke kolom di bawah, bisa langsung diedit.</div>",
+            variant="muted"
+        )
     
     # ===== CHAT MODE =====
     chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
     context_mode = "continue" if "Continue" in chat_mode else "standalone"
     if context_mode == "continue":
-        st.info("AI will see previous chats in this session")
+        render_status_badge("AI will see previous chats in this session", variant="info")
     else:
-        st.success("AI starts fresh - no history (SAVES TOKENS!)")
+        render_status_badge("AI starts fresh - no history (SAVES TOKENS!)", variant="success")
 
     # ===== PROMPT =====
     # Streamlit otomatis membaca dan menulis ke st.session_state.prompt_main melalui key ini
@@ -359,9 +377,9 @@ def show_new_chat():
             cost = TokenCounter.estimate_cost(estimate["total_estimate"])
             st.metric("💵 Est. Cost", f"${cost:.6f}")
         if warning["level"] == "high":
-            st.warning(f"🔴 High token usage! Consider compressor.")
+            render_status_badge("🔴 High token usage! Consider compressor.", variant="danger")
         elif warning["level"] == "medium":
-            st.info(f"🟡 Moderate token usage.")
+            render_status_badge("🟡 Moderate token usage.", variant="warning")
     
     # ===== SUBMIT =====
     col1, col2 = st.columns(2)
@@ -518,7 +536,7 @@ def main():
                 show_session()
         else:
             st.title("🤖 Welcome, " + st.session_state.user + "!")
-            st.info("👈 Select or create a session in the sidebar to start")
+            render_status_badge("👈 Select or create a session in the sidebar to start", variant="info")
             st.markdown("""
             ### Getting Started:
             1. Create a **New Session** in the sidebar
