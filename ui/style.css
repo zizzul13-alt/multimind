@@ -1,51 +1,6 @@
-/* MultiMind AI - CSS Foundation */
+/* MultiMind AI - CSS Foundation Rules */
 
-:root {
-  /* Typography */
-  --mm-font-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --mm-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-
-  /* Spacing Scale */
-  --mm-space-xs: 0.25rem;
-  --mm-space-sm: 0.5rem;
-  --mm-space-md: 1rem;
-  --mm-space-lg: 1.5rem;
-  --mm-space-xl: 2rem;
-  --mm-space-2xl: 3rem;
-
-  /* Radius */
-  --mm-radius-none: 0px;
-  --mm-radius-sm: 0.25rem;
-  --mm-radius-md: 0.5rem;
-  --mm-radius-lg: 0.75rem;
-  --mm-radius-pill: 9999px;
-
-  /* Color Palette - Semantic Roles */
-  --mm-color-primary: #3B82F6;
-  --mm-color-primary-hover: #2563EB;
-  --mm-color-secondary: #64748B;
-  --mm-color-accent: #8B5CF6;
-  --mm-color-bg: #0F172A;
-  --mm-color-surface: #1E293B;
-  --mm-color-surface-elevated: #334155;
-  --mm-color-surface-muted: #0F172A;
-  --mm-color-text: #F8FAFC;
-  --mm-color-text-muted: #94A3B8;
-  --mm-color-border: #334155;
-  --mm-color-border-subtle: #1E293B;
-
-  /* Status Colors */
-  --mm-color-success: #10B981;
-  --mm-color-success-bg: rgba(16, 185, 129, 0.12);
-  --mm-color-warning: #F59E0B;
-  --mm-color-warning-bg: rgba(245, 158, 11, 0.12);
-  --mm-color-danger: #EF4444;
-  --mm-color-danger-bg: rgba(239, 68, 68, 0.12);
-  --mm-color-info: #3B82F6;
-  --mm-color-info-bg: rgba(59, 130, 246, 0.12);
-}
-
-/* Base Primitives */
+/* Base Container Primitives */
 .mm-card {
   background-color: var(--mm-color-surface);
   border: 1px solid var(--mm-color-border);
@@ -64,11 +19,20 @@
   color: var(--mm-color-text);
 }
 
+.mm-card-muted {
+  background-color: var(--mm-color-surface-muted);
+  border: 1px solid var(--mm-color-border-subtle);
+  border-radius: var(--mm-radius-md);
+  padding: var(--mm-space-sm) var(--mm-space-md);
+  margin-bottom: var(--mm-space-sm);
+  color: var(--mm-color-text-muted);
+}
+
 /* Badge Primitives */
 .mm-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.5rem;
+  padding: 0.2rem 0.55rem;
   border-radius: var(--mm-radius-pill);
   font-size: 0.75rem;
   font-weight: 600;
@@ -99,7 +63,7 @@
   border: 1px solid var(--mm-color-info);
 }
 
-/* Typography Utility Classes */
+/* Text Utilities */
 .mm-text-muted {
   color: var(--mm-color-text-muted);
 }

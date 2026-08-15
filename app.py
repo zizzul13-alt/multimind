@@ -68,7 +68,7 @@ def get_agents(user_id):
     
     return {
         "unified": unified,
-        "remote": remote,  # ← BARU!
+        "remote": remote,
         "gemini": GeminiAgent(api_keys.get("gemini_key", "")) if api_keys.get("gemini_key") else None,
         "deepseek": DeepSeekAgent(api_keys.get("deepseek_key", "")) if api_keys.get("deepseek_key") else None,
         "groq": GroqAgent(api_keys.get("groq_key", "")) if api_keys.get("groq_key") else None,
@@ -76,6 +76,7 @@ def get_agents(user_id):
         "openrouter": OpenRouterAgent(api_keys.get("openrouter_key", "")) if api_keys.get("openrouter_key") else None,
         "huggingface": HuggingFaceAgent(api_keys.get("huggingface_key", "")) if api_keys.get("huggingface_key") else None,
     }
+
 def get_db_manager(user_id):
     db_path = Config.get_db_path(user_id)
     return DatabaseManager(db_path)
@@ -89,9 +90,11 @@ def get_template_manager():
     return TemplateManager()
 
 def show_login_page():
-    st.title("🤖 MultiMind AI")
-    st.markdown("### Multi-Agent AI Debate System")
-    st.divider()
+    card_container(
+        "<div class='mm-typo-display'>🤖 MultiMind AI</div>"
+        "<div class='mm-typo-subheading mm-text-muted'>Multi-Agent AI Debate System</div>",
+        variant="elevated"
+    )
     st.subheader("🔐 Silakan Login")
     username = st.text_input("Username", placeholder="Ketik username bebas...", key="login_username_input")
     if st.button("🚀 Masuk", type="primary", key="login_button"):
@@ -102,12 +105,20 @@ def show_login_page():
         else:
             st.error("Username tidak boleh kosong!")
     st.divider()
-    st.info("💡 **Info:**\n\n- Masukkan username bebas (Izzul, Miko, atau nama lain)\n- Data kamu PRIVASI & terpisah dari user lain\n- API keys diatur oleh admin")
+    card_container(
+        "<div class='mm-typo-label'>💡 Info:</div>"
+        "<ul class='mm-typo-body-small mm-text-muted' style='margin-bottom:0; padding-left: 1.2rem;'>"
+        "<li>Masukkan username bebas (Izzul, Miko, atau nama lain)</li>"
+        "<li>Data kamu PRIVASI & terpisah dari user lain</li>"
+        "<li>API keys diatur oleh admin</li>"
+        "</ul>",
+        variant="muted"
+    )
 
 def show_sidebar():
     with st.sidebar:
         st.title("🤖 MultiMind")
-        st.success(f"👤 {st.session_state.user}")
+        render_status_badge(f"👤 {st.session_state.user}", variant="info")
         st.divider()
         st.subheader("📂 Sessions")
         db = get_db_manager(st.session_state.user_id)
@@ -205,7 +216,11 @@ def show_session():
     session = st.session_state.current_session
     memory = st.session_state.memories.get(session['id'])
     st.title(f"💬 {session['name']}")
-    st.caption(f"Mode: {session['mode']} | Created: {session['created_at'][:10]}")
+    st.markdown(
+        f"<span class='mm-badge mm-badge-info'>Mode: {session['mode']}</span> "
+        f"<span class='mm-typo-caption mm-text-muted'>Created: {session['created_at'][:10]}</span>",
+        unsafe_allow_html=True
+    )
     if memory:
         stats = memory.get_stats()
         col1, col2, col3 = st.columns(3)
@@ -267,7 +282,6 @@ def show_new_chat():
     st.subheader("💭 New Chat")
     default_prompt = ""
     
-    # Setup state tracker agar tidak menimpa ketikan manual user
     if "last_generated" not in st.session_state:
         st.session_state.last_generated = ""
     
@@ -289,7 +303,6 @@ def show_new_chat():
         if template:
             st.caption(f"📝 {template['description']}")
             
-            # Deteksi variabel {{var}}
             import re
             variables = re.findall(r'\{\{(\w+)\}\}', template['prompt'])
             if variables:
@@ -298,11 +311,9 @@ def show_new_chat():
                 cols = st.columns(min(len(variables), 3))
                 for i, var in enumerate(variables):
                     with cols[i % 3]:
-                        # Gunakan key spesifik per template agar tidak tabrakan
                         vars_dict[var] = st.text_input(f"{var}", key=f"var_{var}_{selected_template}")
                 st.session_state.template_variables = vars_dict
             
-            # Auto-update prompt
             result = templates_mgr.apply_template(
                 selected_template,
                 st.session_state.get("template_variables", {})
@@ -310,28 +321,30 @@ def show_new_chat():
             
             if result:
                 new_prompt = result["prompt"]
-                default_prompt = new_prompt # Perbaikan 1: Update default_prompt agar preview muncul
+                default_prompt = new_prompt
                 
-                # Perbaikan 2 & 3: Hanya inject ke text_area jika template/variabel benar-benar berubah
                 if new_prompt != st.session_state.last_generated:
                     st.session_state.prompt_main = new_prompt
                     st.session_state.last_generated = new_prompt
     
     # ===== SHOW TEMPLATE PREVIEW =====
     if selected_template and selected_template != "" and default_prompt:
-        st.info(f"📋 **Template Preview:**\n\n{default_prompt}")
-        st.caption("👆 Prompt otomatis masuk ke kolom di bawah, bisa langsung diedit.")
+        card_container(
+            f"<div class='mm-typo-label'>📋 Template Preview:</div>"
+            f"<pre class='mm-typo-mono'>{default_prompt}</pre>"
+            f"<div class='mm-typo-caption mm-text-muted'>👆 Prompt otomatis masuk ke kolom di bawah, bisa langsung diedit.</div>",
+            variant="muted"
+        )
     
     # ===== CHAT MODE =====
     chat_mode = st.radio("Chat Mode:", ["🧵 Continue (with history)", "📌 Standalone (fresh)"], horizontal=True, key="chat_mode_radio")
     context_mode = "continue" if "Continue" in chat_mode else "standalone"
     if context_mode == "continue":
-        st.info("AI will see previous chats in this session")
+        render_status_badge("AI will see previous chats in this session", variant="info")
     else:
-        st.success("AI starts fresh - no history (SAVES TOKENS!)")
+        render_status_badge("AI starts fresh - no history (SAVES TOKENS!)", variant="success")
 
     # ===== PROMPT =====
-    # Streamlit otomatis membaca dan menulis ke st.session_state.prompt_main melalui key ini
     prompt = st.text_area("Prompt:", height=150, placeholder="Paste template atau tulis bebas...", key="prompt_main")
     # ===== FILE UPLOAD =====
     uploaded_files = st.file_uploader(
@@ -358,9 +371,9 @@ def show_new_chat():
             cost = TokenCounter.estimate_cost(estimate["total_estimate"])
             st.metric("💵 Est. Cost", f"${cost:.6f}")
         if warning["level"] == "high":
-            st.warning(f"🔴 High token usage! Consider compressor.")
+            render_status_badge("🔴 High token usage! Consider compressor.", variant="danger")
         elif warning["level"] == "medium":
-            st.info(f"🟡 Moderate token usage.")
+            render_status_badge("🟡 Moderate token usage.", variant="warning")
     
     # ===== SUBMIT =====
     col1, col2 = st.columns(2)
@@ -416,7 +429,6 @@ def process_chat(prompt, uploaded_files, context_mode):
         session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
         active = st.session_state.active_agents
 
-        # ===== AGENT ROUTING =====
         if "unified" in active:
             response = unified.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
             debate_result = {
@@ -447,8 +459,6 @@ def process_chat(prompt, uploaded_files, context_mode):
                 skill=st.session_state.get("selected_skill", "default")
             )
 
-        # Save to memory & database (existing code)...
-        # ===== SAVE TO MEMORY =====
         if st.session_state.current_session:
             memory = st.session_state.memories.get(st.session_state.current_session['id'])
             if not memory:
@@ -456,7 +466,6 @@ def process_chat(prompt, uploaded_files, context_mode):
                 st.session_state.memories[st.session_state.current_session['id']] = memory
             memory.add_chat(prompt, debate_result.get("final_answer", ""))
 
-        # ===== SAVE TO DATABASE =====
         if st.session_state.current_session:
             db = get_db_manager(st.session_state.user_id)
             chat_data = {
@@ -485,7 +494,6 @@ def main():
                 
                 unified = agents.get("unified")
 
-                # Unified Agent Stats
                 if unified:
                     st.subheader("📊 Agent Stats")
                     stats = unified.get_stats()
@@ -517,7 +525,7 @@ def main():
                 show_session()
         else:
             st.title("🤖 Welcome, " + st.session_state.user + "!")
-            st.info("👈 Select or create a session in the sidebar to start")
+            render_status_badge("👈 Select or create a session in the sidebar to start", variant="info")
             st.markdown("""
             ### Getting Started:
             1. Create a **New Session** in the sidebar

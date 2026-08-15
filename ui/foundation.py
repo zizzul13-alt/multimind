@@ -4,23 +4,34 @@ Provides lightweight helpers for injecting foundation CSS and rendering reusable
 """
 import os
 import streamlit as st
-from ui.tokens import COLORS, SPACING, RADIUS
+from ui.tokens import generate_tokens_css
 
-# Path to CSS file relative to this module
 CSS_PATH = os.path.join(os.path.dirname(__file__), "style.css")
 
 
 def load_css():
-    """Reads CSS foundation file and injects it into Streamlit."""
+    """Dynamically loads token CSS custom properties and foundation CSS rules into Streamlit."""
+    token_css = generate_tokens_css()
+    static_css = ""
     if os.path.exists(CSS_PATH):
         with open(CSS_PATH, "r", encoding="utf-8") as f:
-            css_content = f.read()
-        st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
+            static_css = f.read()
+
+    combined_css = f"{token_css}\n\n{static_css}"
+    st.markdown(f"<style>{combined_css}</style>", unsafe_allow_html=True)
 
 
-def card_container(content_html: str, elevated: bool = False):
-    """Renders a card container surface using token-backed primitive styling."""
-    css_class = "mm-card-elevated" if elevated else "mm-card"
+def card_container(content_html: str, variant: str = "default"):
+    """Renders a card container surface using token-backed primitive styling.
+
+    Variants: default, elevated, muted
+    """
+    valid_variants = {
+        "default": "mm-card",
+        "elevated": "mm-card-elevated",
+        "muted": "mm-card-muted"
+    }
+    css_class = valid_variants.get(variant, "mm-card")
     st.markdown(f'<div class="{css_class}">{content_html}</div>', unsafe_allow_html=True)
 
 
