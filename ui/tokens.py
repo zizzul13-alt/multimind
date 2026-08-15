@@ -42,16 +42,24 @@ RADIUS = {
 COLORS = {
     "primary": "#3B82F6",
     "primary_hover": "#2563EB",
+    "primary_active": "#1D4ED8",
     "secondary": "#64748B",
+    "secondary_hover": "#475569",
     "accent": "#8B5CF6",
     "background": "#0F172A",
     "surface": "#1E293B",
     "surface_elevated": "#334155",
     "surface_muted": "#0F172A",
+    "surface_hover": "#273549",
+    "surface_input": "#0B132B",
     "text": "#F8FAFC",
     "text_muted": "#94A3B8",
+    "text_disabled": "#64748B",
     "border": "#334155",
     "border_subtle": "#1E293B",
+    "border_hover": "#475569",
+    "border_focus": "#3B82F6",
+    "focus_ring": "rgba(59, 130, 246, 0.35)",
     "success": "#10B981",
     "success_bg": "rgba(16, 185, 129, 0.12)",
     "warning": "#F59E0B",
@@ -67,14 +75,17 @@ SURFACES = {
     "background": COLORS["background"],
     "surface": COLORS["surface"],
     "surface_elevated": COLORS["surface_elevated"],
-    "surface_muted": COLORS["surface_muted"]
+    "surface_muted": COLORS["surface_muted"],
+    "surface_hover": COLORS["surface_hover"],
+    "surface_input": COLORS["surface_input"]
 }
 
 # Border Tokens
 BORDERS = {
     "default": f"1px solid {COLORS['border']}",
     "subtle": f"1px solid {COLORS['border_subtle']}",
-    "focus": f"2px solid {COLORS['primary']}"
+    "hover": f"1px solid {COLORS['border_hover']}",
+    "focus": f"2px solid {COLORS['border_focus']}"
 }
 
 

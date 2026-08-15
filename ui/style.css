@@ -1,4 +1,4 @@
-/* MultiMind AI - CSS Foundation Rules */
+/* MultiMind AI - CSS Foundation & Semantic Control Styling */
 
 /* Base Container Primitives */
 .mm-card {
@@ -8,6 +8,11 @@
   padding: var(--mm-space-md);
   margin-bottom: var(--mm-space-md);
   color: var(--mm-color-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mm-card:hover {
+  border-color: var(--mm-color-border-hover);
 }
 
 .mm-card-elevated {
@@ -17,6 +22,11 @@
   padding: var(--mm-space-lg);
   margin-bottom: var(--mm-space-md);
   color: var(--mm-color-text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mm-card-elevated:hover {
+  border-color: var(--mm-color-border-hover);
 }
 
 .mm-card-muted {
@@ -66,4 +76,100 @@
 /* Text Utilities */
 .mm-text-muted {
   color: var(--mm-color-text-muted);
+}
+
+/* ==========================================
+   Streamlit Native Control Visual Enhancements
+   Clean, non-intrusive semantic overrides using tokens
+   ========================================== */
+
+/* Text Inputs, Text Areas, Selectboxes */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div > div {
+  border-radius: var(--mm-radius-md) !important;
+  border: 1px solid var(--mm-color-border) !important;
+  background-color: var(--mm-color-surface-input) !important;
+  color: var(--mm-color-text) !important;
+  font-family: var(--mm-font-base) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.stTextInput > div > div > input:hover,
+.stTextArea > div > div > textarea:hover,
+.stSelectbox > div > div > div:hover {
+  border-color: var(--mm-color-border-hover) !important;
+}
+
+.stTextInput > div > div > input:focus,
+.stTextArea > div > div > textarea:focus {
+  border-color: var(--mm-color-border-focus) !important;
+  box-shadow: 0 0 0 3px var(--mm-color-focus-ring) !important;
+  outline: none !important;
+}
+
+.stTextInput > div > div > input:disabled,
+.stTextArea > div > div > textarea:disabled {
+  color: var(--mm-color-text-disabled) !important;
+  opacity: 0.6 !important;
+}
+
+/* Buttons */
+.stButton > button {
+  border-radius: var(--mm-radius-md) !important;
+  font-weight: 500 !important;
+  font-family: var(--mm-font-base) !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.stButton > button:focus {
+  border-color: var(--mm-color-border-focus) !important;
+  box-shadow: 0 0 0 3px var(--mm-color-focus-ring) !important;
+  outline: none !important;
+}
+
+.stButton > button[kind="primary"] {
+  background-color: var(--mm-color-primary) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--mm-color-primary) !important;
+}
+
+.stButton > button[kind="primary"]:hover {
+  background-color: var(--mm-color-primary-hover) !important;
+  border-color: var(--mm-color-primary-hover) !important;
+}
+
+.stButton > button[kind="primary"]:active {
+  background-color: var(--mm-color-primary-active) !important;
+  border-color: var(--mm-color-primary-active) !important;
+}
+
+.stButton > button[kind="secondary"],
+.stButton > button:not([kind="primary"]) {
+  background-color: var(--mm-color-surface) !important;
+  color: var(--mm-color-text) !important;
+  border: 1px solid var(--mm-color-border) !important;
+}
+
+.stButton > button[kind="secondary"]:hover,
+.stButton > button:not([kind="primary"]):hover {
+  background-color: var(--mm-color-surface-hover) !important;
+  border-color: var(--mm-color-border-hover) !important;
+}
+
+/* Expanders */
+.stExpander {
+  border-radius: var(--mm-radius-md) !important;
+  border: 1px solid var(--mm-color-border) !important;
+  background-color: var(--mm-color-surface) !important;
+}
+
+.stExpander summary {
+  font-weight: 500 !important;
+  color: var(--mm-color-text) !important;
+}
+
+.stExpander summary:focus {
+  outline: 2px solid var(--mm-color-border-focus) !important;
+  outline-offset: 2px !important;
 }

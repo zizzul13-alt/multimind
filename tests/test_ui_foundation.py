@@ -29,24 +29,32 @@ class TestUIFoundation(unittest.TestCase):
         for r in expected_radius:
             self.assertIn(r, RADIUS)
 
-        # Semantic Colors
+        # Semantic Colors (including refined interaction state and input tokens)
         expected_colors = [
-            "primary", "secondary", "accent", "background", "surface",
-            "surface_elevated", "surface_muted", "text", "text_muted",
-            "border", "success", "warning", "danger", "info"
+            "primary", "primary_hover", "primary_active", "secondary", "secondary_hover",
+            "accent", "background", "surface", "surface_elevated", "surface_muted",
+            "surface_hover", "surface_input", "text", "text_muted", "text_disabled",
+            "border", "border_subtle", "border_hover", "border_focus", "focus_ring",
+            "success", "warning", "danger", "info"
         ]
         for c in expected_colors:
             self.assertIn(c, COLORS)
 
         # Surfaces & Borders
         self.assertIn("surface", SURFACES)
+        self.assertIn("surface_hover", SURFACES)
+        self.assertIn("surface_input", SURFACES)
         self.assertIn("default", BORDERS)
+        self.assertIn("hover", BORDERS)
+        self.assertIn("focus", BORDERS)
 
     def test_generate_tokens_css(self):
         """Test that generate_tokens_css produces CSS custom properties and typography classes."""
         css = generate_tokens_css()
         self.assertIn(":root {", css)
         self.assertIn("--mm-color-primary:", css)
+        self.assertIn("--mm-color-surface-input:", css)
+        self.assertIn("--mm-color-focus-ring:", css)
         self.assertIn("--mm-space-md:", css)
         self.assertIn(".mm-typo-display {", css)
         self.assertIn(".mm-typo-body-small {", css)
@@ -64,6 +72,7 @@ class TestUIFoundation(unittest.TestCase):
         self.assertTrue(args[0].startswith("<style>"))
         self.assertTrue(args[0].endswith("</style>"))
         self.assertIn("--mm-color-primary:", args[0])
+        self.assertIn(".stButton > button", args[0])
         self.assertTrue(kwargs.get("unsafe_allow_html"))
 
     @patch("streamlit.markdown")
