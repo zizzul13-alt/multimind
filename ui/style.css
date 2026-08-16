@@ -196,6 +196,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--mm-space-xs);
   margin-bottom: var(--mm-space-sm);
 }
 
@@ -215,4 +217,19 @@
 
 .mm-section-title {
   margin-bottom: var(--mm-space-sm);
+}
+
+/* Responsive Utilities */
+.mm-typo-mono, pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+/* Targeted sidebar button text truncation */
+.stSidebar .stButton > button,
+.stSidebar .stButton > button p {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
