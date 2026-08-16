@@ -182,8 +182,8 @@ class TestThemeEngineCore(unittest.TestCase):
         self.assertEqual(demo_theme.display_name, "Neutral Contrast (Demo)")
 
         css_output = generate_theme_css("neutral-contrast-demo")
-        self.assertIn("--mm-color-primary: #2563EB;", css_output)
-        self.assertIn("--mm-color-surface: #131C2E;", css_output)
+        self.assertIn("--mm-color-primary: #D97706;", css_output)
+        self.assertIn("--mm-color-surface: #18181B;", css_output)
 
 if __name__ == "__main__":
     unittest.main()
