@@ -37,11 +37,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-load_css(st.session_state.get("active_theme", "default"))
-
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
-    st.session_state.active_theme = "default"
     st.session_state.user = None
     st.session_state.user_id = None
     st.session_state.current_session = None
@@ -56,6 +53,11 @@ if "initialized" not in st.session_state:
     st.session_state.selected_template = None
     st.session_state.template_variables = {}
     st.session_state.prompt_text = ""
+
+if "active_theme" not in st.session_state:
+    st.session_state.active_theme = "default"
+
+load_css(st.session_state.get("active_theme", "default"))
 
 @st.cache_resource
 def get_agents(user_id):
