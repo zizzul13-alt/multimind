@@ -103,5 +103,44 @@ class TestUIFoundation(unittest.TestCase):
         )
 
 
+
+    @patch("streamlit.button")
+    @patch("database.manager.DatabaseManager.get_sessions")
+    def test_sidebar_session_button_api(self, mock_get_sessions, mock_button):
+        """Test that sidebar session buttons call st.button with type= instead of invalid kind=."""
+        import streamlit as st
+        mock_get_sessions.return_value = [{"id": "session_12345678", "name": "Test Session Name", "mode": "coding"}]
+
+        # Ensure session_state has attribute access mock
+        class StateMock(dict):
+            def __getattr__(self, name):
+                return self.get(name)
+            def __setattr__(self, name, value):
+                self[name] = value
+
+        mock_st_state = StateMock({
+            "user": "testuser",
+            "user_id": "testuser",
+            "current_session": None,
+            "memories": {},
+            "initialized": True
+        })
+
+        with patch("streamlit.session_state", mock_st_state), patch("streamlit.sidebar"):
+            from app import show_sidebar
+            try:
+                show_sidebar()
+            except Exception:
+                pass
+
+        # Verify st.button was called with type= instead of kind=
+        for call in mock_button.call_args_list:
+            kwargs = call.kwargs
+            self.assertNotIn("kind", kwargs, "st.button was called with invalid argument 'kind'")
+            if "key" in kwargs and kwargs["key"].startswith("sidebar_session_"):
+                self.assertIn("type", kwargs)
+                self.assertIn(kwargs["type"], ["primary", "secondary"])
+
+
 if __name__ == "__main__":
     unittest.main()

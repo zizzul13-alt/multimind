@@ -148,7 +148,7 @@ def show_sidebar():
             truncated_name = s_name if len(s_name) <= 22 else f"{s_name[:19]}..."
             label = f"📌 {truncated_name}" if is_active else f"📝 {truncated_name}"
             btn_kind = "primary" if is_active else "secondary"
-            if st.button(label, key=unique_key, use_container_width=True, kind=btn_kind, help=s_name):
+            if st.button(label, key=unique_key, use_container_width=True, type=btn_kind, help=s_name):
                 st.session_state.current_session = s
                 if s['id'] not in st.session_state.memories:
                     st.session_state.memories[s['id']] = SessionMemory()

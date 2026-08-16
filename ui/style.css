@@ -144,25 +144,29 @@
 }
 
 /* Primary Button */
-.stButton > button[kind="primary"] {
+.stButton > button[kind="primary"],
+.stButton > button[data-testid="stBaseButton-primary"] {
   background-color: var(--mm-color-primary);
   color: var(--mm-color-text);
   border: 1px solid var(--mm-color-primary);
 }
 
-.stButton > button[kind="primary"]:hover {
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover {
   background-color: var(--mm-color-primary-hover);
   border-color: var(--mm-color-primary-hover);
 }
 
-.stButton > button[kind="primary"]:active {
+.stButton > button[kind="primary"]:active,
+.stButton > button[data-testid="stBaseButton-primary"]:active {
   background-color: var(--mm-color-primary-active);
   border-color: var(--mm-color-primary-active);
 }
 
 /* Secondary / Default Button */
 .stButton > button[kind="secondary"],
-.stButton > button:not([kind="primary"]) {
+.stButton > button[data-testid="stBaseButton-secondary"],
+.stButton > button:not([kind="primary"]):not([data-testid="stBaseButton-primary"]) {
   background-color: var(--mm-color-surface);
   color: var(--mm-color-text);
   border: 1px solid var(--mm-color-border);
