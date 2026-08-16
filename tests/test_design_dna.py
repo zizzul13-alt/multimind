@@ -1,79 +1,84 @@
 """
-Unit tests for MultiMind AI Design DNA Contract & Registry (S6.1)
+MultiMind AI - Design DNA Tests
+Unit tests covering Design DNA contract models, MaterialReference constraints,
+DNARegistry material ownership policies, and pure adapter mapping.
 """
 import unittest
+from ui.dna.models import DesignDNA, MaterialReference
+from ui.dna.registry import DNARegistry, get_registry
+from ui.dna.mapper import dna_to_theme
+from ui.themes.registry import ThemeRegistry
 from ui import tokens
-from ui.dna import (
-    MaterialReference,
-    DesignDNA,
-    dna_to_theme,
-    DNARegistry,
-    get_registry,
-    register_dna,
-    list_dna,
-    get_dna,
-)
-from ui.themes import ThemeRegistry, generate_theme_css
 
 
-class TestDesignDNAContractAndRegistry(unittest.TestCase):
+class TestDesignDNA(unittest.TestCase):
+    """Test suite verifying Design DNA contract models, material ownership policies, and mapper adapter."""
 
     def setUp(self):
-        """Creates fresh isolated registry instances for test execution."""
+        """Prepares isolated registry instances for clean test runs."""
         self.dna_registry = DNARegistry()
         self.theme_registry = ThemeRegistry()
 
-    def test_material_reference_validation_and_contradiction_checks(self):
-        """Tests MaterialReference contract validation and canonical scope_lock vs shared_resource_policy state rules."""
-        # Valid non-shared material
-        mat_non_shared = MaterialReference(
+    def test_material_reference_contract_validation_and_canonical_sharing_policy(self):
+        """Tests MaterialReference contract validation and canonical sharing policy rule enforcement."""
+        # Valid reference-specific (non-shared) material
+        mat_locked = MaterialReference(
             id="mat-editorial-paper",
             material_type="texture",
             scope_lock=True,
             shared_resource_policy="disallowed"
         )
-        mat_non_shared.validate()
+        mat_locked.validate()
 
-        # Valid shared material (e.g., standard font)
+        # Valid explicitly shared material
         mat_shared = MaterialReference(
-            id="mat-system-font",
+            id="mat-font-serif",
             material_type="font",
             scope_lock=False,
             shared_resource_policy="allowed"
         )
         mat_shared.validate()
 
-        # Invalid empty ID
-        mat_empty = MaterialReference(id="", material_type="font")
+        # Contradiction Case A: scope_lock=True but shared_resource_policy="allowed"
+        mat_invalid_a = MaterialReference(
+            id="mat-invalid-a",
+            material_type="font",
+            scope_lock=True,
+            shared_resource_policy="allowed"
+        )
         with self.assertRaises(ValueError):
-            mat_empty.validate()
+            mat_invalid_a.validate()
+
+        # Contradiction Case B: scope_lock=False but shared_resource_policy="disallowed"
+        mat_invalid_b = MaterialReference(
+            id="mat-invalid-b",
+            material_type="font",
+            scope_lock=False,
+            shared_resource_policy="disallowed"
+        )
+        with self.assertRaises(ValueError):
+            mat_invalid_b.validate()
+
+        # Invalid empty ID
+        mat_empty_id = MaterialReference(id="", material_type="font")
+        with self.assertRaises(ValueError):
+            mat_empty_id.validate()
 
         # Invalid policy string
-        mat_bad_policy = MaterialReference(id="m1", material_type="font", shared_resource_policy="invalid_policy")
+        mat_bad_policy = MaterialReference(
+            id="mat-bad-policy",
+            material_type="font",
+            shared_resource_policy="invalid_policy"
+        )
         with self.assertRaises(ValueError):
             mat_bad_policy.validate()
 
-        # Contradictory state: scope_lock=True with policy="allowed"
-        mat_contradictory_1 = MaterialReference(
-            id="m1", material_type="font", scope_lock=True, shared_resource_policy="allowed"
-        )
-        with self.assertRaises(ValueError):
-            mat_contradictory_1.validate()
-
-        # Contradictory state: scope_lock=False with policy="disallowed"
-        mat_contradictory_2 = MaterialReference(
-            id="m1", material_type="font", scope_lock=False, shared_resource_policy="disallowed"
-        )
-        with self.assertRaises(ValueError):
-            mat_contradictory_2.validate()
-
-    def test_design_dna_validation(self):
-        """Tests DesignDNA validation rules."""
+    def test_design_dna_contract_validation(self):
+        """Tests DesignDNA dataclass validation constraints."""
         dna = DesignDNA(
             id="test-editorial-dna",
             display_name="Test Editorial DNA",
             category="generic",
-            description="Generic test fixture for editorial visual direction.",
             materials=[
                 MaterialReference(
                     id="mat-editorial-paper",
@@ -326,10 +331,6 @@ class TestDesignDNAContractAndRegistry(unittest.TestCase):
         self.assertNotIn("custom_css", field_names)
         self.assertNotIn("css_blob", field_names)
 
-
-if __name__ == "__main__":
-    unittest.main()
-
     def test_s6_2_proof_dna_definitions_and_bootstrap(self):
         """Tests registration, mapping, idempotence, and differentiation of S6.2 real Design DNA proofs."""
         from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
@@ -390,3 +391,7 @@ if __name__ == "__main__":
         with self.assertRaises(ValueError):
             ensure_proof_dna_and_themes_registered()
         dna_b.display_name = original_display  # Restore
+
+
+if __name__ == "__main__":
+    unittest.main()
