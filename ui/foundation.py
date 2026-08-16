@@ -4,14 +4,14 @@ Provides lightweight helpers for injecting foundation CSS and rendering reusable
 """
 import os
 import streamlit as st
-from ui.tokens import generate_tokens_css
+from ui.themes import generate_theme_css
 
 CSS_PATH = os.path.join(os.path.dirname(__file__), "style.css")
 
 
 def load_css():
-    """Dynamically loads token CSS custom properties and foundation CSS rules into Streamlit."""
-    token_css = generate_tokens_css()
+    """Dynamically loads token CSS custom properties and foundation CSS rules into Streamlit via Theme Engine."""
+    token_css = generate_theme_css()
     static_css = ""
     if os.path.exists(CSS_PATH):
         with open(CSS_PATH, "r", encoding="utf-8") as f:
