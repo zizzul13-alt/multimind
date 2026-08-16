@@ -1,8 +1,9 @@
 """
 MultiMind AI - Design DNA Tests
 Unit tests covering Design DNA contract models, MaterialReference constraints,
-DNARegistry material ownership policies, and pure adapter mapping.
+DNARegistry material ownership policies, pure adapter mapping, and S6.2 proof definitions.
 """
+import copy
 import unittest
 from ui.dna.models import DesignDNA, MaterialReference
 from ui.dna.registry import DNARegistry, get_registry
@@ -385,12 +386,27 @@ class TestDesignDNA(unittest.TestCase):
         # 5. Idempotence verification (repeated call produces no errors or duplicate crashes)
         ensure_proof_dna_and_themes_registered()
 
-        # 6. Mismatch detection verification
-        original_display = dna_b.display_name
-        dna_b.display_name = "Conflicting Name Mismatch"
-        with self.assertRaises(ValueError):
-            ensure_proof_dna_and_themes_registered()
-        dna_b.display_name = original_display  # Restore
+    def test_s6_2_unmapped_dna_field_mutation_conflict_detection(self):
+        """Verifies that mutating a non-theme-mapped DNA field (e.g. visual_character) triggers conflict detection."""
+        from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
+        from ui.dna import get_registry as get_dna_registry
+
+        ensure_proof_dna_and_themes_registered()
+
+        dna_reg = get_dna_registry()
+        registered_dna = dna_reg.get_dna("chainsaw-man-inspired")
+        self.assertIsNotNone(registered_dna)
+
+        # Mutate an unmapped DNA descriptive field on the registered instance
+        original_val = registered_dna.visual_character
+        registered_dna.visual_character = "MUTATED_UNMAPPED_FIELD_VALUE"
+
+        try:
+            with self.assertRaises(ValueError):
+                ensure_proof_dna_and_themes_registered()
+        finally:
+            # Restore original value to prevent state contamination
+            registered_dna.visual_character = original_val
 
 
 if __name__ == "__main__":
