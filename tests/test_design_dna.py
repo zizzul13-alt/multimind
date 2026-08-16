@@ -329,3 +329,64 @@ class TestDesignDNAContractAndRegistry(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_s6_2_proof_dna_definitions_and_bootstrap(self):
+        """Tests registration, mapping, idempotence, and differentiation of S6.2 real Design DNA proofs."""
+        from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
+        from ui.dna import get_registry as get_dna_registry
+        from ui.themes import get_registry as get_theme_registry, generate_theme_css
+
+        # Run bootstrap
+        ensure_proof_dna_and_themes_registered()
+
+        dna_reg = get_dna_registry()
+        theme_reg = get_theme_registry()
+
+        proof_ids = ["japan-print-ink", "chainsaw-man-inspired", "mushishi-inspired"]
+
+        for pid in proof_ids:
+            # 1. Registered in DNARegistry
+            dna = dna_reg.get_dna(pid)
+            self.assertIsNotNone(dna, f"DesignDNA '{pid}' not found in DNARegistry.")
+            self.assertIn(dna.category, ("cultural", "anime"))
+            self.assertEqual(dna.materials, [], f"DesignDNA '{pid}' must be asset-free.")
+
+            # 2. Registered in ThemeRegistry
+            self.assertIn(pid, theme_reg._themes, f"Theme '{pid}' not found in ThemeRegistry.")
+            theme = theme_reg.get_theme(pid)
+            self.assertEqual(theme.id, pid)
+
+            # 3. CSS generation works
+            css = generate_theme_css(pid)
+            self.assertTrue(len(css) > 500)
+            self.assertIn("--mm-font-base:", css)
+            self.assertIn("--mm-color-primary:", css)
+
+        # 4. Semantic Differentiation Verification
+        dna_a = dna_reg.get_dna("japan-print-ink")
+        dna_b = dna_reg.get_dna("chainsaw-man-inspired")
+        dna_c = dna_reg.get_dna("mushishi-inspired")
+
+        # Backgrounds differ
+        self.assertNotEqual(dna_a.colors["background"], dna_b.colors["background"])
+        self.assertNotEqual(dna_b.colors["background"], dna_c.colors["background"])
+        self.assertNotEqual(dna_a.colors["background"], dna_c.colors["background"])
+
+        # Radii differ (0px vs 2px vs 8px)
+        self.assertEqual(dna_b.radius["md"], "0px")
+        self.assertEqual(dna_a.radius["md"], "2px")
+        self.assertEqual(dna_c.radius["md"], "8px")
+
+        # Typography hierarchy font families differ
+        self.assertIn("Georgia", dna_a.typography["font_family_base"])
+        self.assertIn("Impact", dna_b.typography["font_family_base"])
+
+        # 5. Idempotence verification (repeated call produces no errors or duplicate crashes)
+        ensure_proof_dna_and_themes_registered()
+
+        # 6. Mismatch detection verification
+        original_display = dna_b.display_name
+        dna_b.display_name = "Conflicting Name Mismatch"
+        with self.assertRaises(ValueError):
+            ensure_proof_dna_and_themes_registered()
+        dna_b.display_name = original_display  # Restore

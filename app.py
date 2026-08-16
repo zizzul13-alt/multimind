@@ -28,7 +28,11 @@ from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 from utils.config import Config
 from ui.foundation import load_css, render_status_badge, card_container
+from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
 from ui.themes import list_themes
+
+# Ensure S6.2 proof Design DNA and themes are registered prior to runtime selector
+ensure_proof_dna_and_themes_registered()
 
 st.set_page_config(
     page_title=Config.APP_NAME,
@@ -628,3 +632,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
+
+ensure_proof_dna_and_themes_registered()
