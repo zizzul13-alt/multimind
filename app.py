@@ -632,6 +632,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
-
-ensure_proof_dna_and_themes_registered()
