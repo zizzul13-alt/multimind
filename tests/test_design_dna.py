@@ -1,79 +1,85 @@
 """
-Unit tests for MultiMind AI Design DNA Contract & Registry (S6.1)
+MultiMind AI - Design DNA Tests
+Unit tests covering Design DNA contract models, MaterialReference constraints,
+DNARegistry material ownership policies, pure adapter mapping, and S6.2 proof definitions.
 """
+import copy
 import unittest
+from ui.dna.models import DesignDNA, MaterialReference
+from ui.dna.registry import DNARegistry, get_registry
+from ui.dna.mapper import dna_to_theme
+from ui.themes.registry import ThemeRegistry
 from ui import tokens
-from ui.dna import (
-    MaterialReference,
-    DesignDNA,
-    dna_to_theme,
-    DNARegistry,
-    get_registry,
-    register_dna,
-    list_dna,
-    get_dna,
-)
-from ui.themes import ThemeRegistry, generate_theme_css
 
 
-class TestDesignDNAContractAndRegistry(unittest.TestCase):
+class TestDesignDNA(unittest.TestCase):
+    """Test suite verifying Design DNA contract models, material ownership policies, and mapper adapter."""
 
     def setUp(self):
-        """Creates fresh isolated registry instances for test execution."""
+        """Prepares isolated registry instances for clean test runs."""
         self.dna_registry = DNARegistry()
         self.theme_registry = ThemeRegistry()
 
-    def test_material_reference_validation_and_contradiction_checks(self):
-        """Tests MaterialReference contract validation and canonical scope_lock vs shared_resource_policy state rules."""
-        # Valid non-shared material
-        mat_non_shared = MaterialReference(
+    def test_material_reference_contract_validation_and_canonical_sharing_policy(self):
+        """Tests MaterialReference contract validation and canonical sharing policy rule enforcement."""
+        # Valid reference-specific (non-shared) material
+        mat_locked = MaterialReference(
             id="mat-editorial-paper",
             material_type="texture",
             scope_lock=True,
             shared_resource_policy="disallowed"
         )
-        mat_non_shared.validate()
+        mat_locked.validate()
 
-        # Valid shared material (e.g., standard font)
+        # Valid explicitly shared material
         mat_shared = MaterialReference(
-            id="mat-system-font",
+            id="mat-font-serif",
             material_type="font",
             scope_lock=False,
             shared_resource_policy="allowed"
         )
         mat_shared.validate()
 
-        # Invalid empty ID
-        mat_empty = MaterialReference(id="", material_type="font")
+        # Contradiction Case A: scope_lock=True but shared_resource_policy="allowed"
+        mat_invalid_a = MaterialReference(
+            id="mat-invalid-a",
+            material_type="font",
+            scope_lock=True,
+            shared_resource_policy="allowed"
+        )
         with self.assertRaises(ValueError):
-            mat_empty.validate()
+            mat_invalid_a.validate()
+
+        # Contradiction Case B: scope_lock=False but shared_resource_policy="disallowed"
+        mat_invalid_b = MaterialReference(
+            id="mat-invalid-b",
+            material_type="font",
+            scope_lock=False,
+            shared_resource_policy="disallowed"
+        )
+        with self.assertRaises(ValueError):
+            mat_invalid_b.validate()
+
+        # Invalid empty ID
+        mat_empty_id = MaterialReference(id="", material_type="font")
+        with self.assertRaises(ValueError):
+            mat_empty_id.validate()
 
         # Invalid policy string
-        mat_bad_policy = MaterialReference(id="m1", material_type="font", shared_resource_policy="invalid_policy")
+        mat_bad_policy = MaterialReference(
+            id="mat-bad-policy",
+            material_type="font",
+            shared_resource_policy="invalid_policy"
+        )
         with self.assertRaises(ValueError):
             mat_bad_policy.validate()
 
-        # Contradictory state: scope_lock=True with policy="allowed"
-        mat_contradictory_1 = MaterialReference(
-            id="m1", material_type="font", scope_lock=True, shared_resource_policy="allowed"
-        )
-        with self.assertRaises(ValueError):
-            mat_contradictory_1.validate()
-
-        # Contradictory state: scope_lock=False with policy="disallowed"
-        mat_contradictory_2 = MaterialReference(
-            id="m1", material_type="font", scope_lock=False, shared_resource_policy="disallowed"
-        )
-        with self.assertRaises(ValueError):
-            mat_contradictory_2.validate()
-
-    def test_design_dna_validation(self):
-        """Tests DesignDNA validation rules."""
+    def test_design_dna_contract_validation(self):
+        """Tests DesignDNA dataclass validation constraints."""
         dna = DesignDNA(
             id="test-editorial-dna",
             display_name="Test Editorial DNA",
             category="generic",
-            description="Generic test fixture for editorial visual direction.",
             materials=[
                 MaterialReference(
                     id="mat-editorial-paper",
@@ -325,6 +331,82 @@ class TestDesignDNAContractAndRegistry(unittest.TestCase):
         self.assertNotIn("layout_mode", field_names)
         self.assertNotIn("custom_css", field_names)
         self.assertNotIn("css_blob", field_names)
+
+    def test_s6_2_proof_dna_definitions_and_bootstrap(self):
+        """Tests registration, mapping, idempotence, and differentiation of S6.2 real Design DNA proofs."""
+        from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
+        from ui.dna import get_registry as get_dna_registry
+        from ui.themes import list_themes, get_theme, generate_theme_css
+
+        # Run bootstrap
+        ensure_proof_dna_and_themes_registered()
+
+        dna_reg = get_dna_registry()
+        registered_theme_map = {t.id: t for t in list_themes()}
+
+        proof_ids = ["japan-print-ink", "chainsaw-man-inspired", "mushishi-inspired"]
+
+        for pid in proof_ids:
+            # 1. Registered in DNARegistry
+            dna = dna_reg.get_dna(pid)
+            self.assertIsNotNone(dna, f"DesignDNA '{pid}' not found in DNARegistry.")
+            self.assertIn(dna.category, ("cultural", "anime"))
+            self.assertEqual(dna.materials, [], f"DesignDNA '{pid}' must be asset-free.")
+
+            # 2. Registered in ThemeRegistry (verified using public list_themes list)
+            self.assertIn(pid, registered_theme_map, f"Theme '{pid}' not found in public list_themes().")
+            theme = get_theme(pid)
+            self.assertEqual(theme.id, pid)
+
+            # 3. CSS generation works
+            css = generate_theme_css(pid)
+            self.assertTrue(len(css) > 500)
+            self.assertIn("--mm-font-base:", css)
+            self.assertIn("--mm-color-primary:", css)
+
+        # 4. Semantic Differentiation Verification
+        dna_a = dna_reg.get_dna("japan-print-ink")
+        dna_b = dna_reg.get_dna("chainsaw-man-inspired")
+        dna_c = dna_reg.get_dna("mushishi-inspired")
+
+        # Backgrounds differ
+        self.assertNotEqual(dna_a.colors["background"], dna_b.colors["background"])
+        self.assertNotEqual(dna_b.colors["background"], dna_c.colors["background"])
+        self.assertNotEqual(dna_a.colors["background"], dna_c.colors["background"])
+
+        # Radii differ (0px vs 2px vs 8px)
+        self.assertEqual(dna_b.radius["md"], "0px")
+        self.assertEqual(dna_a.radius["md"], "2px")
+        self.assertEqual(dna_c.radius["md"], "8px")
+
+        # Typography hierarchy font families differ
+        self.assertIn("Georgia", dna_a.typography["font_family_base"])
+        self.assertIn("Impact", dna_b.typography["font_family_base"])
+
+        # 5. Idempotence verification (repeated call produces no errors or duplicate crashes)
+        ensure_proof_dna_and_themes_registered()
+
+    def test_s6_2_unmapped_dna_field_mutation_conflict_detection(self):
+        """Verifies that mutating a non-theme-mapped DNA field (e.g. visual_character) triggers conflict detection."""
+        from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
+        from ui.dna import get_registry as get_dna_registry
+
+        ensure_proof_dna_and_themes_registered()
+
+        dna_reg = get_dna_registry()
+        registered_dna = dna_reg.get_dna("chainsaw-man-inspired")
+        self.assertIsNotNone(registered_dna)
+
+        # Mutate an unmapped DNA descriptive field on the registered instance
+        original_val = registered_dna.visual_character
+        registered_dna.visual_character = "MUTATED_UNMAPPED_FIELD_VALUE"
+
+        try:
+            with self.assertRaises(ValueError):
+                ensure_proof_dna_and_themes_registered()
+        finally:
+            # Restore original value to prevent state contamination
+            registered_dna.visual_character = original_val
 
 
 if __name__ == "__main__":
