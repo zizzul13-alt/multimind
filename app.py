@@ -28,6 +28,7 @@ from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 from utils.config import Config
 from ui.foundation import load_css, render_status_badge, card_container
+from ui.themes import list_themes
 
 st.set_page_config(
     page_title=Config.APP_NAME,
@@ -36,10 +37,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-load_css()
+load_css(st.session_state.get("active_theme", "default"))
 
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
+    st.session_state.active_theme = "default"
     st.session_state.user = None
     st.session_state.user_id = None
     st.session_state.current_session = None
@@ -190,6 +192,26 @@ def show_sidebar():
                 default=st.session_state.active_agents,
                 key="settings_agents"
             )
+
+            # Theme Selector
+            available_themes = list_themes()
+            current_theme_id = st.session_state.get("active_theme", "default")
+            theme_ids = [t.id for t in available_themes]
+            if current_theme_id not in theme_ids:
+                current_theme_id = "default"
+            theme_index = theme_ids.index(current_theme_id)
+
+            selected_theme = st.selectbox(
+                "🎨 Theme",
+                available_themes,
+                index=theme_index,
+                format_func=lambda t: getattr(t, "display_name", str(t)),
+                key="settings_theme"
+            )
+            selected_theme_id = getattr(selected_theme, "id", str(selected_theme)) if selected_theme else "default"
+            if selected_theme_id != st.session_state.get("active_theme"):
+                st.session_state.active_theme = selected_theme_id
+                st.rerun()
         
         st.divider()
        
