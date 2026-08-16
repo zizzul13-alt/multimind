@@ -39,9 +39,10 @@ def ensure_proof_dna_and_themes_registered() -> None:
         # Map canonical DNA to Theme
         mapped_theme = dna_to_theme(canonical_proof_dna)
 
-        # Check ThemeRegistry idempotence using full dataclass structural equality
-        if mapped_theme.id in theme_reg._themes:
-            existing_theme = theme_reg._themes[mapped_theme.id]
+        # Use public list_themes API for exact ID presence lookup without inspecting private _themes dictionary
+        registered_themes = {t.id: t for t in theme_reg.list_themes()}
+        if mapped_theme.id in registered_themes:
+            existing_theme = registered_themes[mapped_theme.id]
             if existing_theme != mapped_theme:
                 raise ValueError(
                     f"Conflicting Theme definition found in registry for ID '{mapped_theme.id}'. "
