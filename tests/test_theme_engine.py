@@ -24,10 +24,12 @@ class TestThemeEngineCore(unittest.TestCase):
         self.registry = ThemeRegistry()
 
     def test_default_theme_registration_and_lookup(self):
-        """Tests that default theme is registered automatically and resolves correctly."""
+        """Tests that default theme and demo theme are registered automatically and resolve correctly."""
         themes = self.registry.list_themes()
-        self.assertEqual(len(themes), 1)
-        self.assertEqual(themes[0].id, DEFAULT_THEME_ID)
+        self.assertEqual(len(themes), 2)
+        theme_ids = [t.id for t in themes]
+        self.assertIn(DEFAULT_THEME_ID, theme_ids)
+        self.assertIn("neutral-contrast-demo", theme_ids)
 
         default_theme = self.registry.get_theme(DEFAULT_THEME_ID)
         self.assertEqual(default_theme.id, DEFAULT_THEME_ID)
@@ -171,6 +173,17 @@ class TestThemeEngineCore(unittest.TestCase):
         self.assertEqual(theme.metadata.author, "Jules Agent")
         self.assertEqual(theme.metadata.license, "MIT")
 
+
+
+    def test_demo_theme_resolution_and_css(self):
+        """Tests that neutral-contrast-demo theme resolves and produces distinct CSS overrides."""
+        demo_theme = self.registry.get_theme("neutral-contrast-demo")
+        self.assertEqual(demo_theme.id, "neutral-contrast-demo")
+        self.assertEqual(demo_theme.display_name, "Neutral Contrast (Demo)")
+
+        css_output = generate_theme_css("neutral-contrast-demo")
+        self.assertIn("--mm-color-primary: #2563EB;", css_output)
+        self.assertIn("--mm-color-surface: #131C2E;", css_output)
 
 if __name__ == "__main__":
     unittest.main()

@@ -20,6 +20,7 @@ class ThemeRegistry:
     def __init__(self):
         self._themes: Dict[str, Theme] = {}
         self._register_default_theme()
+        self._register_demo_theme()
 
     def _register_default_theme(self):
         """Registers the canonical default/base theme wrapping ui.tokens."""
@@ -39,6 +40,40 @@ class ThemeRegistry:
         )
         default_theme.validate()
         self._themes[DEFAULT_THEME_ID] = default_theme
+
+    def _register_demo_theme(self):
+        """Registers a generic, non-IP demonstration theme to verify runtime theme switching."""
+        demo_theme = Theme(
+            id="neutral-contrast-demo",
+            display_name="Neutral Contrast (Demo)",
+            category="experimental",
+            description="Generic demonstration theme with semantic token overrides for runtime switching verification.",
+            metadata=ThemeMetadata(
+                description="S5.2 Runtime Theme Switching Demonstration Theme",
+                author="MultiMind Core"
+            ),
+            colors={
+                "primary": "#2563EB",
+                "primary_hover": "#1D4ED8",
+                "primary_active": "#1E40AF",
+                "secondary": "#475569",
+                "secondary_hover": "#334155",
+                "accent": "#7C3AED",
+                "background": "#090D16",
+                "surface": "#131C2E",
+                "surface_elevated": "#1E293B",
+                "surface_muted": "#0B111E",
+                "surface_hover": "#1A263D",
+                "surface_input": "#070B14",
+                "border": "#2A3A56",
+                "border_subtle": "#182338",
+                "border_hover": "#3B82F6",
+                "border_focus": "#60A5FA",
+                "focus_ring": "rgba(96, 165, 250, 0.4)",
+            },
+        )
+        demo_theme.validate()
+        self._themes[demo_theme.id] = demo_theme
 
     def register_theme(self, theme: Theme) -> None:
         """Registers a new theme after validating its contract."""
