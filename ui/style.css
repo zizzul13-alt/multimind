@@ -1,3 +1,18 @@
+/* Global Application & Sidebar Token Integration */
+.stApp, [data-testid="stAppViewContainer"] {
+  background-color: var(--mm-color-background);
+  color: var(--mm-color-text);
+}
+
+[data-testid="stSidebar"] {
+  background-color: var(--mm-color-surface);
+  border-right: 1px solid var(--mm-color-border);
+}
+
+[data-testid="stHeader"] {
+  background-color: transparent;
+}
+
 /* MultiMind AI - CSS Foundation & Semantic Control Styling */
 
 /* Base Container Primitives */

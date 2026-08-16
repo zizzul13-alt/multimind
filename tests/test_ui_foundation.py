@@ -79,7 +79,7 @@ class TestUIFoundation(unittest.TestCase):
         load_css("neutral-contrast-demo")
         mock_markdown.assert_called_once()
         args, kwargs = mock_markdown.call_args
-        self.assertIn("--mm-color-primary: #2563EB;", args[0])
+        self.assertIn("--mm-color-primary: #D97706;", args[0])
 
         mock_markdown.reset_mock()
         load_css("nonexistent_invalid_theme_id")
