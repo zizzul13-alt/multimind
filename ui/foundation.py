@@ -3,15 +3,16 @@ MultiMind AI - UI Foundation Utilities & Helpers
 Provides lightweight helpers for injecting foundation CSS and rendering reusable primitives.
 """
 import os
+from typing import Optional
 import streamlit as st
 from ui.themes import generate_theme_css
 
 CSS_PATH = os.path.join(os.path.dirname(__file__), "style.css")
 
 
-def load_css():
+def load_css(theme_id: Optional[str] = None):
     """Dynamically loads token CSS custom properties and foundation CSS rules into Streamlit via Theme Engine."""
-    token_css = generate_theme_css()
+    token_css = generate_theme_css(theme_id)
     static_css = ""
     if os.path.exists(CSS_PATH):
         with open(CSS_PATH, "r", encoding="utf-8") as f:

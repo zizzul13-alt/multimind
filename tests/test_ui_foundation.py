@@ -65,15 +65,27 @@ class TestUIFoundation(unittest.TestCase):
 
     @patch("streamlit.markdown")
     def test_load_css(self, mock_markdown):
-        """Test that load_css reads the CSS file and calls st.markdown with style tags."""
+        """Test that load_css reads the CSS file and calls st.markdown with style tags for default and custom themes."""
         load_css()
         mock_markdown.assert_called_once()
         args, kwargs = mock_markdown.call_args
         self.assertTrue(args[0].startswith("<style>"))
         self.assertTrue(args[0].endswith("</style>"))
-        self.assertIn("--mm-color-primary:", args[0])
+        self.assertIn("--mm-color-primary: #3B82F6;", args[0])
         self.assertIn(".stButton > button", args[0])
         self.assertTrue(kwargs.get("unsafe_allow_html"))
+
+        mock_markdown.reset_mock()
+        load_css("neutral-contrast-demo")
+        mock_markdown.assert_called_once()
+        args, kwargs = mock_markdown.call_args
+        self.assertIn("--mm-color-primary: #2563EB;", args[0])
+
+        mock_markdown.reset_mock()
+        load_css("nonexistent_invalid_theme_id")
+        mock_markdown.assert_called_once()
+        args, kwargs = mock_markdown.call_args
+        self.assertIn("--mm-color-primary: #3B82F6;", args[0])
 
     @patch("streamlit.markdown")
     def test_card_container_rendering(self, mock_markdown):
@@ -156,6 +168,52 @@ class TestUIFoundation(unittest.TestCase):
             self.assertIn(kwargs["type"], ["primary", "secondary"])
             self.assertEqual(kwargs.get("help"), "Test Session Name", "st.button help parameter should preserve full session name")
 
+
+
+    @patch("streamlit.rerun")
+    @patch("streamlit.selectbox")
+    @patch("database.manager.DatabaseManager.get_sessions")
+    def test_theme_selector_switching(self, mock_get_sessions, mock_selectbox, mock_rerun):
+        """Test that theme selectbox in sidebar receives registry options and updates active_theme state on change."""
+        from ui.themes import list_themes, get_theme
+        mock_get_sessions.return_value = []
+        demo_theme = get_theme("neutral-contrast-demo")
+        mock_selectbox.return_value = demo_theme
+
+        class StateMock(dict):
+            def __getattr__(self, name):
+                return self.get(name)
+            def __setattr__(self, name, value):
+                self[name] = value
+
+        mock_st_state = StateMock({
+            "user": "testuser",
+            "user_id": "testuser",
+            "active_theme": "default",
+            "current_session": None,
+            "memories": {},
+            "initialized": True
+        })
+
+        with patch("streamlit.session_state", mock_st_state), \
+             patch("streamlit.sidebar"), \
+             patch("streamlit.expander"), \
+             patch("streamlit.text_input", return_value=""), \
+             patch("streamlit.caption"), \
+             patch("streamlit.divider"), \
+             patch("streamlit.button", return_value=False), \
+             patch("streamlit.multiselect", return_value=[]), \
+             patch("streamlit.toggle", return_value=False), \
+             patch("streamlit.slider", return_value=1), \
+             patch("streamlit.download_button"), \
+             patch("streamlit.file_uploader"), \
+             patch("os.path.exists", return_value=False):
+
+            from app import show_sidebar
+            show_sidebar()
+
+        self.assertEqual(mock_st_state.active_theme, "neutral-contrast-demo")
+        mock_rerun.assert_called_once()
 
 if __name__ == "__main__":
     unittest.main()
