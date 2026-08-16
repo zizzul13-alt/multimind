@@ -226,9 +226,11 @@
   overflow-x: auto;
 }
 
-/* Targeted sidebar button text truncation */
-.stSidebar .stButton > button,
-.stSidebar .stButton > button p {
+/* Targeted sidebar session item text truncation */
+.stSidebar .mm-sidebar-session-list .stButton > button,
+.stSidebar .mm-sidebar-session-list .stButton > button p,
+.stSidebar div[element-id*="sidebar_session_"] button,
+.stSidebar div[element-id*="sidebar_session_"] button p {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;

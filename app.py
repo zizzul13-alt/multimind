@@ -141,6 +141,7 @@ def show_sidebar():
         sessions = db.get_sessions()
         curr_session_id = st.session_state.current_session['id'] if st.session_state.current_session else None
 
+        st.markdown("<div class='mm-sidebar-session-list'>", unsafe_allow_html=True)
         for i, s in enumerate(sessions):
             unique_key = f"sidebar_session_{i}_{s['id'][:8]}"
             is_active = (s['id'] == curr_session_id)
@@ -151,6 +152,7 @@ def show_sidebar():
                 if s['id'] not in st.session_state.memories:
                     st.session_state.memories[s['id']] = SessionMemory()
                 st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
         st.divider()
         
