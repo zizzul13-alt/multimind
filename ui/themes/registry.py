@@ -36,8 +36,6 @@ class ThemeRegistry:
             typography=copy.deepcopy(tokens.TYPOGRAPHY),
             spacing=copy.deepcopy(tokens.SPACING),
             radius=copy.deepcopy(tokens.RADIUS),
-            surfaces=copy.deepcopy(tokens.SURFACES),
-            borders=copy.deepcopy(tokens.BORDERS),
         )
         default_theme.validate()
         self._themes[DEFAULT_THEME_ID] = default_theme
@@ -78,8 +76,6 @@ class ThemeRegistry:
         resolved_typography = copy.deepcopy(tokens.TYPOGRAPHY)
         resolved_spacing = copy.deepcopy(tokens.SPACING)
         resolved_radius = copy.deepcopy(tokens.RADIUS)
-        resolved_surfaces = copy.deepcopy(tokens.SURFACES)
-        resolved_borders = copy.deepcopy(tokens.BORDERS)
 
         # If resolving non-default theme, apply non-mutating overrides
         if theme.id != DEFAULT_THEME_ID:
@@ -89,10 +85,6 @@ class ThemeRegistry:
                 resolved_spacing.update(theme.spacing)
             if theme.radius:
                 resolved_radius.update(theme.radius)
-            if theme.surfaces:
-                resolved_surfaces.update(theme.surfaces)
-            if theme.borders:
-                resolved_borders.update(theme.borders)
             if theme.typography:
                 if "font_family_base" in theme.typography:
                     resolved_typography["font_family_base"] = theme.typography["font_family_base"]
@@ -107,32 +99,11 @@ class ThemeRegistry:
                             roles_base[role_key] = role_val
                     resolved_typography["roles"] = roles_base
 
-        # Re-derive computed surfaces and borders if colors updated but explicit surfaces/borders were not provided
-        if theme.id != DEFAULT_THEME_ID and theme.colors:
-            if not theme.surfaces:
-                resolved_surfaces = {
-                    "background": resolved_colors.get("background", tokens.COLORS["background"]),
-                    "surface": resolved_colors.get("surface", tokens.COLORS["surface"]),
-                    "surface_elevated": resolved_colors.get("surface_elevated", tokens.COLORS["surface_elevated"]),
-                    "surface_muted": resolved_colors.get("surface_muted", tokens.COLORS["surface_muted"]),
-                    "surface_hover": resolved_colors.get("surface_hover", tokens.COLORS["surface_hover"]),
-                    "surface_input": resolved_colors.get("surface_input", tokens.COLORS["surface_input"]),
-                }
-            if not theme.borders:
-                resolved_borders = {
-                    "default": f"1px solid {resolved_colors.get('border', tokens.COLORS['border'])}",
-                    "subtle": f"1px solid {resolved_colors.get('border_subtle', tokens.COLORS['border_subtle'])}",
-                    "hover": f"1px solid {resolved_colors.get('border_hover', tokens.COLORS['border_hover'])}",
-                    "focus": f"2px solid {resolved_colors.get('border_focus', tokens.COLORS['border_focus'])}",
-                }
-
         resolved_token_groups = {
             "colors": resolved_colors,
             "typography": resolved_typography,
             "spacing": resolved_spacing,
             "radius": resolved_radius,
-            "surfaces": resolved_surfaces,
-            "borders": resolved_borders,
         }
 
         return theme, resolved_token_groups
@@ -193,7 +164,7 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
     for k, v in radius.items():
         css_lines.append(f"  --mm-radius-{k}: {v};")
 
-    # Colors
+    # Colors (includes all surface, background, and border semantic role colors)
     for k, v in colors.items():
         css_name = k.replace("_", "-")
         css_lines.append(f"  --mm-color-{css_name}: {v};")
