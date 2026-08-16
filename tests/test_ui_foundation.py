@@ -103,5 +103,59 @@ class TestUIFoundation(unittest.TestCase):
         )
 
 
+
+    @patch("streamlit.button")
+    @patch("database.manager.DatabaseManager.get_sessions")
+    def test_sidebar_session_button_api(self, mock_get_sessions, mock_button):
+        """Test that sidebar session buttons call st.button with type= instead of invalid kind=."""
+        import streamlit as st
+        mock_get_sessions.return_value = [{"id": "session_12345678", "name": "Test Session Name", "mode": "coding"}]
+        mock_button.return_value = False
+
+        class StateMock(dict):
+            def __getattr__(self, name):
+                return self.get(name)
+            def __setattr__(self, name, value):
+                self[name] = value
+
+        mock_st_state = StateMock({
+            "user": "testuser",
+            "user_id": "testuser",
+            "current_session": None,
+            "memories": {},
+            "initialized": True
+        })
+
+        with patch("streamlit.session_state", mock_st_state), \
+             patch("streamlit.sidebar"), \
+             patch("streamlit.expander"), \
+             patch("streamlit.text_input", return_value=""), \
+             patch("streamlit.selectbox", return_value="coding"), \
+             patch("streamlit.caption"), \
+             patch("streamlit.divider"), \
+             patch("streamlit.download_button"), \
+             patch("streamlit.file_uploader"), \
+             patch("os.path.exists", return_value=False):
+
+            from app import show_sidebar
+            show_sidebar()
+
+        # Find session button calls
+        session_button_calls = [
+            call for call in mock_button.call_args_list
+            if "key" in call.kwargs and call.kwargs["key"].startswith("sidebar_session_")
+        ]
+
+        # Must observe at least one session button call
+        self.assertGreater(len(session_button_calls), 0, "No sidebar session button calls were made!")
+
+        for call in session_button_calls:
+            kwargs = call.kwargs
+            self.assertNotIn("kind", kwargs, "st.button was called with invalid argument 'kind'")
+            self.assertIn("type", kwargs, "st.button missing required 'type' argument")
+            self.assertIn(kwargs["type"], ["primary", "secondary"])
+            self.assertEqual(kwargs.get("help"), "Test Session Name", "st.button help parameter should preserve full session name")
+
+
 if __name__ == "__main__":
     unittest.main()
