@@ -109,7 +109,7 @@ Tracing the pipeline:
             ▼
 ┌────────────────────────┐
 │ Streamlit Native DOM   │  UNTOUCHED: st.chat_message, st.metric, st.radio, st.markdown,
-└────────────────────────┘             st.sidebar list items, headers (h1-h6)
+└───────────┴────────────┘             st.sidebar list items, headers (h1-h6)
 ```
 
 ### Categorization of Bottlenecks
@@ -148,7 +148,7 @@ To ensure consistent taxonomy throughout the audit, all findings are categorized
 | Lack of box shadows / elevation depth | **B — Theme Engine semantic capability gap** | `Theme` dataclass lacks `--mm-shadow-*` token fields. | Add elevation & shadow token group to Theme schema. |
 | Missing paper grain / halftone texture overlays | **D — Asset / material gap** | Material pipeline for SVG/image texture overlays not built yet. | Implement future asset layer (CSS pattern gradients/noise). |
 | Fluid real-time live preview during slider dragging | **E — Streamlit component / platform limitation** | Streamlit re-executes full Python script on every slider input event, causing re-run latency. | Use an isolated Custom Component for interactive token editing. |
-| Two-way data sync from custom preview back to Python | **E — Streamlit component / platform limitation** | Static HTML embedding (`components.v1.html`) is uni-directional. | Use a proper bidirectional Streamlit Custom Component bridge. |
+| Two-way data sync from custom preview back to Python | **E — Streamlit component / platform limitation** | Static HTML embedding (`components.v1.html`) is uni-directional. | Validate proper bidirectional Streamlit Custom Component mechanism. |
 | Responsive side-by-side device frame preview | **C — CSS / token consumption gap** | Native `st.columns` lacks viewport container isolation. | Render preview frame within controlled HTML/CSS container. |
 
 ---
@@ -206,8 +206,8 @@ Palette Control          Typography Control     Radius Control
 | **Bidirectional Token Sync** | Custom Component bridge | **Requires Component:** Returning updated structured `DesignDNA` from an interactive preview back to `st.session_state` requires bidirectional component messaging. |
 
 ### Component Architecture Clarification: Static HTML vs. Bidirectional Custom Component
-* **Static HTML Embedding (`streamlit.components.v1.html`):** Renders isolated HTML/CSS inside an iframe. However, it is **one-way only** (Python → Client). It cannot pass modified token state or user canvas actions back into Python `st.session_state`.
-* **Bidirectional Streamlit Custom Component (`streamlit.components.v1.declare_component`):** Establishes a two-way messaging channel over `window.postMessage`. The client UI receives Python state, lets the user interactively edit tokens in local browser memory without full-page re-runs, and emits updated `DesignDNA` payloads back to Python upon explicit save/apply actions.
+* **Static HTML Embedding (`streamlit.components.v1.html`):** Renders isolated HTML/CSS inside an iframe. However, it is **one-way only** (Python → Client). It is insufficient for bidirectional state and cannot pass modified token state or user canvas actions back into Python `st.session_state`.
+* **Bidirectional Custom Component Requirement:** S7 should validate a proper bidirectional Streamlit Custom Component mechanism. The validation spike must evaluate the **currently recommended Streamlit component API** first (such as Components v2 APIs if supported by the runtime environment), retaining Components v1 as a fallback only if concrete repository or runtime compatibility issues arise.
 
 ---
 
@@ -291,7 +291,8 @@ If MultiMind ever required a full presentation migration in the future, the code
 1. **Keep Streamlit as the primary application wrapper:**
    * `app.py`, debate execution feeds, login, session list, backup/restore, settings, and agent selection remain natively in Streamlit.
 2. **Targeted Custom Component for S7 Theme Studio:**
-   * Build the Theme Studio live preview canvas and interactive token adjustment controls using a bidirectional Streamlit Custom Component (`declare_component`).
+   * Build the Theme Studio live preview canvas and interactive token adjustment controls using a proper bidirectional Streamlit Custom Component.
+   * Evaluate the currently recommended Streamlit component API first (testing Components v2 APIs first for new component development), falling back to Components v1 only if repository or runtime compatibility issues require it.
    * This isolates client-side token adjustments during preview, sending structured `DesignDNA` JSON back to Python only when saved or applied.
 3. **Enhance CSS Token Mapping in S7:**
    * Expand `ui/style.css` to target native markdown elements (`h1`-`h6`, `p`, `code`, `blockquote`, `.stChatMessage`) so that display typography from Design DNA proofs (like Chainsaw Man's `Impact` headings) renders faithfully across standard Streamlit outputs.
@@ -312,4 +313,4 @@ MultiMind should reconsider a full platform migration (ORANGE/RED) if and only i
 ### **Recommended Next Session: S7.1 — Theme Experience & Custom Component Validation Spike**
 * **Scope for S7.1:**
   1. **CSS Token Extension:** Expand `ui/style.css` targeting rules to cover native Streamlit headings (`h1`-`h6`) and chat messages, verifying that Chainsaw Man (`Impact`) and Mushishi render full visual differentiation.
-  2. **Custom Component Spike:** Build a minimal bidirectional Streamlit Custom Component spike to validate two-way state passing between Python `st.session_state` and a client-side preview canvas before committing full S7 Theme Studio architecture.
+  2. **Custom Component Spike:** Build a minimal bidirectional Streamlit Custom Component spike to validate two-way state passing between Python `st.session_state` and a client-side preview canvas. Evaluate the currently recommended Streamlit component API first (testing Components v2 APIs first), retaining Components v1 as a fallback only if runtime compatibility gives a concrete reason.
