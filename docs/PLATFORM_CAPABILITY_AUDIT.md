@@ -1,6 +1,6 @@
 # MultiMind AI — Presentation Platform Capability Audit & Migration Decision Gate (S6.3)
 
-**Document Status:** Complete
+**Document Status:** Complete (Revised Post-Review)
 **Session:** S6.3 — Presentation Platform Capability Audit & Migration Decision Gate
 **Target Repository:** `zizzul13-alt/multimind`
 **Inspected Scope:** Main branch post-S6.2 (`Design DNA Architecture` and `Real Design DNA Proofs`)
@@ -17,9 +17,9 @@ The objective of S6.3 is strictly analytical: to gather empirical codebase evide
 
 **Verdict:** **YELLOW — STREAMLIT + TARGETED CUSTOM COMPONENTS**
 
-Streamlit easily handles MultiMind's core debate orchestration, session state management, AI streaming feedback, and static runtime theme switching. However, interactive canvas capabilities required for S7 (such as real-time Theme Studio sliders, visual drag/drop token tweaks, and isolated responsive device previews) struggle under Streamlit's full-script execution re-run loop.
+Streamlit easily handles MultiMind's core debate orchestration, session state management, AI streaming feedback, and static runtime theme switching. However, interactive Theme Studio features required for S7 (such as real-time responsive preview feedback while tweaking sliders, color pickers, and border-radius controls) encounter UX friction under Streamlit's top-to-bottom script execution re-run loop.
 
-Rather than undertaking an expensive, high-risk full frontend migration to React or Reflex before S7, MultiMind should adopt a **hybrid presentation architecture**. In this model, 90% of the application remains in native Streamlit, while targeted interactive experiences (specifically the Theme Studio editor/live preview canvas) are encapsulated inside **Streamlit Custom Components** (React/Vue micro-widgets embedded via standard bidirectional component bridge).
+Rather than undertaking an expensive, high-risk full frontend migration to React or Reflex before S7, MultiMind should adopt a **hybrid presentation architecture**. In this model, 90% of the application remains in native Streamlit, while targeted interactive experiences (specifically the Theme Studio editor/live preview canvas) are encapsulated inside a bidirectional **Streamlit Custom Component** (a micro-widget embedded via the standard bidirectional component bridge).
 
 ---
 
@@ -72,7 +72,7 @@ In `ui/style.css`, several core styling rules rely on Streamlit's internal HTML 
 
 ### 3. Execution Semantics (Script Re-run Overhead)
 * Streamlit re-executes `app.py` from top to bottom on every user interaction (e.g., button click, selectbox change, text input submit).
-* `load_css(st.session_state.active_theme)` re-injects `<style>` blocks into the DOM on every re-run. While fast for 5 themes, real-time slider updates in a Theme Studio (e.g., adjusting color pickers or border-radius sliders 60 times per second) would trigger excessive full-page re-runs.
+* `load_css(st.session_state.active_theme)` re-injects `<style>` blocks into the DOM on every re-run. While fast for 5 themes, interactive slider dragging in a Theme Studio (e.g., adjusting color pickers or border-radius sliders) triggers full-page re-runs.
 
 ### 4. Session State Coupling
 * Presentation state (`st.session_state.active_theme`, `st.session_state.new_chat`, `st.session_state.last_generated`) is stored in `st.session_state` alongside debate and domain data (`st.session_state.memories`, `st.session_state.current_session`).
@@ -109,39 +109,47 @@ Tracing the pipeline:
             ▼
 ┌────────────────────────┐
 │ Streamlit Native DOM   │  UNTOUCHED: st.chat_message, st.metric, st.radio, st.markdown,
-└────────────────────────┘             st.sidebar list items, headers
+└────────────────────────┘             st.sidebar list items, headers (h1-h6)
 ```
 
-### Classification of Bottlenecks
+### Categorization of Bottlenecks
 
-1. **PRIMARY BOTTLENECK: C — CSS / Token Consumption Gap**
-   * `ui/style.css` currently only applies typography and background tokens to `.stTextInput`, `.stTextArea`, `.stButton`, `.stSelectbox`, `.stExpander`, `.mm-card`, and `.mm-badge`.
-   * Native Streamlit components—such as `st.chat_message`, `st.metric`, `st.radio`, `st.divider`, `st.markdown` headings, and sidebar lists—do **not** consume typography roles or surface background tokens unless explicitly wrapped in HTML containers.
-   * **Why Japan Print transformed radically:** Japan Print uses `font_family_base = "Georgia, 'Times New Roman', serif"`. Changing the global font stack from sans-serif to serif drastically alters every single text element on the screen.
-   * **Why Chainsaw Man & Mushishi felt like recolors:** Chainsaw Man uses `Impact` for headers, but since `ui/style.css` does not map `--mm-font-display` to Streamlit headers (`h1`, `h2`, `h3`), the font was not applied. Mushishi uses `system-ui`, which is identical to Streamlit's fallback font stack, leaving the visual differentiation entirely dependent on subtle dark green color shifts.
+1. **PRIMARY BOTTLENECK: C — CSS / token consumption gap**
+   * **Evidence:** Current evidence does NOT show that Streamlit caused Chainsaw Man Inspired and Mushishi Inspired to look mostly like recolors. The primary confirmed cause is incomplete CSS/token consumption in `ui/style.css`.
+   * `ui/style.css` currently only applies typography and background tokens to `.stTextInput`, `.stTextArea`, `.stButton`, `.stSelectbox`, `.stExpander`, `.mm-card`, and `.mm-badge`. Native Streamlit components—such as `st.chat_message`, `st.metric`, `st.radio`, `st.divider`, `st.markdown` headings (`h1`-`h6`), and sidebar lists—do **not** consume typography roles or surface background tokens unless explicitly targeted.
+   * **Why Japan Print transformed radically:** Japan Print sets `font_family_base = "Georgia, 'Times New Roman', serif"`. Changing the global font stack from sans-serif to serif drastically alters every single text element on the screen.
+   * **Why Chainsaw Man & Mushishi felt like recolors:** Chainsaw Man defines `Impact` for display/heading typography roles, but since `ui/style.css` does not map display tokens to Streamlit headers (`h1`-`h6`), the font was never applied to the DOM. Mushishi uses `system-ui`, which is identical to Streamlit's fallback font stack, leaving visual differentiation entirely dependent on subtle dark green color shifts.
 
-2. **SECONDARY BOTTLENECK: D — Asset / Material Gap**
+2. **SECONDARY BOTTLENECK: D — Asset / material gap**
    * Chainsaw Man conceptually calls for high-contrast halftone dots, urban poster graphics, and distressed noise backgrounds.
    * Mushishi conceptually calls for soft atmospheric gradients, paper grain, and organic natural textures.
    * Without asset rendering pipelines or texture CSS overlays, both reduce down to flat hex code palette swaps on standard dark slates.
 
-3. **TERTIARY BOTTLENECK: B — Theme Engine Semantic Gap**
+3. **TERTIARY BOTTLENECK: B — Theme Engine semantic capability gap**
    * The current Theme Engine contract (`ui/themes/models.py`) does not yet express box shadows/elevation depth, border styles (solid vs dashed vs double), backdrop filters, or grid density variables.
 
 ---
 
-## 5. Theme Engine vs Asset vs Component vs Platform Gaps
+## 5. Normalized Gap Taxonomy
 
-To prevent misattribution of engineering challenges, limitations identified across the roadmap are classified below:
+To ensure consistent taxonomy throughout the audit, all findings are categorized strictly under the standard 5-category framework:
 
-| Limitation Requirement | Category | Primary Root Cause | Recommended Action |
+* **Category A — Design DNA mapping gap:** The semantic values exist in Design DNA or Theme Engine, but are improperly transformed during adapter mapping.
+* **Category B — Theme Engine semantic capability gap:** The requirement cannot be expressed because the `Theme` schema lacks necessary token slots (e.g. shadows, elevation, density).
+* **Category C — CSS / token consumption gap:** The theme contract contains differentiated values, but `ui/style.css` does not map or consume them against rendered HTML/DOM nodes.
+* **Category D — Asset / material gap:** The requirement depends on external assets, textures, grain, illustrations, fonts, or imagery.
+* **Category E — Streamlit component / platform limitation:** The requirement fundamentally conflicts with Streamlit's rendering loop, DOM ownership, layout model, or state architecture.
+
+### Mapping Audit Findings to Taxonomy
+
+| Requirement / Issue | Category | Primary Root Cause | Recommended Action |
 | :--- | :--- | :--- | :--- |
-| Heading typography (`Impact`) not rendering on `st.header` | **C — CSS Consumption Gap** | `ui/style.css` does not target native heading tags with typography tokens. | Extend CSS targeting rules in `ui/style.css`. |
-| Lack of box shadows / elevation depth | **A — Theme Engine Gap** | `Theme` dataclass lacks `--mm-shadow-*` token fields. | Add elevation & shadow token group to Theme schema. |
-| Missing paper grain / halftone texture overlays | **B — Asset / Material Gap** | Material pipeline for SVG/image texture overlays not built yet. | Implement S7 asset layer (CSS pattern gradients/noise). |
-| Real-time 60fps slider previews in Theme Studio | **D — Platform Gap** | Streamlit re-executes full Python script on every slider input event. | Use an isolated Custom Component for the interactive editor canvas. |
-| Drag-and-drop theme token editor canvas | **D — Platform Gap** | Native Streamlit widgets do not support HTML5 drag/drop APIs. | Encapsulate drag/drop canvas inside a Streamlit Custom Component. |
-| Responsive side-by-side device frame preview | **C — Component Gap** | Native `st.columns` lacks iframe/viewport container isolation. | Render preview frame within custom HTML or iframe container. |
+| Heading typography (`Impact`) not rendering on `st.header` | **C — CSS / token consumption gap** | `ui/style.css` does not target native heading tags (`h1`-`h6`) with typography tokens. | Extend CSS targeting rules in `ui/style.css`. |
+| Lack of box shadows / elevation depth | **B — Theme Engine semantic capability gap** | `Theme` dataclass lacks `--mm-shadow-*` token fields. | Add elevation & shadow token group to Theme schema. |
+| Missing paper grain / halftone texture overlays | **D — Asset / material gap** | Material pipeline for SVG/image texture overlays not built yet. | Implement future asset layer (CSS pattern gradients/noise). |
+| Fluid real-time live preview during slider dragging | **E — Streamlit component / platform limitation** | Streamlit re-executes full Python script on every slider input event, causing re-run latency. | Use an isolated Custom Component for interactive token editing. |
+| Two-way data sync from custom preview back to Python | **E — Streamlit component / platform limitation** | Static HTML embedding (`components.v1.html`) is uni-directional. | Use a proper bidirectional Streamlit Custom Component bridge. |
+| Responsive side-by-side device frame preview | **C — CSS / token consumption gap** | Native `st.columns` lacks viewport container isolation. | Render preview frame within controlled HTML/CSS container. |
 
 ---
 
@@ -173,9 +181,9 @@ MultiMind was evaluated across three responsive breakpoint viewports using Strea
 
 The expected S7 Theme Studio architecture requires:
 1. **Theme Browser / Filter:** Card grid of themes with search/category tags.
-2. **Live Preview Panel:** Real-time canvas reflecting token edits instantly.
-3. **Interactive Controls:** Sliders (radius, density, spacing), color pickers, typography toggles.
-4. **Apply / Save Workflows:** Exporting updated Design DNA JSON.
+2. **Live Preview Panel:** Responsive preview reflecting token edits smoothly.
+3. **Interactive Controls:** Color pickers, typography toggles, and sliders (radius, density, spacing).
+4. **Apply / Save Workflows:** Exporting/persisting updated Design DNA JSON.
 
 ```
 Theme Library            Live Preview Panel
@@ -190,15 +198,16 @@ Palette Control          Typography Control     Radius Control
 
 ### Technical Evaluation on Pure Streamlit
 
-| Requirement | Streamlit Capability | Architectural Risk |
+| Requirement | Streamlit Capability | Architectural Assessment |
 | :--- | :--- | :--- |
-| **Theme Browser & Filtering** | `st.selectbox`, `st.button`, `st.columns` | **Low:** Native widgets handle grid selection cleanly. |
-| **Color Picker & Sliders** | `st.color_picker`, `st.slider` | **Medium:** Changing a color picker triggers script re-run. |
-| **Real-time Live Preview** | CSS injection via `st.markdown` | **High:** Rapid slider dragging causes re-run lag & UI flicker. |
-| **WYSIWYG Token Editor** | Standard form inputs | **High:** Cannot provide instant 60fps canvas feedback natively. |
+| **Theme Browser & Filtering** | `st.selectbox`, `st.button`, `st.columns` | **Fully Capable:** Native widgets handle grid selection and category filtering cleanly. |
+| **Color Picker & Sliders** | `st.color_picker`, `st.slider` | **Capable with Interaction Latency:** Every slider tick or color change triggers a full Python script re-run. |
+| **Responsive Live Preview** | CSS injection via `st.markdown` | **Friction Point:** Re-injecting CSS on every re-run causes noticeable flicker during continuous adjustments. |
+| **Bidirectional Token Sync** | Custom Component bridge | **Requires Component:** Returning updated structured `DesignDNA` from an interactive preview back to `st.session_state` requires bidirectional component messaging. |
 
-### Conclusion for S7
-Pure Streamlit can render a functional Theme Studio, but interactive adjustments (like dragging a border-radius slider) will feel laggy if every movement triggers a full Python script re-run. Encapsulating the **live preview canvas & interactive sliders inside a Streamlit Custom Component** eliminates this re-run bottleneck.
+### Component Architecture Clarification: Static HTML vs. Bidirectional Custom Component
+* **Static HTML Embedding (`streamlit.components.v1.html`):** Renders isolated HTML/CSS inside an iframe. However, it is **one-way only** (Python → Client). It cannot pass modified token state or user canvas actions back into Python `st.session_state`.
+* **Bidirectional Streamlit Custom Component (`streamlit.components.v1.declare_component`):** Establishes a two-way messaging channel over `window.postMessage`. The client UI receives Python state, lets the user interactively edit tokens in local browser memory without full-page re-runs, and emits updated `DesignDNA` payloads back to Python upon explicit save/apply actions.
 
 ---
 
@@ -224,22 +233,24 @@ Pure Streamlit can render a functional Theme Studio, but interactive adjustments
 
 ## 10. Alternative Platform Screening
 
-An architectural screening was performed comparing Streamlit against alternative presentation options for MultiMind:
+An architectural screening was performed comparing Streamlit against alternative presentation options for MultiMind.
 
-| Criterion | Streamlit (Current) | Streamlit + Custom Components (Hybrid) | NiceGUI | Reflex | Dedicated React/Next.js + FastApi |
+*Note: Relative migration complexity levels below represent qualitative architectural assessments based on codebase coupling, not validated calendar estimates.*
+
+| Criterion | Streamlit (Current) | Streamlit + Custom Components (Hybrid) | NiceGUI | Reflex | Dedicated React/Next.js + FastAPI |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **UI Freedom & CSS Control** | Medium (Constrained DOM) | High (Encapsulated React/Vue) | High (Quasar/Tailwind) | Very High (Tailwind/Radix) | Maximum (Complete DOM control) |
 | **Responsive Control** | Medium (Automated flex) | High (Custom CSS media queries) | High (Tailwind grid) | High (Flex/Grid props) | Maximum |
-| **S7 Theme Studio Suitability** | Medium (Flickers on re-run) | **High** (Client-side 60fps preview) | High (Vue event loop) | High (React state) | Maximum |
+| **S7 Theme Studio Suitability** | Medium (Re-run latency) | **High** (Client-side fluid preview) | High (Vue event loop) | High (React state) | Maximum |
 | **Python Integration** | Native / Direct | Native + Component Bridge | Native / Direct | Transpiled Python to JS | Separated REST/WS API |
-| **Migration Effort** | **0 Days** | **1–2 Days** (Targeted) | 10–14 Days | 12–16 Days | 20–30 Days |
+| **Relative Migration Complexity** | **None** | **Low** (Targeted component spike) | **Medium–High** (App rewrite) | **High** (App rewrite) | **Very High** (Dual codebase) |
 | **Agent Maintainability** | Very High | High | Medium | Medium | Low (Two codebases) |
 | **Suitability for 2–3 Users** | Ideal | Ideal | Good | Good | Over-engineered |
 
 ### Evaluation Summary
-* **NiceGUI & Reflex:** Offer stronger Vue/React-backed client state, but migrating MultiMind's entire session, debate, memory, database, and prompt architecture to NiceGUI or Reflex would require 2–3 weeks of rewrite effort with minimal gain for 90% of the app.
-* **Dedicated React/Next.js:** Provides ultimate design freedom, but introduces heavy architectural complexity (dual repositories, REST/WebSocket API boundary, CORS, auth tokens, client state management), which is unjustified for a private tool used by 2–3 developers.
-* **Streamlit + Custom Components:** Delivers 95% of the interactive UI freedom required for Theme Studio while preserving 100% of existing backend code and debate workflows.
+* **NiceGUI & Reflex:** Offer stronger Vue/React-backed client state, but migrating MultiMind's entire session, debate, memory, database, and prompt architecture would represent a high-complexity rewrite with minimal gain for 90% of the app.
+* **Dedicated React/Next.js:** Provides ultimate design freedom, but introduces very high architectural complexity (dual repositories, REST/WebSocket API boundary, CORS, auth tokens, client state management), which is unjustified for a private tool used by 2–3 developers.
+* **Streamlit + Custom Components:** Delivers the interactive UI freedom required for Theme Studio while preserving 100% of existing backend code and debate workflows.
 
 ---
 
@@ -266,8 +277,8 @@ If MultiMind ever required a full presentation migration in the future, the code
 
 | Option | Threshold Criteria | Alignment with MultiMind AI Roadmap |
 | :--- | :--- | :--- |
-| **GREEN — Keep Pure Streamlit** | S7–S9 can be built purely with native Streamlit widgets without performance or UX degradation. | Partial. Pure Streamlit struggles with 60fps real-time interactive preview canvas during slider manipulation. |
-| **YELLOW — Hybrid (Streamlit + Targeted Custom Components)** | Most of app excels in Streamlit; specific interactive experiences (Theme Studio live preview canvas) need isolated React/Vue components. | **OPTIMAL.** Preserves 100% of backend debate engine while granting full interactive visual control for S7. |
+| **GREEN — Keep Pure Streamlit** | S7–S9 can be built purely with native Streamlit widgets without unacceptable latency or UX degradation. | Partial. Pure Streamlit is sufficient for theme browsing, but suffers re-run latency during continuous interactive slider tweaks. |
+| **YELLOW — Hybrid (Streamlit + Targeted Custom Components)** | Most of app excels in Streamlit; specific interactive experiences (Theme Studio live preview canvas) need an isolated component. | **OPTIMAL.** Preserves 100% of backend debate engine while providing smooth interactive control for S7. |
 | **ORANGE — Migrate Platform Before S7** | Theme Studio requirements fundamentally conflict with Streamlit, requiring massive workarounds across the app. | Unjustified. Core app runs smoothly; full migration would throw away working UI foundation. |
 | **RED — Full Frontend Separation** | App outgrows Python frameworks entirely; demands client-heavy enterprise React/Next.js frontend. | Unjustified. Over-engineered for MultiMind's target deployment scale (2–3 users). |
 
@@ -279,11 +290,11 @@ If MultiMind ever required a full presentation migration in the future, the code
 
 1. **Keep Streamlit as the primary application wrapper:**
    * `app.py`, debate execution feeds, login, session list, backup/restore, settings, and agent selection remain natively in Streamlit.
-2. **Introduce Targeted Custom Components for S7 Theme Studio:**
-   * Build the Theme Studio live preview canvas and interactive token adjustment controls as a lightweight, embedded Streamlit Custom Component (using standard `streamlit.components.v1.html` or a simple React micro-widget).
-   * This isolates real-time DOM manipulation and 60fps slider previews on the client side, sending final `DesignDNA` JSON back to Python only when saved or applied.
+2. **Targeted Custom Component for S7 Theme Studio:**
+   * Build the Theme Studio live preview canvas and interactive token adjustment controls using a bidirectional Streamlit Custom Component (`declare_component`).
+   * This isolates client-side token adjustments during preview, sending structured `DesignDNA` JSON back to Python only when saved or applied.
 3. **Enhance CSS Token Mapping in S7:**
-   * Expand `ui/style.css` to target native markdown elements (`h1`-`h6`, `p`, `code`, `blockquote`, `.stChatMessage`) so that typography roles from Design DNA proofs (like Chainsaw Man's `Impact` headings) render faithfully across standard Streamlit outputs.
+   * Expand `ui/style.css` to target native markdown elements (`h1`-`h6`, `p`, `code`, `blockquote`, `.stChatMessage`) so that display typography from Design DNA proofs (like Chainsaw Man's `Impact` headings) renders faithfully across standard Streamlit outputs.
 
 ---
 
@@ -298,9 +309,7 @@ MultiMind should reconsider a full platform migration (ORANGE/RED) if and only i
 
 ## 15. Next Recommended Session
 
-### **Session S7 — Theme Experience & Custom Component Infrastructure**
-* **S7 Scope:**
-  1. Expand `ui/style.css` token coverage for native Streamlit headings and chat components.
-  2. Implement S7 Theme Browser / Theme Inspector in native Streamlit.
-  3. Create lightweight Streamlit Custom Component bridge for real-time Theme Studio live preview canvas.
-  4. Build JSON export / apply workflow for Design DNA instances.
+### **Recommended Next Session: S7.1 — Theme Experience & Custom Component Validation Spike**
+* **Scope for S7.1:**
+  1. **CSS Token Extension:** Expand `ui/style.css` targeting rules to cover native Streamlit headings (`h1`-`h6`) and chat messages, verifying that Chainsaw Man (`Impact`) and Mushishi render full visual differentiation.
+  2. **Custom Component Spike:** Build a minimal bidirectional Streamlit Custom Component spike to validate two-way state passing between Python `st.session_state` and a client-side preview canvas before committing full S7 Theme Studio architecture.
