@@ -141,18 +141,18 @@ def show_sidebar():
         sessions = db.get_sessions()
         curr_session_id = st.session_state.current_session['id'] if st.session_state.current_session else None
 
-        st.markdown("<div class='mm-sidebar-session-list'>", unsafe_allow_html=True)
         for i, s in enumerate(sessions):
             unique_key = f"sidebar_session_{i}_{s['id'][:8]}"
             is_active = (s['id'] == curr_session_id)
-            label = f"📌 {s['name']}" if is_active else f"📝 {s['name']}"
+            s_name = s['name']
+            truncated_name = s_name if len(s_name) <= 22 else f"{s_name[:19]}..."
+            label = f"📌 {truncated_name}" if is_active else f"📝 {truncated_name}"
             btn_kind = "primary" if is_active else "secondary"
-            if st.button(label, key=unique_key, use_container_width=True, kind=btn_kind):
+            if st.button(label, key=unique_key, use_container_width=True, kind=btn_kind, help=s_name):
                 st.session_state.current_session = s
                 if s['id'] not in st.session_state.memories:
                     st.session_state.memories[s['id']] = SessionMemory()
                 st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
 
         st.divider()
         
@@ -393,18 +393,19 @@ def show_new_chat():
         estimate = TokenCounter.estimate_total(prompt or "", files_count=files_count, mode=session_mode, rounds=st.session_state.debate_rounds, compressor_on=st.session_state.compressor_enabled)
         warning = TokenCounter.get_warning_level(estimate["total_estimate"])
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("📝 Prompt Tokens", estimate["prompt_tokens"])
-        with col2:
-            st.metric("📎 File Tokens", estimate["file_tokens"])
-
-        col3, col4 = st.columns(2)
-        with col3:
-            st.metric("📊 Est. Total", estimate["total_estimate"])
-        with col4:
-            cost = TokenCounter.estimate_cost(estimate["total_estimate"])
-            st.metric("💵 Est. Cost", f"${cost:.6f}")
+        cost = TokenCounter.estimate_cost(estimate["total_estimate"])
+        card_container(
+            f"<div class='mm-flex-between' style='margin-bottom:0;'>"
+            f"  <span class='mm-typo-label'>📊 Estimated Usage:</span>"
+            f"  <span class='mm-typo-body-small'>"
+            f"    <b>Prompt:</b> {estimate['prompt_tokens']} tok | "
+            f"    <b>Files:</b> {estimate['file_tokens']} tok | "
+            f"    <b>Total:</b> {estimate['total_estimate']} tok "
+            f"    <span class='mm-badge mm-badge-info' style='margin-left:0.4rem;'>${cost:.6f}</span>"
+            f"  </span>"
+            f"</div>",
+            variant="muted"
+        )
 
         if warning["level"] == "high":
             render_status_badge("🔴 High token usage! Consider compressor.", variant="danger")
