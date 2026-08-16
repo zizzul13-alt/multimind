@@ -30,8 +30,6 @@ class Theme:
     typography: Optional[Dict[str, Any]] = field(default_factory=dict)
     spacing: Optional[Dict[str, str]] = field(default_factory=dict)
     radius: Optional[Dict[str, str]] = field(default_factory=dict)
-    surfaces: Optional[Dict[str, str]] = field(default_factory=dict)
-    borders: Optional[Dict[str, str]] = field(default_factory=dict)
 
     def validate(self):
         """Validates theme contract constraints."""
