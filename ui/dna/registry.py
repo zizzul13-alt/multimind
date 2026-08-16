@@ -2,6 +2,7 @@
 MultiMind AI - Design DNA Registry
 Central registry for Design DNA registration, material ownership enforcement, and lookup.
 """
+import copy
 import logging
 from typing import Dict, List, Optional, Tuple
 from ui.dna.models import DesignDNA, MaterialReference
@@ -14,7 +15,7 @@ class DNARegistry:
 
     def __init__(self):
         self._dna_map: Dict[str, DesignDNA] = {}
-        # Tracks material_id -> (canonical MaterialReference, owner_dna_id)
+        # Tracks material_id -> (canonical MaterialReference copy, owner_dna_id)
         self._material_records: Dict[str, Tuple[MaterialReference, str]] = {}
 
     def register_dna(self, dna: DesignDNA) -> None:
@@ -67,8 +68,8 @@ class DNARegistry:
                             f"by DesignDNA '{orig_dna_id}'."
                         )
             else:
-                # Track newly seen material ID for commit after all validations pass
-                new_materials_to_record[mat.id] = (mat, dna.id)
+                # Deep copy material reference to prevent external mutation from altering canonical policy
+                new_materials_to_record[mat.id] = (copy.deepcopy(mat), dna.id)
 
         # Commit registration
         self._dna_map[dna.id] = dna
@@ -102,7 +103,7 @@ def register_dna(dna: DesignDNA) -> None:
     _global_dna_registry.register_dna(dna)
 
 
-def list_dna(dna_id: Optional[str] = None) -> List[DesignDNA]:
+def list_dna() -> List[DesignDNA]:
     """Helper function to list all DNA in the global registry."""
     return _global_dna_registry.list_dna()
 
