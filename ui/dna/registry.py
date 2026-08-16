@@ -3,7 +3,7 @@ MultiMind AI - Design DNA Registry
 Central registry for Design DNA registration, material ownership enforcement, and lookup.
 """
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from ui.dna.models import DesignDNA, MaterialReference
 
 logger = logging.getLogger(__name__)
@@ -14,8 +14,8 @@ class DNARegistry:
 
     def __init__(self):
         self._dna_map: Dict[str, DesignDNA] = {}
-        # Tracks material_id -> dna_id for registered material references
-        self._material_ownership: Dict[str, str] = {}
+        # Tracks material_id -> (canonical MaterialReference, owner_dna_id)
+        self._material_records: Dict[str, Tuple[MaterialReference, str]] = {}
 
     def register_dna(self, dna: DesignDNA) -> None:
         """Registers a new DesignDNA object after validating contract and material ownership rules.
@@ -32,24 +32,47 @@ class DNARegistry:
         if dna.id in self._dna_map:
             raise ValueError(f"DesignDNA with ID '{dna.id}' is already registered.")
 
-        # Check material ownership rules across registered materials
+        # Validate material ownership policies against canonical registered materials
+        new_materials_to_record: Dict[str, Tuple[MaterialReference, str]] = {}
+
         for mat in dna.materials:
-            if mat.id in self._material_ownership:
-                owner_dna_id = self._material_ownership[mat.id]
-                if owner_dna_id != dna.id:
-                    # Non-shared material reuse is disallowed
-                    if mat.scope_lock or mat.shared_resource_policy == "disallowed":
+            if mat.id in self._material_records:
+                orig_mat, orig_dna_id = self._material_records[mat.id]
+                orig_is_shared = (not orig_mat.scope_lock) and (orig_mat.shared_resource_policy == "allowed")
+                inc_is_shared = (not mat.scope_lock) and (mat.shared_resource_policy == "allowed")
+
+                if not orig_is_shared:
+                    if not inc_is_shared:
+                        # Case 1: Original non-shared + incoming non-shared -> reject
                         raise ValueError(
                             f"MaterialReference '{mat.id}' in DesignDNA '{dna.id}' is scope-locked/non-shared "
-                            f"and is already owned by DesignDNA '{owner_dna_id}'."
+                            f"and is already owned by DesignDNA '{orig_dna_id}'."
                         )
+                    else:
+                        # Case 2: Original non-shared + incoming claims shared -> reject
+                        raise ValueError(
+                            f"MaterialReference '{mat.id}' in DesignDNA '{dna.id}' claims to be shared, "
+                            f"but material '{mat.id}' was originally registered as scope-locked/non-shared "
+                            f"by DesignDNA '{orig_dna_id}'."
+                        )
+                else:
+                    if inc_is_shared:
+                        # Case 3: Original shared + incoming shared -> allow
+                        pass
+                    else:
+                        # Case 4: Original shared + incoming claims non-shared -> reject
+                        raise ValueError(
+                            f"MaterialReference '{mat.id}' in DesignDNA '{dna.id}' claims to be scope-locked/non-shared, "
+                            f"but material '{mat.id}' was originally registered as an explicitly shared resource "
+                            f"by DesignDNA '{orig_dna_id}'."
+                        )
+            else:
+                # Track newly seen material ID for commit after all validations pass
+                new_materials_to_record[mat.id] = (mat, dna.id)
 
-        # Store DNA and record material ownership
+        # Commit registration
         self._dna_map[dna.id] = dna
-        for mat in dna.materials:
-            # Record ownership for non-shared materials or first registration
-            if mat.id not in self._material_ownership:
-                self._material_ownership[mat.id] = dna.id
+        self._material_records.update(new_materials_to_record)
 
     def list_dna(self) -> List[DesignDNA]:
         """Returns a list of all registered DesignDNA objects."""
@@ -79,7 +102,7 @@ def register_dna(dna: DesignDNA) -> None:
     _global_dna_registry.register_dna(dna)
 
 
-def list_dna() -> List[DesignDNA]:
+def list_dna(dna_id: Optional[str] = None) -> List[DesignDNA]:
     """Helper function to list all DNA in the global registry."""
     return _global_dna_registry.list_dna()
 

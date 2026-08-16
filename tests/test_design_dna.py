@@ -129,28 +129,29 @@ class TestDesignDNAContractAndRegistry(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.dna_registry.register_dna(duplicate_dna)
 
-    def test_material_scope_ownership_and_shared_resource_policy(self):
-        """Tests material ownership enforcement: non-shared materials fail on reuse, shared materials succeed."""
-        mat_locked = MaterialReference(
-            id="mat-locked-asset",
+    def test_material_scope_ownership_and_shared_resource_policy_cases(self):
+        """Tests all 4 material scope ownership and sharing policy cases strictly."""
+        # Setup Case 1 & 2: Original material is non-shared (locked)
+        mat_locked_orig = MaterialReference(
+            id="mat-locked-01",
             material_type="graphic",
             scope_lock=True,
             shared_resource_policy="disallowed"
         )
-        dna_owner = DesignDNA(
-            id="dna-owner",
-            display_name="Owner DNA",
-            materials=[mat_locked]
+        dna_owner_locked = DesignDNA(
+            id="dna-owner-locked",
+            display_name="Locked Owner DNA",
+            materials=[mat_locked_orig]
         )
-        self.dna_registry.register_dna(dna_owner)
+        self.dna_registry.register_dna(dna_owner_locked)
 
-        # Attempting to register another DNA reusing the non-shared material must fail
-        dna_impostor = DesignDNA(
-            id="dna-impostor",
-            display_name="Impostor DNA",
+        # Case 1: Original non-shared + incoming non-shared -> reject
+        dna_case1 = DesignDNA(
+            id="dna-case1",
+            display_name="Case 1 DNA",
             materials=[
                 MaterialReference(
-                    id="mat-locked-asset",
+                    id="mat-locked-01",
                     material_type="graphic",
                     scope_lock=True,
                     shared_resource_policy="disallowed"
@@ -158,37 +159,69 @@ class TestDesignDNAContractAndRegistry(unittest.TestCase):
             ]
         )
         with self.assertRaises(ValueError):
-            self.dna_registry.register_dna(dna_impostor)
+            self.dna_registry.register_dna(dna_case1)
 
-        # Shared materials (scope_lock=False, policy="allowed") can be reused
-        mat_shared = MaterialReference(
-            id="mat-shared-font",
+        # Case 2: Original non-shared + incoming claims shared -> reject (CANNOT bypass original locked policy)
+        dna_case2 = DesignDNA(
+            id="dna-case2",
+            display_name="Case 2 DNA",
+            materials=[
+                MaterialReference(
+                    id="mat-locked-01",
+                    material_type="graphic",
+                    scope_lock=False,
+                    shared_resource_policy="allowed"
+                )
+            ]
+        )
+        with self.assertRaises(ValueError):
+            self.dna_registry.register_dna(dna_case2)
+
+        # Setup Case 3 & 4: Original material is explicitly shared
+        mat_shared_orig = MaterialReference(
+            id="mat-shared-01",
             material_type="font",
             scope_lock=False,
             shared_resource_policy="allowed"
         )
-        dna_shared_1 = DesignDNA(
-            id="dna-shared-1",
-            display_name="Shared DNA 1",
-            materials=[mat_shared]
+        dna_owner_shared = DesignDNA(
+            id="dna-owner-shared",
+            display_name="Shared Owner DNA",
+            materials=[mat_shared_orig]
         )
-        self.dna_registry.register_dna(dna_shared_1)
+        self.dna_registry.register_dna(dna_owner_shared)
 
-        dna_shared_2 = DesignDNA(
-            id="dna-shared-2",
-            display_name="Shared DNA 2",
+        # Case 3: Original shared + incoming shared -> allow
+        dna_case3 = DesignDNA(
+            id="dna-case3",
+            display_name="Case 3 DNA",
             materials=[
                 MaterialReference(
-                    id="mat-shared-font",
+                    id="mat-shared-01",
                     material_type="font",
                     scope_lock=False,
                     shared_resource_policy="allowed"
                 )
             ]
         )
-        # Reusing shared material should succeed
-        self.dna_registry.register_dna(dna_shared_2)
-        self.assertIsNotNone(self.dna_registry.get_dna("dna-shared-2"))
+        self.dna_registry.register_dna(dna_case3)
+        self.assertIsNotNone(self.dna_registry.get_dna("dna-case3"))
+
+        # Case 4: Original shared + incoming claims non-shared -> reject
+        dna_case4 = DesignDNA(
+            id="dna-case4",
+            display_name="Case 4 DNA",
+            materials=[
+                MaterialReference(
+                    id="mat-shared-01",
+                    material_type="font",
+                    scope_lock=True,
+                    shared_resource_policy="disallowed"
+                )
+            ]
+        )
+        with self.assertRaises(ValueError):
+            self.dna_registry.register_dna(dna_case4)
 
     def test_dna_to_theme_mapping_and_theme_engine_compatibility(self):
         """Tests dna_to_theme mapper adapter and verifies mapped Theme compatibility with ThemeRegistry."""
