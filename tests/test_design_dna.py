@@ -336,13 +336,13 @@ class TestDesignDNA(unittest.TestCase):
         """Tests registration, mapping, idempotence, and differentiation of S6.2 real Design DNA proofs."""
         from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
         from ui.dna import get_registry as get_dna_registry
-        from ui.themes import get_registry as get_theme_registry, generate_theme_css
+        from ui.themes import list_themes, get_theme, generate_theme_css
 
         # Run bootstrap
         ensure_proof_dna_and_themes_registered()
 
         dna_reg = get_dna_registry()
-        theme_reg = get_theme_registry()
+        registered_theme_map = {t.id: t for t in list_themes()}
 
         proof_ids = ["japan-print-ink", "chainsaw-man-inspired", "mushishi-inspired"]
 
@@ -353,9 +353,9 @@ class TestDesignDNA(unittest.TestCase):
             self.assertIn(dna.category, ("cultural", "anime"))
             self.assertEqual(dna.materials, [], f"DesignDNA '{pid}' must be asset-free.")
 
-            # 2. Registered in ThemeRegistry
-            self.assertIn(pid, theme_reg._themes, f"Theme '{pid}' not found in ThemeRegistry.")
-            theme = theme_reg.get_theme(pid)
+            # 2. Registered in ThemeRegistry (verified using public list_themes list)
+            self.assertIn(pid, registered_theme_map, f"Theme '{pid}' not found in public list_themes().")
+            theme = get_theme(pid)
             self.assertEqual(theme.id, pid)
 
             # 3. CSS generation works
