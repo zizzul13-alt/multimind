@@ -223,6 +223,42 @@ class TestDesignDNAContractAndRegistry(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.dna_registry.register_dna(dna_case4)
 
+    def test_material_policy_protected_from_external_mutation(self):
+        """Tests that post-registration mutation of a caller-owned MaterialReference does not alter canonical registry policy."""
+        mat_mutable = MaterialReference(
+            id="mat-mutable-01",
+            material_type="texture",
+            scope_lock=True,
+            shared_resource_policy="disallowed"
+        )
+        dna_owner = DesignDNA(
+            id="dna-mutable-owner",
+            display_name="Mutable Owner DNA",
+            materials=[mat_mutable]
+        )
+        self.dna_registry.register_dna(dna_owner)
+
+        # Mutate the caller-owned MaterialReference object externally afterward
+        mat_mutable.scope_lock = False
+        mat_mutable.shared_resource_policy = "allowed"
+
+        # Attempt reuse from another DNA claiming shared usage
+        dna_reuser = DesignDNA(
+            id="dna-mutable-reuser",
+            display_name="Reuser DNA",
+            materials=[
+                MaterialReference(
+                    id="mat-mutable-01",
+                    material_type="texture",
+                    scope_lock=False,
+                    shared_resource_policy="allowed"
+                )
+            ]
+        )
+        # Registry must still enforce original scope-locked policy and reject reuse
+        with self.assertRaises(ValueError):
+            self.dna_registry.register_dna(dna_reuser)
+
     def test_dna_to_theme_mapping_and_theme_engine_compatibility(self):
         """Tests dna_to_theme mapper adapter and verifies mapped Theme compatibility with ThemeRegistry."""
         dna = DesignDNA(
