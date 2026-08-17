@@ -53,14 +53,24 @@ def test_css_token_consumption_rules():
     with open(css_path, "r", encoding="utf-8") as f:
         css_content = f.read()
 
-    # Verify native elements use existing --mm-* variables
-    assert "var(--mm-font-base)" in css_content
-    assert "var(--mm-color-text)" in css_content
-    assert "var(--mm-color-surface)" in css_content
-    assert "var(--mm-color-border)" in css_content
+    # Headings mapping check
+    assert ".stApp h1, .stApp h2, .stApp h3" in css_content or ".stApp h1" in css_content
+    assert "font-family: var(--mm-font-base);" in css_content
+    assert "color: var(--mm-color-text);" in css_content
+
+    # Chat Message Container & Content
     assert '[data-testid="stChatMessage"]' in css_content
+    assert "background-color: var(--mm-color-surface);" in css_content
+    assert "border: 1px solid var(--mm-color-border);" in css_content
+    assert "border-radius: var(--mm-radius-md);" in css_content
+
+    # Metric
     assert '[data-testid="stMetric"]' in css_content
-    assert ".stRadio" in css_content
+    assert '[data-testid="stMetricLabel"]' in css_content
+    assert "color: var(--mm-color-text-muted);" in css_content
+
+    # Radio
+    assert ".stRadio label" in css_content or '[data-testid="stRadio"] label' in css_content
 
     # Ensure no theme-specific hardcoded CSS classes or theme names exist
     assert "japan-print" not in css_content.lower()

@@ -13,232 +13,6 @@
   background-color: transparent;
 }
 
-/* Native Streamlit Typography & Structural Consumption Overrides */
-.stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
-  font-family: var(--mm-font-base);
-  color: var(--mm-color-text);
-}
-
-.stApp h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.stApp h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.stApp h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.stApp h4, .stApp h5, .stApp h6 {
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.stApp p, .stApp li, .stApp span {
-  font-family: var(--mm-font-base);
-}
-
-/* Chat Message Container & Content */
-[data-testid="stChatMessage"] {
-  background-color: var(--mm-color-surface);
-  border: 1px solid var(--mm-color-border);
-  border-radius: var(--mm-radius-md);
-  padding: var(--mm-space-md);
-  margin-bottom: var(--mm-space-md);
-  color: var(--mm-color-text);
-}
-
-[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
-  color: var(--mm-color-text);
-  font-family: var(--mm-font-base);
-}
-
-/* Metrics (Label, Value, Delta) */
-[data-testid="stMetric"] {
-  background-color: var(--mm-color-surface-elevated);
-  border: 1px solid var(--mm-color-border);
-  border-radius: var(--mm-radius-md);
-  padding: var(--mm-space-sm) var(--mm-space-md);
-}
-
-[data-testid="stMetricLabel"] {
-  color: var(--mm-color-text-muted);
-  font-family: var(--mm-font-base);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-[data-testid="stMetricValue"] {
-  color: var(--mm-color-text);
-  font-family: var(--mm-font-base);
-  font-weight: 700;
-}
-
-[data-testid="stMetricDelta"] {
-  font-family: var(--mm-font-base);
-}
-
-/* Radio Controls & Option Labels */
-.stRadio label, [data-testid="stRadio"] label {
-  color: var(--mm-color-text);
-  font-family: var(--mm-font-base);
-}
-
-.stRadio [data-testid="stMarkdownContainer"] p {
-  color: var(--mm-color-text);
-  font-family: var(--mm-font-base);
-}
-
-/* Sidebar Text, Headings & Captions */
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
-  color: var(--mm-color-text);
-  font-family: var(--mm-font-base);
-}
-
-[data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] caption {
-  color: var(--mm-color-text-muted);
-}
-
-/* Code & Blockquotes */
-.stApp code, .stApp pre {
-  font-family: var(--mm-font-mono);
-  background-color: var(--mm-color-surface-input);
-  color: var(--mm-color-text);
-  border-radius: var(--mm-radius-sm);
-}
-
-.stApp blockquote {
-  border-left: 3px solid var(--mm-color-primary);
-  background-color: var(--mm-color-surface-muted);
-  color: var(--mm-color-text-muted);
-  border-radius: var(--mm-radius-sm);
-  padding: var(--mm-space-sm) var(--mm-space-md);
-  margin: var(--mm-space-sm) 0;
-}
-
-
-/* Native Streamlit Typography & Structural Consumption Overrides */
-.stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
-  font-family: var(--mm-font-base);
-  color: var(--mm-color-text);
-}
-
-.stApp h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.stApp h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.stApp h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.stApp h4, .stApp h5, .stApp h6 {
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.stApp p, .stApp li, .stApp span {
-  font-family: var(--mm-font-base);
-}
-
-/* Chat Message Container & Content */
-[data-testid="stChatMessage"] {
-  background-color: var(--mm-color-surface);
-  border: 1px solid var(--mm-color-border);
-  border-radius: var(--mm-radius-md);
-  padding: var(--mm-space-md);
-  margin-bottom: var(--mm-space-md);
-  color: var(--mm-color-text);
-}
-
-[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
-  color: var(--mm-color-text);
-  font-family: var(--mm-font-base);
-}
-
-/* Metrics (Label, Value, Delta) */
-[data-testid="stMetric"] {
-  background-color: var(--mm-color-surface-elevated);
-  border: 1px solid var(--mm-color-border);
-  border-radius: var(--mm-radius-md);
-  padding: var(--mm-space-sm) var(--mm-space-md);
-}
-
-[data-testid="stMetricLabel"] {
-  color: var(--mm-color-text-muted);
-  font-family: var(--mm-font-base);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-[data-testid="stMetricValue"] {
-  color: var(--mm-color-text);
-  font-family: var(--mm-font-base);
-  font-weight: 700;
-}
-
-[data-testid="stMetricDelta"] {
-  font-family: var(--mm-font-base);
-}
-
-/* Radio Controls & Option Labels */
-.stRadio label, [data-testid="stRadio"] label {
-  color: var(--mm-color-text);
-  font-family: var(--mm-font-base);
-}
-
-.stRadio [data-testid="stMarkdownContainer"] p {
-  color: var(--mm-color-text);
-  font-family: var(--mm-font-base);
-}
-
-/* Sidebar Text, Headings & Captions */
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
-  color: var(--mm-color-text);
-  font-family: var(--mm-font-base);
-}
-
-[data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] caption {
-  color: var(--mm-color-text-muted);
-}
-
-/* Code & Blockquotes */
-.stApp code, .stApp pre {
-  font-family: var(--mm-font-mono);
-  background-color: var(--mm-color-surface-input);
-  color: var(--mm-color-text);
-  border-radius: var(--mm-radius-sm);
-}
-
-.stApp blockquote {
-  border-left: 3px solid var(--mm-color-primary);
-  background-color: var(--mm-color-surface-muted);
-  color: var(--mm-color-text-muted);
-  border-radius: var(--mm-radius-sm);
-  padding: var(--mm-space-sm) var(--mm-space-md);
-  margin: var(--mm-space-sm) 0;
-}
-
-
 /* MultiMind AI - CSS Foundation & Semantic Control Styling */
 
 /* Base Container Primitives */
@@ -469,4 +243,117 @@
   white-space: pre-wrap;
   word-break: break-word;
   overflow-x: auto;
+}
+
+
+/* Native Streamlit Typography & Structural Consumption Overrides */
+.stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
+  font-family: var(--mm-font-base);
+  color: var(--mm-color-text);
+}
+
+.stApp h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stApp h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.stApp h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.stApp h4, .stApp h5, .stApp h6 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.stApp p, .stApp li, .stApp span {
+  font-family: var(--mm-font-base);
+}
+
+/* Chat Message Container & Content */
+[data-testid="stChatMessage"] {
+  background-color: var(--mm-color-surface);
+  border: 1px solid var(--mm-color-border);
+  border-radius: var(--mm-radius-md);
+  padding: var(--mm-space-md);
+  margin-bottom: var(--mm-space-md);
+  color: var(--mm-color-text);
+}
+
+[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+}
+
+/* Metrics (Label, Value, Delta) */
+[data-testid="stMetric"] {
+  background-color: var(--mm-color-surface-elevated);
+  border: 1px solid var(--mm-color-border);
+  border-radius: var(--mm-radius-md);
+  padding: var(--mm-space-sm) var(--mm-space-md);
+}
+
+[data-testid="stMetricLabel"] {
+  color: var(--mm-color-text-muted);
+  font-family: var(--mm-font-base);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+[data-testid="stMetricValue"] {
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+  font-weight: 700;
+}
+
+[data-testid="stMetricDelta"] {
+  font-family: var(--mm-font-base);
+}
+
+/* Radio Controls & Option Labels */
+.stRadio label, [data-testid="stRadio"] label {
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+}
+
+.stRadio [data-testid="stMarkdownContainer"] p {
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+}
+
+/* Sidebar Text, Headings & Captions */
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+}
+
+[data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] caption {
+  color: var(--mm-color-text-muted);
+}
+
+/* Code & Blockquotes */
+.stApp code, .stApp pre {
+  font-family: var(--mm-font-mono);
+  background-color: var(--mm-color-surface-input);
+  color: var(--mm-color-text);
+  border-radius: var(--mm-radius-sm);
+}
+
+.stApp blockquote {
+  border-left: 3px solid var(--mm-color-primary);
+  background-color: var(--mm-color-surface-muted);
+  color: var(--mm-color-text-muted);
+  border-radius: var(--mm-radius-sm);
+  padding: var(--mm-space-sm) var(--mm-space-md);
+  margin: var(--mm-space-sm) 0;
 }
