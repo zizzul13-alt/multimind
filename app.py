@@ -585,6 +585,18 @@ def main():
                 st.write("OpenRouter:", "✅" if agents.get("openrouter") else "❌")
                 st.write("HuggingFace:", "✅" if agents.get("huggingface") else "❌")
                 st.write("Remote:", "✅" if agents.get("remote") else "❌")
+
+                # S7.1 Dev Spike Integration
+                if os.getenv("MULTIMIND_DEV_SPIKE", "false").lower() in ("true", "1"):
+                    st.divider()
+                    with st.expander("⚡ Theme Preview Spike (Dev Only)", expanded=False):
+                        try:
+                            from ui.components.theme_preview_spike.preview_spike import render_theme_preview_spike
+                            spike_result = render_theme_preview_spike(key="sidebar_dev_spike")
+                            st.caption("Returned to Python:")
+                            st.json(spike_result)
+                        except Exception as e:
+                            st.error(f"Spike load error: {e}")
     if st.session_state.user is None:
         show_login_page()
     else:

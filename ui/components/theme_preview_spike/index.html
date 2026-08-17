@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Theme Preview Spike</title>
+  <style>
+    :root {
+      --bg-color: #1e293b;
+      --text-color: #f8fafc;
+      --border-color: #334155;
+    }
+    body {
+      margin: 0;
+      padding: 12px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: transparent;
+      color: var(--text-color);
+      box-sizing: border-box;
+    }
+    .card {
+      background-color: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .preview-box {
+      padding: 12px;
+      border: 2px solid;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+      font-size: 13px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    label {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    input, select {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    button {
+      background-color: #3b82f6;
+      color: #ffffff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      width: 100%;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #2563eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="title">⚡ Isolated Custom Component Spike</div>
+
+    <div id="preview" class="preview-box">
+      <strong>Live Local Client Preview</strong><br>
+      Changes here do NOT trigger Streamlit reruns.
+    </div>
+
+    <div class="controls">
+      <div class="field">
+        <label for="primaryColor">Primary Color</label>
+        <input type="color" id="primaryColor" value="#3b82f6">
+      </div>
+      <div class="field">
+        <label for="borderRadius">Border Radius</label>
+        <select id="borderRadius">
+          <option value="0px">0px (Sharp)</option>
+          <option value="4px">4px (Small)</option>
+          <option value="8px" selected>8px (Medium)</option>
+          <option value="16px">16px (Large)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="density">Density</label>
+        <select id="density">
+          <option value="compact">Compact</option>
+          <option value="comfortable" selected>Comfortable</option>
+          <option value="spacious">Spacious</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="applyBtn">Apply / Return to Python</button>
+  </div>
+
+  <script>
+    function sendToStreamlit(type, data) {
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: type,
+        ...data
+      }, "*");
+    }
+
+    const primaryInput = document.getElementById("primaryColor");
+    const radiusInput = document.getElementById("borderRadius");
+    const densityInput = document.getElementById("density");
+    const previewBox = document.getElementById("preview");
+    const applyBtn = document.getElementById("applyBtn");
+
+    function updateLocalPreview() {
+      const primary = primaryInput.value;
+      const radius = radiusInput.value;
+      const density = densityInput.value;
+
+      previewBox.style.borderColor = primary;
+      previewBox.style.borderRadius = radius;
+
+      if (density === "compact") {
+        previewBox.style.padding = "6px";
+      } else if (density === "spacious") {
+        previewBox.style.padding = "18px";
+      } else {
+        previewBox.style.padding = "12px";
+      }
+    }
+
+    primaryInput.addEventListener("input", updateLocalPreview);
+    radiusInput.addEventListener("change", updateLocalPreview);
+    densityInput.addEventListener("change", updateLocalPreview);
+
+    window.addEventListener("message", function(event) {
+      if (event.data.type === "streamlit:render") {
+        const args = event.data.args || {};
+        if (args.initial_payload) {
+          if (args.initial_payload.primary) primaryInput.value = args.initial_payload.primary;
+          if (args.initial_payload.radius) radiusInput.value = args.initial_payload.radius;
+          if (args.initial_payload.density) densityInput.value = args.initial_payload.density;
+          updateLocalPreview();
+        }
+        sendToStreamlit("streamlit:setFrameHeight", { height: document.body.scrollHeight + 10 });
+      }
+    });
+
+    applyBtn.addEventListener("click", function() {
+      const payload = {
+        primary: primaryInput.value,
+        radius: radiusInput.value,
+        density: densityInput.value,
+        applied_at: new Date().toISOString()
+      };
+      sendToStreamlit("streamlit:setComponentValue", { value: payload });
+    });
+
+    updateLocalPreview();
+    sendToStreamlit("streamlit:componentReady", { apiVersion: 1 });
+  </script>
+</body>
+</html>
