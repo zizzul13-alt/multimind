@@ -4,6 +4,30 @@ Session memory management
 from datetime import datetime
 from utils.token_counter import TokenCounter
 
+
+def get_or_hydrate_session_memory(memories, db, session_id):
+    """Return cached memory, rebuilding it from persisted chats when needed."""
+    if session_id not in memories:
+        memory = SessionMemory()
+        for chat in db.get_session_chats_for_memory(session_id):
+            memory.add_chat(chat["prompt"], chat.get("final_answer", ""))
+        memories[session_id] = memory
+
+    return memories[session_id]
+
+
+def persist_chat_and_update_memory(db, session_id, memories, chat_data):
+    """Persist an exchange before making it available as runtime context."""
+    if db.save_chat(session_id, chat_data) is False:
+        return False
+
+    memory = memories.get(session_id)
+    if memory is None:
+        memory = SessionMemory()
+        memories[session_id] = memory
+    memory.add_chat(chat_data["prompt"], chat_data.get("final_answer", ""))
+    return True
+
 class SessionMemory:
     """Short-term memory for a session"""
     

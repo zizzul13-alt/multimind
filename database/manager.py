@@ -91,6 +91,24 @@ class DatabaseManager:
         conn.close()
         return chats
 
+    def get_session_chats_for_memory(self, session_id):
+        """Get complete chat history in deterministic insertion order for memory hydration."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        # This table is not declared WITHOUT ROWID, so rowid is available as a
+        # stable insertion-order tiebreaker when SQLite timestamps share a second.
+        cursor.execute("""
+            SELECT * FROM chats
+            WHERE session_id = ?
+            ORDER BY created_at ASC, rowid ASC
+        """, (session_id,))
+
+        chats = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return chats
+
     def create_session(self, session_id, name, mode="coding", config=None):
         """Create session"""
         conn = sqlite3.connect(self.db_path)
