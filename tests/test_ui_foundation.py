@@ -215,5 +215,30 @@ class TestUIFoundation(unittest.TestCase):
         self.assertEqual(mock_st_state.active_theme, "neutral-contrast-demo")
         mock_rerun.assert_called_once()
 
+
+    @patch("streamlit.markdown")
+    def test_icon_font_preservation_regression(self, mock_markdown):
+        """Test that Streamlit icon selectors are excluded from broad span typography and retain Material Symbols icon fonts across themes."""
+        from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
+        ensure_proof_dna_and_themes_registered()
+
+        test_themes = ["default", "neutral-contrast-demo", "japan-print-ink", "chainsaw-man-inspired", "mushishi-inspired"]
+
+        for theme_id in test_themes:
+            mock_markdown.reset_mock()
+            load_css(theme_id)
+            mock_markdown.assert_called_once()
+            args, _ = mock_markdown.call_args
+            css = args[0]
+
+            # Verify broad span typography rule excludes icon selectors
+            self.assertIn(':not([data-testid="stIcon"])', css)
+            self.assertIn(':not([data-testid="stExpanderToggleIcon"])', css)
+
+            # Verify explicit Material Symbols icon font preservation exists for icon selectors
+            self.assertIn('[data-testid="stIcon"]', css)
+            self.assertIn('[data-testid="stExpanderToggleIcon"]', css)
+            self.assertIn('"Material Symbols Rounded"', css)
+
 if __name__ == "__main__":
     unittest.main()
