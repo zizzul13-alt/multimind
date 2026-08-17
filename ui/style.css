@@ -276,8 +276,20 @@
   line-height: 1.4;
 }
 
-.stApp p, .stApp li, .stApp span {
+.stApp p,
+.stApp li,
+.stApp span:not([data-testid="stIcon"]):not([data-testid="stExpanderToggleIcon"]):not([data-baseweb="icon"]):not(.material-symbols-outlined):not(.material-symbols-rounded):not([class*="material-symbols"]) {
   font-family: var(--mm-font-base);
+}
+
+/* Streamlit Material Symbols / Icon font preservation */
+[data-testid="stIcon"],
+[data-testid="stExpanderToggleIcon"],
+[data-baseweb="icon"],
+.material-symbols-outlined,
+.material-symbols-rounded,
+[class*="material-symbols"] {
+  font-family: "Material Symbols Rounded", "Material Symbols Outlined", "Material Icons", sans-serif;
 }
 
 /* Chat Message Container & Content */
