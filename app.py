@@ -18,7 +18,7 @@ from agents.remote_agent import RemoteAgent
 from agents.unified_agent import UnifiedAgent
 from core.debate import DebateOrchestrator
 from core.compressor import PromptCompressor
-from core.memory import SessionMemory
+from core.memory import get_or_hydrate_session_memory, persist_chat_and_update_memory
 from core.file_handler import FileHandler
 from core.release_gate import ReleaseGate
 from core.skills_manager import SkillsManager
@@ -158,8 +158,7 @@ def show_sidebar():
             btn_kind = "primary" if is_active else "secondary"
             if st.button(label, key=unique_key, use_container_width=True, type=btn_kind, help=s_name):
                 st.session_state.current_session = s
-                if s['id'] not in st.session_state.memories:
-                    st.session_state.memories[s['id']] = SessionMemory()
+                get_or_hydrate_session_memory(st.session_state.memories, db, s['id'])
                 st.rerun()
 
         st.divider()
@@ -526,15 +525,6 @@ def process_chat(prompt, uploaded_files, context_mode):
                 skill=st.session_state.get("selected_skill", "default")
             )
 
-        # Save to memory & database (existing code)...
-        # ===== SAVE TO MEMORY =====
-        if st.session_state.current_session:
-            memory = st.session_state.memories.get(st.session_state.current_session['id'])
-            if not memory:
-                memory = SessionMemory()
-                st.session_state.memories[st.session_state.current_session['id']] = memory
-            memory.add_chat(prompt, debate_result.get("final_answer", ""))
-
         # ===== SAVE TO DATABASE =====
         if st.session_state.current_session:
             db = get_db_manager(st.session_state.user_id)
@@ -549,7 +539,12 @@ def process_chat(prompt, uploaded_files, context_mode):
                 "tokens_used": debate_result.get("total_tokens", 0),
                 "cost": debate_result.get("total_cost", 0)
             }
-            db.save_chat(st.session_state.current_session['id'], chat_data)
+            persist_chat_and_update_memory(
+                db,
+                st.session_state.current_session['id'],
+                st.session_state.memories,
+                chat_data
+            )
 
         st.session_state.new_chat = False
         st.success("✅ Debate complete!")
