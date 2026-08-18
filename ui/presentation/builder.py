@@ -5,8 +5,7 @@ Adapts existing application/session/database state into read-only PresentationSn
 Deterministic, free of side effects, non-mutating, safe on missing or corrupt inputs.
 """
 import json
-from typing import Dict, List, Any, Optional
-from core.release_gate import ReleaseGate
+from typing import Dict, List, Any, Optional, Tuple
 from ui.presentation.models import (
     PresentationSnapshot,
     SessionMetadataSnapshot,
@@ -15,6 +14,26 @@ from ui.presentation.models import (
     DebateDetailSnapshot,
     DebateResponseSnapshot,
 )
+
+
+def _safe_int(val: Any, default: int = 0) -> int:
+    """Defensively parses integer values."""
+    if val is None:
+        return default
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_float(val: Any, default: float = 0.0) -> float:
+    """Defensively parses float values."""
+    if val is None:
+        return default
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
 
 
 def _build_session_metadata(session_dict: Dict[str, Any]) -> SessionMetadataSnapshot:
@@ -42,9 +61,9 @@ def _build_memory_summary(memory_obj: Any) -> Optional[MemorySummarySnapshot]:
         if not isinstance(stats, dict):
             return None
         return MemorySummarySnapshot(
-            context_tokens=int(stats.get("context_tokens", 0)),
-            short_term_chats=int(stats.get("short_term_chats", 0)),
-            free_percent=int(stats.get("free_percent", 0)),
+            context_tokens=_safe_int(stats.get("context_tokens"), 0),
+            short_term_chats=_safe_int(stats.get("short_term_chats"), 0),
+            free_percent=_safe_int(stats.get("free_percent"), 0),
         )
     except Exception:
         return None
@@ -64,19 +83,13 @@ def _build_debate_detail(debate_raw: Any) -> Optional[DebateDetailSnapshot]:
             if isinstance(parsed, dict):
                 debate_dict = parsed
         except Exception:
-            return None
+            return DebateDetailSnapshot(gate_score=None, responses=(), has_error=True)
 
     if not debate_dict:
-        return None
+        return DebateDetailSnapshot(gate_score=None, responses=(), has_error=True)
 
-    gate_score = debate_dict.get("gate_score")
-    gate_badge = None
-    if gate_score is not None:
-        try:
-            gate_score = int(gate_score)
-            gate_badge = ReleaseGate.get_badge(gate_score)
-        except Exception:
-            gate_score = None
+    raw_gate_score = debate_dict.get("gate_score")
+    gate_score = _safe_int(raw_gate_score, default=None) if raw_gate_score is not None else None
 
     responses = []
     raw_responses = debate_dict.get("responses", [])
@@ -87,21 +100,19 @@ def _build_debate_detail(debate_raw: Any) -> Optional[DebateDetailSnapshot]:
                 text = str(resp.get("text", ""))
                 status = str(resp.get("status", "unknown"))
 
-                badge_variant = "success" if status == "success" else ("danger" if status == "error" else "warning")
                 responses.append(
                     DebateResponseSnapshot(
                         round_index=idx,
                         agent=agent,
                         text=text,
                         status=status,
-                        badge_variant=badge_variant,
                     )
                 )
 
     return DebateDetailSnapshot(
         gate_score=gate_score,
-        gate_badge=gate_badge,
-        responses=responses,
+        responses=tuple(responses),
+        has_error=False,
     )
 
 
@@ -110,26 +121,22 @@ def _build_chat_message(chat_dict: Dict[str, Any]) -> ChatMessageSnapshot:
     chat_id = str(chat_dict.get("id", ""))
     prompt = str(chat_dict.get("prompt", ""))
     mode = str(chat_dict.get("mode", "continue"))
-    mode_badge = "🧵" if mode == "continue" else "📌"
     final_answer = str(chat_dict.get("final_answer", "No response"))
-    tokens_used = int(chat_dict.get("tokens_used", 0))
+    tokens_used = _safe_int(chat_dict.get("tokens_used"), 0)
+    cost = _safe_float(chat_dict.get("cost"), 0.0)
 
-    cost_val = chat_dict.get("cost", 0.0)
-    try:
-        cost = float(cost_val)
-    except (ValueError, TypeError):
-        cost = 0.0
-
-    debate_detail = _build_debate_detail(chat_dict.get("debate_data"))
+    raw_debate = chat_dict.get("debate_data")
+    has_debate_data = bool(raw_debate)
+    debate_detail = _build_debate_detail(raw_debate)
 
     return ChatMessageSnapshot(
         id=chat_id,
         prompt=prompt,
         mode=mode,
-        mode_badge=mode_badge,
         final_answer=final_answer,
         tokens_used=tokens_used,
         cost=cost,
+        has_debate_data=has_debate_data,
         debate_detail=debate_detail,
     )
 
@@ -158,6 +165,6 @@ def build_presentation_snapshot(
 
     return PresentationSnapshot(
         session=session_snapshot,
-        chats=chat_snapshots,
+        chats=tuple(chat_snapshots),
         memory=memory_snapshot,
     )

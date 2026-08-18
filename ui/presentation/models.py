@@ -5,7 +5,7 @@ Provides pure presentation snapshots representing the state consumed by UI rende
 Independent of theme styling, database persistence, and orchestration logic.
 """
 from dataclasses import dataclass, field
-from typing import List, Optional, Any, Dict
+from typing import Tuple, Optional
 
 
 @dataclass(frozen=True)
@@ -32,15 +32,14 @@ class DebateResponseSnapshot:
     agent: str
     text: str
     status: str
-    badge_variant: str  # "success", "danger", "warning", "info"
 
 
 @dataclass(frozen=True)
 class DebateDetailSnapshot:
     """Read-only presentation snapshot of debate metrics and agent responses."""
     gate_score: Optional[int]
-    gate_badge: Optional[str]
-    responses: List[DebateResponseSnapshot] = field(default_factory=list)
+    responses: Tuple[DebateResponseSnapshot, ...] = ()
+    has_error: bool = False
 
 
 @dataclass(frozen=True)
@@ -49,10 +48,10 @@ class ChatMessageSnapshot:
     id: str
     prompt: str
     mode: str  # 'continue' or 'standalone'
-    mode_badge: str  # "🧵" or "📌"
     final_answer: str
     tokens_used: int
     cost: float
+    has_debate_data: bool = False
     debate_detail: Optional[DebateDetailSnapshot] = None
 
 
@@ -60,5 +59,5 @@ class ChatMessageSnapshot:
 class PresentationSnapshot:
     """Root read-only semantic presentation snapshot for current active session path."""
     session: SessionMetadataSnapshot
-    chats: List[ChatMessageSnapshot] = field(default_factory=list)
+    chats: Tuple[ChatMessageSnapshot, ...] = ()
     memory: Optional[MemorySummarySnapshot] = None
