@@ -29,6 +29,7 @@ from utils.error_handler import error_logger
 from utils.config import Config
 from ui.foundation import load_css, render_status_badge, card_container
 from ui.presentation import build_presentation_snapshot
+from ui.presentation.projections import render_chat_first, render_command_center
 from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
 from ui.themes import list_themes
 
@@ -61,6 +62,9 @@ if "initialized" not in st.session_state:
 
 if "active_theme" not in st.session_state:
     st.session_state.active_theme = "default"
+
+if "active_archetype" not in st.session_state:
+    st.session_state.active_archetype = "chat_first"
 
 load_css(st.session_state.get("active_theme", "default"))
 
@@ -218,6 +222,26 @@ def show_sidebar():
             if selected_theme_id != st.session_state.get("active_theme"):
                 st.session_state.active_theme = selected_theme_id
                 st.rerun()
+
+            # Archetype Projection Selector (S7.4 Proof)
+            archetypes = {
+                "chat_first": "💬 Chat-first",
+                "command_center": "🎛️ Command Center"
+            }
+            curr_arch = st.session_state.get("active_archetype", "chat_first")
+            arch_keys = list(archetypes.keys())
+            arch_index = arch_keys.index(curr_arch) if curr_arch in arch_keys else 0
+
+            selected_arch = st.selectbox(
+                "📐 Archetype View",
+                arch_keys,
+                index=arch_index,
+                format_func=lambda k: archetypes.get(k, k),
+                key="settings_archetype"
+            )
+            if selected_arch != curr_arch:
+                st.session_state.active_archetype = selected_arch
+                st.rerun()
         
         st.divider()
        
@@ -263,72 +287,11 @@ def show_session():
 
     snapshot = build_presentation_snapshot(session, chats, memory)
 
-    # Session Header Title & Metadata
-    st.markdown(
-        f"<div class='mm-flex-between'>"
-        f"  <div class='mm-typo-heading'>💬 {snapshot.session.name}</div>"
-        f"  <div>"
-        f"    <span class='mm-badge mm-badge-info'>Mode: {snapshot.session.mode}</span> "
-        f"    <span class='mm-typo-caption mm-text-muted'>Created: {snapshot.session.created_at[:10]}</span>"
-        f"  </div>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
-
-    # Memory Metrics Bar
-    if snapshot.memory:
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Context Tokens", snapshot.memory.context_tokens)
-        with col2:
-            st.metric("Short-term Chats", snapshot.memory.short_term_chats)
-        with col3:
-            st.metric("Free Space", f"{snapshot.memory.free_percent}%")
-
-    st.divider()
-
-    # Chat Feed
-    for chat in snapshot.chats:
-        with st.chat_message("user"):
-            mode_badge = "🧵" if chat.mode == 'continue' else "📌"
-            st.caption(f"{mode_badge} {chat.mode.upper()}")
-            st.write(chat.prompt)
-        with st.chat_message("assistant"):
-            st.markdown(chat.final_answer)
-            if chat.has_debate_data:
-                with st.expander("🔍 Debate Details"):
-                    if chat.debate_detail and chat.debate_detail.has_error:
-                        st.caption("Error loading debate details")
-                    elif chat.debate_detail:
-                        if chat.debate_detail.gate_score is not None:
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                st.caption(f"🎯 Gate Score: {chat.debate_detail.gate_score}/10")
-                            with col2:
-                                st.caption(f"{ReleaseGate.get_badge(chat.debate_detail.gate_score)}")
-                            st.divider()
-                        if chat.debate_detail.responses:
-                            for r in chat.debate_detail.responses:
-                                badge_variant = "success" if r.status == "success" else ("danger" if r.status == "error" else "warning")
-                                render_status_badge(f"Round {r.round_index} - {r.agent} ({r.status})", variant=badge_variant)
-                                if r.text:
-                                    st.markdown(r.text)
-                                else:
-                                    st.caption(f"(Status: {r.status})")
-                        else:
-                            st.caption("No debate data available")
-                    else:
-                        st.caption("Error loading debate details")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.caption(f"🔤 {chat.tokens_used} tokens")
-            with col2:
-                st.caption(f"💵 ${chat.cost:.6f}")
-
-    st.divider()
-    if st.button("➕ New Chat", type="primary", key="new_chat_btn", use_container_width=True):
-        st.session_state.new_chat = True
-        st.rerun()
+    archetype = st.session_state.get("active_archetype", "chat_first")
+    if archetype == "command_center":
+        render_command_center(snapshot)
+    else:
+        render_chat_first(snapshot)
 
 def show_new_chat():
     st.markdown("<div class='mm-typo-heading' style='margin-bottom: var(--mm-space-md);'>💭 New Chat</div>", unsafe_allow_html=True)
