@@ -290,28 +290,35 @@ def show_session():
     # Chat Feed
     for chat in snapshot.chats:
         with st.chat_message("user"):
-            st.caption(f"{chat.mode_badge} {chat.mode.upper()}")
+            mode_badge = "🧵" if chat.mode == 'continue' else "📌"
+            st.caption(f"{mode_badge} {chat.mode.upper()}")
             st.write(chat.prompt)
         with st.chat_message("assistant"):
             st.markdown(chat.final_answer)
-            if chat.debate_detail:
+            if chat.has_debate_data:
                 with st.expander("🔍 Debate Details"):
-                    if chat.debate_detail.gate_score is not None:
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.caption(f"🎯 Gate Score: {chat.debate_detail.gate_score}/10")
-                        with col2:
-                            st.caption(f"{chat.debate_detail.gate_badge}")
-                        st.divider()
-                    if chat.debate_detail.responses:
-                        for r in chat.debate_detail.responses:
-                            render_status_badge(f"Round {r.round_index} - {r.agent} ({r.status})", variant=r.badge_variant)
-                            if r.text:
-                                st.markdown(r.text)
-                            else:
-                                st.caption(f"(Status: {r.status})")
+                    if chat.debate_detail and chat.debate_detail.has_error:
+                        st.caption("Error loading debate details")
+                    elif chat.debate_detail:
+                        if chat.debate_detail.gate_score is not None:
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.caption(f"🎯 Gate Score: {chat.debate_detail.gate_score}/10")
+                            with col2:
+                                st.caption(f"{ReleaseGate.get_badge(chat.debate_detail.gate_score)}")
+                            st.divider()
+                        if chat.debate_detail.responses:
+                            for r in chat.debate_detail.responses:
+                                badge_variant = "success" if r.status == "success" else ("danger" if r.status == "error" else "warning")
+                                render_status_badge(f"Round {r.round_index} - {r.agent} ({r.status})", variant=badge_variant)
+                                if r.text:
+                                    st.markdown(r.text)
+                                else:
+                                    st.caption(f"(Status: {r.status})")
+                        else:
+                            st.caption("No debate data available")
                     else:
-                        st.caption("No debate data available")
+                        st.caption("Error loading debate details")
             col1, col2 = st.columns(2)
             with col1:
                 st.caption(f"🔤 {chat.tokens_used} tokens")
