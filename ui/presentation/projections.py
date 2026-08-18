@@ -166,14 +166,12 @@ def render_command_center(snapshot: PresentationSnapshot) -> None:
                             for col_i, resp in enumerate(d_detail.responses):
                                 with agent_cols[col_i % len(agent_cols)]:
                                     variant = "success" if resp.status == "success" else ("danger" if resp.status == "error" else "warning")
-                                    card_container(
-                                        f"<div class='mm-typo-label'>Round {resp.round_index} — {resp.agent}</div>"
-                                        f"<div style='margin-top:4px;'><span class='mm-badge mm-badge-{variant}'>{resp.status.upper()}</span></div>"
-                                        f"<div class='mm-typo-body-small' style='margin-top:8px; max-height:180px; overflow-y:auto;'>"
-                                        f"{resp.text if resp.text else '<i>No output</i>'}"
-                                        f"</div>",
-                                        variant="default"
-                                    )
+                                    badge_variant = "success" if resp.status == "success" else ("danger" if resp.status == "error" else "warning")
+                                    render_status_badge(f"Round {resp.round_index} - {resp.agent} ({resp.status.upper()})", variant=badge_variant)
+                                    if resp.text:
+                                        st.markdown(resp.text)
+                                    else:
+                                        st.caption("(No output)")
                         else:
                             st.caption("No individual agent responses logged.")
                 else:
