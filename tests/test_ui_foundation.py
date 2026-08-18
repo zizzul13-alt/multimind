@@ -178,7 +178,18 @@ class TestUIFoundation(unittest.TestCase):
         from ui.themes import list_themes, get_theme
         mock_get_sessions.return_value = []
         demo_theme = get_theme("neutral-contrast-demo")
-        mock_selectbox.return_value = demo_theme
+
+        def selectbox_side_effect(*args, **kwargs):
+            key = kwargs.get("key")
+            if key == "settings_theme":
+                return demo_theme
+            elif key == "settings_archetype":
+                return "chat_first"
+            elif key == "settings_skill":
+                return "default"
+            return args[0][0] if args and isinstance(args[0], (list, tuple)) and len(args[0]) > 0 else None
+
+        mock_selectbox.side_effect = selectbox_side_effect
 
         class StateMock(dict):
             def __getattr__(self, name):
