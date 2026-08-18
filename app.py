@@ -28,6 +28,7 @@ from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 from utils.config import Config
 from ui.foundation import load_css, render_status_badge, card_container
+from ui.presentation import build_presentation_snapshot
 from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
 from ui.themes import list_themes
 
@@ -257,75 +258,65 @@ def show_sidebar():
 def show_session():
     session = st.session_state.current_session
     memory = st.session_state.memories.get(session['id'])
+    db = get_db_manager(st.session_state.user_id)
+    chats = db.get_session_chats(session['id'])
+
+    snapshot = build_presentation_snapshot(session, chats, memory)
 
     # Session Header Title & Metadata
     st.markdown(
         f"<div class='mm-flex-between'>"
-        f"  <div class='mm-typo-heading'>💬 {session['name']}</div>"
+        f"  <div class='mm-typo-heading'>💬 {snapshot.session.name}</div>"
         f"  <div>"
-        f"    <span class='mm-badge mm-badge-info'>Mode: {session['mode']}</span> "
-        f"    <span class='mm-typo-caption mm-text-muted'>Created: {session['created_at'][:10]}</span>"
+        f"    <span class='mm-badge mm-badge-info'>Mode: {snapshot.session.mode}</span> "
+        f"    <span class='mm-typo-caption mm-text-muted'>Created: {snapshot.session.created_at[:10]}</span>"
         f"  </div>"
         f"</div>",
         unsafe_allow_html=True
     )
 
     # Memory Metrics Bar
-    if memory:
-        stats = memory.get_stats()
+    if snapshot.memory:
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Context Tokens", stats["context_tokens"])
+            st.metric("Context Tokens", snapshot.memory.context_tokens)
         with col2:
-            st.metric("Short-term Chats", stats["short_term_chats"])
+            st.metric("Short-term Chats", snapshot.memory.short_term_chats)
         with col3:
-            st.metric("Free Space", f"{stats['free_percent']}%")
+            st.metric("Free Space", f"{snapshot.memory.free_percent}%")
 
     st.divider()
 
     # Chat Feed
-    db = get_db_manager(st.session_state.user_id)
-    chats = db.get_session_chats(session['id'])
-    for chat in chats:
+    for chat in snapshot.chats:
         with st.chat_message("user"):
-            mode_badge = "🧵" if chat.get('mode') == 'continue' else "📌"
-            st.caption(f"{mode_badge} {chat.get('mode', 'continue').upper()}")
-            st.write(chat['prompt'])
+            st.caption(f"{chat.mode_badge} {chat.mode.upper()}")
+            st.write(chat.prompt)
         with st.chat_message("assistant"):
-            st.markdown(chat.get('final_answer', 'No response'))
-            if chat.get('debate_data'):
+            st.markdown(chat.final_answer)
+            if chat.debate_detail:
                 with st.expander("🔍 Debate Details"):
-                    try:
-                        debate = json.loads(chat['debate_data'])
-                        gate_score = debate.get('gate_score')
-                        if gate_score is not None:
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                st.caption(f"🎯 Gate Score: {gate_score}/10")
-                            with col2:
-                                st.caption(f"{ReleaseGate.get_badge(gate_score)}")
-                            st.divider()
-                        responses = debate.get('responses', [])
-                        if responses:
-                            for i, r in enumerate(responses, 1):
-                                agent = r.get('agent', 'Unknown')
-                                text = r.get('text', '')
-                                status = r.get('status', 'unknown')
-                                badge_variant = "success" if status == "success" else ("danger" if status == "error" else "warning")
-                                render_status_badge(f"Round {i} - {agent} ({status})", variant=badge_variant)
-                                if text:
-                                    st.markdown(text)
-                                else:
-                                    st.caption(f"(Status: {status})")
-                        else:
-                            st.caption("No debate data available")
-                    except:
-                        st.caption("Error loading debate details")
+                    if chat.debate_detail.gate_score is not None:
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.caption(f"🎯 Gate Score: {chat.debate_detail.gate_score}/10")
+                        with col2:
+                            st.caption(f"{chat.debate_detail.gate_badge}")
+                        st.divider()
+                    if chat.debate_detail.responses:
+                        for r in chat.debate_detail.responses:
+                            render_status_badge(f"Round {r.round_index} - {r.agent} ({r.status})", variant=r.badge_variant)
+                            if r.text:
+                                st.markdown(r.text)
+                            else:
+                                st.caption(f"(Status: {r.status})")
+                    else:
+                        st.caption("No debate data available")
             col1, col2 = st.columns(2)
             with col1:
-                st.caption(f"🔤 {chat.get('tokens_used', 0)} tokens")
+                st.caption(f"🔤 {chat.tokens_used} tokens")
             with col2:
-                st.caption(f"💵 ${chat.get('cost', 0):.6f}")
+                st.caption(f"💵 ${chat.cost:.6f}")
 
     st.divider()
     if st.button("➕ New Chat", type="primary", key="new_chat_btn", use_container_width=True):
