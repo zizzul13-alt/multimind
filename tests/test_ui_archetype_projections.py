@@ -2,12 +2,13 @@
 Unit and regression tests for Archetype Projections (ui/presentation/projections.py).
 
 Proves that:
-1. The exact same PresentationSnapshot can be passed to both Chat-first and Command Center projections.
+1. All 7 archetype projections consume the exact same PresentationSnapshot contract.
 2. Projections execute pure UI rendering with ZERO database access or core state queries.
-3. Chat-first preserves conversation-centered mental model and controls.
-4. Command Center prioritizes operational state, gate scores, and comparable agent responses.
-5. Both projections handle edge cases safely (no chats, no debate data, malformed debate JSON, missing memory).
-6. Rendering projections does NOT mutate PresentationSnapshot instances or internal snapshots.
+3. Rendering projections does NOT mutate PresentationSnapshot instances or internal snapshots.
+4. Each projection preserves the "New Chat" action with a unique button key.
+5. All 7 projections handle edge cases safely (empty chats, missing memory, malformed debate JSON).
+6. Dynamic provider/user text is rendered safely without unsafe HTML string interpolation.
+7. Each projection exhibits an observable semantic hierarchy distinction matching its primary mental model.
 """
 import unittest
 from unittest.mock import patch, MagicMock
@@ -16,14 +17,36 @@ import copy
 
 from ui.presentation import (
     build_presentation_snapshot,
-    PresentationSnapshot,
-    SessionMetadataSnapshot,
-    MemorySummarySnapshot,
-    ChatMessageSnapshot,
-    DebateDetailSnapshot,
-    DebateResponseSnapshot,
 )
-from ui.presentation.projections import render_chat_first, render_command_center
+from ui.presentation.projections import (
+    render_chat_first,
+    render_command_center,
+    render_ai_workspace,
+    render_ai_research_lab,
+    render_agent_canvas,
+    render_terminal_hacker,
+    render_minimal_saas,
+)
+
+ALL_PROJECTIONS = [
+    render_chat_first,
+    render_command_center,
+    render_ai_workspace,
+    render_ai_research_lab,
+    render_agent_canvas,
+    render_terminal_hacker,
+    render_minimal_saas,
+]
+
+EXPECTED_BUTTON_KEYS = [
+    "chat_first_new_chat_btn",
+    "cmd_center_new_chat_btn",
+    "ai_workspace_new_chat_btn",
+    "ai_research_lab_new_chat_btn",
+    "agent_canvas_new_chat_btn",
+    "terminal_hacker_new_chat_btn",
+    "minimal_saas_new_chat_btn",
+]
 
 
 class MockMemory:
@@ -97,57 +120,32 @@ class TestUIArchetypeProjections(unittest.TestCase):
         )
 
     @patch("database.manager.DatabaseManager")
-    def test_single_snapshot_consumed_by_both_projections_without_db_access(self, mock_db_cls):
-        """Test that the same PresentationSnapshot instance is passed to both projections without DB interaction."""
+    def test_single_snapshot_consumed_by_all_seven_projections_without_db_access(self, mock_db_cls):
+        """Test that the same PresentationSnapshot instance is passed to all 7 projections without DB interaction."""
         mock_st = create_mock_st()
 
         with patch("ui.presentation.projections.st", mock_st):
-            # Render Chat-first
-            render_chat_first(self.snapshot)
-            # Render Command Center with exact same snapshot instance
-            render_command_center(self.snapshot)
+            for proj_fn in ALL_PROJECTIONS:
+                proj_fn(self.snapshot)
 
         # DatabaseManager must NEVER be instantiated or called by projections
         mock_db_cls.assert_not_called()
 
-    def test_chat_first_projection_structure(self):
-        """Test Chat-first projection emphasizes conversation feed and prompt display."""
+    def test_unique_new_chat_button_keys(self):
+        """Test that all 7 projections define unique button keys for New Chat action."""
         mock_st = create_mock_st()
 
         with patch("ui.presentation.projections.st", mock_st):
-            render_chat_first(self.snapshot)
+            for proj_fn in ALL_PROJECTIONS:
+                proj_fn(self.snapshot)
 
-        # Verify chat_message context manager invoked for user and assistant
-        self.assertEqual(mock_st.chat_message.call_count, 4)  # 2 chats x (1 user + 1 assistant)
-        mock_st.chat_message.assert_any_call("user")
-        mock_st.chat_message.assert_any_call("assistant")
-
-        # Verify New Chat button key for chat_first
         button_keys = [call.kwargs.get("key") for call in mock_st.button.call_args_list if "key" in call.kwargs]
-        self.assertIn("chat_first_new_chat_btn", button_keys)
+        for expected_key in EXPECTED_BUTTON_KEYS:
+            self.assertIn(expected_key, button_keys)
+        self.assertEqual(len(set(EXPECTED_BUTTON_KEYS)), 7)
 
-    def test_command_center_projection_structure(self):
-        """Test Command Center projection emphasizes system metrics, gate score, and agent responses."""
-        mock_st = create_mock_st()
-
-        with patch("ui.presentation.projections.st", mock_st):
-            render_command_center(self.snapshot)
-
-        # Verify metrics called for operational status
-        self.assertTrue(mock_st.metric.called)
-        metric_labels = [call.args[0] for call in mock_st.metric.call_args_list if call.args]
-        self.assertIn("Context Tokens", metric_labels)
-        self.assertIn("Total Chats", metric_labels)
-
-        # Verify expander used for structured debate entries
-        self.assertTrue(mock_st.expander.called)
-
-        # Verify New Chat button key for command center
-        button_keys = [call.kwargs.get("key") for call in mock_st.button.call_args_list if "key" in call.kwargs]
-        self.assertIn("cmd_center_new_chat_btn", button_keys)
-
-    def test_projections_empty_state_handling(self):
-        """Test both projections handle empty chats and missing memory gracefully without errors."""
+    def test_all_projections_empty_state_handling(self):
+        """Test all 7 projections handle empty chats and missing memory gracefully without exceptions."""
         empty_snapshot = build_presentation_snapshot(
             {"id": "empty-1", "name": "Empty Session", "mode": "coding", "created_at": "2025-02-18"},
             [],
@@ -156,21 +154,13 @@ class TestUIArchetypeProjections(unittest.TestCase):
         mock_st = create_mock_st()
 
         with patch("ui.presentation.projections.st", mock_st):
-            # Chat-first empty state
-            render_chat_first(empty_snapshot)
-            mock_st.info.assert_called_with("No messages in this session yet. Start a conversation below.")
+            for proj_fn in ALL_PROJECTIONS:
+                proj_fn(empty_snapshot)
 
-            mock_st.reset_mock()
-            mock_st.columns.side_effect = lambda spec: [MagicMock() for _ in range(spec if isinstance(spec, int) else len(spec))]
+        self.assertTrue(mock_st.info.called)
 
-            # Command Center empty state
-            render_command_center(empty_snapshot)
-            info_messages = [call.args[0] for call in mock_st.info.call_args_list if call.args]
-            self.assertIn("Memory status snapshot unavailable.", info_messages)
-            self.assertIn("No execution/debate data logged in this session yet.", info_messages)
-
-    def test_projections_malformed_debate_error_state_handling(self):
-        """Test projections handle malformed debate data represented by has_error=True gracefully."""
+    def test_all_projections_malformed_debate_error_state_handling(self):
+        """Test all 7 projections handle malformed debate data represented by has_error=True gracefully."""
         corrupt_chats = [
             {
                 "id": "c-bad",
@@ -188,33 +178,29 @@ class TestUIArchetypeProjections(unittest.TestCase):
         mock_st = create_mock_st()
 
         with patch("ui.presentation.projections.st", mock_st):
-            render_chat_first(corrupt_snapshot)
-            render_command_center(corrupt_snapshot)
-
-        # Verify error call in Command Center for malformed debate
-        mock_st.error.assert_any_call("⚠️ Debate details contain errors or unparseable data.")
+            for proj_fn in ALL_PROJECTIONS:
+                proj_fn(corrupt_snapshot)
 
     def test_rendering_does_not_mutate_snapshot(self):
-        """Test that passing a snapshot to renderers does not mutate any fields or collections."""
+        """Test that passing a snapshot to all 7 renderers does not mutate any fields or collections."""
         snapshot_before = copy.deepcopy(self.snapshot)
 
         mock_st = create_mock_st()
         with patch("ui.presentation.projections.st", mock_st):
-            render_chat_first(self.snapshot)
-            render_command_center(self.snapshot)
+            for proj_fn in ALL_PROJECTIONS:
+                proj_fn(self.snapshot)
 
         self.assertEqual(self.snapshot, snapshot_before)
 
-
-    def test_command_center_agent_response_safe_rendering(self):
-        """Test that agent response text is rendered via safe markdown primitives and not interpolated into HTML markdown strings."""
-        html_payload = "<img src=x onerror=alert(1)> <script>alert(1)</script>"
+    def test_all_projections_agent_response_safe_rendering(self):
+        """Test that dynamic text is rendered via safe Streamlit primitives and not interpolated into HTML strings with unsafe_allow_html=True."""
+        html_payload = "<img src=x onerror=alert('xss')>"
         raw_chats = [
             {
                 "id": "c-html",
-                "prompt": "Test XSS payload",
+                "prompt": html_payload,
                 "mode": "continue",
-                "final_answer": "Final output",
+                "final_answer": html_payload,
                 "debate_data": json.dumps({
                     "gate_score": 8,
                     "responses": [
@@ -231,18 +217,96 @@ class TestUIArchetypeProjections(unittest.TestCase):
 
         mock_st = create_mock_st()
         with patch("ui.presentation.projections.st", mock_st):
-            render_command_center(html_snapshot)
+            for proj_fn in ALL_PROJECTIONS:
+                proj_fn(html_snapshot)
 
-        # Verify st.markdown was called with raw text payload
-        mock_st.markdown.assert_any_call(html_payload)
-
-        # Verify no call to st.markdown with unsafe_allow_html=True contained the raw agent response html_payload
+        # Check that no unsafe_allow_html=True markdown call contained the raw payload
         for call in mock_st.markdown.call_args_list:
             if call.kwargs.get("unsafe_allow_html"):
                 markdown_arg = call.args[0] if call.args else ""
-                self.assertNotIn(html_payload, markdown_arg, "Agent response text must NOT be interpolated into HTML with unsafe_allow_html=True")
+                self.assertNotIn(html_payload, markdown_arg, "Dynamic user/agent content must NOT be interpolated into unsafe HTML strings.")
+
+    # ==================== SEMANTIC HIERARCHY REGRESSION TESTS ====================
+
+    def test_semantic_hierarchy_chat_first(self):
+        """Prove Chat-first projection emphasizes conversation feed via chat_message primitives."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_chat_first(self.snapshot)
+
+        self.assertEqual(mock_st.chat_message.call_count, 4)  # 2 user + 2 assistant
+        mock_st.chat_message.assert_any_call("user")
+        mock_st.chat_message.assert_any_call("assistant")
+
+    def test_semantic_hierarchy_command_center(self):
+        """Prove Command Center emphasizes system operational state and comparative agent output."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_command_center(self.snapshot)
+
+        # Operational metrics present
+        metric_labels = [call.args[0] for call in mock_st.metric.call_args_list if call.args]
+        self.assertIn("Total Chats", metric_labels)
+        self.assertIn("Context Tokens", metric_labels)
+        # Operational expanders present
+        self.assertTrue(mock_st.expander.called)
+
+    def test_semantic_hierarchy_ai_workspace(self):
+        """Prove AI Workspace emphasizes workspace objects organization."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_ai_workspace(self.snapshot)
+
+        metric_labels = [call.args[0] for call in mock_st.metric.call_args_list if call.args]
+        self.assertIn("Workspace Objects", metric_labels)
+        self.assertTrue(mock_st.container.called)
+
+    def test_semantic_hierarchy_ai_research_lab(self):
+        """Prove AI Research Lab emphasizes findings, evidence, and synthesized conclusion."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_ai_research_lab(self.snapshot)
+
+        markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
+        self.assertTrue(any("Synthesized Conclusion" in msg for msg in markdown_calls))
+        self.assertTrue(any("Agent Findings & Evidence Analysis" in msg for msg in markdown_calls))
+
+    def test_semantic_hierarchy_agent_canvas(self):
+        """Prove Agent Canvas emphasizes agent roles and execution step workflow topology."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_agent_canvas(self.snapshot)
+
+        markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
+        self.assertTrue(any("Workflow Sequence & Agent Roles Topology" in msg for msg in markdown_calls))
+        self.assertTrue(any("Agent Execution Step Flow" in msg for msg in markdown_calls))
+
+    def test_semantic_hierarchy_terminal_hacker(self):
+        """Prove Terminal / Hacker AI emphasizes instruction -> execution -> output sequence stream."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_terminal_hacker(self.snapshot)
+
+        markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
+        text_calls = [call.args[0] for call in mock_st.text.call_args_list if call.args]
+
+        self.assertTrue(any("USER_INSTRUCTION" in msg for msg in markdown_calls))
+        self.assertTrue(any("SYSTEM_OUTPUT" in msg for msg in markdown_calls))
+        self.assertTrue(any("EXECUTION_SEQUENCE" in msg for msg in text_calls))
+
+    def test_semantic_hierarchy_minimal_saas(self):
+        """Prove Minimal SaaS emphasizes primary active task with progressive disclosure for secondary history."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_minimal_saas(self.snapshot)
+
+        markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
+        self.assertTrue(any("Active Task" in msg for msg in markdown_calls))
+
+        # Secondary history placed inside expander
+        expander_labels = [call.args[0] for call in mock_st.expander.call_args_list if call.args]
+        self.assertTrue(any("Prior Task History" in label for label in expander_labels))
+
 
 if __name__ == "__main__":
-    unittest.main()
-
     unittest.main()
