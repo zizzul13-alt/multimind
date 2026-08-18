@@ -28,8 +28,7 @@ from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 from utils.config import Config
 from ui.foundation import load_css, render_status_badge, card_container
-from ui.presentation import build_presentation_snapshot
-from ui.presentation.projections import render_chat_first, render_command_center
+from ui.presentation import build_presentation_snapshot, render_archetype, list_archetypes
 from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
 from ui.themes import list_themes
 
@@ -223,20 +222,18 @@ def show_sidebar():
                 st.session_state.active_theme = selected_theme_id
                 st.rerun()
 
-            # Archetype Projection Selector (S7.4 Proof)
-            archetypes = {
-                "chat_first": "💬 Chat-first",
-                "command_center": "🎛️ Command Center"
-            }
+            # Archetype Projection Selector (S7.5 Composition Resolver)
+            archetype_options = list_archetypes()
+            arch_keys = [opt[0] for opt in archetype_options]
+            arch_dict = dict(archetype_options)
             curr_arch = st.session_state.get("active_archetype", "chat_first")
-            arch_keys = list(archetypes.keys())
             arch_index = arch_keys.index(curr_arch) if curr_arch in arch_keys else 0
 
             selected_arch = st.selectbox(
                 "📐 Archetype View",
                 arch_keys,
                 index=arch_index,
-                format_func=lambda k: archetypes.get(k, k),
+                format_func=lambda k: arch_dict.get(k, k),
                 key="settings_archetype"
             )
             if selected_arch != curr_arch:
@@ -287,11 +284,8 @@ def show_session():
 
     snapshot = build_presentation_snapshot(session, chats, memory)
 
-    archetype = st.session_state.get("active_archetype", "chat_first")
-    if archetype == "command_center":
-        render_command_center(snapshot)
-    else:
-        render_chat_first(snapshot)
+    active_archetype = st.session_state.get("active_archetype", "chat_first")
+    render_archetype(active_archetype, snapshot)
 
 def show_new_chat():
     st.markdown("<div class='mm-typo-heading' style='margin-bottom: var(--mm-space-md);'>💭 New Chat</div>", unsafe_allow_html=True)
