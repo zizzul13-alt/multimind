@@ -206,5 +206,43 @@ class TestUIArchetypeProjections(unittest.TestCase):
         self.assertEqual(self.snapshot, snapshot_before)
 
 
+    def test_command_center_agent_response_safe_rendering(self):
+        """Test that agent response text is rendered via safe markdown primitives and not interpolated into HTML markdown strings."""
+        html_payload = "<img src=x onerror=alert(1)> <script>alert(1)</script>"
+        raw_chats = [
+            {
+                "id": "c-html",
+                "prompt": "Test XSS payload",
+                "mode": "continue",
+                "final_answer": "Final output",
+                "debate_data": json.dumps({
+                    "gate_score": 8,
+                    "responses": [
+                        {"agent": "agent_x", "text": html_payload, "status": "success"}
+                    ]
+                }),
+                "tokens_used": 100,
+                "cost": 0.0001,
+            }
+        ]
+        html_snapshot = build_presentation_snapshot(
+            self.sample_session, raw_chats, self.sample_memory
+        )
+
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_command_center(html_snapshot)
+
+        # Verify st.markdown was called with raw text payload
+        mock_st.markdown.assert_any_call(html_payload)
+
+        # Verify no call to st.markdown with unsafe_allow_html=True contained the raw agent response html_payload
+        for call in mock_st.markdown.call_args_list:
+            if call.kwargs.get("unsafe_allow_html"):
+                markdown_arg = call.args[0] if call.args else ""
+                self.assertNotIn(html_payload, markdown_arg, "Agent response text must NOT be interpolated into HTML with unsafe_allow_html=True")
+
 if __name__ == "__main__":
+    unittest.main()
+
     unittest.main()
