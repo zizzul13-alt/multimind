@@ -15,7 +15,7 @@ Recognized Archetypes (Exactly 7):
 """
 import streamlit as st
 from ui.presentation.models import PresentationSnapshot
-from ui.foundation import render_status_badge, card_container
+from ui.foundation import render_status_badge
 from core.release_gate import ReleaseGate
 
 
@@ -30,17 +30,12 @@ def render_chat_first(snapshot: PresentationSnapshot) -> None:
     - Message composer trigger (New Chat) is immediately discoverable.
     - System/debate details remain subordinate to conversation context.
     """
-    # Session Header Title & Metadata
-    st.markdown(
-        f"<div class='mm-flex-between'>"
-        f"  <div class='mm-typo-heading'>💬 {snapshot.session.name}</div>"
-        f"  <div>"
-        f"    <span class='mm-badge mm-badge-info'>Mode: {snapshot.session.mode}</span> "
-        f"    <span class='mm-typo-caption mm-text-muted'>Created: {snapshot.session.created_at[:10]}</span>"
-        f"  </div>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+    # Safe Session Header
+    col_title, col_meta = st.columns([3, 1])
+    with col_title:
+        st.subheader(f"💬 {snapshot.session.name}")
+    with col_meta:
+        st.caption(f"Mode: {snapshot.session.mode} | Created: {snapshot.session.created_at[:10]}")
 
     # Subordinate Memory Metrics Bar
     if snapshot.memory:
@@ -113,17 +108,12 @@ def render_command_center(snapshot: PresentationSnapshot) -> None:
     - Conversation content remains accessible as secondary context.
     - Uses exact same PresentationSnapshot instance without backend queries.
     """
-    # Command Center Header
-    st.markdown(
-        f"<div class='mm-flex-between'>"
-        f"  <div class='mm-typo-heading'>🎛️ Command Center — {snapshot.session.name}</div>"
-        f"  <div>"
-        f"    <span class='mm-badge mm-badge-info'>Mode: {snapshot.session.mode}</span> "
-        f"    <span class='mm-typo-caption mm-text-muted'>ID: {snapshot.session.id[:8]}</span>"
-        f"  </div>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+    # Safe Command Center Header
+    col_title, col_meta = st.columns([3, 1])
+    with col_title:
+        st.subheader(f"🎛️ Command Center — {snapshot.session.name}")
+    with col_meta:
+        st.caption(f"Mode: {snapshot.session.mode} | ID: {snapshot.session.id[:8]}")
 
     st.divider()
 
@@ -200,16 +190,12 @@ def render_ai_workspace(snapshot: PresentationSnapshot) -> None:
     - Multiple work objects (chats/session/debate items) are simultaneously organized and navigable.
     - Preserves exact underlying semantics (does not fabricate unrepresented task state).
     """
-    st.markdown(
-        f"<div class='mm-flex-between'>"
-        f"  <div class='mm-typo-heading'>💼 Workspace Overview — {snapshot.session.name}</div>"
-        f"  <div>"
-        f"    <span class='mm-badge mm-badge-info'>Mode: {snapshot.session.mode}</span> "
-        f"    <span class='mm-typo-caption mm-text-muted'>Created: {snapshot.session.created_at[:10]}</span>"
-        f"  </div>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+    # Safe Session Header
+    col_title, col_meta = st.columns([3, 1])
+    with col_title:
+        st.subheader(f"💼 Workspace Overview — {snapshot.session.name}")
+    with col_meta:
+        st.caption(f"Mode: {snapshot.session.mode} | Created: {snapshot.session.created_at[:10]}")
 
     # Workspace Summary Dashboard
     col1, col2, col3, col4 = st.columns(4)
@@ -274,16 +260,12 @@ def render_ai_research_lab(snapshot: PresentationSnapshot) -> None:
     - Agent debate outputs are structured as investigative findings/evidence items.
     - Does not fabricate non-existent source citations.
     """
-    st.markdown(
-        f"<div class='mm-flex-between'>"
-        f"  <div class='mm-typo-heading'>🔬 AI Research Lab — {snapshot.session.name}</div>"
-        f"  <div>"
-        f"    <span class='mm-badge mm-badge-info'>Mode: {snapshot.session.mode}</span> "
-        f"    <span class='mm-typo-caption mm-text-muted'>ID: {snapshot.session.id[:8]}</span>"
-        f"  </div>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+    # Safe Session Header
+    col_title, col_meta = st.columns([3, 1])
+    with col_title:
+        st.subheader(f"🔬 AI Research Lab — {snapshot.session.name}")
+    with col_meta:
+        st.caption(f"Mode: {snapshot.session.mode} | ID: {snapshot.session.id[:8]}")
 
     st.divider()
 
@@ -353,16 +335,12 @@ def render_agent_canvas(snapshot: PresentationSnapshot) -> None:
     - Agent topology and execution flow steps are primary.
     - Expresses available debate responses and roles as step sequences and entity nodes.
     """
-    st.markdown(
-        f"<div class='mm-flex-between'>"
-        f"  <div class='mm-typo-heading'>🎨 Agent Canvas — {snapshot.session.name}</div>"
-        f"  <div>"
-        f"    <span class='mm-badge mm-badge-info'>Mode: {snapshot.session.mode}</span> "
-        f"    <span class='mm-typo-caption mm-text-muted'>Session ID: {snapshot.session.id[:8]}</span>"
-        f"  </div>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+    # Safe Session Header
+    col_title, col_meta = st.columns([3, 1])
+    with col_title:
+        st.subheader(f"🎨 Agent Canvas — {snapshot.session.name}")
+    with col_meta:
+        st.caption(f"Mode: {snapshot.session.mode} | Session ID: {snapshot.session.id[:8]}")
 
     st.divider()
 
@@ -420,16 +398,12 @@ def render_terminal_hacker(snapshot: PresentationSnapshot) -> None:
     - Sequential operational log stream model.
     - Not a visual costume: emphasizes instruction prompt -> execution state -> final output stream sequence.
     """
-    st.markdown(
-        f"<div class='mm-flex-between'>"
-        f"  <div class='mm-typo-heading'>🖥️ Terminal / Operational Stream — {snapshot.session.name}</div>"
-        f"  <div>"
-        f"    <span class='mm-badge mm-badge-info'>SYS_MODE: {snapshot.session.mode.upper()}</span> "
-        f"    <span class='mm-typo-caption mm-text-muted'>UUID: {snapshot.session.id[:8]}</span>"
-        f"  </div>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+    # Safe Session Header
+    col_title, col_meta = st.columns([3, 1])
+    with col_title:
+        st.subheader(f"🖥️ Terminal / Operational Stream — {snapshot.session.name}")
+    with col_meta:
+        st.caption(f"SYS_MODE: {snapshot.session.mode.upper()} | UUID: {snapshot.session.id[:8]}")
 
     if snapshot.memory:
         st.text(f"[SYS_METRICS] CTX_TOKENS={snapshot.memory.context_tokens} | SHORT_TERM_CHATS={snapshot.memory.short_term_chats} | FREE_MEM={snapshot.memory.free_percent}%")
@@ -486,13 +460,12 @@ def render_minimal_saas(snapshot: PresentationSnapshot) -> None:
     - Restrained focus, minimal visual noise, clear primary action.
     - Uses progressive disclosure (expanders) for secondary/historical details.
     """
-    st.markdown(
-        f"<div class='mm-flex-between'>"
-        f"  <div class='mm-typo-heading'>⚡ {snapshot.session.name}</div>"
-        f"  <div class='mm-typo-caption mm-text-muted'>Mode: {snapshot.session.mode}</div>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+    # Safe Session Header
+    col_title, col_meta = st.columns([3, 1])
+    with col_title:
+        st.subheader(f"⚡ {snapshot.session.name}")
+    with col_meta:
+        st.caption(f"Mode: {snapshot.session.mode}")
 
     st.divider()
 
