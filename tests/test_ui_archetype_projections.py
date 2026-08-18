@@ -8,6 +8,7 @@ Proves that:
 4. Each projection preserves the "New Chat" action with a unique button key.
 5. All 7 projections handle edge cases safely (empty chats, missing memory, malformed debate JSON).
 6. Dynamic provider/user text is rendered safely without unsafe HTML string interpolation.
+7. Each projection exhibits an observable semantic hierarchy distinction matching its primary mental model.
 """
 import unittest
 from unittest.mock import patch, MagicMock
@@ -16,7 +17,6 @@ import copy
 
 from ui.presentation import (
     build_presentation_snapshot,
-    PresentationSnapshot,
 )
 from ui.presentation.projections import (
     render_chat_first,
@@ -220,11 +220,92 @@ class TestUIArchetypeProjections(unittest.TestCase):
             for proj_fn in ALL_PROJECTIONS:
                 proj_fn(html_snapshot)
 
-        # Check all unsafe_allow_html=True markdown calls across all projections
+        # Check that no unsafe_allow_html=True markdown call contained the raw payload
         for call in mock_st.markdown.call_args_list:
             if call.kwargs.get("unsafe_allow_html"):
                 markdown_arg = call.args[0] if call.args else ""
                 self.assertNotIn(html_payload, markdown_arg, "Dynamic user/agent content must NOT be interpolated into unsafe HTML strings.")
+
+    # ==================== SEMANTIC HIERARCHY REGRESSION TESTS ====================
+
+    def test_semantic_hierarchy_chat_first(self):
+        """Prove Chat-first projection emphasizes conversation feed via chat_message primitives."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_chat_first(self.snapshot)
+
+        self.assertEqual(mock_st.chat_message.call_count, 4)  # 2 user + 2 assistant
+        mock_st.chat_message.assert_any_call("user")
+        mock_st.chat_message.assert_any_call("assistant")
+
+    def test_semantic_hierarchy_command_center(self):
+        """Prove Command Center emphasizes system operational state and comparative agent output."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_command_center(self.snapshot)
+
+        # Operational metrics present
+        metric_labels = [call.args[0] for call in mock_st.metric.call_args_list if call.args]
+        self.assertIn("Total Chats", metric_labels)
+        self.assertIn("Context Tokens", metric_labels)
+        # Operational expanders present
+        self.assertTrue(mock_st.expander.called)
+
+    def test_semantic_hierarchy_ai_workspace(self):
+        """Prove AI Workspace emphasizes workspace objects organization."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_ai_workspace(self.snapshot)
+
+        metric_labels = [call.args[0] for call in mock_st.metric.call_args_list if call.args]
+        self.assertIn("Workspace Objects", metric_labels)
+        self.assertTrue(mock_st.container.called)
+
+    def test_semantic_hierarchy_ai_research_lab(self):
+        """Prove AI Research Lab emphasizes findings, evidence, and synthesized conclusion."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_ai_research_lab(self.snapshot)
+
+        markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
+        self.assertTrue(any("Synthesized Conclusion" in msg for msg in markdown_calls))
+        self.assertTrue(any("Agent Findings & Evidence Analysis" in msg for msg in markdown_calls))
+
+    def test_semantic_hierarchy_agent_canvas(self):
+        """Prove Agent Canvas emphasizes agent roles and execution step workflow topology."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_agent_canvas(self.snapshot)
+
+        markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
+        self.assertTrue(any("Workflow Sequence & Agent Roles Topology" in msg for msg in markdown_calls))
+        self.assertTrue(any("Agent Execution Step Flow" in msg for msg in markdown_calls))
+
+    def test_semantic_hierarchy_terminal_hacker(self):
+        """Prove Terminal / Hacker AI emphasizes instruction -> execution -> output sequence stream."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_terminal_hacker(self.snapshot)
+
+        markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
+        text_calls = [call.args[0] for call in mock_st.text.call_args_list if call.args]
+
+        self.assertTrue(any("USER_INSTRUCTION" in msg for msg in markdown_calls))
+        self.assertTrue(any("SYSTEM_OUTPUT" in msg for msg in markdown_calls))
+        self.assertTrue(any("EXECUTION_SEQUENCE" in msg for msg in text_calls))
+
+    def test_semantic_hierarchy_minimal_saas(self):
+        """Prove Minimal SaaS emphasizes primary active task with progressive disclosure for secondary history."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            render_minimal_saas(self.snapshot)
+
+        markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
+        self.assertTrue(any("Active Task" in msg for msg in markdown_calls))
+
+        # Secondary history placed inside expander
+        expander_labels = [call.args[0] for call in mock_st.expander.call_args_list if call.args]
+        self.assertTrue(any("Prior Task History" in label for label in expander_labels))
 
 
 if __name__ == "__main__":
