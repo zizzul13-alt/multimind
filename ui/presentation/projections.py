@@ -16,7 +16,7 @@ Recognized Archetypes (Exactly 7):
 """
 import streamlit as st
 from ui.presentation.models import PresentationSnapshot
-from ui.foundation import render_status_badge, semantic_zone
+from ui.foundation import render_status_badge
 from core.release_gate import ReleaseGate
 
 
@@ -27,11 +27,11 @@ def render_chat_first(snapshot: PresentationSnapshot) -> None:
     Primary Mental Model: "I am having an ongoing conversation with MultiMind."
     Primary Object: Conversation (continuous reading sanctuary).
     Composition Policy:
-    - Central reading column owns continuous perceptual gravity (`mm-zone-primary mm-zone-reading`).
-    - Subordinate memory metrics and session state housed in compact utility zone (`mm-zone-utility`).
+    - Central reading column owns continuous perceptual gravity.
+    - Subordinate memory metrics and session state housed in compact utility zone.
     - Message composer trigger (New Chat) is immediately discoverable.
     """
-    # Zone 1: Subordinate Metadata & Memory Utility
+    # Metadata Container
     with st.container(key="chat_first_meta_container"):
         col_title, col_meta = st.columns([3, 1])
         with col_title:
@@ -50,7 +50,7 @@ def render_chat_first(snapshot: PresentationSnapshot) -> None:
 
     st.divider()
 
-    # Zone 2: Continuous Conversation Feed (Dominant Primary Content & Reading Sanctuary)
+    # Continuous Conversation Feed (Primary Content Container)
     with st.container(key="chat_first_feed_container"):
         if not snapshot.chats:
             st.info("No messages in this session yet. Start a conversation below.")
@@ -94,7 +94,7 @@ def render_chat_first(snapshot: PresentationSnapshot) -> None:
 
     st.divider()
 
-    # Zone 3: Primary Action
+    # Primary Action
     with st.container(key="chat_first_action_container"):
         if st.button("➕ New Chat", type="primary", key="chat_first_new_chat_btn", use_container_width=True):
             st.session_state.new_chat = True
@@ -106,13 +106,11 @@ def render_command_center(snapshot: PresentationSnapshot) -> None:
     Renders Command Center Archetype Projection.
 
     Primary Mental Model: "I am observing and controlling MultiMind's operation."
-    Primary Object: Operational State & Comparative Agent Matrix (`mm-zone-operational`).
+    Primary Object: Operational State & Comparative Agent Matrix.
     Composition Policy:
-    - System metrics and active agent comparison grid dominate prominence (`mm-zone-status`, `mm-zone-activity`).
-    - Gate score and error flags organize the operational attention hierarchy (`mm-zone-operational`).
-    - Conversation content subordinated to contextual side-panel or collapsible detail.
+    - System metrics and active agent comparison grid dominate prominence.
+    - Gate score and error flags organize the operational attention hierarchy.
     """
-    # Zone 1: Command Header & System Operational Metrics
     with st.container(key="command_center_header_container"):
         col_title, col_meta = st.columns([3, 1])
         with col_title:
@@ -136,7 +134,7 @@ def render_command_center(snapshot: PresentationSnapshot) -> None:
 
     st.divider()
 
-    # Zone 2: Primary Operational Focus - Agent Comparison Matrix & Execution Status
+    # Operational Focus Container - Agent Matrix
     with st.container(key="command_center_matrix_container"):
         st.markdown("#### 🤖 Agent Operational Comparison Matrix")
 
@@ -177,7 +175,6 @@ def render_command_center(snapshot: PresentationSnapshot) -> None:
 
     st.divider()
 
-    # Zone 3: Primary Operational Action
     with st.container(key="command_center_action_container"):
         if st.button("➕ New Chat", type="primary", key="cmd_center_new_chat_btn", use_container_width=True):
             st.session_state.new_chat = True
@@ -189,10 +186,9 @@ def render_ai_workspace(snapshot: PresentationSnapshot) -> None:
     Renders AI Workspace Archetype Projection.
 
     Primary Mental Model: "I work with multiple active objects."
-    Primary Object: Workspace Objects (`mm-zone-primary`).
+    Primary Object: Workspace Objects.
     Composition Policy:
-    - Dual-pane layout: Anchored active workspace item on left/top (`mm-zone-primary`), orbiting contextual surfaces on right/bottom (`mm-zone-utility`).
-    - Preserve work identity without destroying active context.
+    - Dual-pane layout: Anchored active workspace item on left/top, orbiting contextual surfaces on right/bottom.
     """
     with st.container(key="ai_workspace_header_container"):
         col_title, col_meta = st.columns([3, 1])
@@ -214,7 +210,6 @@ def render_ai_workspace(snapshot: PresentationSnapshot) -> None:
 
     st.divider()
 
-    # Organized Workspace Objects (Dual Pane Anchor)
     with st.container(key="ai_workspace_objects_container"):
         st.markdown("#### 📂 Active Workspace Objects")
         if not snapshot.chats:
@@ -258,10 +253,10 @@ def render_ai_research_lab(snapshot: PresentationSnapshot) -> None:
     Renders AI Research Lab Archetype Projection.
 
     Primary Mental Model: "I investigate evidence and build conclusions."
-    Primary Object: Evidence / Findings / Synthesis Hierarchy (`mm-zone-primary`, `mm-zone-evidence`).
+    Primary Object: Evidence / Findings / Synthesis Hierarchy.
     Composition Policy:
-    - Synthesized conclusion dominates as the primary thesis (`mm-zone-primary`).
-    - Relational claim/evidence traversal maps synthesis directly to underlying agent findings (`mm-zone-evidence`).
+    - Synthesized conclusion dominates as the primary thesis.
+    - Relational claim/evidence traversal maps synthesis directly to underlying agent findings.
     - EVIDENCE TRUTH: Never fabricate non-existent citations or external sources.
     """
     with st.container(key="ai_research_lab_header_container"):
@@ -292,11 +287,11 @@ def render_ai_research_lab(snapshot: PresentationSnapshot) -> None:
                 st.markdown(f"### Research Query #{idx}")
                 st.caption(f"**Research Prompt:** {chat.prompt}")
 
-                # Zone 1: Synthesized Conclusion Banner (Primary Thesis)
+                # Synthesized Conclusion Banner
                 st.markdown("##### 🔍 Synthesized Conclusion (Primary Thesis)")
                 st.markdown(chat.final_answer)
 
-                # Zone 2: Agent Evidence & Findings Relational Traversal
+                # Relational Evidence Traversal Tabs
                 if chat.has_debate_data and chat.debate_detail:
                     d_detail = chat.debate_detail
                     if d_detail.has_error:
@@ -308,7 +303,6 @@ def render_ai_research_lab(snapshot: PresentationSnapshot) -> None:
                             st.caption(f"Release Gate Quality Confidence: **{d_detail.gate_score}/10** ({badge})")
 
                         if d_detail.responses:
-                            # Use tabs to provide clear relational traversal between agent findings
                             tab_names = [f"Finding: {r.agent}" for r in d_detail.responses]
                             tabs = st.tabs(tab_names)
                             for t_idx, resp in enumerate(d_detail.responses):
@@ -338,11 +332,11 @@ def render_agent_canvas(snapshot: PresentationSnapshot) -> None:
     Renders Agent Canvas Archetype Projection.
 
     Primary Mental Model: "I work with agent relationships and execution flow topology."
-    Primary Object: Agent Execution Flow Topology (`mm-zone-topology`).
+    Primary Object: Agent Execution Flow Topology.
     Composition Policy:
-    - Sequential workflow topology graph step nodes (`mm-zone-topology`).
-    - TOPOLOGY TRUTH: Only express actual execution path (Prompt Trigger -> Agent Debate Responses -> Gate Decision -> Synthesized Result Node).
-    - Mobile / Narrow Viewport: Navigable step topology explorer using tabs/containers.
+    - Sequential workflow topology graph step nodes.
+    - TOPOLOGY TRUTH: Only express actual execution path (Trigger Input -> Agent Step Nodes -> Gate Node -> Synthesized Output Node).
+    - Navigable Topology Explorer: Interactive tabbed/step navigation for mobile/narrow viewports.
     """
     with st.container(key="agent_canvas_header_container"):
         col_title, col_meta = st.columns([3, 1])
@@ -363,19 +357,20 @@ def render_agent_canvas(snapshot: PresentationSnapshot) -> None:
                 st.markdown(f"#### Workflow Node #{idx}")
                 st.caption(f"**Trigger Input Node:** {chat.prompt}")
 
-                # Sequential Topology Nodes
+                # Topology Step Focus Explorer
                 if chat.has_debate_data and chat.debate_detail and not chat.debate_detail.has_error:
                     d_detail = chat.debate_detail
                     st.markdown("##### 🔄 Parallel Agent Step Flow Nodes")
 
                     if d_detail.responses:
-                        # Render step topology cards
-                        cols = st.columns(min(len(d_detail.responses), 4))
-                        for c_idx, resp in enumerate(d_detail.responses):
-                            with cols[c_idx % len(cols)]:
+                        # Interactive Step Topology Focus Navigator
+                        step_labels = [f"Step {r.round_index}: {r.agent}" for r in d_detail.responses]
+                        step_tabs = st.tabs(step_labels)
+                        for s_idx, resp in enumerate(d_detail.responses):
+                            with step_tabs[s_idx]:
                                 badge_variant = "success" if resp.status == "success" else ("danger" if resp.status == "error" else "warning")
-                                st.markdown(f"**Step {resp.round_index}: Node `{resp.agent}`**")
-                                render_status_badge(resp.status.upper(), variant=badge_variant)
+                                st.markdown(f"**Active Step Focus Node: `{resp.agent}` (Round {resp.round_index})**")
+                                render_status_badge(f"STATUS: {resp.status.upper()}", variant=badge_variant)
                                 if resp.text:
                                     st.markdown(resp.text)
 
@@ -404,11 +399,11 @@ def render_terminal_hacker(snapshot: PresentationSnapshot) -> None:
     Renders Terminal / Hacker AI Archetype Projection.
 
     Primary Mental Model: "I issue instructions and observe execution stream chronology."
-    Primary Object: Causal Execution Chronology Stream (`mm-zone-chronology`).
+    Primary Object: Causal Execution Chronology Stream.
     Composition Policy:
     - Sequential operational log stream: `intent` -> `execution/activity` -> `observable state` -> `result`.
     - Operational sys logs use monospaced code font (`var(--mm-font-mono)`).
-    - READING SANCTUARY PRESERVATION: Sustained final answer text transitions into proportional typography (`var(--mm-font-base)`) for reading comfort (`mm-zone-reading`).
+    - READING SANCTUARY PRESERVATION: Sustained final answer text transitions into proportional typography for reading comfort.
     """
     with st.container(key="terminal_hacker_header_container"):
         col_title, col_meta = st.columns([3, 1])
@@ -434,7 +429,7 @@ def render_terminal_hacker(snapshot: PresentationSnapshot) -> None:
                 # Step 1: Intent / Instruction
                 st.markdown(f"**$ USER_INSTRUCTION:** `{chat.prompt}`")
 
-                # Step 2: Execution Progression & Activity
+                # Step 2: Execution Progression
                 if chat.has_debate_data and chat.debate_detail:
                     d_detail = chat.debate_detail
                     if d_detail.has_error:
@@ -469,7 +464,7 @@ def render_minimal_saas(snapshot: PresentationSnapshot) -> None:
     Renders Minimal SaaS Archetype Projection.
 
     Primary Mental Model: "I complete the current active task without unnecessary clutter."
-    Primary Object: Direct Task Action & Active Result (`mm-zone-primary`).
+    Primary Object: Direct Task Action & Active Result.
     Composition Policy:
     - High contrast active task card dominates screen.
     - Historical chats and secondary debate details are hidden behind progressive disclosure (`st.expander`), NOT rendered as an ongoing continuous chat feed.
@@ -487,7 +482,6 @@ def render_minimal_saas(snapshot: PresentationSnapshot) -> None:
         if not snapshot.chats:
             st.info("No active tasks in this session. Start below.")
         else:
-            # Active primary task prominently presented
             latest_chat = snapshot.chats[-1]
             st.markdown("#### 🎯 Active Task")
             st.caption(f"**Prompt:** {latest_chat.prompt}")
@@ -495,7 +489,7 @@ def render_minimal_saas(snapshot: PresentationSnapshot) -> None:
             st.markdown("##### Task Result")
             st.markdown(latest_chat.final_answer)
 
-            # Progressive disclosure for debate breakdown
+            # Progressive disclosure
             if latest_chat.has_debate_data and latest_chat.debate_detail:
                 with st.expander("Show Quality & Agent Details", expanded=False):
                     d_detail = latest_chat.debate_detail
@@ -510,7 +504,6 @@ def render_minimal_saas(snapshot: PresentationSnapshot) -> None:
                             if resp.text:
                                 st.markdown(resp.text)
 
-            # Progressive disclosure for prior conversation history (Separates from Chat First)
             if len(snapshot.chats) > 1:
                 st.divider()
                 with st.expander(f"📜 Prior Task History ({len(snapshot.chats) - 1} previous items)", expanded=False):
