@@ -6,11 +6,16 @@ import hashlib
 import json
 import uuid
 import sqlite3
+import shutil
 from utils.config import Config
 from database.manager import DatabaseManager
 from playwright.sync_api import sync_playwright
 
 EVIDENCE_USER = "multimind_visual_evidence_v2"
+RUN_ID = f"run-{int(time.time())}"
+TEMP_EVIDENCE_DIR = f"visual_evidence_temp_{RUN_ID}"
+FINAL_EVIDENCE_DIR = "visual_evidence"
+MANIFEST_PATH = os.path.join(FINAL_EVIDENCE_DIR, "manifest.json")
 
 def compute_hash(filepath):
     hasher = hashlib.sha256()
@@ -19,7 +24,7 @@ def compute_hash(filepath):
     return hasher.hexdigest()
 
 def seed_populated_session():
-    """Seeds a realistic session using dedicated evidence user database without touching testuser or main databases."""
+    """Seeds a realistic populated session using dedicated evidence user database."""
     db_path = Config.get_db_path(EVIDENCE_USER)
 
     conn = sqlite3.connect(db_path)
@@ -82,11 +87,11 @@ def seed_populated_session():
     })
 
     print(f"Seeded dedicated evidence session database successfully at: {db_path}")
-    return sess_name
+    return sess_id, sess_name
 
-def generate_evidence_v2():
-    target_sess_name = seed_populated_session()
-    os.makedirs("visual_evidence", exist_ok=True)
+def run_atomic_evidence_capture():
+    sess_id, target_sess_name = seed_populated_session()
+    os.makedirs(TEMP_EVIDENCE_DIR, exist_ok=True)
 
     print("Launching Streamlit server on port 8501...")
     env = os.environ.copy()
@@ -115,7 +120,7 @@ def generate_evidence_v2():
         ("390px", 390, 844)
     ]
 
-    captured_hashes = {}
+    manifest_entries = []
 
     try:
         with sync_playwright() as p:
@@ -123,45 +128,36 @@ def generate_evidence_v2():
             for vp_label, width, height in viewports:
                 for arch_id, container_key_substring in archetypes:
                     page = browser.new_page(viewport={"width": width, "height": height})
-                    # Request active archetype via presentation query parameter seam
                     page.goto(f"http://localhost:8501/?archetype={arch_id}", timeout=20000)
                     time.sleep(1.5)
 
-                    # 1. Login as dedicated evidence user
+                    # 1. Login & Verify EVIDENCE_USER
                     if page.locator("input[placeholder='Ketik username bebas...']").is_visible():
                         page.fill("input[placeholder='Ketik username bebas...']", EVIDENCE_USER)
                         page.click("button:has-text('Masuk')")
                         time.sleep(1.5)
 
                     sidebar = page.locator("[data-testid='stSidebar']")
+                    user_badge = sidebar.locator(f"text='👤 {EVIDENCE_USER}'")
+                    assert user_badge.is_visible(), f"ATOMIC VERIFICATION FAILED: Active user is not {EVIDENCE_USER}"
 
-                    # On narrow viewports (390px), expand collapsed sidebar if collapsed control button is visible
-                    collapsed_btn = page.locator("[data-testid='collapsedControl']")
-                    if width < 768 and collapsed_btn.is_visible():
-                        collapsed_btn.dispatch_event("click")
-                        time.sleep(1)
-
-                    # 2. LOCATE & SELECT exact seeded evidence session in sidebar
+                    # 2. LOCATE & SELECT exact seeded evidence session by button text
                     pop_sess_btn = sidebar.locator("button").filter(has_text="Populated Archetype").first
                     if pop_sess_btn.count() == 0:
                         pop_sess_btn = sidebar.locator("button[help*='Populated Archetype']").first
-                    if pop_sess_btn.count() == 0:
-                        pop_sess_btn = sidebar.locator("button").filter(has_text="📝").first
-                    if pop_sess_btn.count() == 0:
-                        pop_sess_btn = sidebar.locator("button").filter(has_text="📌").first
-
-                    assert pop_sess_btn.count() > 0, f"R6 Failure: Seeded session button for '{target_sess_name}' not found in sidebar."
+                    assert pop_sess_btn.count() > 0, f"ATOMIC VERIFICATION FAILED: Seeded session button for '{target_sess_name}' not found in sidebar."
 
                     pop_sess_btn.dispatch_event("click")
                     time.sleep(1.5)
 
-                    # VERIFY populated session title/header is rendered on main surface
-                    heading_text = page.locator("h3, h4").all_inner_texts()
-                    assert any(target_sess_name in h for h in heading_text), f"R6 Failure: Seeded session header not rendered for '{target_sess_name}' in headings: {heading_text}"
+                    # VERIFY populated session content & title on main surface
+                    heading_texts = page.locator("h3, h4").all_inner_texts()
+                    assert any(target_sess_name in h for h in heading_texts), f"ATOMIC VERIFICATION FAILED: Seeded session heading not rendered for '{target_sess_name}' in headings: {heading_texts}"
 
                     # 3. VERIFY active archetype container key is rendered in DOM
-                    expected_container = page.locator(f".st-key-{container_key_substring}")
-                    assert expected_container.is_visible(), f"R6 Verification failed: Container key class .st-key-{container_key_substring} not visible in DOM for archetype '{arch_id}'"
+                    expected_selector = f".st-key-{container_key_substring}"
+                    expected_container = page.locator(expected_selector)
+                    assert expected_container.is_visible(), f"ATOMIC VERIFICATION FAILED: Container selector '{expected_selector}' not visible in DOM for archetype '{arch_id}'"
 
                     # 4. COLLAPSE SIDEBAR via real UI control button
                     collapse_btn = page.locator("[data-testid='stSidebarCollapseButton']")
@@ -171,43 +167,70 @@ def generate_evidence_v2():
 
                     # 5. VERIFY sidebar is actually collapsed and NOT obstructing viewport
                     sidebar_box = sidebar.bounding_box()
+                    sidebar_unobstructed = True
                     if sidebar_box:
-                        assert sidebar_box["x"] < 0 or sidebar_box["width"] <= 1 or not sidebar.is_visible(), \
-                            f"R6 Verification failed: Sidebar remains visible/obstructing at x={sidebar_box['x']}, width={sidebar_box['width']}"
+                        if sidebar_box["x"] > -100 and sidebar_box["width"] > 1 and sidebar.is_visible():
+                            sidebar_unobstructed = False
+                    assert sidebar_unobstructed, f"ATOMIC VERIFICATION FAILED: Sidebar remains visible/obstructing at x={sidebar_box['x'] if sidebar_box else 'N/A'}, width={sidebar_box['width'] if sidebar_box else 'N/A'}"
 
-                    # 6. VERIFY main archetype surface remains unobstructed
-                    assert expected_container.is_visible(), f"R6 Verification failed: Main archetype surface obstructed after sidebar collapse for archetype '{arch_id}'"
+                    # 6. VERIFY main archetype surface remains unobstructed after collapse
+                    assert expected_container.is_visible(), f"ATOMIC VERIFICATION FAILED: Main archetype surface obstructed after collapse for '{arch_id}'"
 
-                    # 7. CAPTURE screenshot
-                    screenshot_path = f"visual_evidence/archetype_{arch_id}_{vp_label}.png"
-                    page.screenshot(path=screenshot_path, full_page=True)
+                    # 7. CAPTURE screenshot into temp directory
+                    screenshot_filename = f"archetype_{arch_id}_{vp_label}.png"
+                    temp_screenshot_path = os.path.join(TEMP_EVIDENCE_DIR, screenshot_filename)
+                    page.screenshot(path=temp_screenshot_path, full_page=True)
 
-                    file_hash = compute_hash(screenshot_path)
-                    captured_hashes[f"{arch_id}_{vp_label}"] = (screenshot_path, file_hash)
-                    print(f"R6 VERIFIED & CAPTURED {arch_id} ({vp_label}): {screenshot_path} (SHA256: {file_hash[:12]}...)")
+                    file_hash = compute_hash(temp_screenshot_path)
+
+                    manifest_entries.append({
+                        "run_id": RUN_ID,
+                        "archetype": arch_id,
+                        "viewport": vp_label,
+                        "screenshot_filename": screenshot_filename,
+                        "sha256": file_hash,
+                        "file_size_bytes": os.path.getsize(temp_screenshot_path),
+                        "evidence_username": EVIDENCE_USER,
+                        "evidence_session_id": sess_id,
+                        "evidence_session_name": target_sess_name,
+                        "populated_content_heading_verified": target_sess_name,
+                        "archetype_dom_selector": expected_selector,
+                        "sidebar_unobstructed_verified": True
+                    })
+                    print(f"VERIFIED [{len(manifest_entries)}/14] {arch_id} ({vp_label}) -> SHA256: {file_hash[:12]}...")
 
                     page.close()
             browser.close()
     except Exception as fatal_err:
-        print(f"CRITICAL R6 FAILURE: Capture error ({fatal_err}). Aborting without fallback.")
+        print(f"\nCRITICAL ATOMIC CAPTURE FAILURE: {fatal_err}. Aborting without modifying current evidence.")
+        if os.path.exists(TEMP_EVIDENCE_DIR):
+            shutil.rmtree(TEMP_EVIDENCE_DIR)
         sys.exit(1)
     finally:
         print("Terminating Streamlit server...")
         proc.terminate()
         proc.wait()
 
-    # Log recorded hashes and sizes
-    print("\n--- REPLACED V2 SCREENSHOT HASHES & SIZES ---")
-    for k, (p_path, h) in captured_hashes.items():
-        print(f"  {k:30s} -> SHA256: {h} ({os.path.getsize(p_path)} bytes)")
+    assert len(manifest_entries) == 14, f"ATOMIC VERIFICATION FAILED: Expected 14 verified entries, got {len(manifest_entries)}"
 
-    hashes_1440 = [h for k, (p, h) in captured_hashes.items() if "1440px" in k]
-    hashes_390 = [h for k, (p, h) in captured_hashes.items() if "390px" in k]
+    # 8. ATOMIC REPLACEMENT: Only after ALL 14 captures pass verification
+    print("\nALL 14 CAPTURES PASSED ATOMIC VERIFICATION. Replacing visual_evidence/ atomically...")
+    if os.path.exists(FINAL_EVIDENCE_DIR):
+        shutil.rmtree(FINAL_EVIDENCE_DIR)
+    shutil.move(TEMP_EVIDENCE_DIR, FINAL_EVIDENCE_DIR)
 
-    print(f"\n1440px unique hashes: {len(set(hashes_1440))} / {len(archetypes)}")
-    print(f"390px unique hashes: {len(set(hashes_390))} / {len(archetypes)}")
+    # Write Machine-Readable Proof Manifest
+    manifest_data = {
+        "run_id": RUN_ID,
+        "timestamp_utc": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+        "total_captures": len(manifest_entries),
+        "captures": manifest_entries
+    }
+    with open(MANIFEST_PATH, "w", encoding="utf-8") as f:
+        json.dump(manifest_data, f, indent=2)
 
-    print("\nSUCCESS: All 14 populated replacement screenshots verified in DOM and captured unobstructed across all 7 archetypes!")
+    print(f"Machine-readable proof manifest generated at: {MANIFEST_PATH}")
+    print("ATOMIC REPLACEMENT COMPLETE SUCCESS!")
 
 if __name__ == "__main__":
-    generate_evidence_v2()
+    run_atomic_evidence_capture()
