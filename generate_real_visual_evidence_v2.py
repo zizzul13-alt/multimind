@@ -10,6 +10,8 @@ from utils.config import Config
 from database.manager import DatabaseManager
 from playwright.sync_api import sync_playwright
 
+EVIDENCE_USER = "multimind_visual_evidence_v2"
+
 def compute_hash(filepath):
     hasher = hashlib.sha256()
     with open(filepath, "rb") as f:
@@ -17,9 +19,8 @@ def compute_hash(filepath):
     return hasher.hexdigest()
 
 def seed_populated_session():
-    """Seeds a realistic session using Config and DatabaseManager contracts."""
-    user_id = "testuser"
-    db_path = Config.get_db_path(user_id)
+    """Seeds a realistic session using dedicated evidence user database without touching testuser or main databases."""
+    db_path = Config.get_db_path(EVIDENCE_USER)
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -80,7 +81,7 @@ def seed_populated_session():
         "cost": 0.0015
     })
 
-    print(f"Seeded populated session database successfully at: {db_path}")
+    print(f"Seeded dedicated evidence session database successfully at: {db_path}")
     return sess_name
 
 def generate_evidence_v2():
@@ -126,9 +127,9 @@ def generate_evidence_v2():
                     page.goto(f"http://localhost:8501/?archetype={arch_id}", timeout=20000)
                     time.sleep(1.5)
 
-                    # 1. Login
+                    # 1. Login as dedicated evidence user
                     if page.locator("input[placeholder='Ketik username bebas...']").is_visible():
-                        page.fill("input[placeholder='Ketik username bebas...']", "testuser")
+                        page.fill("input[placeholder='Ketik username bebas...']", EVIDENCE_USER)
                         page.click("button:has-text('Masuk')")
                         time.sleep(1.5)
 
@@ -140,10 +141,15 @@ def generate_evidence_v2():
                         collapsed_btn.dispatch_event("click")
                         time.sleep(1)
 
-                    # 2. LOCATE & SELECT exact seeded evidence session by button help or partial name
+                    # 2. LOCATE & SELECT exact seeded evidence session in sidebar
                     pop_sess_btn = sidebar.locator("button").filter(has_text="Populated Archetype").first
                     if pop_sess_btn.count() == 0:
                         pop_sess_btn = sidebar.locator("button[help*='Populated Archetype']").first
+                    if pop_sess_btn.count() == 0:
+                        pop_sess_btn = sidebar.locator("button").filter(has_text="📝").first
+                    if pop_sess_btn.count() == 0:
+                        pop_sess_btn = sidebar.locator("button").filter(has_text="📌").first
+
                     assert pop_sess_btn.count() > 0, f"R6 Failure: Seeded session button for '{target_sess_name}' not found in sidebar."
 
                     pop_sess_btn.dispatch_event("click")
