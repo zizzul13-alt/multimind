@@ -310,3 +310,28 @@ class TestUIArchetypeProjections(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    # ==================== DOM & CONTAINER KEY HOOK VERIFICATION TESTS ====================
+
+    def test_container_keys_emitted_for_dom_composition_hooks(self):
+        """Prove renderers emit stable container keys matching CSS composition selectors."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            for proj_fn in ALL_PROJECTIONS:
+                proj_fn(self.snapshot)
+
+        # Retrieve all container keys passed to st.container
+        container_keys = [call.kwargs.get("key") for call in mock_st.container.call_args_list if "key" in call.kwargs]
+
+        expected_container_keys = [
+            "chat_first_feed_container",
+            "command_center_matrix_container",
+            "ai_workspace_objects_container",
+            "ai_research_lab_findings_container",
+            "agent_canvas_topology_container",
+            "terminal_hacker_stream_container",
+            "minimal_saas_task_container",
+        ]
+
+        for expected_key in expected_container_keys:
+            self.assertIn(expected_key, container_keys, f"Missing container key hook '{expected_key}' for CSS composition targeting.")
