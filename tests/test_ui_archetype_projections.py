@@ -269,7 +269,7 @@ class TestUIArchetypeProjections(unittest.TestCase):
 
         markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
         self.assertTrue(any("Synthesized Conclusion" in msg for msg in markdown_calls))
-        self.assertTrue(any("Agent Findings & Evidence Analysis" in msg for msg in markdown_calls))
+        self.assertTrue(any("Agent Evidence & Analysis Traversal" in msg for msg in markdown_calls))
 
     def test_semantic_hierarchy_agent_canvas(self):
         """Prove Agent Canvas emphasizes agent roles and execution step workflow topology."""
@@ -278,8 +278,8 @@ class TestUIArchetypeProjections(unittest.TestCase):
             render_agent_canvas(self.snapshot)
 
         markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
-        self.assertTrue(any("Workflow Sequence & Agent Roles Topology" in msg for msg in markdown_calls))
-        self.assertTrue(any("Agent Execution Step Flow" in msg for msg in markdown_calls))
+        self.assertTrue(any("Workflow Sequence & Agent Topology Flow" in msg for msg in markdown_calls))
+        self.assertTrue(any("Parallel Agent Step Flow Nodes" in msg for msg in markdown_calls))
 
     def test_semantic_hierarchy_terminal_hacker(self):
         """Prove Terminal / Hacker AI emphasizes instruction -> execution -> output sequence stream."""

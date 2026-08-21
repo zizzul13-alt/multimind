@@ -47,3 +47,23 @@ def render_status_badge(text: str, variant: str = "info"):
         f'<span class="mm-badge mm-badge-{badge_variant}">{text}</span>',
         unsafe_allow_html=True
     )
+
+
+def semantic_zone(zone_type: str, content_html: str, variant: str = "default"):
+    """Renders a semantic zone container surface with CSS target classes for composition policies.
+
+    Zone types: primary, operational, status, activity, evidence, topology, reading, utility
+    """
+    valid_zones = {
+        "primary": "mm-zone-primary",
+        "operational": "mm-zone-operational",
+        "status": "mm-zone-status",
+        "activity": "mm-zone-activity",
+        "evidence": "mm-zone-evidence",
+        "topology": "mm-zone-topology",
+        "reading": "mm-zone-reading",
+        "utility": "mm-zone-utility"
+    }
+    zone_class = valid_zones.get(zone_type, "mm-zone-primary")
+    variant_class = f"mm-card-{variant}" if variant in ("elevated", "muted") else "mm-card"
+    st.markdown(f'<div class="{zone_class} {variant_class}">{content_html}</div>', unsafe_allow_html=True)

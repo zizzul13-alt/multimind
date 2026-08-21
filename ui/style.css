@@ -369,3 +369,71 @@
   padding: var(--mm-space-sm) var(--mm-space-md);
   margin: var(--mm-space-sm) 0;
 }
+
+/* ==========================================
+   Semantic Composition & Responsive Layout Zones
+   ========================================== */
+
+/* Base Semantic Zones */
+.mm-zone-primary {
+  border-left: 3px solid var(--mm-color-primary);
+}
+
+.mm-zone-operational {
+  border-left: 3px solid var(--mm-color-warning);
+}
+
+.mm-zone-status {
+  background-color: var(--mm-color-surface-elevated);
+}
+
+.mm-zone-activity {
+  border: 1px dashed var(--mm-color-border-hover);
+}
+
+.mm-zone-evidence {
+  border-left: 3px solid var(--mm-color-info);
+  background-color: var(--mm-color-surface-muted);
+}
+
+.mm-zone-topology {
+  border-left: 3px solid var(--mm-color-accent);
+}
+
+.mm-zone-reading {
+  font-family: var(--mm-font-base);
+  line-height: 1.6;
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+.mm-zone-utility {
+  opacity: 0.9;
+}
+
+/* Reading Sanctuary Typography Preservation */
+.mm-zone-reading p, .mm-zone-reading span {
+  font-family: var(--mm-font-base) !important;
+}
+
+.mm-zone-reading code, .mm-zone-reading pre {
+  font-family: var(--mm-font-mono) !important;
+}
+
+/* Viewport Breakpoint Transformations (~1440px / ~768px / ~390px) */
+@media screen and (max-width: 768px) {
+  .mm-card-elevated, .mm-card {
+    padding: var(--mm-space-sm);
+  }
+}
+
+@media screen and (max-width: 390px) {
+  .mm-flex-between {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mm-badge {
+    margin-top: 0.25rem;
+  }
+}
