@@ -4,7 +4,10 @@ import os
 import sys
 import hashlib
 import json
+import uuid
 import sqlite3
+from utils.config import Config
+from database.manager import DatabaseManager
 from playwright.sync_api import sync_playwright
 
 def compute_hash(filepath):
@@ -14,46 +17,23 @@ def compute_hash(filepath):
     return hasher.hexdigest()
 
 def seed_populated_session():
-    """Seeds a realistic populated session with multi-turn debate chats into testuser's database."""
-    db_dir = os.path.join(os.path.expanduser("~"), ".multimind", "users", "testuser")
-    os.makedirs(db_dir, exist_ok=True)
-    db_path = os.path.join(db_dir, "multimind.db")
+    """Seeds a realistic session using Config and DatabaseManager contracts."""
+    user_id = "testuser"
+    db_path = Config.get_db_path(user_id)
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+    cursor.execute("DROP TABLE IF EXISTS chats")
+    cursor.execute("DROP TABLE IF EXISTS sessions")
+    conn.commit()
+    conn.close()
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS sessions (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            mode TEXT NOT NULL,
-            created_at TEXT NOT NULL
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS chats (
-            id TEXT PRIMARY KEY,
-            session_id TEXT NOT NULL,
-            prompt TEXT NOT NULL,
-            prompt_compressed TEXT,
-            mode TEXT NOT NULL,
-            context_mode TEXT,
-            final_answer TEXT NOT NULL,
-            debate_data TEXT,
-            tokens_used INTEGER,
-            cost REAL,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (session_id) REFERENCES sessions (id)
-        )
-    """)
+    db = DatabaseManager(db_path)
 
     sess_id = "sess-evidence-v2-populated"
-    cursor.execute("DELETE FROM chats WHERE session_id = ?", (sess_id,))
-    cursor.execute("DELETE FROM sessions WHERE id = ?", (sess_id,))
+    sess_name = "Populated Archetype Evidence Session"
 
-    cursor.execute("INSERT INTO sessions (id, name, mode, created_at) VALUES (?, ?, ?, ?)",
-                   (sess_id, "Populated Archetype Evidence Session", "coding", "2025-02-18 12:00:00"))
+    db.create_session(sess_id, sess_name, "coding")
 
     sample_debate_1 = {
         "gate_score": 9,
@@ -76,46 +56,35 @@ def seed_populated_session():
         "total_cost": 0.0015
     }
 
-    cursor.execute("""
-        INSERT INTO chats (id, session_id, prompt, prompt_compressed, mode, context_mode, final_answer, debate_data, tokens_used, cost, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        "chat-v2-1",
-        sess_id,
-        "Write an efficient Fibonacci function in Python.",
-        "",
-        "continue",
-        "continue",
-        "Here is the optimized iterative Fibonacci function in Python:\n\n```python\ndef fibonacci(n):\n    if n <= 0: return 0\n    a, b = 0, 1\n    for _ in range(1, n):\n        a, b = b, a + b\n    return b\n```\n\nThis provides linear time complexity O(n) and constant memory O(1).",
-        json.dumps(sample_debate_1),
-        1850,
-        0.0028,
-        "2025-02-18 12:05:00"
-    ))
+    db.save_chat(sess_id, {
+        "id": str(uuid.uuid4()),
+        "prompt": "Write an efficient Fibonacci function in Python.",
+        "prompt_compressed": "",
+        "mode": "continue",
+        "context_mode": "continue",
+        "final_answer": "Here is the optimized iterative Fibonacci function in Python:\n\n```python\ndef fibonacci(n):\n    if n <= 0: return 0\n    a, b = 0, 1\n    for _ in range(1, n):\n        a, b = b, a + b\n    return b\n```\n\nThis provides linear time complexity O(n) and constant memory O(1).",
+        "debate_data": json.dumps(sample_debate_1),
+        "tokens_used": 1850,
+        "cost": 0.0028
+    })
 
-    cursor.execute("""
-        INSERT INTO chats (id, session_id, prompt, prompt_compressed, mode, context_mode, final_answer, debate_data, tokens_used, cost, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        "chat-v2-2",
-        sess_id,
-        "Explain immutable presentation snapshot models in Python.",
-        "",
-        "continue",
-        "continue",
-        "Immutable presentation snapshot models use frozen dataclasses (`@dataclass(frozen=True)`) and tuple collections to guarantee that UI renderers cannot mutate underlying source state or execute side-effects during presentation rendering.",
-        json.dumps(sample_debate_2),
-        1200,
-        0.0015,
-        "2025-02-18 12:10:00"
-    ))
+    db.save_chat(sess_id, {
+        "id": str(uuid.uuid4()),
+        "prompt": "Explain immutable presentation snapshot models in Python.",
+        "prompt_compressed": "",
+        "mode": "continue",
+        "context_mode": "continue",
+        "final_answer": "Immutable presentation snapshot models use frozen dataclasses (`@dataclass(frozen=True)`) and tuple collections to guarantee that UI renderers cannot mutate underlying source state or execute side-effects during presentation rendering.",
+        "debate_data": json.dumps(sample_debate_2),
+        "tokens_used": 1200,
+        "cost": 0.0015
+    })
 
-    conn.commit()
-    conn.close()
-    print("Seeded populated session database successfully.")
+    print(f"Seeded populated session database successfully at: {db_path}")
+    return sess_name
 
 def generate_evidence_v2():
-    seed_populated_session()
+    target_sess_name = seed_populated_session()
     os.makedirs("visual_evidence", exist_ok=True)
 
     print("Launching Streamlit server on port 8501...")
@@ -165,14 +134,24 @@ def generate_evidence_v2():
 
                     sidebar = page.locator("[data-testid='stSidebar']")
 
-                    # 2. Select populated session in sidebar using dispatch_event
-                    sess_btn = sidebar.locator("button").filter(has_text="📝").first
-                    if sess_btn.count() == 0:
-                        sess_btn = sidebar.locator("button").filter(has_text="📌").first
+                    # On narrow viewports (390px), expand collapsed sidebar if collapsed control button is visible
+                    collapsed_btn = page.locator("[data-testid='collapsedControl']")
+                    if width < 768 and collapsed_btn.is_visible():
+                        collapsed_btn.dispatch_event("click")
+                        time.sleep(1)
 
-                    if sess_btn.count() > 0:
-                        sess_btn.dispatch_event("click")
-                        time.sleep(2)
+                    # 2. LOCATE & SELECT exact seeded evidence session by button help or partial name
+                    pop_sess_btn = sidebar.locator("button").filter(has_text="Populated Archetype").first
+                    if pop_sess_btn.count() == 0:
+                        pop_sess_btn = sidebar.locator("button[help*='Populated Archetype']").first
+                    assert pop_sess_btn.count() > 0, f"R6 Failure: Seeded session button for '{target_sess_name}' not found in sidebar."
+
+                    pop_sess_btn.dispatch_event("click")
+                    time.sleep(1.5)
+
+                    # VERIFY populated session title/header is rendered on main surface
+                    heading_text = page.locator("h3, h4").all_inner_texts()
+                    assert any(target_sess_name in h for h in heading_text), f"R6 Failure: Seeded session header not rendered for '{target_sess_name}' in headings: {heading_text}"
 
                     # 3. VERIFY active archetype container key is rendered in DOM
                     expected_container = page.locator(f".st-key-{container_key_substring}")
@@ -181,13 +160,19 @@ def generate_evidence_v2():
                     # 4. COLLAPSE SIDEBAR via real UI control button
                     collapse_btn = page.locator("[data-testid='stSidebarCollapseButton']")
                     if collapse_btn.is_visible():
-                        collapse_btn.dispatch_event("click")
-                        time.sleep(1.5)
+                        collapse_btn.click()
+                        time.sleep(1)
 
-                    # 5. VERIFY main archetype surface is unobstructed (container key visible)
+                    # 5. VERIFY sidebar is actually collapsed and NOT obstructing viewport
+                    sidebar_box = sidebar.bounding_box()
+                    if sidebar_box:
+                        assert sidebar_box["x"] < 0 or sidebar_box["width"] <= 1 or not sidebar.is_visible(), \
+                            f"R6 Verification failed: Sidebar remains visible/obstructing at x={sidebar_box['x']}, width={sidebar_box['width']}"
+
+                    # 6. VERIFY main archetype surface remains unobstructed
                     assert expected_container.is_visible(), f"R6 Verification failed: Main archetype surface obstructed after sidebar collapse for archetype '{arch_id}'"
 
-                    # 6. CAPTURE screenshot
+                    # 7. CAPTURE screenshot
                     screenshot_path = f"visual_evidence/archetype_{arch_id}_{vp_label}.png"
                     page.screenshot(path=screenshot_path, full_page=True)
 
