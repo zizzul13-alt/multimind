@@ -63,7 +63,12 @@ if "active_theme" not in st.session_state:
     st.session_state.active_theme = "default"
 
 if "active_archetype" not in st.session_state:
-    st.session_state.active_archetype = "chat_first"
+    qp_arch = st.query_params.get("archetype", None)
+    if qp_arch and isinstance(qp_arch, str):
+        from ui.presentation.resolver import CANONICAL_ARCHETYPE_IDS, FALLBACK_ARCHETYPE_ID
+        st.session_state.active_archetype = qp_arch if qp_arch in CANONICAL_ARCHETYPE_IDS else FALLBACK_ARCHETYPE_ID
+    else:
+        st.session_state.active_archetype = "chat_first"
 
 load_css(st.session_state.get("active_theme", "default"))
 

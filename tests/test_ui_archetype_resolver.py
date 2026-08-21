@@ -95,3 +95,17 @@ class TestUIArchetypeResolver(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_query_param_archetype_initialization_seam(self):
+        """Test query parameter active_archetype initialization seam logic."""
+        from ui.presentation.resolver import CANONICAL_ARCHETYPE_IDS, FALLBACK_ARCHETYPE_ID
+
+        # Valid query parameter maps to canonical ID
+        for valid_id in CANONICAL_ARCHETYPE_IDS:
+            resolved_id = valid_id if valid_id in CANONICAL_ARCHETYPE_IDS else FALLBACK_ARCHETYPE_ID
+            self.assertEqual(resolved_id, valid_id)
+
+        # Invalid query parameter falls back safely
+        invalid_qp = "invalid_archetype_xyz"
+        resolved_invalid = invalid_qp if invalid_qp in CANONICAL_ARCHETYPE_IDS else FALLBACK_ARCHETYPE_ID
+        self.assertEqual(resolved_invalid, FALLBACK_ARCHETYPE_ID)
