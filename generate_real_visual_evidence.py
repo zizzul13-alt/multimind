@@ -24,16 +24,16 @@ def generate_screenshots():
         env=env
     )
 
-    time.sleep(4)  # Allow server startup
+    time.sleep(5)  # Allow server startup
 
-    archetype_keys = [
-        "chat_first",
-        "command_center",
-        "ai_workspace",
-        "ai_research_lab",
-        "agent_canvas",
-        "terminal_hacker",
-        "minimal_saas"
+    archetypes = [
+        ("chat_first", "chat_first_feed_container"),
+        ("command_center", "command_center_matrix_container"),
+        ("ai_workspace", "ai_workspace_objects_container"),
+        ("ai_research_lab", "ai_research_lab_findings_container"),
+        ("agent_canvas", "agent_canvas_topology_container"),
+        ("terminal_hacker", "terminal_hacker_stream_container"),
+        ("minimal_saas", "minimal_saas_task_container")
     ]
 
     viewports = [
@@ -47,34 +47,80 @@ def generate_screenshots():
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             for vp_label, width, height in viewports:
-                page = browser.new_page(viewport={"width": width, "height": height})
-                page.goto("http://localhost:8501", timeout=15000)
-                time.sleep(1.5)
-
-                # Handle login once
-                if page.locator("input[placeholder='Ketik username bebas...']").is_visible():
-                    page.fill("input[placeholder='Ketik username bebas...']", "testuser")
-                    page.click("button:has-text('Masuk')")
+                for arch_id, container_key_substring in archetypes:
+                    page = browser.new_page(viewport={"width": width, "height": height})
+                    # Request active archetype via approved presentation query parameter seam
+                    page.goto(f"http://localhost:8501/?archetype={arch_id}", timeout=20000)
                     time.sleep(1.5)
 
-                for arch in archetype_keys:
-                    screenshot_path = f"visual_evidence/archetype_{arch}_{vp_label}.png"
+                    # 1. Login
+                    if page.locator("input[placeholder='Ketik username bebas...']").is_visible():
+                        page.fill("input[placeholder='Ketik username bebas...']", "testuser")
+                        page.click("button:has-text('Masuk')")
+                        time.sleep(1.5)
+
+                    sidebar = page.locator("[data-testid='stSidebar']")
+
+                    # 2. Select first active session in sidebar using dispatch_event
+                    sess_btn = sidebar.locator("button").filter(has_text="📝").first
+                    if sess_btn.count() == 0:
+                        sess_btn = sidebar.locator("button").filter(has_text="📌").first
+
+                    if sess_btn.count() > 0:
+                        sess_btn.dispatch_event("click")
+                        time.sleep(2)
+
+                    # 3. VERIFY active archetype container key is rendered in DOM
+                    expected_container = page.locator(f".st-key-{container_key_substring}")
+                    assert expected_container.is_visible(), f"R6 Verification failed: Container key class .st-key-{container_key_substring} not visible in DOM for archetype '{arch_id}'"
+
+                    # 4. COLLAPSE SIDEBAR via real UI control button to leave main surface unobstructed
+                    collapse_btn = page.locator("[data-testid='stSidebarCollapseButton']")
+                    if collapse_btn.is_visible():
+                        collapse_btn.dispatch_event("click")
+                        time.sleep(1)
+
+                    # 5. VERIFY main archetype surface is unobstructed (container key visible)
+                    assert expected_container.is_visible(), f"R6 Verification failed: Main archetype surface obstructed after sidebar collapse for archetype '{arch_id}'"
+
+                    # 6. CAPTURE
+                    screenshot_path = f"visual_evidence/archetype_{arch_id}_{vp_label}.png"
                     page.screenshot(path=screenshot_path, full_page=True)
 
                     file_hash = compute_hash(screenshot_path)
-                    captured_hashes[f"{arch}_{vp_label}"] = (screenshot_path, file_hash)
-                    print(f"Captured PNG screenshot: {screenshot_path} (SHA256: {file_hash[:12]}...)")
-                page.close()
+                    captured_hashes[f"{arch_id}_{vp_label}"] = (screenshot_path, file_hash)
+                    print(f"R6 VERIFIED & CAPTURED {arch_id} ({vp_label}): {screenshot_path} (SHA256: {file_hash[:12]}...)")
+
+                    page.close()
             browser.close()
     except Exception as fatal_err:
-        print(f"CRITICAL: Capture failure ({fatal_err}). Aborting without fallback.")
+        print(f"CRITICAL R6 FAILURE: State transition / capture error ({fatal_err}). Aborting without fallback.")
         sys.exit(1)
     finally:
         print("Terminating Streamlit server...")
         proc.terminate()
         proc.wait()
 
-    print(f"\nCaptured {len(captured_hashes)} screenshot files.")
+    # Log recorded hashes
+    print("\n--- RECORDED SCREENSHOT HASHES & SIZES ---")
+    for k, (p_path, h) in captured_hashes.items():
+        print(f"  {k:30s} -> SHA256: {h} ({os.path.getsize(p_path)} bytes)")
+
+    # Compare hashes across archetypes for each viewport
+    hashes_1440 = [h for k, (p, h) in captured_hashes.items() if "1440px" in k]
+    hashes_390 = [h for k, (p, h) in captured_hashes.items() if "390px" in k]
+
+    print(f"\n1440px unique hashes: {len(set(hashes_1440))} / {len(archetypes)}")
+    print(f"390px unique hashes: {len(set(hashes_390))} / {len(archetypes)}")
+
+    if len(set(hashes_1440)) != len(archetypes):
+        print(f"FAIL: Expected {len(archetypes)} unique hashes for 1440px viewports, got {len(set(hashes_1440))}")
+        sys.exit(1)
+    if len(set(hashes_390)) != len(archetypes):
+        print(f"FAIL: Expected {len(archetypes)} unique hashes for 390px viewports, got {len(set(hashes_390))}")
+        sys.exit(1)
+
+    print("\nSUCCESS: All 14 screenshots verified in DOM and captured across all 7 archetypes!")
 
 if __name__ == "__main__":
     generate_screenshots()
