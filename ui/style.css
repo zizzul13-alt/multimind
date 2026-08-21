@@ -13,6 +13,8 @@
   background-color: transparent;
 }
 
+/* MultiMind AI - CSS Foundation & Semantic Control Styling */
+
 /* Base Container Primitives */
 .mm-card {
   background-color: var(--mm-color-surface);
@@ -86,6 +88,7 @@
   border: 1px solid var(--mm-color-info);
 }
 
+/* Text Utilities */
 .mm-text-muted {
   color: var(--mm-color-text-muted);
 }
@@ -113,6 +116,30 @@
   outline: none;
 }
 
+.stTextInput input:disabled,
+.stTextArea textarea:disabled {
+  color: var(--mm-color-text-disabled);
+  opacity: 0.6;
+}
+
+/* Selectbox */
+.stSelectbox [data-baseweb="select"] {
+  border-radius: var(--mm-radius-md);
+  border: 1px solid var(--mm-color-border);
+  background-color: var(--mm-color-surface-input);
+  color: var(--mm-color-text);
+}
+
+.stSelectbox [data-baseweb="select"]:hover {
+  border-color: var(--mm-color-border-hover);
+}
+
+.stSelectbox [data-baseweb="select"]:focus-within {
+  border-color: var(--mm-color-border-focus);
+  box-shadow: 0 0 0 3px var(--mm-color-focus-ring);
+}
+
+/* Buttons */
 .stButton > button {
   border-radius: var(--mm-radius-md);
   font-weight: 500;
@@ -120,6 +147,13 @@
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.stButton > button:focus {
+  border-color: var(--mm-color-border-focus);
+  box-shadow: 0 0 0 3px var(--mm-color-focus-ring);
+  outline: none;
+}
+
+/* Primary Button */
 .stButton > button[kind="primary"],
 .stButton > button[data-testid="stBaseButton-primary"] {
   background-color: var(--mm-color-primary);
@@ -127,10 +161,48 @@
   border: 1px solid var(--mm-color-primary);
 }
 
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover {
+  background-color: var(--mm-color-primary-hover);
+  border-color: var(--mm-color-primary-hover);
+}
+
+.stButton > button[kind="primary"]:active,
+.stButton > button[data-testid="stBaseButton-primary"]:active {
+  background-color: var(--mm-color-primary-active);
+  border-color: var(--mm-color-primary-active);
+}
+
+/* Secondary / Default Button */
+.stButton > button[kind="secondary"],
+.stButton > button[data-testid="stBaseButton-secondary"],
+.stButton > button:not([kind="primary"]):not([data-testid="stBaseButton-primary"]) {
+  background-color: var(--mm-color-surface);
+  color: var(--mm-color-text);
+  border: 1px solid var(--mm-color-border);
+}
+
+.stButton > button[kind="secondary"]:hover,
+.stButton > button:not([kind="primary"]):hover {
+  background-color: var(--mm-color-surface-hover);
+  border-color: var(--mm-color-border-hover);
+}
+
+/* Expanders */
 .stExpander {
   border-radius: var(--mm-radius-md);
   border: 1px solid var(--mm-color-border);
   background-color: var(--mm-color-surface);
+}
+
+.stExpander summary {
+  font-weight: 500;
+  color: var(--mm-color-text);
+}
+
+.stExpander summary:focus {
+  outline: 2px solid var(--mm-color-border-focus);
+  outline-offset: 2px;
 }
 
 /* Layout & Spacing Helpers */
@@ -143,30 +215,93 @@
   margin-bottom: var(--mm-space-sm);
 }
 
+.mm-list-styled {
+  margin-bottom: 0;
+  padding-left: 1.2rem;
+  line-height: 1.7;
+}
+
+.mm-spacer-md {
+  margin-top: var(--mm-space-md);
+}
+
+.mm-subtitle-margin {
+  margin-top: var(--mm-space-xs);
+}
+
+.mm-section-title {
+  margin-bottom: var(--mm-space-sm);
+}
+
+/* Responsive Utilities */
 .mm-typo-mono, pre {
   white-space: pre-wrap;
   word-break: break-word;
   overflow-x: auto;
 }
 
-/* Native Streamlit Typography & Container Overrides */
+/* Native Streamlit Typography & Structural Consumption Overrides */
 .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
   font-family: var(--mm-font-base);
   color: var(--mm-color-text);
 }
 
-.stApp p, .stApp li, .stApp span:not([data-testid="stIcon"]):not([data-testid="stExpanderToggleIcon"]):not([data-baseweb="icon"]) {
+.stApp h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stApp h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.stApp h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.stApp h4, .stApp h5, .stApp h6 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.stApp p,
+.stApp li,
+.stApp span:not([data-testid="stIcon"]):not([data-testid="stExpanderToggleIcon"]):not([data-baseweb="icon"]):not(.material-symbols-outlined):not(.material-symbols-rounded):not([class*="material-symbols"]) {
   font-family: var(--mm-font-base);
 }
 
+/* Streamlit Material Symbols / Icon font preservation */
+[data-testid="stIcon"],
+[data-testid="stExpanderToggleIcon"],
+[data-baseweb="icon"],
+.material-symbols-outlined,
+.material-symbols-rounded,
+[class*="material-symbols"] {
+  font-family: "Material Symbols Rounded", "Material Symbols Outlined", "Material Icons", sans-serif;
+}
+
+/* Chat Message Container & Content */
 [data-testid="stChatMessage"] {
   background-color: var(--mm-color-surface);
   border: 1px solid var(--mm-color-border);
   border-radius: var(--mm-radius-md);
   padding: var(--mm-space-md);
   margin-bottom: var(--mm-space-md);
+  color: var(--mm-color-text);
 }
 
+[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] {
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+}
+
+/* Metrics (Label, Value, Delta) */
 [data-testid="stMetric"] {
   background-color: var(--mm-color-surface-elevated);
   border: 1px solid var(--mm-color-border);
@@ -174,13 +309,68 @@
   padding: var(--mm-space-sm) var(--mm-space-md);
 }
 
+[data-testid="stMetricLabel"] {
+  color: var(--mm-color-text-muted);
+  font-family: var(--mm-font-base);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+[data-testid="stMetricValue"] {
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+  font-weight: 700;
+}
+
+[data-testid="stMetricDelta"] {
+  font-family: var(--mm-font-base);
+}
+
+/* Radio Controls & Option Labels */
+.stRadio label, [data-testid="stRadio"] label {
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+}
+
+.stRadio [data-testid="stMarkdownContainer"] p {
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+}
+
+/* Sidebar Text, Headings & Captions */
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+  color: var(--mm-color-text);
+  font-family: var(--mm-font-base);
+}
+
+[data-testid="stSidebar"] .stCaption, [data-testid="stSidebar"] caption {
+  color: var(--mm-color-text-muted);
+}
+
+/* Code & Blockquotes */
+.stApp code, .stApp pre {
+  font-family: var(--mm-font-mono);
+  background-color: var(--mm-color-surface-input);
+  color: var(--mm-color-text);
+  border-radius: var(--mm-radius-sm);
+}
+
+.stApp blockquote {
+  border-left: 3px solid var(--mm-color-primary);
+  background-color: var(--mm-color-surface-muted);
+  color: var(--mm-color-text-muted);
+  border-radius: var(--mm-radius-sm);
+  padding: var(--mm-space-sm) var(--mm-space-md);
+  margin: var(--mm-space-sm) 0;
+}
+
 /* ==========================================
-   ACTUAL STREAMLIT 1.61 DOM CONTAINER COMPOSITION
-   Targets stable native container keys directly in DOM
+   STREAMLIT 1.61 NATIVE ST-KEY CONTAINER CSS HOOKS
+   Uses verified .st-key-[key] container classes
    ========================================== */
 
 /* Chat First Container Zone */
-[data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="chat_first_feed"]) {
+.st-key-chat_first_feed_container {
   max-width: 850px;
   margin: 0 auto;
   border-left: 3px solid var(--mm-color-primary);
@@ -188,7 +378,7 @@
 }
 
 /* Command Center Container Zone */
-[data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="command_center_matrix"]) {
+.st-key-command_center_matrix_container {
   border: 1px solid var(--mm-color-border);
   background-color: var(--mm-color-surface-muted);
   border-radius: var(--mm-radius-lg);
@@ -196,40 +386,40 @@
 }
 
 /* AI Workspace Container Zone */
-[data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="ai_workspace_objects"]) {
+.st-key-ai_workspace_objects_container {
   border-left: 3px solid var(--mm-color-accent);
   padding-left: 1rem;
 }
 
 /* AI Research Lab Container Zone */
-[data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="ai_research_lab_findings"]) {
+.st-key-ai_research_lab_findings_container {
   border-left: 3px solid var(--mm-color-info);
   background-color: var(--mm-color-surface-muted);
   padding: 1rem;
 }
 
 /* Agent Canvas Container Zone */
-[data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="agent_canvas_topology"]) {
+.st-key-agent_canvas_topology_container {
   border: 1px dashed var(--mm-color-primary);
   border-radius: var(--mm-radius-lg);
   padding: 1rem;
 }
 
 /* Terminal / Hacker Container Zone & Reading Sanctuary */
-[data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="terminal_hacker_stream"]) {
-  background-color: #050811;
+.st-key-terminal_hacker_stream_container {
+  background-color: var(--mm-color-surface-input);
   border: 1px solid var(--mm-color-border);
   padding: 1rem;
   border-radius: var(--mm-radius-md);
 }
 
-[data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="terminal_hacker_stream"]) .stMarkdown p {
+.st-key-terminal_hacker_stream_container .stMarkdown p {
   font-family: var(--mm-font-base) !important;
   line-height: 1.6;
 }
 
 /* Minimal SaaS Container Zone */
-[data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="minimal_saas_task"]) {
+.st-key-minimal_saas_task_container {
   max-width: 700px;
   margin: 0 auto;
   border: 1px solid var(--mm-color-primary);
@@ -249,29 +439,29 @@
 }
 
 @media screen and (max-width: 390px) {
-  /* Chat First ~390px: Focus on edge-to-edge chat stream */
-  [data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="chat_first_feed"]) {
+  /* Chat First ~390px: Edge-to-edge reading stream */
+  .st-key-chat_first_feed_container {
     padding-left: 0.25rem;
     border-left-width: 2px;
   }
 
-  /* Command Center ~390px: Priority operational stream, full width comparison cards */
-  [data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="command_center_matrix"]) {
+  /* Command Center ~390px: Priority operational stream */
+  .st-key-command_center_matrix_container {
     padding: 0.5rem;
   }
 
   /* AI Workspace ~390px: Work anchor focus */
-  [data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="ai_workspace_objects"]) {
+  .st-key-ai_workspace_objects_container {
     padding-left: 0.25rem;
   }
 
-  /* Agent Canvas ~390px: Topology step flow adaptation */
-  [data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="agent_canvas_topology"]) {
+  /* Agent Canvas ~390px: Compact step topology */
+  .st-key-agent_canvas_topology_container {
     padding: 0.5rem;
   }
 
   /* Minimal SaaS ~390px: Compact single task card focus */
-  [data-testid="stVerticalBlock"]:has(> div [data-testid="stElementContainer"][key*="minimal_saas_task"]) {
+  .st-key-minimal_saas_task_container {
     padding: 0.75rem;
     border-width: 1px;
   }
@@ -280,23 +470,4 @@
     flex-direction: column;
     align-items: flex-start;
   }
-}
-
-
-/* Metrics (Label, Value, Delta) */
-[data-testid="stMetricLabel"] {
-  color: var(--mm-color-text-muted);
-  font-family: var(--mm-font-base);
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-[data-testid="stMetricValue"] {
-  color: var(--mm-color-text);
-  font-family: var(--mm-font-base);
-  font-weight: 700;
-}
-
-[data-testid="stMetricDelta"] {
-  font-family: var(--mm-font-base);
 }
