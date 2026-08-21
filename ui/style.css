@@ -93,12 +93,7 @@
   color: var(--mm-color-text-muted);
 }
 
-/* ==========================================
-   Streamlit Native Control Visual Enhancements
-   Targeted semantic overrides using tokens
-   ========================================== */
-
-/* Text Inputs & Text Areas */
+/* Streamlit Native Control Visual Enhancements */
 .stTextInput input,
 .stTextArea textarea {
   border-radius: var(--mm-radius-md);
@@ -245,7 +240,6 @@
   overflow-x: auto;
 }
 
-
 /* Native Streamlit Typography & Structural Consumption Overrides */
 .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
   font-family: var(--mm-font-base);
@@ -368,4 +362,112 @@
   border-radius: var(--mm-radius-sm);
   padding: var(--mm-space-sm) var(--mm-space-md);
   margin: var(--mm-space-sm) 0;
+}
+
+/* ==========================================
+   STREAMLIT 1.61 NATIVE ST-KEY CONTAINER CSS HOOKS
+   Uses verified .st-key-[key] container classes
+   ========================================== */
+
+/* Chat First Container Zone */
+.st-key-chat_first_feed_container {
+  max-width: 850px;
+  margin: 0 auto;
+  border-left: 3px solid var(--mm-color-primary);
+  padding-left: 1rem;
+}
+
+/* Command Center Container Zone */
+.st-key-command_center_matrix_container {
+  border: 1px solid var(--mm-color-border);
+  background-color: var(--mm-color-surface-muted);
+  border-radius: var(--mm-radius-lg);
+  padding: 1rem;
+}
+
+/* AI Workspace Container Zone */
+.st-key-ai_workspace_objects_container {
+  border-left: 3px solid var(--mm-color-accent);
+  padding-left: 1rem;
+}
+
+/* AI Research Lab Container Zone */
+.st-key-ai_research_lab_findings_container {
+  border-left: 3px solid var(--mm-color-info);
+  background-color: var(--mm-color-surface-muted);
+  padding: 1rem;
+}
+
+/* Agent Canvas Container Zone */
+.st-key-agent_canvas_topology_container {
+  border: 1px dashed var(--mm-color-primary);
+  border-radius: var(--mm-radius-lg);
+  padding: 1rem;
+}
+
+/* Terminal / Hacker Container Zone & Reading Sanctuary */
+.st-key-terminal_hacker_stream_container {
+  background-color: var(--mm-color-surface-input);
+  border: 1px solid var(--mm-color-border);
+  padding: 1rem;
+  border-radius: var(--mm-radius-md);
+}
+
+.st-key-terminal_hacker_stream_container .stMarkdown p {
+  font-family: var(--mm-font-base) !important;
+  line-height: 1.6;
+}
+
+/* Minimal SaaS Container Zone */
+.st-key-minimal_saas_task_container {
+  max-width: 700px;
+  margin: 0 auto;
+  border: 1px solid var(--mm-color-primary);
+  padding: 1.5rem;
+  border-radius: var(--mm-radius-lg);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* ==========================================
+   REAL RESPONSIVE ARCHETYPE MORPHOLOGY (~390px / ~768px)
+   ========================================== */
+
+@media screen and (max-width: 768px) {
+  [data-testid="stMetric"] {
+    padding: 0.4rem 0.6rem;
+  }
+}
+
+@media screen and (max-width: 390px) {
+  /* Chat First ~390px: Edge-to-edge reading stream */
+  .st-key-chat_first_feed_container {
+    padding-left: 0.25rem;
+    border-left-width: 2px;
+  }
+
+  /* Command Center ~390px: Priority operational stream */
+  .st-key-command_center_matrix_container {
+    padding: 0.5rem;
+  }
+
+  /* AI Workspace ~390px: Work anchor focus */
+  .st-key-ai_workspace_objects_container {
+    padding-left: 0.25rem;
+  }
+
+  /* Agent Canvas ~390px: Compact step topology */
+  .st-key-agent_canvas_topology_container {
+    padding: 0.5rem;
+  }
+
+  /* Minimal SaaS ~390px: Compact single task card focus */
+  .st-key-minimal_saas_task_container {
+    padding: 0.75rem;
+    border-width: 1px;
+  }
+
+  .mm-flex-between {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

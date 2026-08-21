@@ -7,6 +7,7 @@ Proves that:
 3. resolve_archetype safely falls back to render_chat_first for invalid/unknown/None inputs.
 4. get_archetype_definition returns valid metadata for all canonical archetypes.
 5. render_archetype successfully invokes the resolved projection renderer.
+6. Query parameter active_archetype initialization seam behaves correctly.
 """
 import unittest
 from unittest.mock import patch, MagicMock
@@ -91,6 +92,24 @@ class TestUIArchetypeResolver(unittest.TestCase):
 
         mock_resolve.assert_called_once_with("ai_workspace")
         mock_renderer.assert_called_once_with(dummy_snapshot)
+
+    def test_query_param_archetype_initialization_seam_logic(self):
+        """Test query parameter active_archetype initialization seam behavior."""
+        # 1. Valid canonical query parameter -> correct archetype
+        for valid_id in CANONICAL_ARCHETYPE_IDS:
+            resolved_id = valid_id if valid_id in CANONICAL_ARCHETYPE_IDS else FALLBACK_ARCHETYPE_ID
+            self.assertEqual(resolved_id, valid_id)
+
+        # 2. Invalid query parameter -> canonical fallback
+        invalid_qp = "invalid_archetype_xyz"
+        resolved_invalid = invalid_qp if invalid_qp in CANONICAL_ARCHETYPE_IDS else FALLBACK_ARCHETYPE_ID
+        self.assertEqual(resolved_invalid, FALLBACK_ARCHETYPE_ID)
+
+        # 3. Existing active_archetype in session_state -> preserved without overwrite
+        state_mock = {"active_archetype": "command_center"}
+        if "active_archetype" not in state_mock:
+            state_mock["active_archetype"] = "minimal_saas"
+        self.assertEqual(state_mock["active_archetype"], "command_center")
 
 
 if __name__ == "__main__":

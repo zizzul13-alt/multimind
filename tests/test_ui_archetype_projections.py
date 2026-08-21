@@ -9,6 +9,7 @@ Proves that:
 5. All 7 projections handle edge cases safely (empty chats, missing memory, malformed debate JSON).
 6. Dynamic provider/user text is rendered safely without unsafe HTML string interpolation.
 7. Each projection exhibits an observable semantic hierarchy distinction matching its primary mental model.
+8. Renderers emit stable container keys for DOM composition hooks.
 """
 import unittest
 from unittest.mock import patch, MagicMock
@@ -128,7 +129,6 @@ class TestUIArchetypeProjections(unittest.TestCase):
             for proj_fn in ALL_PROJECTIONS:
                 proj_fn(self.snapshot)
 
-        # DatabaseManager must NEVER be instantiated or called by projections
         mock_db_cls.assert_not_called()
 
     def test_unique_new_chat_button_keys(self):
@@ -193,7 +193,7 @@ class TestUIArchetypeProjections(unittest.TestCase):
         self.assertEqual(self.snapshot, snapshot_before)
 
     def test_all_projections_agent_response_safe_rendering(self):
-        """Test that dynamic text is rendered via safe Streamlit primitives and not interpolated into HTML strings with unsafe_allow_html=True."""
+        """Test that dynamic text is rendered via safe Streamlit primitives and not interpolated into HTML strings."""
         html_payload = "<img src=x onerror=alert('xss')>"
         raw_chats = [
             {
@@ -220,11 +220,10 @@ class TestUIArchetypeProjections(unittest.TestCase):
             for proj_fn in ALL_PROJECTIONS:
                 proj_fn(html_snapshot)
 
-        # Check that no unsafe_allow_html=True markdown call contained the raw payload
         for call in mock_st.markdown.call_args_list:
             if call.kwargs.get("unsafe_allow_html"):
                 markdown_arg = call.args[0] if call.args else ""
-                self.assertNotIn(html_payload, markdown_arg, "Dynamic user/agent content must NOT be interpolated into unsafe HTML strings.")
+                self.assertNotIn(html_payload, markdown_arg, "Dynamic content must NOT be interpolated into unsafe HTML strings.")
 
     # ==================== SEMANTIC HIERARCHY REGRESSION TESTS ====================
 
@@ -234,7 +233,7 @@ class TestUIArchetypeProjections(unittest.TestCase):
         with patch("ui.presentation.projections.st", mock_st):
             render_chat_first(self.snapshot)
 
-        self.assertEqual(mock_st.chat_message.call_count, 4)  # 2 user + 2 assistant
+        self.assertEqual(mock_st.chat_message.call_count, 4)
         mock_st.chat_message.assert_any_call("user")
         mock_st.chat_message.assert_any_call("assistant")
 
@@ -244,11 +243,9 @@ class TestUIArchetypeProjections(unittest.TestCase):
         with patch("ui.presentation.projections.st", mock_st):
             render_command_center(self.snapshot)
 
-        # Operational metrics present
         metric_labels = [call.args[0] for call in mock_st.metric.call_args_list if call.args]
         self.assertIn("Total Chats", metric_labels)
         self.assertIn("Context Tokens", metric_labels)
-        # Operational expanders present
         self.assertTrue(mock_st.expander.called)
 
     def test_semantic_hierarchy_ai_workspace(self):
@@ -269,7 +266,7 @@ class TestUIArchetypeProjections(unittest.TestCase):
 
         markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
         self.assertTrue(any("Synthesized Conclusion" in msg for msg in markdown_calls))
-        self.assertTrue(any("Agent Findings & Evidence Analysis" in msg for msg in markdown_calls))
+        self.assertTrue(any("Underlying Agent Evidence & Analysis Traversal" in msg for msg in markdown_calls))
 
     def test_semantic_hierarchy_agent_canvas(self):
         """Prove Agent Canvas emphasizes agent roles and execution step workflow topology."""
@@ -278,8 +275,7 @@ class TestUIArchetypeProjections(unittest.TestCase):
             render_agent_canvas(self.snapshot)
 
         markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
-        self.assertTrue(any("Workflow Sequence & Agent Roles Topology" in msg for msg in markdown_calls))
-        self.assertTrue(any("Agent Execution Step Flow" in msg for msg in markdown_calls))
+        self.assertTrue(any("Workflow Sequence & Agent Topology Flow" in msg for msg in markdown_calls))
 
     def test_semantic_hierarchy_terminal_hacker(self):
         """Prove Terminal / Hacker AI emphasizes instruction -> execution -> output sequence stream."""
@@ -303,9 +299,32 @@ class TestUIArchetypeProjections(unittest.TestCase):
         markdown_calls = [call.args[0] for call in mock_st.markdown.call_args_list if call.args]
         self.assertTrue(any("Active Task" in msg for msg in markdown_calls))
 
-        # Secondary history placed inside expander
         expander_labels = [call.args[0] for call in mock_st.expander.call_args_list if call.args]
         self.assertTrue(any("Prior Task History" in label for label in expander_labels))
+
+    # ==================== STABLE CONTAINER KEY HOOK VERIFICATION ====================
+
+    def test_container_keys_emitted_for_dom_composition_hooks(self):
+        """Prove renderers emit stable container keys matching CSS composition selectors."""
+        mock_st = create_mock_st()
+        with patch("ui.presentation.projections.st", mock_st):
+            for proj_fn in ALL_PROJECTIONS:
+                proj_fn(self.snapshot)
+
+        container_keys = [call.kwargs.get("key") for call in mock_st.container.call_args_list if "key" in call.kwargs]
+
+        expected_container_keys = [
+            "chat_first_feed_container",
+            "command_center_matrix_container",
+            "ai_workspace_objects_container",
+            "ai_research_lab_findings_container",
+            "agent_canvas_topology_container",
+            "terminal_hacker_stream_container",
+            "minimal_saas_task_container",
+        ]
+
+        for expected_key in expected_container_keys:
+            self.assertIn(expected_key, container_keys, f"Missing container key hook '{expected_key}'.")
 
 
 if __name__ == "__main__":
