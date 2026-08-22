@@ -471,3 +471,23 @@
     align-items: flex-start;
   }
 }
+
+
+/* ==========================================
+   S7.6 ARCHETYPE INTERACTION SHELL STYLING
+   ========================================== */
+
+/* Shell Composer Container Surfaces */
+.st-key-shell_send_btn_terminal_hacker button {
+  font-family: var(--mm-font-mono) !important;
+}
+
+/* Operational action surface expander styling */
+.st-key-command_center_matrix_container .stExpander {
+  border-color: var(--mm-color-border-hover);
+}
+
+/* Minimal SaaS direct task focus card */
+.st-key-minimal_saas_task_container .stTextArea textarea {
+  font-size: 1.05rem;
+}
