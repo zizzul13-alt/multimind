@@ -119,6 +119,45 @@ def _render_template_variables_and_preview(templates_mgr: Any, selected_template
     return default_prompt
 
 
+
+def _render_token_estimation_metrics(prompt: str, uploaded_files: Any, archetype: str) -> None:
+    """Restores Token/Cost estimation metrics from CURRENT MAIN."""
+    if prompt or uploaded_files:
+        from utils.token_counter import TokenCounter
+        files_count = len(uploaded_files) if uploaded_files else 0
+        session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.get('current_session') else 'coding'
+        rounds = st.session_state.get('debate_rounds', 1)
+        compressor_on = st.session_state.get('compressor_enabled', False)
+
+        estimate = TokenCounter.estimate_total(
+            prompt or '',
+            files_count=files_count,
+            mode=session_mode,
+            rounds=rounds,
+            compressor_on=compressor_on
+        )
+        warning = TokenCounter.get_warning_level(estimate['total_estimate'])
+        cost = TokenCounter.estimate_cost(estimate['total_estimate'])
+
+        card_container(
+            f"<div class='mm-flex-between' style='margin-bottom:0;'>"
+            f"  <span class='mm-typo-label'>📊 Estimated Usage:</span>"
+            f"  <span class='mm-typo-body-small'>"
+            f"    <b>Prompt:</b> {estimate['prompt_tokens']} tok | "
+            f"    <b>Files:</b> {estimate['file_tokens']} tok | "
+            f"    <b>Total:</b> {estimate['total_estimate']} tok "
+            f"    <span class='mm-badge mm-badge-info' style='margin-left:0.4rem;'></span>"
+            f"  </span>"
+            f"</div>",
+            variant="muted"
+        )
+
+        if warning["level"] == "high":
+            render_status_badge("🔴 High token usage! Consider compressor.", variant="danger")
+        elif warning["level"] == "medium":
+            render_status_badge("🟡 Moderate token usage.", variant="warning")
+
+
 def _render_action_buttons(
     archetype: str,
     on_send: Callable[[str, Any, str], None],
@@ -158,7 +197,8 @@ def _render_composer_surface(
         selected_template, context_mode = _render_shared_controls(templates_mgr, archetype)
         _render_template_variables_and_preview(templates_mgr, selected_template)
         prompt = st.text_area("Prompt:", height=120, placeholder="Type your message...", key="prompt_main")
-        uploaded_files = st.file_uploader("📎 Files (optional)", accept_multiple_files=True, key="new_chat_files")
+        uploaded_files = st.file_uploader("📎 Files (optional)", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
+        _render_token_estimation_metrics(prompt, uploaded_files, archetype)
         _render_action_buttons(archetype, on_send, on_cancel, prompt, uploaded_files, context_mode)
 
     elif archetype == "command_center":
@@ -169,7 +209,8 @@ def _render_composer_surface(
                 selected_template, context_mode = _render_shared_controls(templates_mgr, archetype)
                 _render_template_variables_and_preview(templates_mgr, selected_template)
             prompt = st.text_area("Operational Instruction / Prompt:", height=120, placeholder="Enter operational objective...", key="prompt_main")
-            uploaded_files = st.file_uploader("📎 Context Documents / Files", accept_multiple_files=True, key="new_chat_files")
+            uploaded_files = st.file_uploader("📎 Context Documents / Files", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
+            _render_token_estimation_metrics(prompt, uploaded_files, archetype)
             _render_action_buttons(archetype, on_send, on_cancel, prompt, uploaded_files, context_mode)
 
     elif archetype == "ai_workspace":
@@ -178,7 +219,8 @@ def _render_composer_surface(
         selected_template, context_mode = _render_shared_controls(templates_mgr, archetype)
         _render_template_variables_and_preview(templates_mgr, selected_template)
         prompt = st.text_area("Workspace Task Prompt:", height=130, placeholder="Describe task or document update...", key="prompt_main")
-        uploaded_files = st.file_uploader("📎 Workspace File Attachments", accept_multiple_files=True, key="new_chat_files")
+        uploaded_files = st.file_uploader("📎 Workspace File Attachments", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
+        _render_token_estimation_metrics(prompt, uploaded_files, archetype)
         _render_action_buttons(archetype, on_send, on_cancel, prompt, uploaded_files, context_mode)
 
     elif archetype == "ai_research_lab":
@@ -187,7 +229,8 @@ def _render_composer_surface(
         selected_template, context_mode = _render_shared_controls(templates_mgr, archetype)
         _render_template_variables_and_preview(templates_mgr, selected_template)
         prompt = st.text_area("Research Question / Hypothesis:", height=140, placeholder="State research topic or inquiry...", key="prompt_main")
-        uploaded_files = st.file_uploader("📎 Research Evidence Files", accept_multiple_files=True, key="new_chat_files")
+        uploaded_files = st.file_uploader("📎 Research Evidence Files", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
+        _render_token_estimation_metrics(prompt, uploaded_files, archetype)
         _render_action_buttons(archetype, on_send, on_cancel, prompt, uploaded_files, context_mode)
 
     elif archetype == "agent_canvas":
@@ -196,7 +239,8 @@ def _render_composer_surface(
         selected_template, context_mode = _render_shared_controls(templates_mgr, archetype)
         _render_template_variables_and_preview(templates_mgr, selected_template)
         prompt = st.text_area("Node Input Trigger Prompt:", height=120, placeholder="Enter input prompt for agent workflow step...", key="prompt_main")
-        uploaded_files = st.file_uploader("📎 Node Data Attachments", accept_multiple_files=True, key="new_chat_files")
+        uploaded_files = st.file_uploader("📎 Node Data Attachments", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
+        _render_token_estimation_metrics(prompt, uploaded_files, archetype)
         _render_action_buttons(archetype, on_send, on_cancel, prompt, uploaded_files, context_mode)
 
     elif archetype == "terminal_hacker":
@@ -205,12 +249,13 @@ def _render_composer_surface(
         with st.expander("CONSOLE OPTIONS", expanded=False):
             selected_template, context_mode = _render_shared_controls(templates_mgr, archetype)
             _render_template_variables_and_preview(templates_mgr, selected_template)
-            uploaded_files = st.file_uploader("📎 CONSOLE_UPLOADS", accept_multiple_files=True, key="new_chat_files")
+            uploaded_files = st.file_uploader("📎 CONSOLE_UPLOADS", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
         if "selected_template" not in locals():
             selected_template, context_mode = "", "continue"
         if "uploaded_files" not in locals():
             uploaded_files = None
         prompt = st.text_area("COMMAND_PROMPT >", height=110, placeholder="Enter command prompt...", key="prompt_main")
+        _render_token_estimation_metrics(prompt, uploaded_files, archetype)
         _render_action_buttons(archetype, on_send, on_cancel, prompt, uploaded_files, context_mode)
 
     elif archetype == "minimal_saas":
@@ -220,11 +265,12 @@ def _render_composer_surface(
         with st.expander("⚙️ Advanced Options (Template, Mode, Files)", expanded=False):
             selected_template, context_mode = _render_shared_controls(templates_mgr, archetype)
             _render_template_variables_and_preview(templates_mgr, selected_template)
-            uploaded_files = st.file_uploader("📎 Attachments", accept_multiple_files=True, key="new_chat_files")
+            uploaded_files = st.file_uploader("📎 Attachments", accept_multiple_files=True, type=['txt', 'md', 'csv', 'py', 'js', 'java', 'cpp', 'html', 'css', 'json', 'pdf', 'xlsx', 'xls', 'docx', 'jpg', 'png', 'jpeg', 'pptx'], key="new_chat_files")
         if "selected_template" not in locals():
             selected_template, context_mode = "", "continue"
         if "uploaded_files" not in locals():
             uploaded_files = None
+        _render_token_estimation_metrics(prompt, uploaded_files, archetype)
         _render_action_buttons(archetype, on_send, on_cancel, prompt, uploaded_files, context_mode)
 
 

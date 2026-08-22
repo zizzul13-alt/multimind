@@ -413,7 +413,7 @@ def show_new_chat():
             st.session_state.new_chat = False
             st.rerun()
 
-def process_chat(prompt, uploaded_files, context_mode):
+def process_chat(prompt, uploaded_files, context_mode, processing_label=None):
     agents = get_agents(st.session_state.user_id)
     unified = agents.get("unified")
     remote = agents.get("remote")
@@ -424,10 +424,8 @@ def process_chat(prompt, uploaded_files, context_mode):
     openrouter = agents.get("openrouter")
     huggingface = agents.get("huggingface")
 
-    active_arch = st.session_state.get("active_archetype", "chat_first")
-    from ui.presentation.shell import get_processing_label
-    label = get_processing_label(active_arch)
-    with st.status(label, expanded=True) as status_container:
+    status_label = processing_label or "🤖 Agents debating..."
+    with st.status(status_label, expanded=True) as status_container:
         final_prompt = prompt
         if st.session_state.compressor_enabled and gemini and prompt:
             try:
@@ -589,7 +587,9 @@ def main():
             )
 
             def handle_send(prompt, files, context_mode):
-                process_chat(prompt, files, context_mode)
+                from ui.presentation.shell import get_processing_label
+                label = get_processing_label(active_archetype)
+                process_chat(prompt, files, context_mode, processing_label=label)
 
             def handle_cancel():
                 st.session_state.new_chat = False
