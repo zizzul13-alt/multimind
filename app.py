@@ -557,10 +557,46 @@ def main():
     else:
         show_sidebar()
         if st.session_state.current_session:
-            if st.session_state.new_chat:
-                show_new_chat()
-            else:
-                show_session()
+            session = st.session_state.current_session
+            memory = st.session_state.memories.get(session['id'])
+            db = get_db_manager(st.session_state.user_id)
+            chats = db.get_session_chats(session['id'])
+
+            snapshot = build_presentation_snapshot(session, chats, memory)
+            active_archetype = st.session_state.get("active_archetype", "chat_first")
+
+            from ui.presentation.models import SessionMetadataSnapshot, InteractionContext
+            from ui.presentation.shell import render_interaction_shell
+
+            session_meta = SessionMetadataSnapshot(
+                id=session['id'],
+                name=session.get('name', 'Untitled'),
+                mode=session.get('mode', 'coding'),
+                created_at=str(session.get('created_at', ''))
+            )
+
+            ctx = InteractionContext(
+                active_archetype=active_archetype,
+                new_chat_active=st.session_state.get("new_chat", False),
+                session=session_meta,
+                prompt_text=st.session_state.get("prompt_main", ""),
+                selected_template=st.session_state.get("selected_template"),
+                chat_mode=st.session_state.get("chat_mode", "continue"),
+                is_processing=False
+            )
+
+            def handle_send(prompt, files, context_mode):
+                from ui.presentation.shell import get_processing_label
+                label = get_processing_label(active_archetype)
+                with st.status(label, expanded=True):
+                    process_chat(prompt, files, context_mode)
+
+            def handle_cancel():
+                st.session_state.new_chat = False
+                st.rerun()
+
+            templates_mgr = get_template_manager()
+            render_interaction_shell(ctx, snapshot, templates_mgr, handle_send, handle_cancel)
         else:
             card_container(
                 f"<div class='mm-typo-display'>🤖 Welcome, {st.session_state.user}!</div>"
