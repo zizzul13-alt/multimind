@@ -11,19 +11,20 @@
    - Created presentation-only shell boundary module providing `render_interaction_shell()`, archetype-specific composer morphology functions, token estimation metrics, file-uploader type restriction contracts, and truthful status labels.
 3. `app.py`:
    - Integrated `InteractionContext` and `render_interaction_shell()` into main application execution flow.
-   - Restored pure presentation boundary in `process_chat(prompt, files, mode, processing_label=None)` so it remains presentation-agnostic and single-path without importing presentation modules or inspecting session state archetypes.
+   - Restored exact original signature `process_chat(prompt, uploaded_files, context_mode)` without presentation parameters.
+   - Moved archetype-aware status container (`st.status`) ownership strictly to the caller/presentation side inside `handle_send`.
 4. `ui/style.css`:
    - Added interaction shell CSS styling rules for archetype-specific composer morphology containers.
 5. `tests/test_ui_interaction_shell.py`:
    - Unit tests for `InteractionContext`, processing labels, archetype shell resolution, and safe fallback.
 6. `tests/test_interaction_architecture_contracts.py`:
-   - Expanded architecture contract tests confirming single `process_chat` execution path, Send callback invocation, Cancel callback invocation, zero persistence/memory mutation, token estimation reachability, and exact file-uploader type contract preservation.
+   - Contract tests confirming single `process_chat` execution path, Send callback invocation, Cancel callback invocation, zero persistence/memory mutation, token estimation reachability, and exact file-uploader type contract preservation.
 7. `docs/s7_6_chat_first_desktop.png`, `docs/s7_6_chat_first_mobile.png`, `docs/s7_6_terminal_hacker_desktop.png`, `docs/s7_6_terminal_hacker_mobile.png`:
-   - 4 representative visual validation screenshots (distinct Chat First and Terminal/Hacker captures).
+   - 4 representative visual validation screenshots.
 
 ## 3. INTERACTION SEAM IMPLEMENTED
 - Seam Boundary: `ui/presentation/shell.py` -> `render_interaction_shell(ctx, snapshot, templates_mgr, on_send, on_cancel)`.
-- Ownership: Application and database state remain owned strictly by `app.py`, `database/manager.py`, and `core/memory.py`. Read-only interaction presentation is passed via immutable `InteractionContext`. Explicit callbacks (`on_send`, `on_cancel`) cross the presentation seam. `process_chat()` accepts `processing_label` from the caller.
+- Ownership: Application and database state remain owned strictly by `app.py`, `database/manager.py`, and `core/memory.py`. Read-only interaction presentation is passed via immutable `InteractionContext`. Explicit callbacks (`on_send`, `on_cancel`) cross the presentation seam. `process_chat` remains presentation-agnostic.
 
 ## 4. SEVEN ARCHETYPE INTERACTION RESULTS
 1. **chat_first:**
@@ -92,7 +93,7 @@
 - Stop condition checks verified: no backend semantics changed, no ORANGE/RED workarounds introduced, native sidebar preserved, no duplicate persistence.
 
 ## 11. DEVIATIONS
-- None. Implementation fully conforms to Governor instructions and targeted review requirements.
+- None. Implementation fully conforms to Governor instructions and final targeted review requirements.
 
 ## 12. IMPLEMENTER VERDICT
 - **READY FOR GOVERNOR REVIEW**
