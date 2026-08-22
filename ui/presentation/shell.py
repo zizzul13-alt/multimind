@@ -50,7 +50,7 @@ def _render_shared_controls(
                 "📋 Template (optional)",
                 [t[0] for t in template_list],
                 format_func=lambda x: dict(template_list).get(x, "No Template") if x != "" else "No Template",
-                key=f"shell_template_{archetype}",
+                key="shell_selected_template",
                 help="Select template for quick prompt"
             )
         with col2:
@@ -58,7 +58,7 @@ def _render_shared_controls(
                 "Chat Mode:",
                 ["🧵 Continue (with history)", "📌 Standalone (fresh)"],
                 horizontal=True,
-                key=f"shell_mode_{archetype}"
+                key="shell_chat_mode"
             )
     else:
         c1, c2 = st.columns([1, 1])
@@ -67,14 +67,14 @@ def _render_shared_controls(
                 "📋 Prompt Template",
                 [t[0] for t in template_list],
                 format_func=lambda x: dict(template_list).get(x, "No Template") if x != "" else "No Template",
-                key=f"shell_template_{archetype}"
+                key="shell_selected_template"
             )
         with c2:
             chat_mode = st.radio(
                 "Context Strategy",
                 ["🧵 Continue (with history)", "📌 Standalone (fresh)"],
                 horizontal=True,
-                key=f"shell_mode_{archetype}"
+                key="shell_chat_mode"
             )
 
     context_mode = "continue" if "Continue" in chat_mode else "standalone"
@@ -146,7 +146,7 @@ def _render_token_estimation_metrics(prompt: str, uploaded_files: Any, archetype
             f"    <b>Prompt:</b> {estimate['prompt_tokens']} tok | "
             f"    <b>Files:</b> {estimate['file_tokens']} tok | "
             f"    <b>Total:</b> {estimate['total_estimate']} tok "
-            f"    <span class='mm-badge mm-badge-info' style='margin-left:0.4rem;'></span>"
+            f"    <span class='mm-badge mm-badge-info' style='margin-left:0.4rem;'>${cost:.6f}</span>"
             f"  </span>"
             f"</div>",
             variant="muted"

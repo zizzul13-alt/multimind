@@ -424,92 +424,91 @@ def process_chat(prompt, uploaded_files, context_mode):
     openrouter = agents.get("openrouter")
     huggingface = agents.get("huggingface")
 
-    with st.spinner("🤖 Agents debating..."):
-        final_prompt = prompt
-        if st.session_state.compressor_enabled and gemini and prompt:
-            try:
-                compression = PromptCompressor.compress(prompt, gemini)
-                final_prompt = compression["compressed"]
-            except:
-                final_prompt = prompt
+    final_prompt = prompt
+    if st.session_state.compressor_enabled and gemini and prompt:
+        try:
+            compression = PromptCompressor.compress(prompt, gemini)
+            final_prompt = compression["compressed"]
+        except:
+            final_prompt = prompt
 
-        file_context = ""
-        if uploaded_files:
-            try:
-                file_results = FileHandler.handle(uploaded_files, gemini)
-                for f in file_results.get("files", []):
-                    if "content" in f:
-                        file_context += f"\n--- FILE: {f['filename']} ---\n{f['content']}\n"
-            except:
-                pass
+    file_context = ""
+    if uploaded_files:
+        try:
+            file_results = FileHandler.handle(uploaded_files, gemini)
+            for f in file_results.get("files", []):
+                if "content" in f:
+                    file_context += f"\n--- FILE: {f['filename']} ---\n{f['content']}\n"
+        except:
+            pass
 
-        context = ""
-        if context_mode == "continue" and st.session_state.current_session:
-            memory = st.session_state.memories.get(st.session_state.current_session['id'])
-            if memory:
-                context = memory.get_context()
-        if file_context:
-            context = file_context + "\n" + context
+    context = ""
+    if context_mode == "continue" and st.session_state.current_session:
+        memory = st.session_state.memories.get(st.session_state.current_session['id'])
+        if memory:
+            context = memory.get_context()
+    if file_context:
+        context = file_context + "\n" + context
 
-        session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
-        active = st.session_state.active_agents
+    session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
+    active = st.session_state.active_agents
 
-        # ===== AGENT ROUTING =====
-        if "unified" in active:
-            response = unified.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
-            debate_result = {
-                "responses": [response],
-                "final_answer": response.get("text", ""),
-                "total_tokens": response.get("tokens", 0),
-                "total_cost": response.get("cost", 0),
-                "status": response.get("status", "error")
-            }
-        elif "remote" in active:
-            response = remote.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
-            debate_result = {
-                "responses": [response],
-                "final_answer": response.get("text", ""),
-                "total_tokens": response.get("tokens", 0),
-                "total_cost": response.get("cost", 0),
-                "status": response.get("status", "error")
-            }
-        else:
-            orchestrator = DebateOrchestrator(
-                gemini_agent=gemini, deepseek_agent=deepseek, groq_agent=groq,
-                cloudflare_agent=cloudflare, openrouter_agent=openrouter,
-                huggingface_agent=huggingface
-            )
-            debate_result = orchestrator.debate(
-                prompt=final_prompt, context=context[:3000], mode=session_mode,
-                rounds=st.session_state.debate_rounds, agents=active,
-                skill=st.session_state.get("selected_skill", "default")
-            )
+    # ===== AGENT ROUTING =====
+    if "unified" in active:
+        response = unified.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
+        debate_result = {
+            "responses": [response],
+            "final_answer": response.get("text", ""),
+            "total_tokens": response.get("tokens", 0),
+            "total_cost": response.get("cost", 0),
+            "status": response.get("status", "error")
+        }
+    elif "remote" in active:
+        response = remote.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
+        debate_result = {
+            "responses": [response],
+            "final_answer": response.get("text", ""),
+            "total_tokens": response.get("tokens", 0),
+            "total_cost": response.get("cost", 0),
+            "status": response.get("status", "error")
+        }
+    else:
+        orchestrator = DebateOrchestrator(
+            gemini_agent=gemini, deepseek_agent=deepseek, groq_agent=groq,
+            cloudflare_agent=cloudflare, openrouter_agent=openrouter,
+            huggingface_agent=huggingface
+        )
+        debate_result = orchestrator.debate(
+            prompt=final_prompt, context=context[:3000], mode=session_mode,
+            rounds=st.session_state.debate_rounds, agents=active,
+            skill=st.session_state.get("selected_skill", "default")
+        )
 
-        # ===== SAVE TO DATABASE =====
-        if st.session_state.current_session:
-            db = get_db_manager(st.session_state.user_id)
-            chat_data = {
-                "id": str(uuid.uuid4()),
-                "prompt": prompt,
-                "prompt_compressed": json.dumps({"compressed": final_prompt}) if final_prompt != prompt else "",
-                "mode": context_mode,
-                "context_mode": context_mode,
-                "final_answer": debate_result.get("final_answer", ""),
-                "debate_data": json.dumps(debate_result),
-                "tokens_used": debate_result.get("total_tokens", 0),
-                "cost": debate_result.get("total_cost", 0)
-            }
-            persist_chat_and_update_memory(
-                db,
-                st.session_state.current_session['id'],
-                st.session_state.memories,
-                chat_data
-            )
+    # ===== SAVE TO DATABASE =====
+    if st.session_state.current_session:
+        db = get_db_manager(st.session_state.user_id)
+        chat_data = {
+            "id": str(uuid.uuid4()),
+            "prompt": prompt,
+            "prompt_compressed": json.dumps({"compressed": final_prompt}) if final_prompt != prompt else "",
+            "mode": context_mode,
+            "context_mode": context_mode,
+            "final_answer": debate_result.get("final_answer", ""),
+            "debate_data": json.dumps(debate_result),
+            "tokens_used": debate_result.get("total_tokens", 0),
+            "cost": debate_result.get("total_cost", 0)
+        }
+        persist_chat_and_update_memory(
+            db,
+            st.session_state.current_session['id'],
+            st.session_state.memories,
+            chat_data
+        )
 
-        st.session_state.new_chat = False
-        st.success("✅ Debate complete!")
-        st.rerun()
-        
+    st.session_state.new_chat = False
+    st.success("✅ Debate complete!")
+    st.rerun()
+
 def main():
     if st.session_state.user:
         with st.sidebar:
