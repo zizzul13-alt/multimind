@@ -61,3 +61,18 @@ class PresentationSnapshot:
     session: SessionMetadataSnapshot
     chats: Tuple[ChatMessageSnapshot, ...] = ()
     memory: Optional[MemorySummarySnapshot] = None
+
+@dataclass(frozen=True)
+class InteractionContext:
+    """Read-only presentation context for interaction shell rendering."""
+    active_archetype: str
+    new_chat_active: bool
+    session: Optional[SessionMetadataSnapshot] = None
+    prompt_text: str = ""
+    selected_template: Optional[str] = None
+    chat_mode: str = "continue"
+    uploaded_files_count: int = 0
+    uploaded_file_names: Tuple[str, ...] = ()
+    is_processing: bool = False
+    estimated_tokens: int = 0
+    estimated_cost: float = 0.0
