@@ -491,3 +491,45 @@
 .st-key-minimal_saas_task_container .stTextArea textarea {
   font-size: 1.05rem;
 }
+
+/* ==========================================
+   THEME STUDIO MOBILE RESPONSIVE CORRECTIONS
+   ========================================== */
+
+/* Prevent expander header text/icon collisions and label overflows on narrow viewports */
+.stExpander summary {
+  word-break: break-word;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.stExpander summary [data-testid="stMarkdownContainer"] p {
+  word-break: break-word;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media screen and (max-width: 768px) {
+  /* Theme Studio controls column spacing on small screens */
+  .stRadio label, [data-testid="stRadio"] label,
+  .stSelectbox label, [data-testid="stWidgetLabel"] {
+    word-break: break-word;
+    white-space: normal;
+  }
+}
+
+@media screen and (max-width: 390px) {
+  /* Theme Studio compact padding & clear element spacing on ~390px mobile viewports */
+  .stExpander {
+    margin-bottom: var(--mm-space-sm);
+  }
+
+  .stExpander [data-testid="stExpanderDetails"] {
+    padding: var(--mm-space-xs) var(--mm-space-sm);
+  }
+
+  /* Ensure color picker and slider labels fit cleanly without text/control collision */
+  [data-testid="stColorPicker"], [data-testid="stSlider"], [data-testid="stSelectbox"] {
+    margin-bottom: var(--mm-space-xs);
+  }
+}
