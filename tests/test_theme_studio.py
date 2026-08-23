@@ -166,3 +166,181 @@ class TestThemeStudioState(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestThemeStudioConstrainedWidgetRegression(unittest.TestCase):
+    """Regression tests verifying constrained widgets handle non-preset options without crashing
+    and without silently mutating active application theme or draft state.
+    """
+
+    def setUp(self):
+        if SESSION_DRAFT_KEY in st.session_state:
+            del st.session_state[SESSION_DRAFT_KEY]
+        if "active_theme" in st.session_state:
+            del st.session_state["active_theme"]
+
+    def test_ensure_option_present_helper(self):
+        """Test ensure_option_present utility correctly inserts missing values in numeric/unit order."""
+        from ui.theme_studio.surface import ensure_option_present
+
+        # Value already present
+        self.assertEqual(ensure_option_present(["0px", "4px", "8px"], "4px"), ["0px", "4px", "8px"])
+
+        # Value missing (px) - inserted in numeric order
+        self.assertEqual(ensure_option_present(["0px", "4px", "8px"], "2px"), ["0px", "2px", "4px", "8px"])
+
+        # Value missing (rem) - inserted in numeric order
+        self.assertEqual(ensure_option_present(["0.5rem", "1rem", "1.5rem"], "0.25rem"), ["0.25rem", "0.5rem", "1rem", "1.5rem"])
+
+        # Non-numeric string - appended at end
+        self.assertEqual(ensure_option_present(["Inter", "Georgia"], "Roboto"), ["Inter", "Georgia", "Roboto"])
+
+    @patch("streamlit.rerun")
+    @patch("streamlit.color_picker")
+    @patch("streamlit.selectbox")
+    @patch("streamlit.select_slider")
+    @patch("streamlit.button")
+    def test_render_surface_with_non_preset_radius_and_spacing(
+        self,
+        mock_button,
+        mock_select_slider,
+        mock_selectbox,
+        mock_color_picker,
+        mock_rerun
+    ):
+        """Regression test: Render surface when draft radius and spacing are outside default slider presets."""
+        mock_button.return_value = False
+        mock_color_picker.side_effect = lambda label, value, key: value
+
+        # Record slider options passed during rendering
+        slider_options_passed = {}
+        def capture_slider(label, options, value, key):
+            slider_options_passed[label] = options
+            # Assert that Streamlit receives value that IS present in options
+            self.assertIn(value, options, f"Value '{value}' not found in options {options} for '{label}'")
+            return value
+
+        mock_select_slider.side_effect = capture_slider
+        mock_selectbox.side_effect = lambda label, options, **kwargs: options[0] if options else None
+
+        # Setup draft with non-preset radius and spacing values
+        draft = get_or_create_draft(default_base_id="default")
+        draft.radius["md"] = "3px"       # Not in ["0px", "2px", "4px", "8px", "12px", "16px", "24px"]
+        draft.spacing["md"] = "0.85rem"  # Not in ["0.5rem", "0.75rem", "1rem", "1.25rem", "1.5rem"]
+
+        # Render surface - must NOT raise ValueError
+        render_theme_studio_surface()
+
+        # Confirm non-preset values were dynamically extended into options
+        self.assertIn("3px", slider_options_passed["Medium Border Radius"])
+        self.assertIn("0.85rem", slider_options_passed["Medium Spacing Unit"])
+
+        # Confirm draft values were preserved
+        self.assertEqual(draft.radius["md"], "3px")
+        self.assertEqual(draft.spacing["md"], "0.85rem")
+
+    @patch("streamlit.rerun")
+    @patch("streamlit.color_picker")
+    @patch("streamlit.selectbox")
+    @patch("streamlit.select_slider")
+    @patch("streamlit.button")
+    def test_render_surface_with_dna_derived_non_preset_radius(
+        self,
+        mock_button,
+        mock_select_slider,
+        mock_selectbox,
+        mock_color_picker,
+        mock_rerun
+    ):
+        """Regression test: Render surface when derived from DesignDNA base with non-preset values."""
+        from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
+        ensure_proof_dna_and_themes_registered()
+
+        mock_button.return_value = False
+        mock_color_picker.side_effect = lambda label, value, key: value
+
+        # Verify slider receives valid value in options
+        def capture_slider(label, options, value, key):
+            self.assertIn(value, options, f"Value '{value}' not found in options {options} for '{label}'")
+            return value
+
+        mock_select_slider.side_effect = capture_slider
+        mock_selectbox.side_effect = lambda label, options, **kwargs: options[0] if options else None
+
+        # Initialize draft from DesignDNA
+        draft = reset_draft_to_base("japan-print-ink", base_type="dna")
+        # Ensure radius md is a value like "2px" or non-standard
+        draft.radius["md"] = "5px"
+
+        render_theme_studio_surface()
+        self.assertEqual(draft.radius["md"], "5px")
+
+    @patch("streamlit.rerun")
+    @patch("streamlit.color_picker")
+    @patch("streamlit.selectbox")
+    @patch("streamlit.select_slider")
+    @patch("streamlit.button")
+    def test_loading_editor_does_not_mutate_active_theme(
+        self,
+        mock_button,
+        mock_select_slider,
+        mock_selectbox,
+        mock_color_picker,
+        mock_rerun
+    ):
+        """Regression test: Loading Theme Studio does NOT alter the active application theme in session state."""
+        st.session_state.active_theme = "default"
+        initial_active_theme = st.session_state.active_theme
+
+        mock_button.return_value = False
+        mock_color_picker.side_effect = lambda label, value, key: value
+        mock_select_slider.side_effect = lambda label, options, value, key: value
+        mock_selectbox.side_effect = lambda label, options, **kwargs: options[0] if options else None
+
+        render_theme_studio_surface()
+
+        # Active application theme remains untouched
+        self.assertEqual(st.session_state.active_theme, initial_active_theme)
+
+
+    @patch("streamlit.rerun")
+    @patch("streamlit.color_picker")
+    @patch("streamlit.selectbox")
+    @patch("streamlit.select_slider")
+    @patch("streamlit.button")
+    def test_render_surface_with_non_preset_font_stacks(
+        self,
+        mock_button,
+        mock_select_slider,
+        mock_selectbox,
+        mock_color_picker,
+        mock_rerun
+    ):
+        """Regression test: Render surface when draft typography font stacks are outside default presets."""
+        mock_button.return_value = False
+        mock_color_picker.side_effect = lambda label, value, key: value
+        mock_select_slider.side_effect = lambda label, options, value, key: value
+
+        selectbox_options_passed = {}
+        def capture_selectbox(label, options, **kwargs):
+            selectbox_options_passed[label] = options
+            # Assert current index/selected option is valid
+            idx = kwargs.get("index", 0)
+            self.assertTrue(0 <= idx < len(options), f"Index {idx} out of bounds for options {options}")
+            return options[idx]
+
+        mock_selectbox.side_effect = capture_selectbox
+
+        draft = get_or_create_draft(default_base_id="default")
+        custom_base_font = "CustomSans, 'Comic Sans MS', sans-serif"
+        custom_mono_font = "CustomMono, 'Ubuntu Mono', monospace"
+        draft.typography["font_family_base"] = custom_base_font
+        draft.typography["font_family_mono"] = custom_mono_font
+
+        render_theme_studio_surface()
+
+        # Confirm non-preset custom font stacks were dynamically extended into selectbox options and preserved
+        self.assertIn(custom_base_font, selectbox_options_passed["Base Font Stack"])
+        self.assertIn(custom_mono_font, selectbox_options_passed["Monospace Font Stack"])
+        self.assertEqual(draft.typography["font_family_base"], custom_base_font)
+        self.assertEqual(draft.typography["font_family_mono"], custom_mono_font)

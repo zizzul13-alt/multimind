@@ -132,3 +132,26 @@ In accordance with governance rules and explicit constraints:
 - **No S9 Theme Library / Distribution:** Import/export JSON, personal theme library, and GitHub publishing were not added.
 - **No Arbitrary CSS / Layout Editing:** Controls are strictly bounded by supported Theme tokens.
 - **Zero Backend / Provider Changes:** No modifications were made to agents, orchestrators, databases, or provider interfaces.
+
+---
+
+## 6. Post-Merge Production Hotfix (Constrained Widgets & Mobile Layout)
+
+### Summary of Failure
+In Streamlit Cloud production, initializing Theme Studio with certain base Themes or DesignDNA configurations triggered a `ValueError: <value> is not in iterable` crash at `st.select_slider`. The root cause was that Theme and DesignDNA contracts supplied valid token values (e.g., border radius `"3px"` or spacing `"0.85rem"`) that were absent from Theme Studio's hardcoded widget preset option lists. Streamlit constrained widgets require their current `value` parameter to exist in `options`.
+
+### Hotfix Invariants & Solution
+1. **Option-Extension Strategy (`ensure_option_present`):**
+   - Introduced a reusable helper in `ui/theme_studio/surface.py` that checks if a current draft token value exists within a widget's preset option list.
+   - If missing, the option set is dynamically extended to include the current draft value in numeric/unit order (e.g. `px`, `rem`), ensuring `value in options` holds True without mutating or resetting the underlying Theme/DesignDNA draft value.
+   - Applied across all constrained widgets: Medium Border Radius (`select_slider`), Medium Spacing Unit (`select_slider`), Base Font Stack (`selectbox`), and Monospace Font Stack (`selectbox`).
+
+2. **Mobile Visual Regression Fix (~390px):**
+   - Added minimal targeted CSS rules in `ui/style.css` to prevent control label collisions, expander header text overflowing, and container overlap on mobile viewports (~390px).
+
+3. **Regression Test Suite Coverage:**
+   - Extended `tests/test_theme_studio.py` with 4 new regression tests verifying:
+     - `ensure_option_present` option insertion ordering;
+     - Base Theme radius/spacing values outside slider preset lists render without raising `ValueError`;
+     - Base DesignDNA derived drafts with non-preset tokens render safely while preserving draft values;
+     - Loading Theme Studio editor surface does not silently alter the active session application theme.
