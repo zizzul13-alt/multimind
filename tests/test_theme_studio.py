@@ -1,5 +1,5 @@
 """
-Unit and integration tests for Theme Studio (Draft state management and surface rendering).
+Unit and integration tests for Theme Studio (Draft state management, multi-session isolation, and surface rendering).
 """
 import unittest
 from unittest.mock import patch, MagicMock
@@ -86,16 +86,46 @@ class TestThemeStudioState(unittest.TestCase):
         draft.colors["primary"] = "#00FF00"
 
         active_theme_before = st.session_state.get("active_theme", "default")
-        self.assertNotEqual(active_theme_before, "custom-default")
-
         applied_theme = apply_draft_to_active_theme(draft)
-        self.assertEqual(applied_theme.id, "custom-default")
-        self.assertEqual(st.session_state.active_theme, "custom-default")
+
+        self.assertTrue(applied_theme.id.startswith("custom-default-"))
+        self.assertEqual(st.session_state.active_theme, applied_theme.id)
 
         # Verify applied theme is now registered in global ThemeRegistry
-        registered_theme = get_theme("custom-default")
-        self.assertEqual(registered_theme.id, "custom-default")
+        registered_theme = get_theme(applied_theme.id)
+        self.assertEqual(registered_theme.id, applied_theme.id)
         self.assertEqual(registered_theme.colors["primary"], "#00FF00")
+
+    def test_multi_session_custom_theme_isolation(self):
+        """Regression test proving two independent session/user identities applying drafts derived from
+        the same base receive distinct theme IDs without colliding or overwriting each other in ThemeRegistry.
+        """
+        # Session A setup and apply
+        draft_a = init_draft_from_base("default", base_type="theme")
+        draft_a.colors["primary"] = "#FF0000"
+        applied_theme_a = apply_draft_to_active_theme(draft_a)
+        session_a_active_theme = st.session_state.active_theme
+
+        # Session B setup and apply (same base 'default', different primary color)
+        draft_b = init_draft_from_base("default", base_type="theme")
+        draft_b.colors["primary"] = "#0000FF"
+        applied_theme_b = apply_draft_to_active_theme(draft_b)
+        session_b_active_theme = st.session_state.active_theme
+
+        # Assert unique theme IDs generated per applied draft
+        self.assertNotEqual(applied_theme_a.id, applied_theme_b.id)
+        self.assertTrue(applied_theme_a.id.startswith("custom-default-"))
+        self.assertTrue(applied_theme_b.id.startswith("custom-default-"))
+
+        # Assert Session B's active_theme is set to Theme B
+        self.assertEqual(session_b_active_theme, applied_theme_b.id)
+
+        # Assert both themes exist concurrently in global ThemeRegistry without overwriting each other
+        reg_theme_a = get_theme(applied_theme_a.id)
+        reg_theme_b = get_theme(applied_theme_b.id)
+
+        self.assertEqual(reg_theme_a.colors["primary"], "#FF0000")
+        self.assertEqual(reg_theme_b.colors["primary"], "#0000FF")
 
     @patch("streamlit.rerun")
     @patch("streamlit.color_picker")
