@@ -3,6 +3,8 @@ MultiMind AI - Theme Studio UI Surface
 Provides an interactive, responsive presentation surface for selecting a base Theme/DesignDNA,
 editing Theme-level presentation controls, viewing isolated live previews, and applying or discarding drafts.
 """
+import re
+from typing import List, Any
 import streamlit as st
 from ui.foundation import card_container, render_status_badge
 from ui.themes import list_themes
@@ -14,6 +16,50 @@ from ui.theme_studio.state import (
     apply_draft_to_active_theme,
     SESSION_DRAFT_KEY
 )
+
+
+def ensure_option_present(options: List[Any], current_value: Any) -> List[Any]:
+    """Ensures current_value exists within options list without mutating or replacing it.
+
+    If current_value is not in options, dynamically extends options while preserving
+    numeric/unit order (e.g. px, rem) when possible.
+    """
+    if current_value is None or current_value in options:
+        return list(options)
+
+    opts = list(options)
+
+    def _parse_numeric(val):
+        if not isinstance(val, str):
+            return None
+        match = re.match(r"^([0-9.]+)\s*(px|rem|em|%|pt)?$", val.strip())
+        if match:
+            try:
+                num = float(match.group(1))
+                unit = match.group(2) or ""
+                return num, unit
+            except ValueError:
+                return None
+        return None
+
+    curr_parsed = _parse_numeric(current_value)
+    if curr_parsed:
+        curr_num, curr_unit = curr_parsed
+        inserted = False
+        for idx, opt in enumerate(opts):
+            opt_parsed = _parse_numeric(opt)
+            if opt_parsed:
+                opt_num, opt_unit = opt_parsed
+                if opt_unit == curr_unit and curr_num < opt_num:
+                    opts.insert(idx, current_value)
+                    inserted = True
+                    break
+        if not inserted:
+            opts.append(current_value)
+    else:
+        opts.append(current_value)
+
+    return opts
 
 
 def render_theme_studio_surface():
@@ -135,39 +181,49 @@ def render_theme_studio_surface():
             ]
 
             curr_base_font = draft.typography.get("font_family_base", font_options[0])
-            base_idx = font_options.index(curr_base_font) if curr_base_font in font_options else 0
+            safe_font_options = ensure_option_present(font_options, curr_base_font)
+            base_idx = safe_font_options.index(curr_base_font)
             draft.typography["font_family_base"] = st.selectbox(
                 "Base Font Stack",
-                font_options,
+                safe_font_options,
                 index=base_idx,
                 key="ts_typo_base_font"
             )
 
             curr_mono_font = draft.typography.get("font_family_mono", mono_options[0])
-            mono_idx = mono_options.index(curr_mono_font) if curr_mono_font in mono_options else 0
+            safe_mono_options = ensure_option_present(mono_options, curr_mono_font)
+            mono_idx = safe_mono_options.index(curr_mono_font)
             draft.typography["font_family_mono"] = st.selectbox(
                 "Monospace Font Stack",
-                mono_options,
+                safe_mono_options,
                 index=mono_idx,
                 key="ts_typo_mono_font"
             )
 
         # ----- BORDER RADIUS & SPACING -----
         with st.expander("📐 Shape Radius & Spacing Density", expanded=False):
+            radius_preset = ["0px", "2px", "4px", "8px", "12px", "16px", "24px"]
+            curr_radius_md = draft.radius.get("md", "8px")
+            safe_radius_options = ensure_option_present(radius_preset, curr_radius_md)
+
             radius_md = st.select_slider(
                 "Medium Border Radius",
-                options=["0px", "2px", "4px", "8px", "12px", "16px", "24px"],
-                value=draft.radius.get("md", "8px"),
+                options=safe_radius_options,
+                value=curr_radius_md,
                 key="ts_radius_md_slider"
             )
             draft.radius["md"] = radius_md
             draft.radius["sm"] = "2px" if radius_md == "0px" else "4px"
             draft.radius["lg"] = "4px" if radius_md in ("0px", "2px") else "12px"
 
+            spacing_preset = ["0.5rem", "0.75rem", "1rem", "1.25rem", "1.5rem"]
+            curr_spacing_md = draft.spacing.get("md", "1rem")
+            safe_spacing_options = ensure_option_present(spacing_preset, curr_spacing_md)
+
             spacing_md = st.select_slider(
                 "Medium Spacing Unit",
-                options=["0.5rem", "0.75rem", "1rem", "1.25rem", "1.5rem"],
-                value=draft.spacing.get("md", "1rem"),
+                options=safe_spacing_options,
+                value=curr_spacing_md,
                 key="ts_spacing_md_slider"
             )
             draft.spacing["md"] = spacing_md
