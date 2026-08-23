@@ -21,9 +21,11 @@ from ui.theme_studio.surface import render_theme_studio_surface
 class TestThemeStudioState(unittest.TestCase):
 
     def setUp(self):
-        # Clear session draft state before each test
+        # Clear session draft state and session custom themes before each test
         if SESSION_DRAFT_KEY in st.session_state:
             del st.session_state[SESSION_DRAFT_KEY]
+        if "session_custom_themes" in st.session_state:
+            del st.session_state["session_custom_themes"]
 
     def test_init_draft_from_theme_base(self):
         """Test initializing ThemeStudioDraft from a base Theme."""
@@ -98,34 +100,43 @@ class TestThemeStudioState(unittest.TestCase):
 
     def test_multi_session_custom_theme_isolation(self):
         """Regression test proving two independent session/user identities applying drafts derived from
-        the same base receive distinct theme IDs without colliding or overwriting each other in ThemeRegistry.
+        the same base receive distinct theme IDs AND complete discovery/visibility isolation in list_themes().
         """
         # Session A setup and apply
+        st.session_state.session_custom_themes = set()
         draft_a = init_draft_from_base("default", base_type="theme")
         draft_a.colors["primary"] = "#FF0000"
         applied_theme_a = apply_draft_to_active_theme(draft_a)
-        session_a_active_theme = st.session_state.active_theme
+        session_a_custom_themes = set(st.session_state.session_custom_themes)
 
-        # Session B setup and apply (same base 'default', different primary color)
+        # Session B setup and apply (simulate independent session_state)
+        st.session_state.session_custom_themes = set()
         draft_b = init_draft_from_base("default", base_type="theme")
         draft_b.colors["primary"] = "#0000FF"
         applied_theme_b = apply_draft_to_active_theme(draft_b)
-        session_b_active_theme = st.session_state.active_theme
+        session_b_custom_themes = set(st.session_state.session_custom_themes)
 
         # Assert unique theme IDs generated per applied draft
         self.assertNotEqual(applied_theme_a.id, applied_theme_b.id)
-        self.assertTrue(applied_theme_a.id.startswith("custom-default-"))
-        self.assertTrue(applied_theme_b.id.startswith("custom-default-"))
 
-        # Assert Session B's active_theme is set to Theme B
-        self.assertEqual(session_b_active_theme, applied_theme_b.id)
+        # Verify Session A visibility isolation: list_themes() in Session A context shows theme_a but NOT theme_b
+        st.session_state.session_custom_themes = session_a_custom_themes
+        visible_in_session_a = [t.id for t in list_themes()]
+        self.assertIn(applied_theme_a.id, visible_in_session_a)
+        self.assertNotIn(applied_theme_b.id, visible_in_session_a)
 
-        # Assert both themes exist concurrently in global ThemeRegistry without overwriting each other
-        reg_theme_a = get_theme(applied_theme_a.id)
-        reg_theme_b = get_theme(applied_theme_b.id)
+        # Verify Session B visibility isolation: list_themes() in Session B context shows theme_b but NOT theme_a
+        st.session_state.session_custom_themes = session_b_custom_themes
+        visible_in_session_b = [t.id for t in list_themes()]
+        self.assertIn(applied_theme_b.id, visible_in_session_b)
+        self.assertNotIn(applied_theme_a.id, visible_in_session_b)
 
-        self.assertEqual(reg_theme_a.colors["primary"], "#FF0000")
-        self.assertEqual(reg_theme_b.colors["primary"], "#0000FF")
+        # Verify fresh Session C visibility isolation: list_themes() shows built-ins but NEITHER custom theme
+        st.session_state.session_custom_themes = set()
+        visible_in_session_c = [t.id for t in list_themes()]
+        self.assertIn("default", visible_in_session_c)
+        self.assertNotIn(applied_theme_a.id, visible_in_session_c)
+        self.assertNotIn(applied_theme_b.id, visible_in_session_c)
 
     @patch("streamlit.rerun")
     @patch("streamlit.color_picker")

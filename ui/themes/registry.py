@@ -5,6 +5,7 @@ Central registry for theme management, resolution, partial override merging, and
 import copy
 import logging
 from typing import Dict, List, Optional, Tuple, Any
+import streamlit as st
 
 from ui import tokens
 from ui.themes.models import Theme, ThemeMetadata
@@ -164,8 +165,25 @@ def register_theme(theme: Theme) -> None:
 
 
 def list_themes() -> List[Theme]:
-    """Helper to list themes in the global registry."""
-    return _global_registry.list_themes()
+    """Helper to list themes in the global registry, filtered to built-in themes plus session-owned custom themes."""
+    all_themes = _global_registry.list_themes()
+
+    session_customs = set()
+    try:
+        if hasattr(st, "session_state") and "session_custom_themes" in st.session_state:
+            session_customs = set(st.session_state.session_custom_themes)
+    except Exception:
+        session_customs = set()
+
+    visible_themes = []
+    for t in all_themes:
+        if getattr(t, "category", "") == "custom":
+            if t.id in session_customs:
+                visible_themes.append(t)
+        else:
+            visible_themes.append(t)
+
+    return visible_themes
 
 
 def get_theme(theme_id: Optional[str]) -> Theme:
