@@ -28,7 +28,7 @@ from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 from utils.config import Config
 from ui.foundation import load_css, render_status_badge, card_container
-from ui.presentation import build_presentation_snapshot, render_archetype, list_archetypes
+from ui.presentation import build_presentation_snapshot, render_archetype, list_archetypes, render_brand_identity
 from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
 from ui.themes import list_themes
 from ui.theme_studio.surface import render_theme_studio_surface
@@ -138,12 +138,10 @@ def show_login_page():
 
 def show_sidebar():
     with st.sidebar:
-        st.markdown(
-            f"<div class='mm-flex-between'>"
-            f"<span class='mm-typo-heading'>🤖 MultiMind</span>"
-            f"<span class='mm-badge mm-badge-info'>👤 {st.session_state.user}</span>"
-            f"</div>",
-            unsafe_allow_html=True
+        render_brand_identity(
+            st.session_state.get("active_theme", "default"),
+            user_label=str(st.session_state.user or ""),
+            container_kind="sidebar"
         )
 
         # Main Navigation Surface Selector

@@ -13,6 +13,7 @@ class MaterialReference:
     """Contract for design materials / provenance assets."""
     id: str
     material_type: str
+    asset_path: str = ""
     source: str = ""
     author: str = ""
     license: str = ""
@@ -27,6 +28,8 @@ class MaterialReference:
             raise ValueError("MaterialReference 'id' must be a non-empty string.")
         if not self.material_type or not isinstance(self.material_type, str) or not self.material_type.strip():
             raise ValueError("MaterialReference 'material_type' must be a non-empty string.")
+        if not isinstance(self.asset_path, str):
+            raise TypeError("MaterialReference 'asset_path' must be a string.")
         if self.shared_resource_policy not in VALID_SHARED_RESOURCE_POLICIES:
             raise ValueError(
                 f"MaterialReference 'shared_resource_policy' must be one of {VALID_SHARED_RESOURCE_POLICIES}, "

@@ -351,7 +351,7 @@ class TestDesignDNA(unittest.TestCase):
             dna = dna_reg.get_dna(pid)
             self.assertIsNotNone(dna, f"DesignDNA '{pid}' not found in DNARegistry.")
             self.assertIn(dna.category, ("cultural", "anime"))
-            self.assertEqual(dna.materials, [], f"DesignDNA '{pid}' must be asset-free.")
+            self.assertEqual(len(dna.materials), 1, f"DesignDNA '{pid}' must have 1 bound material.")
 
             # 2. Registered in ThemeRegistry (verified using public list_themes list)
             self.assertIn(pid, registered_theme_map, f"Theme '{pid}' not found in public list_themes().")
