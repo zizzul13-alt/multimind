@@ -8,14 +8,19 @@ import os
 import logging
 from typing import Optional, Union, Any, List
 
-from ui.dna.models import DesignDNA, MaterialReference
+from ui.dna.models import DesignDNA, MaterialReference, SUPPORTED_MATERIAL_TYPES
 from ui.dna import get_registry as get_dna_registry
 from ui.themes import get_theme, Theme
 
 logger = logging.getLogger(__name__)
 
-# Canonical relative path to approved UI material root
+# Absolute path to repository root, anchored deterministically to this module file
+_MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
+_REPO_ROOT = os.path.abspath(os.path.join(_MODULE_DIR, "..", ".."))
+
+# Canonical relative path and absolute root for approved UI materials
 APPROVED_MATERIAL_ROOT_RELATIVE = os.path.join("ui", "assets", "materials")
+APPROVED_MATERIAL_ROOT_ABS = os.path.abspath(os.path.join(_REPO_ROOT, APPROVED_MATERIAL_ROOT_RELATIVE))
 
 
 @dataclass
@@ -105,6 +110,8 @@ def validate_material_asset_path(raw_asset_path: str, root_dir: Optional[str] = 
     Validates that raw_asset_path is repository-relative, contained strictly within
     the approved material root, exists on disk as a file, and does not perform path traversal.
 
+    Deterministically resolves relative paths against repo root regardless of process CWD.
+
     Returns the absolute path if valid, or None if invalid/unsafe.
     """
     if not raw_asset_path or not isinstance(raw_asset_path, str) or not raw_asset_path.strip():
@@ -117,8 +124,8 @@ def validate_material_asset_path(raw_asset_path: str, root_dir: Optional[str] = 
         logger.warning(f"Material asset path rejected: absolute path '{clean_path}' is disallowed.")
         return None
 
-    base_dir = os.path.abspath(root_dir or APPROVED_MATERIAL_ROOT_RELATIVE)
-    target_abs = os.path.abspath(clean_path)
+    base_dir = os.path.abspath(root_dir) if root_dir else APPROVED_MATERIAL_ROOT_ABS
+    target_abs = os.path.abspath(os.path.join(_REPO_ROOT, clean_path))
 
     # Security check 2: Strict path containment verification using commonpath
     try:
@@ -174,6 +181,14 @@ def resolve_material(
         return MaterialResolutionResult(
             status="fallback",
             error_reason="No matching MaterialReference or missing asset_path"
+        )
+
+    # Check supported material type contract
+    if target_mat.material_type not in SUPPORTED_MATERIAL_TYPES:
+        return MaterialResolutionResult(
+            status="fallback",
+            material=target_mat,
+            error_reason=f"Unsupported material type '{target_mat.material_type}'"
         )
 
     validated_abs_path = validate_material_asset_path(target_mat.asset_path, root_dir=material_root)
