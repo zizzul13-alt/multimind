@@ -5,6 +5,7 @@ deterministic resolver contract, proof integrations, Theme Studio provenance res
 """
 import os
 import copy
+import tempfile
 import unittest
 from ui.dna.models import DesignDNA, MaterialReference
 from ui.dna.registry import DNARegistry, get_registry as get_dna_registry
@@ -36,7 +37,7 @@ class TestMaterialPipelineFoundation(unittest.TestCase):
             asset_path="ui/assets/materials/test-mat-01/mark.svg",
             source="Test Source",
             author="Programmatically generated SVG for MultiMind AI",
-            license="MIT",
+            license="MultiMind AI Project Terms",
             scope_lock=True,
             shared_resource_policy="disallowed",
         )
@@ -52,6 +53,36 @@ class TestMaterialPipelineFoundation(unittest.TestCase):
         with self.assertRaises(TypeError):
             mat_bad_type.validate()
 
+    def test_unsupported_material_type_contract_validation_and_resolution_rejection(self):
+        """Tests that unsupported material types fail validation and resolution safely."""
+        # 1. Validation rejection
+        mat_unsupported = MaterialReference(
+            id="speculative-mat-01",
+            material_type="unsupported_speculative_type",
+            asset_path="ui/assets/materials/japan-ink-mark/mark.svg",
+        )
+        with self.assertRaises(ValueError):
+            mat_unsupported.validate()
+
+        # 2. Resolution fallback for unvalidated or legacy object
+        unsupported_dna = DesignDNA(
+            id="unsupported-type-dna",
+            display_name="Unsupported Type DNA",
+            materials=[],
+        )
+        # Bypassing validate to test resolver robustness against unsupported type
+        raw_mat = MaterialReference.__new__(MaterialReference)
+        raw_mat.id = "raw-unsupported"
+        raw_mat.material_type = "unsupported_type"
+        raw_mat.asset_path = "ui/assets/materials/japan-ink-mark/mark.svg"
+        raw_mat.scope_lock = True
+        raw_mat.shared_resource_policy = "disallowed"
+        unsupported_dna.materials = [raw_mat]
+
+        res = resolve_material(unsupported_dna)
+        self.assertEqual(res.status, "fallback")
+        self.assertIn("Unsupported material type", str(res.error_reason))
+
     def test_proof_dnas_have_valid_truthful_materials_bound(self):
         """Tests that all 3 canonical proof DNAs have truthful MaterialReferences bound."""
         proof_ids = ["japan-print-ink", "chainsaw-man-inspired", "mushishi-inspired"]
@@ -61,8 +92,9 @@ class TestMaterialPipelineFoundation(unittest.TestCase):
             self.assertEqual(len(dna.materials), 1, f"Proof DNA '{pid}' must have 1 bound material.")
             mat = dna.materials[0]
             self.assertTrue(bool(mat.id))
+            self.assertEqual(mat.material_type, "graphic_mark")
             self.assertTrue(bool(mat.asset_path))
-            self.assertEqual(mat.license, "MIT")
+            self.assertEqual(mat.license, "MultiMind AI Project Terms")
             self.assertIn("Programmatically generated SVG", mat.author)
 
     def test_valid_repository_material_resolution_for_all_proofs(self):
@@ -80,6 +112,19 @@ class TestMaterialPipelineFoundation(unittest.TestCase):
             self.assertIsNotNone(res.material)
             self.assertEqual(res.material.id, expected_mat_id)
             self.assertTrue(os.path.exists(res.resolved_path))
+
+    def test_deterministic_root_resolution_independent_of_process_cwd(self):
+        """Tests that material resolution succeeds even when process current working directory (CWD) is changed."""
+        orig_cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            try:
+                os.chdir(tmp_dir)
+                res = resolve_material("japan-print-ink")
+                self.assertEqual(res.status, "resolved")
+                self.assertEqual(res.material.id, "japan-ink-mark")
+                self.assertTrue(os.path.exists(res.resolved_path))
+            finally:
+                os.chdir(orig_cwd)
 
     def test_security_absolute_path_rejection(self):
         """Tests that absolute paths in asset_path are strictly rejected."""
