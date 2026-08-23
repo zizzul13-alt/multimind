@@ -7,6 +7,7 @@ import re
 from typing import List, Any
 import streamlit as st
 from ui.foundation import card_container, render_status_badge
+from ui.presentation import render_brand_identity
 from ui.themes import list_themes
 from ui.dna import list_dna
 from ui.components.theme_preview_spike.preview_spike import render_theme_preview_spike
@@ -235,6 +236,9 @@ def render_theme_studio_surface():
         with preview_col:
             st.markdown("<div class='mm-typo-heading'>3. Isolated Live Preview</div>", unsafe_allow_html=True)
             render_status_badge("Preview Mode — Active Theme Unchanged", variant="info")
+
+            # Material Identity Preview (S6.3 Presentation Seam)
+            render_brand_identity(draft.base_id, container_kind="theme_studio")
 
             # Isolated Custom Preview Spike Component
             spike_payload = {
