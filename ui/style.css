@@ -494,16 +494,17 @@
 
 /* ==========================================
    THEME STUDIO MOBILE RESPONSIVE CORRECTIONS
+   Scoped strictly to Theme Studio container (.st-key-theme_studio_surface_container)
    ========================================== */
 
-/* Prevent expander header text/icon collisions and label overflows on narrow viewports */
-.stExpander summary {
+/* Prevent expander header text/icon collisions and label overflows on narrow viewports in Theme Studio */
+.st-key-theme_studio_surface_container .stExpander summary {
   word-break: break-word;
   white-space: normal;
   overflow-wrap: anywhere;
 }
 
-.stExpander summary [data-testid="stMarkdownContainer"] p {
+.st-key-theme_studio_surface_container .stExpander summary [data-testid="stMarkdownContainer"] p {
   word-break: break-word;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -511,8 +512,10 @@
 
 @media screen and (max-width: 768px) {
   /* Theme Studio controls column spacing on small screens */
-  .stRadio label, [data-testid="stRadio"] label,
-  .stSelectbox label, [data-testid="stWidgetLabel"] {
+  .st-key-theme_studio_surface_container .stRadio label,
+  .st-key-theme_studio_surface_container [data-testid="stRadio"] label,
+  .st-key-theme_studio_surface_container .stSelectbox label,
+  .st-key-theme_studio_surface_container [data-testid="stWidgetLabel"] {
     word-break: break-word;
     white-space: normal;
   }
@@ -520,16 +523,18 @@
 
 @media screen and (max-width: 390px) {
   /* Theme Studio compact padding & clear element spacing on ~390px mobile viewports */
-  .stExpander {
+  .st-key-theme_studio_surface_container .stExpander {
     margin-bottom: var(--mm-space-sm);
   }
 
-  .stExpander [data-testid="stExpanderDetails"] {
+  .st-key-theme_studio_surface_container .stExpander [data-testid="stExpanderDetails"] {
     padding: var(--mm-space-xs) var(--mm-space-sm);
   }
 
   /* Ensure color picker and slider labels fit cleanly without text/control collision */
-  [data-testid="stColorPicker"], [data-testid="stSlider"], [data-testid="stSelectbox"] {
+  .st-key-theme_studio_surface_container [data-testid="stColorPicker"],
+  .st-key-theme_studio_surface_container [data-testid="stSlider"],
+  .st-key-theme_studio_surface_container [data-testid="stSelectbox"] {
     margin-bottom: var(--mm-space-xs);
   }
 }
