@@ -35,15 +35,16 @@ Editable Presentation Controls & Isolated Live Preview
 │ - Generates unique runtime theme ID   │ - Restores draft from base Theme/DNA  │
 │   (e.g., custom-default-a1b2c3d4)     │ - Leaves active application theme     │
 │ - Registers in process ThemeRegistry  │   completely untouched                │
+│ - Tracks ID in session_custom_themes  │                                       │
 │ - Sets st.session_state.active_theme  │                                       │
 └───────────────────────────────────────┴───────────────────────────────────────┘
 ```
 
-### Process Singleton Ownership & Session Isolation
+### Process Singleton Ownership & Session Visibility Isolation
 
 - **ThemeRegistry Ownership:** `ThemeRegistry` operates as an in-memory process-level singleton instance (`_global_registry`).
 - **Runtime Theme ID Isolation:** To prevent collisions or cross-session overwrites when concurrent users or sessions apply drafts derived from the same base theme, `apply_draft_to_active_theme()` generates a unique theme ID (`f"custom-{draft.base_id}-{uuid.uuid4().hex[:8]}"`).
-- **Session Theme Switch:** The custom theme instance is registered in `ThemeRegistry` and set as `st.session_state.active_theme` for the current Streamlit session. This guarantees multi-session runtime isolation while leveraging the existing Theme Engine.
+- **Visibility & Discovery Isolation:** `list_themes()` filters out custom-category themes unless the custom theme ID is present in the current session's `st.session_state.session_custom_themes`. This guarantees that custom themes created by Session A remain invisible to Session B in theme selection dropdowns, while preserving built-in system and proof themes for all sessions.
 
 ### Preservation of Architectural Layers
 
@@ -94,7 +95,7 @@ A comprehensive suite of tests in `tests/test_theme_studio.py` covers:
 - Base Theme and Base Design DNA draft initialization.
 - Session draft state lifecycle (`get_or_create_draft`, `reset_draft_to_base`).
 - Explicit Apply promotion to `ThemeRegistry` and `st.session_state.active_theme`.
-- **Multi-session runtime custom theme isolation regression test (`test_multi_session_custom_theme_isolation`).**
+- **Multi-session runtime custom theme ID & visibility isolation regression test (`test_multi_session_custom_theme_isolation`).**
 - Surface rendering validation with Streamlit mocks.
 
 ### Full Test Suite Status
@@ -117,7 +118,7 @@ tests/test_ui_foundation.py .........                                    [ 90%]
 tests/test_ui_interaction_shell.py ....                                  [ 94%]
 tests/test_ui_presentation.py .....                                      [100%]
 
-======================== 93 passed, 1 warning in 6.82s =========================
+======================== 93 passed, 1 warning in 6.78s =========================
 ```
 
 ---

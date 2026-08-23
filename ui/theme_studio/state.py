@@ -143,6 +143,13 @@ def apply_draft_to_active_theme(draft: ThemeStudioDraft) -> Theme:
     # Register runtime theme into global process-level ThemeRegistry
     register_theme(custom_theme)
 
+    # Track session ownership so custom theme is discoverable only by current session
+    if "session_custom_themes" not in st.session_state:
+        st.session_state.session_custom_themes = set()
+    elif isinstance(st.session_state.session_custom_themes, (list, tuple)):
+        st.session_state.session_custom_themes = set(st.session_state.session_custom_themes)
+    st.session_state.session_custom_themes.add(custom_theme.id)
+
     # Set as active application theme for this session
     st.session_state.active_theme = custom_theme.id
     return custom_theme
