@@ -132,14 +132,17 @@ def reset_draft_to_base(base_id: str, base_type: str = "theme") -> ThemeStudioDr
 
 
 def apply_draft_to_active_theme(draft: ThemeStudioDraft) -> Theme:
-    """Promotes draft to ThemeRegistry as a session runtime theme and sets active_theme."""
-    # Create deterministic or unique session custom theme ID
-    custom_theme_id = f"custom-{draft.base_id}"
-    custom_theme = draft.to_theme(custom_id=custom_theme_id)
+    """Promotes draft to ThemeRegistry as a runtime theme and sets active_theme for the current session.
 
-    # Register runtime theme into ThemeRegistry (session-scoped in-memory)
+    Generates a unique theme ID per applied draft instance to guarantee isolation and prevent collisions
+    across concurrent sessions sharing the process-level ThemeRegistry singleton.
+    """
+    unique_theme_id = f"custom-{draft.base_id}-{uuid.uuid4().hex[:8]}"
+    custom_theme = draft.to_theme(custom_id=unique_theme_id)
+
+    # Register runtime theme into global process-level ThemeRegistry
     register_theme(custom_theme)
 
-    # Set as active application theme
+    # Set as active application theme for this session
     st.session_state.active_theme = custom_theme.id
     return custom_theme

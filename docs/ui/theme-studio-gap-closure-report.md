@@ -32,11 +32,18 @@ Editable Presentation Controls & Isolated Live Preview
           ↓
 ┌───────────────────────────────────────┬───────────────────────────────────────┐
 │ Explicit Apply                        │ Discard / Reset                       │
-│ - Promotes draft to ThemeRegistry     │ - Restores draft from base Theme/DNA  │
-│ - Registers runtime session theme     │ - Leaves active application theme     │
-│ - Sets st.session_state.active_theme  │   completely untouched                │
+│ - Generates unique runtime theme ID   │ - Restores draft from base Theme/DNA  │
+│   (e.g., custom-default-a1b2c3d4)     │ - Leaves active application theme     │
+│ - Registers in process ThemeRegistry  │   completely untouched                │
+│ - Sets st.session_state.active_theme  │                                       │
 └───────────────────────────────────────┴───────────────────────────────────────┘
 ```
+
+### Process Singleton Ownership & Session Isolation
+
+- **ThemeRegistry Ownership:** `ThemeRegistry` operates as an in-memory process-level singleton instance (`_global_registry`).
+- **Runtime Theme ID Isolation:** To prevent collisions or cross-session overwrites when concurrent users or sessions apply drafts derived from the same base theme, `apply_draft_to_active_theme()` generates a unique theme ID (`f"custom-{draft.base_id}-{uuid.uuid4().hex[:8]}"`).
+- **Session Theme Switch:** The custom theme instance is registered in `ThemeRegistry` and set as `st.session_state.active_theme` for the current Streamlit session. This guarantees multi-session runtime isolation while leveraging the existing Theme Engine.
 
 ### Preservation of Architectural Layers
 
@@ -46,7 +53,7 @@ $$\text{Reference} \longrightarrow \text{DesignDNA} \longrightarrow \text{mapper
 
 - **Theme vs Design DNA Boundary:** Editable controls modify Theme-level presentation draft state (`colors`, `typography`, `spacing`, `radius`) rather than mutating Design DNA core definitions.
 - **Base DNA Provenance:** When a user selects a base Design DNA starting point, `dna_to_theme()` translates the DNA into a base Theme object, which populates the draft while maintaining metadata provenance.
-- **Single Theme Engine Path:** Applying a theme registers the validated draft as a session runtime `Theme` instance in `ThemeRegistry` and updates `st.session_state.active_theme`. The existing `load_css()` helper and Theme Engine dynamically generate and inject CSS custom properties (`--mm-*`). No competing or parallel CSS generation path was created.
+- **Single Theme Engine Path:** Applying a theme registers the validated draft as a runtime `Theme` instance in `ThemeRegistry` and updates `st.session_state.active_theme`. The existing `load_css()` helper and Theme Engine dynamically generate and inject CSS custom properties (`--mm-*`). No competing or parallel CSS generation path was created.
 
 ---
 
@@ -81,12 +88,13 @@ The Theme Studio surface (`ui/theme_studio/surface.py`) provides:
 
 ### Unit and Integration Test Results
 
-A comprehensive suite of tests was added in `tests/test_theme_studio.py` covering:
+A comprehensive suite of tests in `tests/test_theme_studio.py` covers:
 
 - `ThemeStudioDraft` dataclass creation and contract validation.
 - Base Theme and Base Design DNA draft initialization.
 - Session draft state lifecycle (`get_or_create_draft`, `reset_draft_to_base`).
 - Explicit Apply promotion to `ThemeRegistry` and `st.session_state.active_theme`.
+- **Multi-session runtime custom theme isolation regression test (`test_multi_session_custom_theme_isolation`).**
 - Surface rendering validation with Streamlit mocks.
 
 ### Full Test Suite Status
@@ -94,22 +102,22 @@ A comprehensive suite of tests was added in `tests/test_theme_studio.py` coverin
 Executing `PYTHONPATH=. python -m pytest tests/`:
 
 ```
-collected 92 items
+collected 93 items
 
 tests/test_architecture.py ...........                                   [ 11%]
 tests/test_design_dna.py .........                                       [ 21%]
 tests/test_interaction_architecture_contracts.py .........               [ 31%]
-tests/test_session_memory_persistence.py .......                         [ 39%]
+tests/test_session_memory_persistence.py .......                         [ 38%]
 tests/test_theme_engine.py .......                                       [ 46%]
-tests/test_theme_preview_spike.py ....                                   [ 51%]
-tests/test_theme_studio.py .......                                       [ 58%]
-tests/test_ui_archetype_projections.py ..............                    [ 73%]
+tests/test_theme_preview_spike.py ....                                   [ 50%]
+tests/test_theme_studio.py ........                                      [ 59%]
+tests/test_ui_archetype_projections.py ..............                    [ 74%]
 tests/test_ui_archetype_resolver.py ......                               [ 80%]
 tests/test_ui_foundation.py .........                                    [ 90%]
 tests/test_ui_interaction_shell.py ....                                  [ 94%]
 tests/test_ui_presentation.py .....                                      [100%]
 
-======================== 92 passed, 1 warning in 4.61s =========================
+======================== 93 passed, 1 warning in 6.82s =========================
 ```
 
 ---
