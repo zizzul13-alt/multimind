@@ -31,6 +31,7 @@ from ui.foundation import load_css, render_status_badge, card_container
 from ui.presentation import build_presentation_snapshot, render_archetype, list_archetypes
 from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
 from ui.themes import list_themes
+from ui.theme_studio.surface import render_theme_studio_surface
 
 # Ensure S6.2 proof Design DNA and themes are registered prior to runtime selector
 ensure_proof_dna_and_themes_registered()
@@ -59,6 +60,9 @@ if "initialized" not in st.session_state:
     st.session_state.template_variables = {}
     st.session_state.prompt_text = ""
 
+if "active_navigation" not in st.session_state:
+    st.session_state.active_navigation = "workspace"
+
 if "active_theme" not in st.session_state:
     st.session_state.active_theme = "default"
 
@@ -85,7 +89,7 @@ def get_agents(user_id):
     
     return {
         "unified": unified,
-        "remote": remote,  # ← BARU!
+        "remote": remote,
         "gemini": GeminiAgent(api_keys.get("gemini_key", "")) if api_keys.get("gemini_key") else None,
         "deepseek": DeepSeekAgent(api_keys.get("deepseek_key", "")) if api_keys.get("deepseek_key") else None,
         "groq": GroqAgent(api_keys.get("groq_key", "")) if api_keys.get("groq_key") else None,
@@ -141,6 +145,22 @@ def show_sidebar():
             f"</div>",
             unsafe_allow_html=True
         )
+
+        # Main Navigation Surface Selector
+        curr_nav = st.session_state.get("active_navigation", "workspace")
+        view_mode = st.radio(
+            "📍 Navigation View",
+            ["💬 Main Workspace", "🎨 Theme Studio"],
+            index=0 if curr_nav == "workspace" else 1,
+            key="sidebar_navigation_view"
+        )
+        new_nav = "theme_studio" if "Theme Studio" in str(view_mode) else "workspace"
+        if new_nav != curr_nav:
+            st.session_state.active_navigation = new_nav
+            st.rerun()
+
+        st.divider()
+
         db = get_db_manager(st.session_state.user_id)
 
         # Prominent New Session creation control at the top
@@ -168,6 +188,8 @@ def show_sidebar():
             if st.button(label, key=unique_key, use_container_width=True, type=btn_kind, help=s_name):
                 st.session_state.current_session = s
                 get_or_hydrate_session_memory(st.session_state.memories, db, s['id'])
+                # Switch to workspace view when selecting a session
+                st.session_state.active_navigation = "workspace"
                 st.rerun()
 
         st.divider()
@@ -555,7 +577,11 @@ def main():
         show_login_page()
     else:
         show_sidebar()
-        if st.session_state.current_session:
+        active_nav = st.session_state.get("active_navigation", "workspace")
+
+        if active_nav == "theme_studio":
+            render_theme_studio_surface()
+        elif st.session_state.current_session:
             session = st.session_state.current_session
             memory = st.session_state.memories.get(session['id'])
             db = get_db_manager(st.session_state.user_id)
@@ -609,8 +635,8 @@ def main():
             col1, col2 = st.columns(2)
             with col1:
                 card_container(
-                    "<div class='mm-typo-heading mm-section-title'>🚀 Getting Started</div>"
-                    "<ol class='mm-typo-body-small mm-text-muted mm-list-styled'>"
+                    "<div class='mm-section-title mm-typo-heading'>🚀 Getting Started</div>"
+                    "<ol class='mm-list-styled mm-typo-body-small mm-text-muted'>"
                     "<li>Create a <b>New Session</b> in the sidebar</li>"
                     "<li>Pick a <b>Template</b> (optional) for quick prompts</li>"
                     "<li>Choose a <b>Skill</b> for specialized agent behavior</li>"
@@ -621,8 +647,8 @@ def main():
                 )
             with col2:
                 card_container(
-                    "<div class='mm-typo-heading mm-section-title'>✨ Core Capabilities</div>"
-                    "<ul class='mm-typo-body-small mm-text-muted mm-list-styled'>"
+                    "<div class='mm-section-title mm-typo-heading'>✨ Core Capabilities</div>"
+                    "<ul class='mm-list-styled mm-typo-body-small mm-text-muted'>"
                     "<li>🤖 <b>6 AI Agents</b> (Gemini, Groq, Cloudflare, OpenRouter, HuggingFace, DeepSeek)</li>"
                     "<li>📋 <b>Prompt Templates & Skills System</b></li>"
                     "<li>🎯 <b>Release Gates</b> (Automated quality check)</li>"
