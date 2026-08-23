@@ -6,7 +6,10 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional
 
 VALID_SHARED_RESOURCE_POLICIES = {"disallowed", "allowed"}
-SUPPORTED_MATERIAL_TYPES = {"graphic_mark"}
+
+# Controlled Material Taxonomy: contract-level valid types vs currently renderable types
+VALID_MATERIAL_TYPES = {"graphic_mark", "texture", "font", "pattern"}
+CURRENT_RENDERABLE_MATERIAL_TYPES = {"graphic_mark"}
 
 
 @dataclass
@@ -29,9 +32,9 @@ class MaterialReference:
             raise ValueError("MaterialReference 'id' must be a non-empty string.")
         if not self.material_type or not isinstance(self.material_type, str) or not self.material_type.strip():
             raise ValueError("MaterialReference 'material_type' must be a non-empty string.")
-        if self.material_type not in SUPPORTED_MATERIAL_TYPES:
+        if self.material_type not in VALID_MATERIAL_TYPES:
             raise ValueError(
-                f"MaterialReference 'material_type' must be one of {SUPPORTED_MATERIAL_TYPES}, "
+                f"MaterialReference 'material_type' must be one of {VALID_MATERIAL_TYPES}, "
                 f"got '{self.material_type}'."
             )
         if not isinstance(self.asset_path, str):

@@ -7,7 +7,12 @@ import os
 import copy
 import tempfile
 import unittest
-from ui.dna.models import DesignDNA, MaterialReference
+from ui.dna.models import (
+    DesignDNA,
+    MaterialReference,
+    VALID_MATERIAL_TYPES,
+    CURRENT_RENDERABLE_MATERIAL_TYPES,
+)
 from ui.dna.registry import DNARegistry, get_registry as get_dna_registry
 from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
 from ui.dna.resolver import (
@@ -37,7 +42,7 @@ class TestMaterialPipelineFoundation(unittest.TestCase):
             asset_path="ui/assets/materials/test-mat-01/mark.svg",
             source="Test Source",
             author="Programmatically generated SVG for MultiMind AI",
-            license="MultiMind AI Project Terms",
+            license="Project-Owned Asset",
             scope_lock=True,
             shared_resource_policy="disallowed",
         )
@@ -53,35 +58,45 @@ class TestMaterialPipelineFoundation(unittest.TestCase):
         with self.assertRaises(TypeError):
             mat_bad_type.validate()
 
-    def test_unsupported_material_type_contract_validation_and_resolution_rejection(self):
-        """Tests that unsupported material types fail validation and resolution safely."""
-        # 1. Validation rejection
-        mat_unsupported = MaterialReference(
-            id="speculative-mat-01",
-            material_type="unsupported_speculative_type",
+    def test_valid_vs_renderable_material_type_contract(self):
+        """Tests that valid non-renderable material types pass contract validation but fall back at resolution,
+        while completely unknown material types fail contract validation.
+        """
+        # 1. Renderable material type ('graphic_mark') -> passes validation & resolves
+        mat_renderable = MaterialReference(
+            id="mark-mat",
+            material_type="graphic_mark",
+            asset_path="ui/assets/materials/japan-ink-mark/mark.svg",
+        )
+        mat_renderable.validate()
+
+        # 2. Valid contract type but currently unrenderable ('texture', 'font', 'pattern') -> passes validation
+        for valid_unrenderable in ["texture", "font", "pattern"]:
+            mat_valid = MaterialReference(
+                id=f"mat-{valid_unrenderable}",
+                material_type=valid_unrenderable,
+                asset_path="ui/assets/materials/japan-ink-mark/mark.svg",
+            )
+            mat_valid.validate()  # Passes contract validation
+
+            # Resolution must safely fall back at consumption boundary
+            unrenderable_dna = DesignDNA(
+                id=f"dna-{valid_unrenderable}",
+                display_name=f"DNA {valid_unrenderable}",
+                materials=[mat_valid],
+            )
+            res = resolve_material(unrenderable_dna)
+            self.assertEqual(res.status, "fallback")
+            self.assertIn("valid but currently unrenderable", str(res.error_reason))
+
+        # 3. Invalid/unknown material type -> rejected by MaterialReference contract validation
+        mat_invalid = MaterialReference(
+            id="mat-unknown",
+            material_type="completely_unknown_speculative_type",
             asset_path="ui/assets/materials/japan-ink-mark/mark.svg",
         )
         with self.assertRaises(ValueError):
-            mat_unsupported.validate()
-
-        # 2. Resolution fallback for unvalidated or legacy object
-        unsupported_dna = DesignDNA(
-            id="unsupported-type-dna",
-            display_name="Unsupported Type DNA",
-            materials=[],
-        )
-        # Bypassing validate to test resolver robustness against unsupported type
-        raw_mat = MaterialReference.__new__(MaterialReference)
-        raw_mat.id = "raw-unsupported"
-        raw_mat.material_type = "unsupported_type"
-        raw_mat.asset_path = "ui/assets/materials/japan-ink-mark/mark.svg"
-        raw_mat.scope_lock = True
-        raw_mat.shared_resource_policy = "disallowed"
-        unsupported_dna.materials = [raw_mat]
-
-        res = resolve_material(unsupported_dna)
-        self.assertEqual(res.status, "fallback")
-        self.assertIn("Unsupported material type", str(res.error_reason))
+            mat_invalid.validate()
 
     def test_proof_dnas_have_valid_truthful_materials_bound(self):
         """Tests that all 3 canonical proof DNAs have truthful MaterialReferences bound."""
@@ -94,7 +109,7 @@ class TestMaterialPipelineFoundation(unittest.TestCase):
             self.assertTrue(bool(mat.id))
             self.assertEqual(mat.material_type, "graphic_mark")
             self.assertTrue(bool(mat.asset_path))
-            self.assertEqual(mat.license, "MultiMind AI Project Terms")
+            self.assertEqual(mat.license, "Project-Owned Asset")
             self.assertIn("Programmatically generated SVG", mat.author)
 
     def test_valid_repository_material_resolution_for_all_proofs(self):

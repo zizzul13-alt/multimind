@@ -66,19 +66,21 @@ Runtime material assets are strictly local repository files. No external CDN fet
 
 ---
 
-## 4. Contract Extension & Supported Material Types
+## 4. Contract Extension & Material Taxonomy
 
 ### MaterialReference Contract (`ui/dna/models.py`)
 Minimally extended with `asset_path: str = ""`:
 
 - `id`: Non-empty material ID string (independent of theme ID).
-- `material_type`: Enforced against `SUPPORTED_MATERIAL_TYPES = {"graphic_mark"}`.
+- `material_type`: Enforced against `VALID_MATERIAL_TYPES = {"graphic_mark", "texture", "font", "pattern"}`.
 - `asset_path`: Repository-relative path string.
 - `scope_lock` & `shared_resource_policy`: Enforces non-shared vs shared resource rules in `DNARegistry`.
 - `source`, `author`, `license`, `attribution`, `reference_ip`: Truthful provenance tracking.
 
-### Supported Material Type Set:
-To prevent speculative infrastructure, `SUPPORTED_MATERIAL_TYPES` is strictly bounded to types with a real presentation consumer (`"graphic_mark"`). Unsupported material types fail closed to fallback.
+### Controlled Material Taxonomy:
+- **`VALID_MATERIAL_TYPES`**: Contract-level valid design material categories (`{"graphic_mark", "texture", "font", "pattern"}`).
+- **`CURRENT_RENDERABLE_MATERIAL_TYPES`**: Currently renderable types by the presentation layer (`{"graphic_mark"}`).
+- **Resolution Behavior**: A valid but currently unrenderable material type (e.g. `texture` or `font`) passes `MaterialReference.validate()` contract validation, but safely falls back to presentation fallback during resolution without raising an error.
 
 ### DNARegistry Ownership (`ui/dna/registry.py`)
 `DNARegistry` retains single-source-of-truth ownership over registered `DesignDNA` objects and enforces material scope lock policies:
@@ -103,12 +105,12 @@ The Material Resolver (`ui/dna/resolver.py`) validates every `asset_path` agains
 All repository material assets carry explicit, truthful provenance metadata.
 
 ### Proof Asset Provenance:
-- **`japan-ink-mark`**: Author: `"Programmatically generated SVG for MultiMind AI"`, License: `"MultiMind AI Project Terms"`, Reference IP: `"Traditional Japanese print/ink arts"`.
-- **`chainsaw-hazard-mark`**: Author: `"Programmatically generated SVG for MultiMind AI"`, License: `"MultiMind AI Project Terms"`, Reference IP: `"Generic industrial hazard visual language"`.
-- **`mushishi-moss-mark`**: Author: `"Programmatically generated SVG for MultiMind AI"`, License: `"MultiMind AI Project Terms"`, Reference IP: `"Natural atmospheric graphic language"`.
+- **`japan-ink-mark`**: Author: `"Programmatically generated SVG for MultiMind AI"`, License: `"Project-Owned Asset"`, Reference IP: `"Traditional Japanese print/ink arts"`.
+- **`chainsaw-hazard-mark`**: Author: `"Programmatically generated SVG for MultiMind AI"`, License: `"Project-Owned Asset"`, Reference IP: `"Generic industrial hazard visual language"`.
+- **`mushishi-moss-mark`**: Author: `"Programmatically generated SVG for MultiMind AI"`, License: `"Project-Owned Asset"`, Reference IP: `"Natural atmospheric graphic language"`.
 
 ### Licensing Hard Rules:
-- Proof assets record truthful project terms rather than claiming unsupported external open-source licenses.
+- Proof assets record truthful project-owned asset terms rather than claiming unsupported external open-source licenses or formal unapproved legal documents.
 - No copyrighted third-party artwork, manga panels, or character silhouettes.
 - Generic industrial hazard geometry is used for Chainsaw-inspired proof without reproducing protected trademarks or character artwork.
 - Technical proof assets are truthfully attributed as programmatically generated project assets.
@@ -149,13 +151,15 @@ Future theme expansion requires zero architecture or presentation code changes:
 
 All test obligations have been implemented and verified in `tests/test_material_pipeline.py`:
 
-- MaterialReference `asset_path` compatibility and existing validation rules
+- MaterialReference `asset_path` compatibility and contract validation rules
 - Valid repository material resolution for all 3 proof DNAs
 - Absolute path rejection (`/etc/passwd`)
 - Path traversal rejection (`../../etc/passwd`)
 - Normalized path containment verification
 - Deterministic resolution when process working directory (`os.chdir()`) differs from repo root
-- Unsupported material type safety rejection (`SUPPORTED_MATERIAL_TYPES = {"graphic_mark"}`)
+- Renderable material type (`graphic_mark`) resolves
+- Valid but currently unrenderable material types (`texture`, `font`) pass contract validation but fall back safely during resolution
+- Unknown/invalid material types (`invalid_type`) are rejected by contract validation
 - Missing asset fallback
 - Invalid/unbound theme fallback
 - Scope lock / non-shared material ownership enforcement
