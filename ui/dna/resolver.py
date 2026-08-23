@@ -8,7 +8,12 @@ import os
 import logging
 from typing import Optional, Union, Any, List
 
-from ui.dna.models import DesignDNA, MaterialReference, SUPPORTED_MATERIAL_TYPES
+from ui.dna.models import (
+    DesignDNA,
+    MaterialReference,
+    VALID_MATERIAL_TYPES,
+    CURRENT_RENDERABLE_MATERIAL_TYPES,
+)
 from ui.dna import get_registry as get_dna_registry
 from ui.themes import get_theme, Theme
 
@@ -183,12 +188,12 @@ def resolve_material(
             error_reason="No matching MaterialReference or missing asset_path"
         )
 
-    # Check supported material type contract
-    if target_mat.material_type not in SUPPORTED_MATERIAL_TYPES:
+    # Check if material type is currently renderable by presentation layer
+    if target_mat.material_type not in CURRENT_RENDERABLE_MATERIAL_TYPES:
         return MaterialResolutionResult(
             status="fallback",
             material=target_mat,
-            error_reason=f"Unsupported material type '{target_mat.material_type}'"
+            error_reason=f"Material type '{target_mat.material_type}' is valid but currently unrenderable"
         )
 
     validated_abs_path = validate_material_asset_path(target_mat.asset_path, root_dir=material_root)

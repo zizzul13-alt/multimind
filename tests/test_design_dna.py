@@ -25,7 +25,7 @@ class TestDesignDNA(unittest.TestCase):
         # Valid reference-specific (non-shared) material
         mat_locked = MaterialReference(
             id="mat-editorial-paper",
-            material_type="graphic_mark",
+            material_type="texture",
             scope_lock=True,
             shared_resource_policy="disallowed"
         )
@@ -34,7 +34,7 @@ class TestDesignDNA(unittest.TestCase):
         # Valid explicitly shared material
         mat_shared = MaterialReference(
             id="mat-font-serif",
-            material_type="graphic_mark",
+            material_type="font",
             scope_lock=False,
             shared_resource_policy="allowed"
         )
@@ -140,7 +140,7 @@ class TestDesignDNA(unittest.TestCase):
         # Setup Case 1 & 2: Original material is non-shared (locked)
         mat_locked_orig = MaterialReference(
             id="mat-locked-01",
-            material_type="graphic_mark",
+            material_type="texture",
             scope_lock=True,
             shared_resource_policy="disallowed"
         )
@@ -186,7 +186,7 @@ class TestDesignDNA(unittest.TestCase):
         # Setup Case 3 & 4: Original material is explicitly shared
         mat_shared_orig = MaterialReference(
             id="mat-shared-01",
-            material_type="graphic_mark",
+            material_type="font",
             scope_lock=False,
             shared_resource_policy="allowed"
         )
