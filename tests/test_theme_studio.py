@@ -301,3 +301,46 @@ class TestThemeStudioConstrainedWidgetRegression(unittest.TestCase):
 
         # Active application theme remains untouched
         self.assertEqual(st.session_state.active_theme, initial_active_theme)
+
+
+    @patch("streamlit.rerun")
+    @patch("streamlit.color_picker")
+    @patch("streamlit.selectbox")
+    @patch("streamlit.select_slider")
+    @patch("streamlit.button")
+    def test_render_surface_with_non_preset_font_stacks(
+        self,
+        mock_button,
+        mock_select_slider,
+        mock_selectbox,
+        mock_color_picker,
+        mock_rerun
+    ):
+        """Regression test: Render surface when draft typography font stacks are outside default presets."""
+        mock_button.return_value = False
+        mock_color_picker.side_effect = lambda label, value, key: value
+        mock_select_slider.side_effect = lambda label, options, value, key: value
+
+        selectbox_options_passed = {}
+        def capture_selectbox(label, options, **kwargs):
+            selectbox_options_passed[label] = options
+            # Assert current index/selected option is valid
+            idx = kwargs.get("index", 0)
+            self.assertTrue(0 <= idx < len(options), f"Index {idx} out of bounds for options {options}")
+            return options[idx]
+
+        mock_selectbox.side_effect = capture_selectbox
+
+        draft = get_or_create_draft(default_base_id="default")
+        custom_base_font = "CustomSans, 'Comic Sans MS', sans-serif"
+        custom_mono_font = "CustomMono, 'Ubuntu Mono', monospace"
+        draft.typography["font_family_base"] = custom_base_font
+        draft.typography["font_family_mono"] = custom_mono_font
+
+        render_theme_studio_surface()
+
+        # Confirm non-preset custom font stacks were dynamically extended into selectbox options and preserved
+        self.assertIn(custom_base_font, selectbox_options_passed["Base Font Stack"])
+        self.assertIn(custom_mono_font, selectbox_options_passed["Monospace Font Stack"])
+        self.assertEqual(draft.typography["font_family_base"], custom_base_font)
+        self.assertEqual(draft.typography["font_family_mono"], custom_mono_font)
