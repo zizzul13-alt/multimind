@@ -18,6 +18,7 @@ from ui.presentation.resolver import (
     CANONICAL_ARCHETYPE_IDS,
     FALLBACK_ARCHETYPE_ID,
 )
+from ui.presentation.brand import render_brand_identity
 
 __all__ = [
     "PresentationSnapshot",
@@ -33,4 +34,5 @@ __all__ = [
     "render_archetype",
     "CANONICAL_ARCHETYPE_IDS",
     "FALLBACK_ARCHETYPE_ID",
+    "render_brand_identity",
 ]
