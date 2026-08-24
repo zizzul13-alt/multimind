@@ -1,8 +1,8 @@
 """
-MultiMind AI - Real Design DNA Proofs (S6.2)
-Defines three asset-free, contrasting Design DNA definitions mapping supported semantic capabilities.
+MultiMind AI - Real Design DNA Proofs (S6.2 / S6.3)
+Defines three asset-enabled, contrasting Design DNA definitions mapping supported semantic capabilities.
 """
-from ui.dna.models import DesignDNA
+from ui.dna.models import DesignDNA, MaterialReference
 
 # DNA A — Japan Print / Ink
 JAPAN_PRINT_INK_DNA = DesignDNA(
@@ -17,10 +17,23 @@ JAPAN_PRINT_INK_DNA = DesignDNA(
     surface_language="paper-like surface and subtle warm borders",
     shape_language="firm, small radii reflecting cut block edges",
     interaction_character="precise, restrained focus and active state contrast",
-    materials=[],
+    materials=[
+        MaterialReference(
+            id="japan-ink-mark",
+            material_type="graphic_mark",
+            asset_path="ui/assets/materials/japan-ink-mark/mark.svg",
+            source="S6.3 Material Pipeline Proofs",
+            author="Programmatically generated SVG for MultiMind AI",
+            license="Project-Owned Asset",
+            attribution="MultiMind AI Project",
+            reference_ip="Traditional Japanese print/ink arts",
+            scope_lock=True,
+            shared_resource_policy="disallowed",
+        )
+    ],
     provenance={
         "author": "MultiMind Design Team",
-        "license": "MIT",
+        "license": "Project-Owned Asset",
         "source": "S6.2 Design DNA Proofs",
         "attribution": "Inspired by traditional woodblock and print graphic arts",
     },
@@ -98,10 +111,23 @@ CHAINSAW_MAN_INSPIRED_DNA = DesignDNA(
     surface_language="stark dark slate/asphalt surfaces with razor-sharp borders",
     shape_language="sharp, zero-radius geometry",
     interaction_character="high-contrast assertive interactive states",
-    materials=[],
+    materials=[
+        MaterialReference(
+            id="chainsaw-hazard-mark",
+            material_type="graphic_mark",
+            asset_path="ui/assets/materials/chainsaw-hazard-mark/mark.svg",
+            source="S6.3 Material Pipeline Proofs",
+            author="Programmatically generated SVG for MultiMind AI",
+            license="Project-Owned Asset",
+            attribution="MultiMind AI Project",
+            reference_ip="Generic industrial hazard visual language",
+            scope_lock=True,
+            shared_resource_policy="disallowed",
+        )
+    ],
     provenance={
         "author": "MultiMind Design Team",
-        "license": "MIT",
+        "license": "Project-Owned Asset",
         "source": "S6.2 Design DNA Proofs",
         "attribution": "Conceptual interpretation of modern urban action manga visual language",
     },
@@ -179,10 +205,23 @@ MUSHISHI_INSPIRED_DNA = DesignDNA(
     surface_language="soft natural surface layering with organic subtle borders",
     shape_language="softer rounded geometry",
     interaction_character="gentle, unobtrusive interactive state transitions",
-    materials=[],
+    materials=[
+        MaterialReference(
+            id="mushishi-moss-mark",
+            material_type="graphic_mark",
+            asset_path="ui/assets/materials/mushishi-moss-mark/mark.svg",
+            source="S6.3 Material Pipeline Proofs",
+            author="Programmatically generated SVG for MultiMind AI",
+            license="Project-Owned Asset",
+            attribution="MultiMind AI Project",
+            reference_ip="Natural atmospheric graphic language",
+            scope_lock=True,
+            shared_resource_policy="disallowed",
+        )
+    ],
     provenance={
         "author": "MultiMind Design Team",
-        "license": "MIT",
+        "license": "Project-Owned Asset",
         "source": "S6.2 Design DNA Proofs",
         "attribution": "Conceptual interpretation of naturalistic anime atmospheric art",
     },
@@ -201,7 +240,7 @@ MUSHISHI_INSPIRED_DNA = DesignDNA(
         "primary_active": "#668576",
         "secondary": "#91A398",
         "secondary_hover": "#B0C2B7",
-        "accent": "#A3B899",  # Soft Pale Moss Accent
+        "accent": "#A3B899",  # Soft Pale Moss Accent",
         "border": "#2C3E34",
         "border_subtle": "#1D2822",
         "border_hover": "#3F5649",
