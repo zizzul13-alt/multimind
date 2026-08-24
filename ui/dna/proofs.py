@@ -33,7 +33,7 @@ JAPAN_PRINT_INK_DNA = DesignDNA(
     ],
     provenance={
         "author": "MultiMind Design Team",
-        "license": "MultiMind AI Project Terms",
+        "license": "Project-Owned Asset",
         "source": "S6.2 Design DNA Proofs",
         "attribution": "Inspired by traditional woodblock and print graphic arts",
     },
@@ -127,7 +127,7 @@ CHAINSAW_MAN_INSPIRED_DNA = DesignDNA(
     ],
     provenance={
         "author": "MultiMind Design Team",
-        "license": "MultiMind AI Project Terms",
+        "license": "Project-Owned Asset",
         "source": "S6.2 Design DNA Proofs",
         "attribution": "Conceptual interpretation of modern urban action manga visual language",
     },
@@ -221,7 +221,7 @@ MUSHISHI_INSPIRED_DNA = DesignDNA(
     ],
     provenance={
         "author": "MultiMind Design Team",
-        "license": "MultiMind AI Project Terms",
+        "license": "Project-Owned Asset",
         "source": "S6.2 Design DNA Proofs",
         "attribution": "Conceptual interpretation of naturalistic anime atmospheric art",
     },
