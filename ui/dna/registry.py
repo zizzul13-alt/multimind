@@ -75,6 +75,14 @@ class DNARegistry:
         self._dna_map[dna.id] = dna
         self._material_records.update(new_materials_to_record)
 
+    def combine_materials(self, *dnas: DesignDNA) -> Tuple[MaterialReference, ...]:
+        """Validates and combines registered DNA materials using registry ownership rules."""
+        combined_registry = DNARegistry()
+        for dna in dnas:
+            if dna is not None:
+                combined_registry.register_dna(dna)
+        return tuple(material for dna in dnas if dna is not None for material in dna.materials)
+
     def list_dna(self) -> List[DesignDNA]:
         """Returns a list of all registered DesignDNA objects."""
         return list(self._dna_map.values())
