@@ -18,7 +18,9 @@
 /* Base Container Primitives */
 .mm-card {
   background-color: var(--mm-color-surface);
-  border: var(--mm-shape-border-width, 1px) var(--mm-shape-border-style, solid) var(--mm-color-border);
+  border-width: var(--mm-shape-border-width, 1px);
+  border-style: var(--mm-shape-border-style, solid);
+  border-color: var(--mm-shape-border-color, var(--mm-color-border));
   border-radius: var(--mm-radius-md);
   padding: var(--mm-space-md);
   margin-bottom: var(--mm-space-md);
@@ -34,7 +36,9 @@
 
 .mm-card-elevated {
   background-color: var(--mm-color-surface-elevated);
-  border: var(--mm-shape-border-width, 1px) var(--mm-shape-border-style, solid) var(--mm-color-border);
+  border-width: var(--mm-shape-border-width, 1px);
+  border-style: var(--mm-shape-border-style, solid);
+  border-color: var(--mm-shape-border-color, var(--mm-color-border));
   border-radius: var(--mm-radius-lg);
   padding: var(--mm-space-lg);
   margin-bottom: var(--mm-space-md);

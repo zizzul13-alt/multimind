@@ -243,17 +243,17 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
         css_lines.append("  --mm-heading-font-weight: 700;")
         css_lines.append("  --mm-heading-letter-spacing: normal;")
 
-    # 2. border_stroke_style (PARTIAL shape character - emission of VALID CSS border-style values)
+    # 2. border_stroke_style (PARTIAL shape character - valid CSS properties consumed in ui/style.css)
     css_lines.append("  --mm-shape-border-style: solid;")
     if id_proj.border_stroke_style == "crisp":
         css_lines.append("  --mm-shape-border-width: 1px;")
-        css_lines.append("  --mm-shape-border-opacity: 0.9;")
+        css_lines.append("  --mm-shape-border-color: var(--mm-color-border);")
     elif id_proj.border_stroke_style == "soft":
         css_lines.append("  --mm-shape-border-width: 1px;")
-        css_lines.append("  --mm-shape-border-opacity: 0.5;")
+        css_lines.append("  --mm-shape-border-color: var(--mm-color-border-subtle);")
     else:
         css_lines.append("  --mm-shape-border-width: 1px;")
-        css_lines.append("  --mm-shape-border-opacity: 0.75;")
+        css_lines.append("  --mm-shape-border-color: var(--mm-color-border);")
 
     # 3. energy_emphasis (visual_energy hover transform/shadow)
     if id_proj.energy_emphasis == "aggressive":
