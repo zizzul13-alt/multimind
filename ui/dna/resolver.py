@@ -6,7 +6,8 @@ to validated repository material assets with strict path containment security.
 from dataclasses import dataclass
 import os
 import logging
-from typing import Optional, Union, Any, List
+from types import MappingProxyType
+from typing import Optional, Union, Any, Dict
 
 from ui.dna.models import (
     DesignDNA,
@@ -208,4 +209,110 @@ def resolve_material(
         status="resolved",
         material=target_mat,
         resolved_path=validated_abs_path
+    )
+
+
+# ==============================================================================
+# S8.1 DESIGN DNA COMPOSITION RESOLVER
+# ==============================================================================
+
+from ui.dna.models import DesignComposition, ComposedProjection, PresentationPolicy
+from ui.dna.mapper import dna_to_theme
+from ui.presentation.resolver import get_archetype_definition, CANONICAL_ARCHETYPE_IDS
+
+
+def resolve_composition(
+    composition: DesignComposition,
+    dna_registry=None
+) -> ComposedProjection:
+    """Deterministically resolves a DesignComposition into a ComposedProjection.
+
+    CORE RULES:
+    1. DO NOT BLEND STYLES: Compose design roles with explicit ownership boundaries.
+    2. IDENTITY DNA owns primary visual identity, Theme tokens, and primary graphic material.
+    3. WEB / INFORMATION DNA owns bounded PresentationPolicy (metadata prominence, status richness, etc.).
+    4. UI/UX ARCHETYPE owns interaction morphology.
+    5. Generic & extensible: Resolution relies on role metadata, NOT hardcoded DNA name checks.
+
+    Args:
+        composition: Validated DesignComposition instance.
+        dna_registry: Optional custom registry instance (defaults to global registry).
+
+    Returns:
+        ComposedProjection containing resolved Theme, PresentationPolicy, Archetype ID, Materials, and Provenance.
+
+    Raises:
+        ValueError: If composition is malformed, referenced DNA IDs are unknown,
+                    DNA roles mismatch contract expectations, or archetype ID is invalid.
+    """
+    if not isinstance(composition, DesignComposition):
+        raise TypeError("composition must be an instance of DesignComposition.")
+
+    composition.validate()
+
+    # Look up Identity DNA
+    if dna_registry is not None:
+        identity_dna = dna_registry.get_dna(composition.identity_dna_id)
+    else:
+        identity_dna = get_dna_registry().get_dna(composition.identity_dna_id)
+
+    if not identity_dna:
+        raise ValueError(f"Identity DesignDNA with ID '{composition.identity_dna_id}' is not registered.")
+
+    if identity_dna.role != "identity":
+        raise ValueError(
+            f"DesignDNA '{identity_dna.id}' has role '{identity_dna.role}', "
+            f"but was provided as identity_dna_id (expected role 'identity')."
+        )
+
+    # Look up Web / Information DNA (optional)
+    web_dna: Optional[DesignDNA] = None
+    if composition.web_information_dna_id:
+        if dna_registry is not None:
+            web_dna = dna_registry.get_dna(composition.web_information_dna_id)
+        else:
+            web_dna = get_dna_registry().get_dna(composition.web_information_dna_id)
+
+        if not web_dna:
+            raise ValueError(
+                f"Web / Information DesignDNA with ID '{composition.web_information_dna_id}' is not registered."
+            )
+
+        if web_dna.role != "web_information":
+            raise ValueError(
+                f"DesignDNA '{web_dna.id}' has role '{web_dna.role}', "
+                f"but was provided as web_information_dna_id (expected role 'web_information')."
+            )
+
+    # Validate UI/UX Archetype ID against canonical archetypes
+    arch_def = get_archetype_definition(composition.archetype_id)
+    if composition.archetype_id not in CANONICAL_ARCHETYPE_IDS:
+        raise ValueError(f"Archetype ID '{composition.archetype_id}' is not a recognized canonical archetype.")
+
+    # 1. RESOLVE THEME (Owned 100% by Identity DNA)
+    theme_instance = dna_to_theme(identity_dna)
+
+    # 2. RESOLVE PRESENTATION POLICY (Owned by Web / Information DNA)
+    policy = web_dna.presentation_policy if web_dna else PresentationPolicy()
+
+    # 3. RESOLVE MATERIALS (Reuses existing MaterialReference list from Identity & Web DNAs)
+    registry = dna_registry if dna_registry is not None else get_dna_registry()
+    resolved_materials = registry.combine_materials(identity_dna, web_dna)
+
+    # 4. CONSTRUCT PROVENANCE METADATA
+    provenance: Dict[str, Any] = {
+        "identity_dna_id": identity_dna.id,
+        "web_information_dna_id": web_dna.id if web_dna else None,
+        "archetype_id": arch_def.id,
+        "identity_display_name": identity_dna.display_name,
+        "web_information_display_name": web_dna.display_name if web_dna else None,
+        "archetype_display_name": arch_def.display_name,
+    }
+
+    return ComposedProjection(
+        theme=theme_instance,
+        presentation_policy=policy,
+        archetype_id=arch_def.id,
+        materials=resolved_materials,
+        provenance=MappingProxyType(provenance),
     )
