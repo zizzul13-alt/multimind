@@ -14,6 +14,7 @@ from ui.dna.models import (
     MaterialReference,
     VALID_MATERIAL_TYPES,
     CURRENT_RENDERABLE_MATERIAL_TYPES,
+    IdentityPresentationProjection,
 )
 from ui.dna import get_registry as get_dna_registry
 from ui.themes import get_theme, Theme
@@ -212,11 +213,28 @@ def resolve_material(
     )
 
 
+def resolve_identity_projection(identity_dna: Optional[DesignDNA]) -> IdentityPresentationProjection:
+    """Deterministically projects Identity DesignDNA semantic intent into a typed IdentityPresentationProjection."""
+    if not identity_dna:
+        return IdentityPresentationProjection()
+
+    shape_char = identity_dna.shape_character
+    border_style = "crisp" if shape_char == "sharp" else ("soft" if shape_char in ("organic", "soft") else "solid")
+
+    return IdentityPresentationProjection(
+        hierarchy_contrast=identity_dna.hierarchy_strength or "strong",
+        border_stroke_style=border_style,
+        energy_emphasis=identity_dna.visual_energy or "balanced",
+        surface_treatment=identity_dna.surface_character or "flat",
+        transition_speed=identity_dna.interaction_intensity or "deliberate",
+    )
+
+
 # ==============================================================================
 # S8.1 DESIGN DNA COMPOSITION RESOLVER
 # ==============================================================================
 
-from ui.dna.models import DesignComposition, ComposedProjection, PresentationPolicy
+from ui.dna.models import DesignComposition, ComposedProjection, PresentationPolicy, IdentityPresentationProjection
 from ui.dna.mapper import dna_to_theme
 from ui.presentation.resolver import get_archetype_definition, CANONICAL_ARCHETYPE_IDS
 
@@ -314,10 +332,13 @@ def resolve_composition(
         "archetype_display_name": arch_def.display_name,
     }
 
+    identity_proj = resolve_identity_projection(identity_dna)
+
     return ComposedProjection(
         theme=theme_instance,
         presentation_policy=policy,
         archetype_id=arch_def.id,
+        identity_projection=identity_proj,
         materials=resolved_materials,
         provenance=MappingProxyType(provenance),
     )
