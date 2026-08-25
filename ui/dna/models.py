@@ -16,6 +16,17 @@ CURRENT_RENDERABLE_MATERIAL_TYPES = {"graphic_mark"}
 VALID_DNA_ROLES = {"identity", "web_information"}
 DEFAULT_DNA_ROLE = "identity"
 
+# Bounded Production Semantic Taxonomy (S8.2)
+VALID_VISUAL_ENERGY = {"quiet", "restrained", "balanced", "expressive", "aggressive"}
+VALID_SPATIAL_DENSITY = {"spacious", "balanced", "compact", "dense"}
+VALID_COMPOSITION_BALANCE = {"regular", "asymmetric", "organic"}
+VALID_HIERARCHY_STRENGTH = {"soft", "moderate", "strong", "dramatic"}
+VALID_SURFACE_CHARACTER = {"flat", "layered", "paper", "atmospheric", "poster"}
+VALID_SHAPE_CHARACTER = {"soft", "restrained", "sharp", "organic"}
+VALID_ORNAMENT_EMPHASIS = {"none", "subtle", "selective", "prominent"}
+VALID_INTERACTION_INTENSITY = {"gentle", "restrained", "deliberate", "assertive"}
+VALID_RESPONSIVE_IDENTITY_PRIORITY = {"minimal", "preserve_core", "preserve_strong"}
+
 
 @dataclass
 class MaterialReference:
@@ -110,8 +121,19 @@ class DesignDNA:
     spacing: Dict[str, str] = field(default_factory=dict)
     radius: Dict[str, str] = field(default_factory=dict)
 
+    # S8.2 Production Semantic Dimensions (Optional with bounded validation when set)
+    visual_energy: Optional[str] = None
+    spatial_density: Optional[str] = None
+    composition_balance: Optional[str] = None
+    hierarchy_strength: Optional[str] = None
+    surface_character: Optional[str] = None
+    shape_character: Optional[str] = None
+    ornament_emphasis: Optional[str] = None
+    interaction_intensity: Optional[str] = None
+    responsive_identity_priority: Optional[str] = None
+
     def validate(self) -> None:
-        """Validates Design DNA contract constraints, role classification, and attached material references."""
+        """Validates Design DNA contract constraints, role classification, semantic dimensions, and attached material references."""
         if not self.id or not isinstance(self.id, str) or not self.id.strip():
             raise ValueError("DesignDNA 'id' must be a non-empty string.")
         if not self.display_name or not isinstance(self.display_name, str) or not self.display_name.strip():
@@ -124,6 +146,44 @@ class DesignDNA:
             raise ValueError("Web / Information DesignDNA requires a PresentationPolicy.")
         if self.role == "identity" and self.presentation_policy is not None:
             raise ValueError("Only Web / Information DesignDNA may define a PresentationPolicy.")
+
+        # S8.2 Semantic Dimensions Bounded Validation
+        if self.visual_energy is not None and self.visual_energy not in VALID_VISUAL_ENERGY:
+            raise ValueError(
+                f"DesignDNA 'visual_energy' must be one of {VALID_VISUAL_ENERGY}, got '{self.visual_energy}'."
+            )
+        if self.spatial_density is not None and self.spatial_density not in VALID_SPATIAL_DENSITY:
+            raise ValueError(
+                f"DesignDNA 'spatial_density' must be one of {VALID_SPATIAL_DENSITY}, got '{self.spatial_density}'."
+            )
+        if self.composition_balance is not None and self.composition_balance not in VALID_COMPOSITION_BALANCE:
+            raise ValueError(
+                f"DesignDNA 'composition_balance' must be one of {VALID_COMPOSITION_BALANCE}, got '{self.composition_balance}'."
+            )
+        if self.hierarchy_strength is not None and self.hierarchy_strength not in VALID_HIERARCHY_STRENGTH:
+            raise ValueError(
+                f"DesignDNA 'hierarchy_strength' must be one of {VALID_HIERARCHY_STRENGTH}, got '{self.hierarchy_strength}'."
+            )
+        if self.surface_character is not None and self.surface_character not in VALID_SURFACE_CHARACTER:
+            raise ValueError(
+                f"DesignDNA 'surface_character' must be one of {VALID_SURFACE_CHARACTER}, got '{self.surface_character}'."
+            )
+        if self.shape_character is not None and self.shape_character not in VALID_SHAPE_CHARACTER:
+            raise ValueError(
+                f"DesignDNA 'shape_character' must be one of {VALID_SHAPE_CHARACTER}, got '{self.shape_character}'."
+            )
+        if self.ornament_emphasis is not None and self.ornament_emphasis not in VALID_ORNAMENT_EMPHASIS:
+            raise ValueError(
+                f"DesignDNA 'ornament_emphasis' must be one of {VALID_ORNAMENT_EMPHASIS}, got '{self.ornament_emphasis}'."
+            )
+        if self.interaction_intensity is not None and self.interaction_intensity not in VALID_INTERACTION_INTENSITY:
+            raise ValueError(
+                f"DesignDNA 'interaction_intensity' must be one of {VALID_INTERACTION_INTENSITY}, got '{self.interaction_intensity}'."
+            )
+        if self.responsive_identity_priority is not None and self.responsive_identity_priority not in VALID_RESPONSIVE_IDENTITY_PRIORITY:
+            raise ValueError(
+                f"DesignDNA 'responsive_identity_priority' must be one of {VALID_RESPONSIVE_IDENTITY_PRIORITY}, got '{self.responsive_identity_priority}'."
+            )
 
         for material in self.materials:
             if not isinstance(material, MaterialReference):
