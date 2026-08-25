@@ -293,7 +293,12 @@ def resolve_composition(
     theme_instance = dna_to_theme(identity_dna)
 
     # 2. RESOLVE PRESENTATION POLICY (Owned by Web / Information DNA)
-    policy = web_dna.presentation_policy if web_dna else PresentationPolicy()
+    if web_dna and web_dna.presentation_policy:
+        policy = web_dna.presentation_policy
+    else:
+        # Bounded generic derivation from Identity DNA spatial_density
+        is_compact = identity_dna.spatial_density in ("compact", "dense")
+        policy = PresentationPolicy(secondary_compactness=is_compact)
 
     # 3. RESOLVE MATERIALS (Reuses existing MaterialReference list from Identity & Web DNAs)
     registry = dna_registry if dna_registry is not None else get_dna_registry()
