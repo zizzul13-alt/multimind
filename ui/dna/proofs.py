@@ -1,13 +1,14 @@
 """
-MultiMind AI - Real Design DNA Proofs (S6.2 / S6.3)
-Defines three asset-enabled, contrasting Design DNA definitions mapping supported semantic capabilities.
+MultiMind AI - Real Design DNA Proofs (S6.2 / S8.1 Composition)
+Defines asset-enabled Design DNA definitions representing Identity and Web/Information roles.
 """
-from ui.dna.models import DesignDNA, MaterialReference
+from ui.dna.models import DesignDNA, MaterialReference, PresentationPolicy
 
-# DNA A — Japan Print / Ink
+# DNA A — Japan Print / Ink (Identity DNA)
 JAPAN_PRINT_INK_DNA = DesignDNA(
     id="japan-print-ink",
     display_name="Japan Print / Ink",
+    role="identity",
     category="cultural",
     description="A restrained, print-inspired visual character drawing on ink strokes and warm paper surfaces.",
     reference_identity="Traditional Japanese woodblock printing and high-contrast editorial typography",
@@ -98,10 +99,11 @@ JAPAN_PRINT_INK_DNA = DesignDNA(
 )
 
 
-# DNA B — Chainsaw Man-Inspired
+# DNA B — Chainsaw Man-Inspired (Identity DNA)
 CHAINSAW_MAN_INSPIRED_DNA = DesignDNA(
     id="chainsaw-man-inspired",
     display_name="Chainsaw Man Inspired",
+    role="identity",
     category="anime",
     description="An aggressive, graphic, poster-like urban visual character with stark contrast and sharp geometry.",
     reference_identity="High-energy manga composition, urban editorial graphic direction, and sharp contrasts",
@@ -192,10 +194,11 @@ CHAINSAW_MAN_INSPIRED_DNA = DesignDNA(
 )
 
 
-# DNA C — Mushishi-Inspired
+# DNA C — Mushishi-Inspired (Identity DNA)
 MUSHISHI_INSPIRED_DNA = DesignDNA(
     id="mushishi-inspired",
     display_name="Mushishi Inspired",
+    role="identity",
     category="anime",
     description="A calm, organic, atmospheric visual character with muted earth/moss tones and gentle curves.",
     reference_identity="Atmospheric naturalism, quiet organic stillness, and soft muted color palettes",
@@ -285,4 +288,141 @@ MUSHISHI_INSPIRED_DNA = DesignDNA(
     },
 )
 
-PROOFS = [JAPAN_PRINT_INK_DNA, CHAINSAW_MAN_INSPIRED_DNA, MUSHISHI_INSPIRED_DNA]
+
+# DNA D — Rinpa Decorative Spatial (Identity DNA Proof)
+RINPA_DECORATIVE_SPATIAL_DNA = DesignDNA(
+    id="rinpa-decorative-spatial",
+    display_name="Rinpa Decorative Spatial",
+    role="identity",
+    category="cultural",
+    description="A decorative, spatial visual identity featuring deliberate asymmetry, negative space tension, and mineral/gold accents.",
+    reference_identity="Traditional Japanese Rinpa school screen paintings, gold foil spatial composition, and organic asymmetry",
+    visual_character="decorative spatial composition, deliberate asymmetry, negative space ownership, restrained focal ornament",
+    color_direction="warm aged-silk surface, dark ink foundation, gold foil and mineral pigment accents",
+    typography_direction="deliberate, elegant hierarchy with serif elegance",
+    surface_language="gilded silk surface layering with delicate warm golden borders",
+    shape_language="organic subtle curves with asymmetric framing",
+    interaction_character="refined, deliberate focus state transitions with mineral gold highlights",
+    materials=[
+        MaterialReference(
+            id="rinpa-gold-mark",
+            material_type="graphic_mark",
+            asset_path="ui/assets/materials/rinpa-gold-mark/mark.svg",
+            source="Composition Contract Proofs",
+            author="Programmatically generated SVG for MultiMind AI",
+            license="Project-Owned Asset",
+            attribution="MultiMind AI Project",
+            reference_ip="Traditional Japanese Rinpa decorative arts",
+            scope_lock=True,
+            shared_resource_policy="disallowed",
+        )
+    ],
+    provenance={
+        "author": "MultiMind Design Team",
+        "license": "Project-Owned Asset",
+        "source": "Composition Contract Proofs",
+        "attribution": "Inspired by Rinpa school gold leaf screen compositions and natural motifs",
+    },
+    colors={
+        "background": "#F2ECE1",
+        "surface": "#E6DEC8",
+        "surface_elevated": "#DCD2B7",
+        "surface_muted": "#F2ECE1",
+        "surface_hover": "#DDD4BC",
+        "surface_input": "#ECE5D5",
+        "text": "#1A1714",
+        "text_muted": "#5C5449",
+        "text_disabled": "#948A7B",
+        "primary": "#B8860B",  # Mineral Gold Leaf
+        "primary_hover": "#966C05",
+        "primary_active": "#735200",
+        "secondary": "#5C5449",
+        "secondary_hover": "#3D372F",
+        "accent": "#2E5A44",  # Malachite Green Mineral Accent
+        "border": "#2B241C",
+        "border_subtle": "#CDC2A8",
+        "border_hover": "#B8860B",
+        "border_focus": "#B8860B",
+        "focus_ring": "rgba(184, 134, 11, 0.35)",
+        "success": "#2E5A44",
+        "success_bg": "rgba(46, 90, 68, 0.12)",
+        "warning": "#B8860B",
+        "warning_bg": "rgba(184, 134, 11, 0.12)",
+        "danger": "#A63A2B",
+        "danger_bg": "rgba(166, 58, 43, 0.12)",
+        "info": "#1A1714",
+        "info_bg": "rgba(26, 23, 20, 0.08)",
+    },
+    typography={
+        "font_family_base": "Georgia, 'Times New Roman', serif",
+        "font_family_mono": "'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace",
+        "roles": {
+            "display": {"size": "2.25rem", "weight": "700", "line_height": "1.2"},
+            "heading": {"size": "1.5rem", "weight": "700", "line_height": "1.3"},
+            "subheading": {"size": "1.2rem", "weight": "600", "line_height": "1.35"},
+            "body": {"size": "1rem", "weight": "400", "line_height": "1.6"},
+            "body_small": {"size": "0.875rem", "weight": "400", "line_height": "1.5"},
+            "caption": {"size": "0.75rem", "weight": "400", "line_height": "1.4"},
+            "label": {"size": "0.875rem", "weight": "600", "line_height": "1.2"},
+        },
+    },
+    spacing={
+        "xs": "0.25rem",
+        "sm": "0.5rem",
+        "md": "1rem",
+        "lg": "1.5rem",
+        "xl": "2.25rem",
+        "2xl": "3.5rem",
+    },
+    radius={
+        "none": "0px",
+        "sm": "3px",
+        "md": "4px",
+        "lg": "6px",
+        "pill": "9999px",
+    },
+)
+
+
+# DNA E — Japan High-Density Information (Web / Information DNA Proof)
+JAPAN_HIGH_DENSITY_INFO_DNA = DesignDNA(
+    id="japan-high-density-info",
+    display_name="Japan High-Density Information",
+    role="web_information",
+    category="cultural_web",
+    description="A secondary information design character emphasizing metadata prominence, status richness, and compact utility grouping.",
+    reference_identity="Japanese modern utility web portals, high-density dashboard layouts, and information-rich metadata displays",
+    visual_character="high-density metadata, rich status indicators, efficient utility grouping, clear secondary hierarchy",
+    color_direction="secondary status richness with distinct badge contrast",
+    typography_direction="compact readable metadata scales",
+    surface_language="compact structured utility groupings",
+    shape_language="compact functional radii",
+    interaction_character="compact rapid status feedback",
+    presentation_policy=PresentationPolicy(
+        metadata_prominence="high",
+        status_richness="rich",
+        navigation_density="compact",
+        secondary_compactness=True,
+        information_discoverability="enhanced",
+        utility_grouping="structured",
+    ),
+    materials=[],
+    provenance={
+        "author": "MultiMind Design Team",
+        "license": "Project-Owned Asset",
+        "source": "Composition Contract Proofs",
+        "attribution": "Inspired by information-rich Japanese modern web portal architecture",
+    },
+    colors={},
+    typography={},
+    spacing={},
+    radius={},
+)
+
+PROOFS = [
+    JAPAN_PRINT_INK_DNA,
+    CHAINSAW_MAN_INSPIRED_DNA,
+    MUSHISHI_INSPIRED_DNA,
+    RINPA_DECORATIVE_SPATIAL_DNA,
+    JAPAN_HIGH_DENSITY_INFO_DNA,
+]

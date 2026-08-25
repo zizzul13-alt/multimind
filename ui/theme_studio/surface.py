@@ -1,15 +1,18 @@
 """
 MultiMind AI - Theme Studio UI Surface
-Provides an interactive, responsive presentation surface for selecting a base Theme/DesignDNA,
-editing Theme-level presentation controls, viewing isolated live previews, and applying or discarding drafts.
+Provides an interactive, responsive presentation surface for selecting independent composition roles
+(Identity DNA, Web/Information DNA, UI/UX Archetype), editing Theme-level presentation controls,
+viewing isolated live previews, and applying or discarding drafts atomically.
 """
 import re
 from typing import List, Any
 import streamlit as st
 from ui.foundation import card_container, render_status_badge
 from ui.presentation import render_brand_identity
-from ui.themes import list_themes
+from ui.presentation.resolver import list_archetypes
 from ui.dna import list_dna
+from ui.dna.models import DesignComposition
+from ui.dna.resolver import resolve_composition
 from ui.components.theme_preview_spike.preview_spike import render_theme_preview_spike
 from ui.theme_studio.state import (
     get_or_create_draft,
@@ -20,11 +23,7 @@ from ui.theme_studio.state import (
 
 
 def ensure_option_present(options: List[Any], current_value: Any) -> List[Any]:
-    """Ensures current_value exists within options list without mutating or replacing it.
-
-    If current_value is not in options, dynamically extends options while preserving
-    numeric/unit order (e.g. px, rem) when possible.
-    """
+    """Ensures current_value exists within options list without mutating or replacing it."""
     if current_value is None or current_value in options:
         return list(options)
 
@@ -67,61 +66,85 @@ def render_theme_studio_surface():
     """Renders the user-facing Theme Studio interactive editor surface."""
     with st.container(key="theme_studio_surface_container"):
         card_container(
-            "<div class='mm-typo-display'>🎨 Theme Studio</div>"
+            "<div class='mm-typo-display'>🎨 Theme Studio — Design DNA Composition</div>"
             "<div class='mm-typo-subheading mm-text-muted'>"
-            "Customize visual presentation tokens with live isolated preview before applying to active app session."
+            "Compose independent design roles (Identity DNA, Web/Information DNA, UI/UX Archetype) with live isolated preview."
             "</div>",
             variant="elevated"
         )
 
         draft = get_or_create_draft()
 
-        # ===== SECTION 1: BASE THEME / DESIGN DNA SELECTION =====
-        st.markdown("<div class='mm-typo-heading' style='margin-top: 1.5rem;'>1. Starting Base Selection</div>", unsafe_allow_html=True)
-        col_type, col_select = st.columns([1, 2])
+        # ===== SECTION 1: ROLE-BASED COMPOSITION SELECTORS =====
+        st.markdown("<div class='mm-typo-heading' style='margin-top: 1.5rem;'>1. Role-Based Design Composition</div>", unsafe_allow_html=True)
 
-        with col_type:
-            base_type = st.radio(
-                "Base Type Source",
-                options=["Theme", "Design DNA"],
-                index=0 if draft.base_type == "theme" else 1,
-                key="ts_base_type_radio"
+        all_dna = list_dna()
+        identity_dnas = [d for d in all_dna if d.role == "identity"]
+        web_dnas = [d for d in all_dna if d.role == "web_information"]
+        archetype_options = list_archetypes()
+
+        col_id, col_web, col_arch = st.columns(3)
+
+        with col_id:
+            st.markdown("<b>Identity / Cultural DNA</b>", unsafe_allow_html=True)
+            id_ids = [d.id for d in identity_dnas]
+            current_id_idx = id_ids.index(draft.identity_dna_id) if draft.identity_dna_id in id_ids else 0
+            selected_id_dna = st.selectbox(
+                "Identity DNA",
+                identity_dnas,
+                index=current_id_idx,
+                format_func=lambda d: f"{d.display_name} ({d.id})",
+                key="ts_composition_identity_select"
             )
-            selected_base_type = "theme" if base_type == "Theme" else "dna"
+            selected_id_str = getattr(selected_id_dna, "id", "rinpa-decorative-spatial")
 
-        with col_select:
-            if selected_base_type == "theme":
-                available_themes = list_themes()
-                theme_ids = [t.id for t in available_themes]
-                current_idx = theme_ids.index(draft.base_id) if draft.base_id in theme_ids else 0
-                selected_theme = st.selectbox(
-                    "Select Base Theme",
-                    available_themes,
-                    index=current_idx,
-                    format_func=lambda t: f"{t.display_name} ({t.id})",
-                    key="ts_base_theme_select"
-                )
-                selected_id = getattr(selected_theme, "id", "default")
-            else:
-                available_dna = list_dna()
-                dna_ids = [d.id for d in available_dna]
-                current_idx = dna_ids.index(draft.base_id) if draft.base_id in dna_ids else 0
-                if available_dna:
-                    selected_dna = st.selectbox(
-                        "Select Base Design DNA",
-                        available_dna,
-                        index=current_idx,
-                        format_func=lambda d: f"{d.display_name} ({d.id})",
-                        key="ts_base_dna_select"
-                    )
-                    selected_id = getattr(selected_dna, "id", dna_ids[0])
-                else:
-                    st.info("No Design DNA registered.")
-                    selected_id = "default"
+        with col_web:
+            st.markdown("<b>Web / Information DNA</b>", unsafe_allow_html=True)
+            # Support None / None selector for Web DNA
+            web_options = [None] + web_dnas
+            current_web_idx = 0
+            if draft.web_information_dna_id:
+                web_ids = [getattr(w, "id", None) for w in web_options]
+                if draft.web_information_dna_id in web_ids:
+                    current_web_idx = web_ids.index(draft.web_information_dna_id)
 
-            if selected_id != draft.base_id or selected_base_type != draft.base_type:
-                draft = reset_draft_to_base(selected_id, selected_base_type)
-                st.rerun()
+            selected_web_dna = st.selectbox(
+                "Web / Information DNA",
+                web_options,
+                index=current_web_idx,
+                format_func=lambda d: f"{d.display_name} ({d.id})" if d else "None (Default Density)",
+                key="ts_composition_web_select"
+            )
+            selected_web_str = getattr(selected_web_dna, "id", None) if selected_web_dna else None
+
+        with col_arch:
+            st.markdown("<b>UI / UX Archetype</b>", unsafe_allow_html=True)
+            arch_keys = [opt[0] for opt in archetype_options]
+            arch_dict = dict(archetype_options)
+            current_arch_idx = arch_keys.index(draft.archetype_id) if draft.archetype_id in arch_keys else 0
+
+            selected_arch_key = st.selectbox(
+                "UI/UX Archetype",
+                arch_keys,
+                index=current_arch_idx,
+                format_func=lambda k: arch_dict.get(k, k),
+                key="ts_composition_archetype_select"
+            )
+
+        # Check if composition selection changed in draft state
+        if (
+            selected_id_str != draft.identity_dna_id
+            or selected_web_str != draft.web_information_dna_id
+            or selected_arch_key != draft.archetype_id
+        ):
+            from ui.theme_studio.state import init_draft_from_composition
+            new_draft = init_draft_from_composition(
+                identity_dna_id=selected_id_str,
+                web_information_dna_id=selected_web_str,
+                archetype_id=selected_arch_key
+            )
+            st.session_state[SESSION_DRAFT_KEY] = new_draft
+            st.rerun()
 
         st.divider()
 
@@ -171,15 +194,15 @@ def render_theme_studio_surface():
             # ----- TYPOGRAPHY -----
             with st.expander("🔤 Typography Font Families", expanded=False):
                 font_options = [
-                    "Inter, -apple-system, sans-serif",
                     "Georgia, 'Times New Roman', serif",
+                    "Inter, -apple-system, sans-serif",
                     "Impact, 'Arial Black', sans-serif",
                     "system-ui, -apple-system, sans-serif",
                 ]
                 mono_options = [
+                    "'SFMono-Regular', Consolas, monospace",
                     "JetBrains Mono, monospace",
-                    "Fira Code, monospace",
-                    "Courier New, monospace"
+                    "Fira Code, monospace"
                 ]
 
                 curr_base_font = draft.typography.get("font_family_base", font_options[0])
@@ -205,7 +228,7 @@ def render_theme_studio_surface():
             # ----- BORDER RADIUS & SPACING -----
             with st.expander("📐 Shape Radius & Spacing Density", expanded=False):
                 radius_preset = ["0px", "2px", "4px", "8px", "12px", "16px", "24px"]
-                curr_radius_md = draft.radius.get("md", "8px")
+                curr_radius_md = draft.radius.get("md", "4px")
                 safe_radius_options = ensure_option_present(radius_preset, curr_radius_md)
 
                 radius_md = st.select_slider(
@@ -215,8 +238,8 @@ def render_theme_studio_surface():
                     key="ts_radius_md_slider"
                 )
                 draft.radius["md"] = radius_md
-                draft.radius["sm"] = "2px" if radius_md == "0px" else "4px"
-                draft.radius["lg"] = "4px" if radius_md in ("0px", "2px") else "12px"
+                draft.radius["sm"] = "2px" if radius_md == "0px" else "3px"
+                draft.radius["lg"] = "4px" if radius_md in ("0px", "2px") else "6px"
 
                 spacing_preset = ["0.5rem", "0.75rem", "1rem", "1.25rem", "1.5rem"]
                 curr_spacing_md = draft.spacing.get("md", "1rem")
@@ -234,29 +257,45 @@ def render_theme_studio_surface():
             st.session_state[SESSION_DRAFT_KEY] = draft
 
         with preview_col:
-            st.markdown("<div class='mm-typo-heading'>3. Isolated Live Preview</div>", unsafe_allow_html=True)
-            render_status_badge("Preview Mode — Active Theme Unchanged", variant="info")
+            st.markdown("<div class='mm-typo-heading'>3. Isolated Composed Live Preview</div>", unsafe_allow_html=True)
+            render_status_badge("Preview Mode — Active App State Unchanged", variant="info")
+
+            # Resolve Composed Projection for preview
+            projection = draft.resolve()
+
+            # Display Composition Policy Badge Summary
+            card_container(
+                f"<div class='mm-typo-label'>📐 Composition Resolution Summary:</div>"
+                f"<ul class='mm-typo-body-small mm-text-muted' style='padding-left: 1.2rem; margin-bottom: 0;'>"
+                f"<li><b>Identity:</b> {projection.provenance.get('identity_display_name')}</li>"
+                f"<li><b>Web/Info:</b> {projection.provenance.get('web_information_display_name') or 'None'}</li>"
+                f"<li><b>Archetype View:</b> {projection.provenance.get('archetype_display_name')}</li>"
+                f"<li><b>Metadata Prominence:</b> {projection.presentation_policy.metadata_prominence}</li>"
+                f"<li><b>Status Richness:</b> {projection.presentation_policy.status_richness}</li>"
+                f"</ul>",
+                variant="muted"
+            )
 
             # Material Identity Preview (S6.3 Presentation Seam)
-            render_brand_identity(draft.base_id, container_kind="theme_studio")
+            render_brand_identity(draft.identity_dna_id, container_kind="theme_studio")
 
             # Isolated Custom Preview Spike Component
             spike_payload = {
-                "primary": draft.colors.get("primary", "#3B82F6"),
-                "radius": draft.radius.get("md", "8px"),
-                "density": "comfortable"
+                "primary": draft.colors.get("primary", "#B8860B"),
+                "radius": draft.radius.get("md", "4px"),
+                "density": "compact" if projection.presentation_policy.secondary_compactness else "comfortable"
             }
             render_theme_preview_spike(initial_payload=spike_payload, key="ts_preview_spike_comp")
 
             # Isolated Dynamic Token Preview Box
-            p_bg = draft.colors.get("background", "#09090B")
-            p_surf = draft.colors.get("surface", "#18181B")
-            p_text = draft.colors.get("text", "#FAFAFA")
-            p_pri = draft.colors.get("primary", "#3B82F6")
-            p_acc = draft.colors.get("accent", "#10B981")
-            p_border = draft.colors.get("border", "#3F3F46")
-            p_font = draft.typography.get("font_family_base", "sans-serif")
-            p_rad = draft.radius.get("md", "8px")
+            p_bg = draft.colors.get("background", "#F2ECE1")
+            p_surf = draft.colors.get("surface", "#E6DEC8")
+            p_text = draft.colors.get("text", "#1A1714")
+            p_pri = draft.colors.get("primary", "#B8860B")
+            p_acc = draft.colors.get("accent", "#2E5A44")
+            p_border = draft.colors.get("border", "#2B241C")
+            p_font = draft.typography.get("font_family_base", "serif")
+            p_rad = draft.radius.get("md", "4px")
 
             preview_html = f"""
             <div style="
@@ -269,7 +308,7 @@ def render_theme_studio_surface():
                 margin-top: 1rem;
             ">
                 <div style="font-size: 1.1rem; font-weight: bold; margin-bottom: 0.5rem;">
-                    Draft Theme Preview: {draft.display_name}
+                    Composed Preview: {draft.identity_dna_id} + {draft.web_information_dna_id or 'standard'}
                 </div>
                 <div style="
                     background-color: {p_surf};
@@ -279,7 +318,7 @@ def render_theme_studio_surface():
                     margin-bottom: 0.75rem;
                 ">
                     <span style="color: {p_text}; font-size: 0.9rem;">
-                        This is an isolated card surface showing current draft tokens.
+                        Isolated card surface rendering primary visual identity and secondary information density policy.
                     </span>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
@@ -312,13 +351,13 @@ def render_theme_studio_surface():
         act_col1, act_col2, _ = st.columns([1, 1, 2])
 
         with act_col1:
-            if st.button("🚀 Apply Theme", type="primary", use_container_width=True, key="ts_apply_theme_btn"):
+            if st.button("🚀 Apply Composition", type="primary", use_container_width=True, key="ts_apply_theme_btn"):
                 applied_theme = apply_draft_to_active_theme(draft)
-                st.success(f"✅ Theme '{applied_theme.display_name}' applied to session!")
+                st.success(f"✅ Composition applied to session (Theme: '{applied_theme.display_name}', Archetype: '{draft.archetype_id}')!")
                 st.rerun()
 
         with act_col2:
             if st.button("🔄 Discard / Reset Draft", use_container_width=True, key="ts_discard_draft_btn"):
-                reset_draft_to_base(draft.base_id, draft.base_type)
-                st.info("Draft reset to base defaults.")
+                reset_draft_to_base(draft.identity_dna_id, "composition")
+                st.info("Draft reset to composition defaults.")
                 st.rerun()
