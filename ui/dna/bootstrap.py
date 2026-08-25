@@ -1,6 +1,6 @@
 """
-MultiMind AI - Design DNA & Theme Registry Bootstrap (S6.2)
-Idempotent bootstrap module to register S6.2 real Design DNA proofs and map them to ThemeRegistry.
+MultiMind AI - Design DNA & Theme Registry Bootstrap (S6.2 / S8.1)
+Idempotent bootstrap module to register Design DNA proofs and map Identity DNAs to ThemeRegistry.
 """
 import copy
 import logging
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def ensure_proof_dna_and_themes_registered() -> None:
-    """Safely and idempotently registers S6.2 Design DNA proofs and their mapped Themes.
+    """Safely and idempotently registers Design DNA proofs and maps Identity DNAs to ThemeRegistry.
 
     Idempotence rules:
     - If a proof DNA/Theme ID is absent, registers a deep copy.
@@ -36,17 +36,18 @@ def ensure_proof_dna_and_themes_registered() -> None:
                     f"Registered DNA does not match canonical expected proof DNA."
                 )
 
-        # Map canonical DNA to Theme
-        mapped_theme = dna_to_theme(canonical_proof_dna)
+        # Only map Identity DNAs into ThemeRegistry automatically
+        if canonical_proof_dna.role == "identity":
+            mapped_theme = dna_to_theme(canonical_proof_dna)
 
-        # Use public list_themes API for exact ID presence lookup without inspecting private _themes dictionary
-        registered_themes = {t.id: t for t in theme_reg.list_themes()}
-        if mapped_theme.id in registered_themes:
-            existing_theme = registered_themes[mapped_theme.id]
-            if existing_theme != mapped_theme:
-                raise ValueError(
-                    f"Conflicting Theme definition found in registry for ID '{mapped_theme.id}'. "
-                    f"Registered Theme does not match incoming mapped Theme."
-                )
-        else:
-            theme_reg.register_theme(mapped_theme)
+            # Use public list_themes API for exact ID presence lookup without inspecting private _themes dictionary
+            registered_themes = {t.id: t for t in theme_reg.list_themes()}
+            if mapped_theme.id in registered_themes:
+                existing_theme = registered_themes[mapped_theme.id]
+                if existing_theme != mapped_theme:
+                    raise ValueError(
+                        f"Conflicting Theme definition found in registry for ID '{mapped_theme.id}'. "
+                        f"Registered Theme does not match incoming mapped Theme."
+                    )
+            else:
+                theme_reg.register_theme(mapped_theme)

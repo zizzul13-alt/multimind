@@ -170,3 +170,40 @@ If a vocabulary characteristic cannot be represented by the asset-free Theme Eng
 | **Japan Print / Ink** (`japan-print-ink`) | `ink`, `paper`, `print`, `editorial`, `restrained`, `high-contrast` | Dark ink text (`#121212`) on warm paper surface (`#F5F2EB`), stark borders (`#222222`), firm small radii (`2px`), print-like serif-compatible font stacks. |
 | **Chainsaw Man Inspired** (`chainsaw-man-inspired`) | `poster`, `editorial`, `rough`, `sharp`, `high-contrast` | Stark dark asphalt background (`#111114`), assertive warning yellow (`#FFCC00`) & visceral red (`#E63946`) accents, zero radius (`0px`), crisp bold typography hierarchy. |
 | **Mushishi Inspired** (`mushishi-inspired`) | `organic`, `atmospheric`, `calm`, `muted`, `restrained` | Deep forest moss background (`#111814`), soft sage surface (`#1D2822`), pale green-tinted text (`#E2EBE5`), calm muted tea accent (`#7A9A8B`), softer radii (`8px` - `12px`). |
+
+
+## Design DNA Composition Contract (S8.1)
+
+### Overview
+S8.1 establishes the production composition contract allowing independent design roles to compose into one deterministic presentation projection without style blending or last-write-wins dictionary merges.
+
+### DNA Role Taxonomy & Ownership Boundaries
+1. **Identity / Cultural DNA** (`role="identity"`):
+   - Owns primary visual identity, color palette, typography character, surface/material language, shape character, and primary graphic mark.
+   - Proofs: `rinpa-decorative-spatial`, `japan-print-ink`, `chainsaw-man-inspired`, `mushishi-inspired`.
+2. **Web / Information DNA** (`role="web_information"`):
+   - Owns secondary information expression: metadata prominence, status richness, navigation density, secondary compactness, and utility grouping.
+   - Proof: `japan-high-density-info`.
+3. **UI / UX Archetype**:
+   - Owns interaction morphology, workspace structure, and interaction shell flow.
+   - Proofs: `chat_first`, `command_center`, `ai_workspace`, `ai_research_lab`, `agent_canvas`, `terminal_hacker`, `minimal_saas`.
+
+### Composition Resolution Flow
+```
+DesignComposition(identity_dna_id, web_information_dna_id, archetype_id)
+        ↓
+resolve_composition()
+        ↓
+ComposedProjection
+  - theme: Theme (mapped from Identity DNA)
+  - presentation_policy: PresentationPolicy (from Web / Information DNA)
+  - archetype_id: str
+  - materials: Tuple[MaterialReference, ...]
+  - provenance: Dict
+```
+
+### Adding Future DNAs
+To introduce a new Identity or Web DNA:
+1. Define and register the `DesignDNA` instance declaring `role="identity"` or `role="web_information"`.
+2. Attach approved `MaterialReference` objects if applicable.
+3. Call `resolve_composition(DesignComposition(...))` directly — no generic resolver code edits required.
