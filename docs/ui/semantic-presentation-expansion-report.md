@@ -29,10 +29,10 @@ Seven production semantics remained deferred at the S8.3 baseline (`visual_energ
 | Semantic Field | Evaluation Role | Final Status | Bounded Projection / Seam | Technical Reason / Capability |
 | :--- | :--- | :--- | :--- | :--- |
 | **`hierarchy_strength`** | Primary | **`CONSUMED_PARTIAL`** | `IdentityPresentationProjection.hierarchy_contrast` | Mapped via Theme Engine to `--mm-heading-font-weight` (500 for `soft`, 700 for `strong`/`moderate`, 900 for `dramatic`) and `--mm-heading-letter-spacing` (0.04em for `dramatic`). Consumed in `ui/style.css` for heading contrast. |
-| **`shape_character`** | Primary | **`CONSUMED_PARTIAL`** | `IdentityPresentationProjection.border_stroke_style` | Documented PARTIAL consumer: maps semantic intent to `--mm-shape-border-style` (`crisp` for `sharp`, `soft` for `organic`/`soft`, `solid` for `restrained`). Consumed in `ui/style.css` across cards and containers alongside border radii. |
+| **`shape_character`** | Primary | **`CONSUMED_PARTIAL`** | `IdentityPresentationProjection.border_stroke_style` | Documented PARTIAL consumer: maps semantic terms (`crisp`, `soft`, `solid`) to valid CSS properties (`--mm-shape-border-style: solid;` with `--mm-shape-border-opacity` 0.9 for `crisp`, 0.5 for `soft`, 0.75 for `solid`). Consumed in `ui/style.css` across cards and containers alongside border radii. |
 | **`visual_energy`** | Primary | **`CONSUMED_PARTIAL`** | `IdentityPresentationProjection.energy_emphasis` | Mapped to `--mm-energy-hover-lift` (`translate(-1px, -1px)` for `aggressive`, `translateY(-1px)` for `expressive`, `none` for `quiet`) and `--mm-energy-hover-shadow`. Preserves Identity Theme HEX color tokens strictly without color mutation. |
 | **`surface_character`** | Primary | **`CONSUMED_PARTIAL`** | `IdentityPresentationProjection.surface_treatment` | Documented PARTIAL consumer: maps surface intent to `--mm-surface-elevation-shadow` (`0 4px 14px rgba(0,0,0,0.2)` for `layered`/`poster`, `0 2px 10px rgba(0,0,0,0.1)` for `atmospheric`, `none` for `flat`/`paper`). |
-| **`interaction_intensity`** | Secondary | **`CONSUMED_PARTIAL`** | `IdentityPresentationProjection.transition_speed` | Reuses existing CSS transition capability: maps motion intent to `--mm-transition-spec` (`0.1s cubic-bezier` for `assertive`, `0.35s ease` for `gentle`, `0.2s ease` for `deliberate`/`restrained`). Consumed across cards and buttons. |
+| **`interaction_intensity`** | Secondary | **`CONSUMED_PARTIAL`** | `IdentityPresentationProjection.transition_speed` | Reuses existing CSS transition capability: maps motion intent to `--mm-transition-spec` (`0.1s cubic-bezier` for `assertive`, `0.35s ease` for `gentle`, `0.2s ease` for `deliberate`/`restrained`), transitioning background-color, border-color, box-shadow, and transform. Consumed across cards and buttons. |
 | **`responsive_identity_priority`** | Secondary | **`DEFERRED`** | None | **DEFERRED**: Existing `@media` breakpoints handle layout compaction. No non-archetype-disrupting seam exists to translate `preserve_core` vs `preserve_strong` without generating DNA-specific media queries. |
 | **`composition_balance`** | Constrained | **`DEFERRED`** | None | **DEFERRED**: Archetype strictly owns container layout morphology (`chat_first`, `command_center`, etc.). Shift to organic or asymmetric layout remains constrained by the Archetype Ownership Rule. |
 
@@ -74,9 +74,9 @@ At least five newly expanded presentation properties reach the actual main appli
    - Selector: `.stApp h1` in `ui/style.css`.
    - Effect: In `app.py` session view, h1 headers dynamically render with `500` font weight for Mushishi (`soft`), `700` for Rinpa/Japan Print (`strong`), and `900` for Chainsaw Man (`dramatic`).
 2. **Interactive Hover Lift (`--mm-energy-hover-lift`)**:
-   - Selector: `.mm-card:hover`, `.mm-card-elevated:hover` in `ui/style.css`.
-   - Effect: Action card containers in `app.py` shift with `translate(-1px, -1px)` for Chainsaw (`aggressive`), `translateY(-1px)` for Rinpa (`expressive`), and remain steady for Mushishi (`quiet`).
-3. **Card Border & Stroke Style (`--mm-shape-border-style`)**:
+   - Selector: `.mm-card:hover`, `.mm-card-elevated:hover`, `.stButton > button:hover` in `ui/style.css`.
+   - Effect: Action card containers and primary buttons in `app.py` shift with `translate(-1px, -1px)` for Chainsaw (`aggressive`), `translateY(-1px)` for Rinpa (`expressive`), and remain steady for Mushishi (`quiet`).
+3. **Card Border & Stroke Opacity (`--mm-shape-border-opacity`)**:
    - Selector: `.mm-card`, `.mm-card-elevated` in `ui/style.css`.
    - Effect: Surface cards render crisp borders for Chainsaw (`sharp`) and soft borders for Mushishi/Rinpa (`organic`).
 4. **Elevation Shadow Treatment (`--mm-surface-elevation-shadow`)**:
@@ -84,7 +84,7 @@ At least five newly expanded presentation properties reach the actual main appli
    - Effect: Elevated cards in `app.py` render distinct elevation shadows for `poster` and `layered` surface characters.
 5. **Transition Velocity (`--mm-transition-spec`)**:
    - Selector: `.stButton > button`, `.mm-card` in `ui/style.css`.
-   - Effect: Button and card hover state transitions fire with 0.1s rapid feedback for Chainsaw (`assertive`) vs 0.35s gentle ease for Mushishi (`gentle`).
+   - Effect: Button and card hover state transitions (including background-color) fire with 0.1s rapid feedback for Chainsaw (`assertive`) vs 0.35s gentle ease for Mushishi (`gentle`).
 
 ---
 
@@ -105,12 +105,12 @@ All four canonical Identity DNAs were paired with the same Web/Information DNA (
 
 | Streamlit Visual Characteristic | Observation Verdict | Code-Backed Justification |
 | :--- | :--- | :--- |
-| **Uniform rounded component language** | **`IMPROVED`** | Shape character and radius tokens dynamically alter border radius and stroke style (`sharp` crisp 0px vs `organic` soft 8px). |
-| **Weak hierarchy differentiation** | **`IMPROVED`** | Heading weight and letter-spacing scale dynamically between `500` (soft), `700` (strong), and `900` (dramatic). |
+| **Uniform rounded component language** | **`IMPROVED`** | Shape character and radius tokens dynamically alter border radius (`0px` sharp vs `8px` organic) and stroke opacity. |
+| **Weak hierarchy differentiation** | **`IMPROVED`** | Heading font weight and letter-spacing scale dynamically between `500` (soft), `700` (strong), and `900` (dramatic). |
 | **Identical surface treatment** | **`IMPROVED`** | Elevated surface shadow and elevation depth dynamically adapt to surface character (`poster`/`layered` depth vs `flat`/`paper`). |
 | **Generic vertical-form visual rhythm** | **`UNCHANGED`** | Streamlit layout flow remains vertical continuous column; layout structure strictly governed by active Archetype projection. |
 | **Identity loss on responsive layouts** | **`UNCHANGED`** | Existing `@media` breakpoints preserve responsive compaction on 768px and 390px viewports without identity degradation. |
-| **Native-widget dominance** | **`IMPROVED`** | Native Streamlit buttons and text inputs consume `--mm-transition-spec` and `--mm-energy-hover-lift` custom properties. |
+| **Native-widget dominance** | **`IMPROVED`** | Native Streamlit buttons consume `--mm-transition-spec` (preserving background-color transitions) and `--mm-energy-hover-lift`. |
 
 ---
 
@@ -140,5 +140,5 @@ Actual rendered application screenshots captured via Playwright in runtime sessi
 
 ## 9. Recommendation for S8.5
 
-1. Maintain Streamlit as MultiMind AI's primary frontend framework. S8.4 proves that bounded, typed semantic projections and generic CSS seams provide rich visual differentiation without custom React/Vue components or framework exits.
-2. Maintain strict separation between Identity presentation projections, Web presentation policies, and UI archetypes in future feature development.
+1. Evidence-based continuation toward the S8.5 visual closure decision gate. S8.4 proves that bounded, typed presentation projections (`IdentityPresentationProjection`) and generic CSS custom property seams provide observable visual differentiation in Streamlit without custom frontend framework bridges.
+2. Maintain strict separation between Identity presentation projections, Web presentation policies, and UI archetypes in S8.5 visual closure evaluation.

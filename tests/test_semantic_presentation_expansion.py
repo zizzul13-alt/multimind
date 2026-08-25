@@ -37,7 +37,11 @@ def test_t01_no_canonical_dna_id_branches():
 
 
 def test_t02_synthetic_future_dna_uses_generic_consumers():
-    """T02: Synthetic future DNA can use every new generic consumer seamlessly."""
+    """T02: Synthetic future DNA can use every new generic consumer seamlessly through full runtime chain."""
+    from ui.dna import get_registry as get_dna_registry
+    from ui.themes import register_theme
+    from ui.dna.mapper import dna_to_theme
+
     synthetic_dna = DesignDNA(
         id="synthetic-future-dna-001",
         display_name="Synthetic Future DNA",
@@ -57,6 +61,10 @@ def test_t02_synthetic_future_dna_uses_generic_consumers():
         },
     )
 
+    # Register synthetic DNA & Theme in registries to prove generic non-branching chain
+    get_dna_registry().register_dna(synthetic_dna)
+    register_theme(dna_to_theme(synthetic_dna))
+
     proj = resolve_identity_projection(synthetic_dna)
     assert isinstance(proj, IdentityPresentationProjection)
     assert proj.hierarchy_contrast == "dramatic"
@@ -66,8 +74,11 @@ def test_t02_synthetic_future_dna_uses_generic_consumers():
     assert proj.transition_speed == "assertive"
 
     css = generate_theme_css("synthetic-future-dna-001")
-    # CSS should be generated without error using default fallback theme or registered theme
-    assert ":root {" in css
+    assert "--mm-heading-font-weight: 900;" in css
+    assert "--mm-shape-border-style: solid;" in css
+    assert "--mm-energy-hover-lift: translate(-1px, -1px);" in css
+    assert "--mm-surface-elevation-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);" in css
+    assert "--mm-transition-spec: background-color 0.1s cubic-bezier" in css
 
 
 def test_t03_s83_spatial_density_behavior_intact():
@@ -153,14 +164,14 @@ def test_t09_s84_semantic_reaches_actual_application_presentation():
     """T09: At least one S8.4 semantic reaches actual application presentation in generated CSS."""
     css_chainsaw = generate_theme_css("chainsaw-man-inspired")
     assert "--mm-heading-font-weight: 900;" in css_chainsaw
-    assert "--mm-shape-border-style: crisp;" in css_chainsaw
+    assert "--mm-shape-border-style: solid;" in css_chainsaw
     assert "--mm-energy-hover-lift: translate(-1px, -1px);" in css_chainsaw
     assert "--mm-surface-elevation-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);" in css_chainsaw
-    assert "--mm-transition-spec:" in css_chainsaw
+    assert "--mm-transition-spec: background-color 0.1s cubic-bezier" in css_chainsaw
 
     css_mushishi = generate_theme_css("mushishi-inspired")
     assert "--mm-heading-font-weight: 500;" in css_mushishi
-    assert "--mm-shape-border-style: soft;" in css_mushishi
+    assert "--mm-shape-border-style: solid;" in css_mushishi
     assert "--mm-energy-hover-lift: none;" in css_mushishi
 
 

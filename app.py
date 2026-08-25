@@ -64,12 +64,7 @@ if "active_navigation" not in st.session_state:
     st.session_state.active_navigation = "workspace"
 
 if "active_theme" not in st.session_state:
-    qp_theme = st.query_params.get("theme", None)
-    st.session_state.active_theme = qp_theme if qp_theme else "default"
-else:
-    qp_theme = st.query_params.get("theme", None)
-    if qp_theme and isinstance(qp_theme, str) and qp_theme != st.session_state.active_theme:
-        st.session_state.active_theme = qp_theme
+    st.session_state.active_theme = "default"
 
 if "active_archetype" not in st.session_state:
     qp_arch = st.query_params.get("archetype", None)
