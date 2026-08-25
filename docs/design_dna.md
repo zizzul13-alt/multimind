@@ -207,3 +207,19 @@ To introduce a new Identity or Web DNA:
 1. Define and register the `DesignDNA` instance declaring `role="identity"` or `role="web_information"`.
 2. Attach approved `MaterialReference` objects if applicable.
 3. Call `resolve_composition(DesignComposition(...))` directly — no generic resolver code edits required.
+
+## Production Design DNA Deepening (S8.2)
+
+### Bounded Production Semantic Taxonomy
+S8.2 deepens `DesignDNA` with 9 explicit controlled production semantic fields:
+- `visual_energy`: `{"quiet", "restrained", "balanced", "expressive", "aggressive"}`
+- `spatial_density`: `{"spacious", "balanced", "compact", "dense"}`
+- `composition_balance`: `{"regular", "asymmetric", "organic"}`
+- `hierarchy_strength`: `{"soft", "moderate", "strong", "dramatic"}`
+- `surface_character`: `{"flat", "layered", "paper", "atmospheric", "poster"}`
+- `shape_character`: `{"soft", "restrained", "sharp", "organic"}`
+- `ornament_emphasis`: `{"none", "subtle", "selective", "prominent"}`
+- `interaction_intensity`: `{"gentle", "restrained", "deliberate", "assertive"}`
+- `responsive_identity_priority`: `{"minimal", "preserve_core", "preserve_strong"}`
+
+All 9 fields are optional (`Optional[str] = None`) to preserve full backward compatibility with legacy and minimal DNA definitions. When set, values are validated strictly against their bounded taxonomy.
