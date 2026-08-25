@@ -46,6 +46,7 @@ from ui.dna.proofs import (
 from ui.dna.registry import DNARegistry, get_registry
 from ui.dna.resolver import resolve_composition, resolve_material, resolve_source_dna
 from ui.dna.mapper import dna_to_theme
+from ui.presentation.brand import render_brand_identity, _get_ornament_width
 from ui.theme_studio.state import ThemeStudioDraft, reset_draft_to_base, get_or_create_draft
 from ui.themes import Theme, get_theme, ThemeRegistry
 
@@ -69,7 +70,6 @@ class TestSemanticConsumptionGate(unittest.TestCase):
             "ui/presentation/brand.py",
         ]
 
-        # Broad regex checking for logic switches on canonical ID strings across single/double quotes, formatting, etc.
         pattern = re.compile(r'(if|elif|case)\s+.*["\'](' + '|'.join(canonical_ids) + r')["\']')
 
         for mod_path in modules_to_check:
@@ -207,11 +207,19 @@ class TestSemanticConsumptionGate(unittest.TestCase):
         active_theme = get_theme("rinpa-decorative-spatial")
         self.assertEqual(active_theme.colors["primary"], "#B8860B")
 
-    def test_T07_material_pipeline_remains_unchanged(self):
-        """T07: Material Pipeline resolves materials deterministically without modification."""
-        res = resolve_material("rinpa-decorative-spatial")
-        self.assertTrue(res.is_resolved)
-        self.assertEqual(res.material.id, "rinpa-gold-mark")
+    def test_T07_generic_ornament_and_density_consumers(self):
+        """T07: Generic consumers for ornament_emphasis and spatial_density function correctly."""
+        # 1. Test ornament_emphasis width mapping helper
+        self.assertEqual(_get_ornament_width("none"), 0)
+        self.assertEqual(_get_ornament_width("subtle"), 24)
+        self.assertEqual(_get_ornament_width("selective"), 32)
+        self.assertEqual(_get_ornament_width("prominent"), 40)
+        self.assertEqual(_get_ornament_width(None), 32)
+
+        # 2. Test spatial_density generic derivation in resolve_composition
+        comp = DesignComposition(identity_dna_id="chainsaw-man-inspired")  # spatial_density="dense"
+        proj = resolve_composition(comp)
+        self.assertTrue(proj.presentation_policy.secondary_compactness)
 
     def test_T08_every_semantic_field_has_exactly_one_s83_classification(self):
         """T08: Verifies report contains explicit classification for all 9 production semantic fields."""
@@ -237,26 +245,40 @@ class TestSemanticConsumptionGate(unittest.TestCase):
             self.assertIn(f"`{field}`", content, f"Field {field} missing from report inventory/table.")
 
     def test_T09_every_c_classification_includes_explicit_blocker_type(self):
-        """T09: Verifies every C-classified field in the report specifies a recognized blocker type."""
-        valid_blockers = {
+        """T09: Verifies every field classified C in the report specifies an explicit recognized blocker type."""
+        valid_blockers = [
             "STREAMLIT_PLATFORM_LIMIT",
             "PRESENTATION_ARCHITECTURE_LIMIT",
             "THEME_ENGINE_LIMIT",
             "MATERIAL_PIPELINE_LIMIT",
             "ARCHETYPE_OWNERSHIP_LIMIT",
             "NO_SAFE_GENERIC_MAPPING",
-        }
+        ]
 
         report_path = "docs/ui/semantic-consumption-visual-reality-gate.md"
         with open(report_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        found_blockers = set()
-        for b in valid_blockers:
-            if b in content:
-                found_blockers.add(b)
+        c_fields = [
+            "visual_energy",
+            "composition_balance",
+            "hierarchy_strength",
+            "surface_character",
+            "shape_character",
+            "interaction_intensity",
+            "responsive_identity_priority",
+        ]
 
-        self.assertGreater(len(found_blockers), 0, "Report must reference valid blocker types.")
+        for field in c_fields:
+            # Locate field line in table and verify one of valid blockers is on that line
+            pattern = re.compile(r'`' + field + r'`\s*\|\s*\*\*C\*\*\s*\|\s*([^|\n]+)')
+            match = pattern.search(content)
+            self.assertIsNotNone(match, f"C-classified field {field} not found in report table.")
+            blocker_cell = match.group(1).strip()
+            self.assertTrue(
+                any(b in blocker_cell for b in valid_blockers),
+                f"Field {field} blocker '{blocker_cell}' not in recognized set {valid_blockers}"
+            )
 
     def test_T10_no_c_classified_field_falsely_represented_as_visually_consumed(self):
         """T10: Verifies dna_to_theme and resolve_composition produce pure contracts without fake attributes."""
@@ -264,7 +286,7 @@ class TestSemanticConsumptionGate(unittest.TestCase):
         self.assertIsInstance(theme, Theme)
         # Theme contract must only expose standard theme token dictionaries
         self.assertFalse(hasattr(theme, "visual_energy"))
-        self.assertFalse(hasattr(theme, "spatial_density"))
+        self.assertFalse(hasattr(theme, "composition_balance"))
         self.assertNotIn("visual_energy", theme.colors)
 
     def test_T11_presentation_policy_audit_backed_by_code_references(self):
