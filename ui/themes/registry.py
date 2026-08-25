@@ -243,8 +243,17 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
         css_lines.append("  --mm-heading-font-weight: 700;")
         css_lines.append("  --mm-heading-letter-spacing: normal;")
 
-    # 2. border_stroke_style (PARTIAL shape character)
-    css_lines.append(f"  --mm-shape-border-style: {id_proj.border_stroke_style};")
+    # 2. border_stroke_style (PARTIAL shape character - emission of VALID CSS border-style values)
+    css_lines.append("  --mm-shape-border-style: solid;")
+    if id_proj.border_stroke_style == "crisp":
+        css_lines.append("  --mm-shape-border-width: 1px;")
+        css_lines.append("  --mm-shape-border-opacity: 0.9;")
+    elif id_proj.border_stroke_style == "soft":
+        css_lines.append("  --mm-shape-border-width: 1px;")
+        css_lines.append("  --mm-shape-border-opacity: 0.5;")
+    else:
+        css_lines.append("  --mm-shape-border-width: 1px;")
+        css_lines.append("  --mm-shape-border-opacity: 0.75;")
 
     # 3. energy_emphasis (visual_energy hover transform/shadow)
     if id_proj.energy_emphasis == "aggressive":
@@ -268,13 +277,13 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
     else:
         css_lines.append("  --mm-surface-elevation-shadow: none;")
 
-    # 5. transition_speed (interaction_intensity)
+    # 5. transition_speed (interaction_intensity - preserves background-color transition)
     if id_proj.transition_speed == "assertive":
-        css_lines.append("  --mm-transition-spec: border-color 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.1s cubic-bezier(0.4, 0, 0.2, 1), transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);")
+        css_lines.append("  --mm-transition-spec: background-color 0.1s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.1s cubic-bezier(0.4, 0, 0.2, 1), transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);")
     elif id_proj.transition_speed == "gentle":
-        css_lines.append("  --mm-transition-spec: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;")
+        css_lines.append("  --mm-transition-spec: background-color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;")
     else:
-        css_lines.append("  --mm-transition-spec: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;")
+        css_lines.append("  --mm-transition-spec: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;")
 
     css_lines.append("}")
 
