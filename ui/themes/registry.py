@@ -208,6 +208,10 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
     spacing = resolved["spacing"]
     radius = resolved["radius"]
 
+    from ui.dna.resolver import resolve_source_dna, resolve_identity_projection
+    source_dna = resolve_source_dna(theme)
+    id_proj = resolve_identity_projection(source_dna)
+
     css_lines = [":root {"]
 
     # Fonts
@@ -226,6 +230,60 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
     for k, v in colors.items():
         css_name = k.replace("_", "-")
         css_lines.append(f"  --mm-color-{css_name}: {v};")
+
+    # Identity Semantic Presentation Custom Properties (Derived from IdentityPresentationProjection)
+    # 1. hierarchy_contrast
+    if id_proj.hierarchy_contrast == "dramatic":
+        css_lines.append("  --mm-heading-font-weight: 900;")
+        css_lines.append("  --mm-heading-letter-spacing: 0.04em;")
+    elif id_proj.hierarchy_contrast == "soft":
+        css_lines.append("  --mm-heading-font-weight: 500;")
+        css_lines.append("  --mm-heading-letter-spacing: normal;")
+    else:
+        css_lines.append("  --mm-heading-font-weight: 700;")
+        css_lines.append("  --mm-heading-letter-spacing: normal;")
+
+    # 2. border_stroke_style (PARTIAL shape character - valid CSS properties consumed in ui/style.css)
+    css_lines.append("  --mm-shape-border-style: solid;")
+    if id_proj.border_stroke_style == "crisp":
+        css_lines.append("  --mm-shape-border-width: 1px;")
+        css_lines.append("  --mm-shape-border-color: var(--mm-color-border);")
+    elif id_proj.border_stroke_style == "soft":
+        css_lines.append("  --mm-shape-border-width: 1px;")
+        css_lines.append("  --mm-shape-border-color: var(--mm-color-border-subtle);")
+    else:
+        css_lines.append("  --mm-shape-border-width: 1px;")
+        css_lines.append("  --mm-shape-border-color: var(--mm-color-border);")
+
+    # 3. energy_emphasis (visual_energy hover transform/shadow)
+    if id_proj.energy_emphasis == "aggressive":
+        css_lines.append("  --mm-energy-hover-lift: translate(-1px, -1px);")
+        css_lines.append("  --mm-energy-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);")
+    elif id_proj.energy_emphasis == "expressive":
+        css_lines.append("  --mm-energy-hover-lift: translateY(-1px);")
+        css_lines.append("  --mm-energy-hover-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);")
+    elif id_proj.energy_emphasis == "quiet":
+        css_lines.append("  --mm-energy-hover-lift: none;")
+        css_lines.append("  --mm-energy-hover-shadow: none;")
+    else:
+        css_lines.append("  --mm-energy-hover-lift: translateY(-1px);")
+        css_lines.append("  --mm-energy-hover-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);")
+
+    # 4. surface_treatment (PARTIAL surface elevation shadow)
+    if id_proj.surface_treatment in ("layered", "poster"):
+        css_lines.append("  --mm-surface-elevation-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);")
+    elif id_proj.surface_treatment == "atmospheric":
+        css_lines.append("  --mm-surface-elevation-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);")
+    else:
+        css_lines.append("  --mm-surface-elevation-shadow: none;")
+
+    # 5. transition_speed (interaction_intensity - preserves background-color transition)
+    if id_proj.transition_speed == "assertive":
+        css_lines.append("  --mm-transition-spec: background-color 0.1s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.1s cubic-bezier(0.4, 0, 0.2, 1), transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);")
+    elif id_proj.transition_speed == "gentle":
+        css_lines.append("  --mm-transition-spec: background-color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;")
+    else:
+        css_lines.append("  --mm-transition-spec: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;")
 
     css_lines.append("}")
 
