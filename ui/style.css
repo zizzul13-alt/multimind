@@ -18,30 +18,35 @@
 /* Base Container Primitives */
 .mm-card {
   background-color: var(--mm-color-surface);
-  border: 1px solid var(--mm-color-border);
+  border: var(--mm-shape-border-width, 1px) var(--mm-shape-border-style, solid) var(--mm-color-border);
   border-radius: var(--mm-radius-md);
   padding: var(--mm-space-md);
   margin-bottom: var(--mm-space-md);
   color: var(--mm-color-text);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: var(--mm-transition-spec, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease);
 }
 
 .mm-card:hover {
   border-color: var(--mm-color-border-hover);
+  transform: var(--mm-energy-hover-lift, none);
+  box-shadow: var(--mm-energy-hover-shadow, none);
 }
 
 .mm-card-elevated {
   background-color: var(--mm-color-surface-elevated);
-  border: 1px solid var(--mm-color-border);
+  border: var(--mm-shape-border-width, 1px) var(--mm-shape-border-style, solid) var(--mm-color-border);
   border-radius: var(--mm-radius-lg);
   padding: var(--mm-space-lg);
   margin-bottom: var(--mm-space-md);
   color: var(--mm-color-text);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--mm-surface-elevation-shadow, none);
+  transition: var(--mm-transition-spec, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease);
 }
 
 .mm-card-elevated:hover {
   border-color: var(--mm-color-border-hover);
+  transform: var(--mm-energy-hover-lift, none);
+  box-shadow: var(--mm-energy-hover-shadow, none);
 }
 
 .mm-card-muted {
@@ -144,7 +149,7 @@
   border-radius: var(--mm-radius-md);
   font-weight: 500;
   font-family: var(--mm-font-base);
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: var(--mm-transition-spec, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease);
 }
 
 .stButton > button:focus {
@@ -244,11 +249,12 @@
 .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6 {
   font-family: var(--mm-font-base);
   color: var(--mm-color-text);
+  letter-spacing: var(--mm-heading-letter-spacing, normal);
 }
 
 .stApp h1 {
   font-size: 2rem;
-  font-weight: 700;
+  font-weight: var(--mm-heading-font-weight, 700);
   line-height: 1.2;
 }
 

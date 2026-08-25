@@ -77,6 +77,24 @@ class MaterialReference:
 
 
 @dataclass(frozen=True)
+class IdentityPresentationProjection:
+    """Read-only bounded semantic presentation projection derived generically from Identity DesignDNA.
+
+    Translates Identity DesignDNA semantic intent into typed presentation attributes:
+    - hierarchy_contrast: str ('soft', 'moderate', 'strong', 'dramatic') -> typography/heading contrast emphasis
+    - border_stroke_style: str ('solid', 'crisp', 'soft') -> bounded PARTIAL shape character
+    - energy_emphasis: str ('quiet', 'restrained', 'balanced', 'expressive', 'aggressive') -> hover/focus elevation emphasis
+    - surface_treatment: str ('flat', 'layered', 'paper', 'atmospheric', 'poster') -> bounded PARTIAL surface elevation/border treatment
+    - transition_speed: str ('gentle', 'restrained', 'deliberate', 'assertive') -> motion transition speed
+    """
+    hierarchy_contrast: str = "strong"
+    border_stroke_style: str = "solid"
+    energy_emphasis: str = "balanced"
+    surface_treatment: str = "flat"
+    transition_speed: str = "deliberate"
+
+
+@dataclass(frozen=True)
 class PresentationPolicy:
     """Read-only presentation policy expressing Web / Information DNA behavior.
 
@@ -228,5 +246,6 @@ class ComposedProjection:
     theme: Any
     presentation_policy: PresentationPolicy
     archetype_id: str
+    identity_projection: Optional[IdentityPresentationProjection] = None
     materials: Tuple[MaterialReference, ...] = ()
     provenance: Mapping[str, Any] = field(default_factory=lambda: MappingProxyType({}))
