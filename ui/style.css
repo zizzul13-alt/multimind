@@ -548,3 +548,18 @@
     margin-bottom: var(--mm-space-xs);
   }
 }
+
+/* ==========================================
+   S8.5 PRE-CLOSURE BOUNDED CONTAINMENT & OVERFLOW FIXES
+   ========================================== */
+
+/* Universal flex child min-width 0 reset to prevent container flex blowout on narrow viewports */
+[data-testid="column"], [data-testid="stHorizontalBlock"] > div {
+  min-width: 0;
+}
+
+/* Ensure long text, URLs, and code snippets in all cards wrap gracefully */
+.mm-card, .mm-card-elevated, .mm-card-muted, [data-testid="stChatMessage"] {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}

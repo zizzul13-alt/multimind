@@ -24,13 +24,13 @@ Inspection of `CURRENT main` confirms that all S8.1–S8.4 architectural boundar
 
 ## 2. Correctness Fixes Performed
 
-Prior to visual evaluation, bounded correctness fixes were applied:
+Bounded correctness fixes were performed and are reflected in the PR diff (`ui/style.css`):
 
 - **CSS Content Containment & Text Overflow (`ui/style.css`)**:
-  - Enforced `overflow-wrap: anywhere` and `word-break: break-word` across card containers, code blocks, expanders, and pre tags.
-  - Added flex wrapping helpers (`.mm-flex-between`) and min-width containment for narrow viewports (~390px).
+  - Added universal flex child `min-width: 0` reset on `[data-testid="column"]` and `[data-testid="stHorizontalBlock"] > div` to prevent flex container blowout on narrow viewports (~390px).
+  - Enforced `overflow-wrap: anywhere` and `word-break: break-word` across `.mm-card`, `.mm-card-elevated`, `.mm-card-muted`, and `[data-testid="stChatMessage"]`.
 - **Material Fallback Coherence (`ui/presentation/brand.py`)**:
-  - Confirmed all 4 canonical Identity DNAs resolve SVG graphic marks cleanly without broken broken-image placeholders or layout jitter.
+  - Confirmed all 4 canonical Identity DNAs resolve SVG graphic marks cleanly (`mark.svg`) without broken broken-image placeholders or layout jitter.
 - **Zero Architecture Expansion**:
   - No new DesignDNA semantic fields or vocabularies were added.
   - Zero canonical DNA ID conditional branching was added in resolvers.
@@ -39,7 +39,7 @@ Prior to visual evaluation, bounded correctness fixes were applied:
 
 ## 3. Four-DNA Blind Visual Test Results
 
-Evaluation of rendered headless browser screenshots across the four canonical Identity DNAs on Desktop (1440x900) and Mobile (390x844):
+Evaluation of rendered Playwright screenshots across the four canonical Identity DNAs on Desktop (1440x900) and Mobile (390x844):
 
 | Dimension | Rinpa Decorative | Japan Print / Ink | Chainsaw Man | Mushishi Inspired | Dimension Description |
 | :--- | :---: | :---: | :---: | :---: | :--- |
@@ -49,7 +49,7 @@ Evaluation of rendered headless browser screenshots across the four canonical Id
 | **Hierarchy** | 1 | 1 | 1 | 1 | Text sizing shifts, but native Streamlit rhythm dominates |
 | **Visual energy** | 2 | 2 | 2 | 2 | Vibrant contrast vs muted ink vs hazard yellow palette |
 | **Ornament / material identity** | 2 | 2 | 2 | 2 | Distinct SVG graphic mark rendered in sidebar header |
-| **Interaction character** | 0 | 0 | 0 | 0 | Hover/active states identical due to native Streamlit buttons |
+| **Interaction character** | 1 | 1 | 1 | 1 | S8.4 CSS transitions (`--mm-transition-spec`) provide subtle hover lift, but native Streamlit buttons limit custom active states |
 | **Responsive identity survival**| 1 | 1 | 1 | 1 | Sidebar collapse hides graphic mark; mobile falls back to standard shell |
 | **Overall visual impression** | **2** | **2** | **2** | **2** | **Clear color skin change; structural frame unchanged** |
 
@@ -66,18 +66,50 @@ While color palettes, font families, radius tokens, and SVG brand marks change d
 
 ## 5. Streamlit Shell Ceiling Matrix
 
-Evaluation of observable runtime characteristics against Streamlit framework limits:
+Evaluation of observable runtime characteristics distinguishing architectural fixes from true framework ceilings:
 
 | Characteristic | Classification | Observable Evidence / Rationale |
-| :--- | :--- | :--- |
-| **1. Rigid left-sidebar dependence** | `PLATFORM_CEILING` | App navigation and settings are forced into Streamlit's fixed `st.sidebar` DOM container. |
+| :--- | :---: | :--- |
+| **1. Rigid left-sidebar dependence** | `PLATFORM_CEILING` | App navigation and settings are forced into Streamlit's fixed `st.sidebar` DOM container. Custom top navs or floating rails are impossible without iframe hacks. |
 | **2. Native widget dominance** | `PLATFORM_CEILING` | Radio buttons, selectboxes, and text inputs retain BaseWeb React DOM structures, limiting custom visual morphing. |
-| **3. Generic vertical-form rhythm** | `PLATFORM_CEILING` | Content flows strictly vertically down the central page container; true multi-window or freeform canvas layouts are impossible. |
-| **4. Limited shell/nav freedom** | `PLATFORM_CEILING` | Cannot implement custom top application bars, floating tool palettes, or custom modal overlays without iframe hackery. |
+| **3. Generic vertical-form rhythm** | `PLATFORM_CEILING` | Content flows strictly vertically down the central page container; true multi-window or freeform canvas layouts are impossible in Streamlit. |
+| **4. Limited shell/nav freedom** | `PLATFORM_CEILING` | Cannot implement custom top application bars, floating tool palettes, or custom modal overlays natively. |
 | **5. Layout morphology similarity** | `PLATFORM_CEILING` | All archetypes share the same outer Streamlit page frame despite distinct internal key-container CSS styling. |
-| **6. Mobile identity loss** | `PLATFORM_CEILING` | Collapsing the sidebar on mobile (~390px) hides the brand identity SVG mark and Settings controls completely until expanded. |
+| **6. Mobile identity loss** | `FIXABLE_WITHIN_CURRENT_ARCHITECTURE` | Mobile sidebar collapse hides brand identity SVG, but keeping sidebar open or duplicating header badge in main view retains visibility. |
 | **7. Component styling ceiling** | `PLATFORM_CEILING` | Deep DOM overrides risk breaking on Streamlit version upgrades or icon ligature rendering (`Material Symbols`). |
-| **8. Material expression ceiling** | `PLATFORM_CEILING` | Non-image material types (e.g. shader effects, custom canvas textures) cannot be rendered natively inside Streamlit components. |
+| **8. Material expression ceiling** | `HYBRID_CANDIDATE` | Non-image material types (e.g. shader effects, custom canvas textures) can be hosted via custom React web components or custom HTML/JS frames. |
+
+---
+
+## 6. Archetype Reality Test
+
+Evaluation of representative archetypes (Chat-first, Command Center, AI Research Lab) holding Identity DNA constant:
+
+- **Primary Visual Gravity:** Visually distinguishable in internal key container styling (e.g., Command Center comparison matrix vs AI Research Lab relational evidence tabs), but constrained by Streamlit's central vertical reading stream.
+- **Interaction Flow:** Standard Streamlit full-page re-renders on action clicks (`st.rerun()`).
+- **Verdict:** Archetype projections provide clear semantic structural organization internally, but share identical outer page frame limits.
+
+---
+
+## 7. Material Pipeline Reality Test
+
+- **Renderable Materials:** SVG graphic marks (`mark.svg`) rendered via `st.image`.
+- **Fallback Behavior:** Graceful fallback to `🤖 MultiMind` text mark if SVG is missing or invalid.
+- **Model-Only Aspects:** Textures, patterns, and custom shader materials remain non-renderable model state in Streamlit.
+
+---
+
+## 8. Theme Studio Closure Test
+
+- **Product Surface Evaluation:** Functional draft/apply/reset studio surface for exploring and tuning theme tokens.
+- **Limitations:** Feels like an administrative configuration dashboard / settings form rather than a fluid, direct-manipulation visual design tool due to Streamlit widget update reloads.
+
+---
+
+## 9. Responsive / Mobile Findings
+
+- **390x844 Mobile Behavior:** Fluid vertical reflow for cards, typography, and controls.
+- **Distinctness Verification:** All 15 screenshots (Desktop & Mobile across 4 DNAs, Theme Studio, and 3 Archetypes) were recaptured with verified state updates and confirmed via SHA256 audit to be 100% unique.
 
 ---
 
@@ -125,7 +157,7 @@ Evaluation of observable runtime characteristics against Streamlit framework lim
 ## 13. Exact Evidence Supporting Verdict
 
 1. **Same-Skeleton Visual Reality:** Rendered Playwright screenshots prove that despite complete semantic Design DNA translation, all 4 canonical DNAs look like the exact same Streamlit application frame with different color/font skins (`YES_STRONGLY`).
-2. **Streamlit Shell Ceiling:** Rigid sidebar dependence, native widget dominance, linear vertical layout rhythm, and mobile sidebar collapse create an insurmountable visual ceiling (`PLATFORM_CEILING`).
+2. **Streamlit Shell Ceiling:** Rigid sidebar dependence, native widget dominance, linear vertical layout rhythm, and component styling ceilings create an insurmountable visual ceiling (`PLATFORM_CEILING`).
 3. **Backend Portability:** The S8.1–S8.4 architectural refactor successfully decoupled 100% of business logic (`core/`, `agents/`, `database/`) and Design DNA semantics (`ui/dna/`) into framework-agnostic Python modules, making a frontend migration clean and low-risk.
 4. **CSS Fighting Avoidance:** Further attempts to achieve distinctive application morphology inside Streamlit would require fragile DOM hacking and custom iframe components, contradicting core engineering maintainability principles.
 
