@@ -37,7 +37,7 @@ Bounded correctness fixes were performed and are reflected in the PR diff (`ui/s
 
 ---
 
-## 3. Four-DNA Blind Visual Test Results
+## 3. Four-DNA Blind Visual Test Results & SHA256 Audit
 
 Evaluation of rendered Playwright screenshots across the four canonical Identity DNAs on Desktop (1440x900) and Mobile (390x844):
 
@@ -53,6 +53,11 @@ Evaluation of rendered Playwright screenshots across the four canonical Identity
 | **Responsive identity survival**| 1 | 1 | 1 | 1 | Sidebar collapse hides graphic mark; mobile falls back to standard shell |
 | **Overall visual impression** | **2** | **2** | **2** | **2** | **Clear color skin change; structural frame unchanged** |
 
+### Verified SHA256 Screenshot Audit
+- **Desktop Identity DNAs:** `workspace_rinpa-decorative-spatial_desktop.png` (`464f428485fc`), `workspace_japan-print-ink_desktop.png` (`b1000b36881d`), `workspace_chainsaw-man-inspired_desktop.png` (`272439479543`), and `workspace_mushishi-inspired_desktop.png` (`9726fd903acc`) exhibit **100% distinct SHA256 hashes**, demonstrating clear theme token translation on desktop workspace views.
+- **Mobile Viewport Collapse:** On mobile viewports (~390px), Streamlit automatically collapses the sidebar container (`st.sidebar`), causing the brand identity SVG mark and Settings theme/archetype controls to be hidden behind the expander button. Consequently, mobile viewports reflect the central stream frame, leading to visual identity collapse on mobile viewports when the sidebar is collapsed.
+- **Visual Convergence:** Rather than masking this mobile visual convergence, the audit treats this responsive identity loss as direct evidence of Streamlit's layout constraints.
+
 ---
 
 ## 4. Same-Skeleton-Different-Skin Test Verdict
@@ -60,19 +65,19 @@ Evaluation of rendered Playwright screenshots across the four canonical Identity
 **Verdict:** `YES_STRONGLY`
 
 **Evidence & Rationale:**
-While color palettes, font families, radius tokens, and SVG brand marks change distinctively across the 4 DNAs, all 4 renderings indisputably share the exact same Streamlit application skeleton. The rigid left sidebar, top header bar, vertical radio navigation, native button controls, and single-column main content stream retain identical macro morphology regardless of the active Design DNA.
+While color palettes, font families, radius tokens, and SVG brand marks change distinctively across the 4 DNAs on desktop, all renderings indisputably share the exact same Streamlit application skeleton. The rigid left sidebar, top header bar, vertical radio navigation, native button controls, and single-column main content stream retain identical macro morphology regardless of the active Design DNA.
 
 ---
 
 ## 5. Streamlit Shell Ceiling Matrix
 
-Evaluation of observable runtime characteristics distinguishing architectural fixes from true framework ceilings:
+Evaluation of observable runtime characteristics distinguishing architectural fixes from framework limitations:
 
 | Characteristic | Classification | Observable Evidence / Rationale |
 | :--- | :---: | :--- |
-| **1. Rigid left-sidebar dependence** | `PLATFORM_CEILING` | App navigation and settings are forced into Streamlit's fixed `st.sidebar` DOM container. Custom top navs or floating rails are impossible without iframe hacks. |
+| **1. Rigid left-sidebar dependence** | `PLATFORM_CEILING` | App navigation and settings are constrained to Streamlit's fixed `st.sidebar` DOM container. Custom top navs or floating rails are blocked without iframe hacks. |
 | **2. Native widget dominance** | `PLATFORM_CEILING` | Radio buttons, selectboxes, and text inputs retain BaseWeb React DOM structures, limiting custom visual morphing. |
-| **3. Generic vertical-form rhythm** | `PLATFORM_CEILING` | Content flows strictly vertically down the central page container; true multi-window or freeform canvas layouts are impossible in Streamlit. |
+| **3. Generic vertical-form rhythm** | `PLATFORM_CEILING` | Content flows strictly vertically down the central page container; true multi-window or freeform canvas layouts are constrained in Streamlit. |
 | **4. Limited shell/nav freedom** | `PLATFORM_CEILING` | Cannot implement custom top application bars, floating tool palettes, or custom modal overlays natively. |
 | **5. Layout morphology similarity** | `PLATFORM_CEILING` | All archetypes share the same outer Streamlit page frame despite distinct internal key-container CSS styling. |
 | **6. Mobile identity loss** | `FIXABLE_WITHIN_CURRENT_ARCHITECTURE` | Mobile sidebar collapse hides brand identity SVG, but keeping sidebar open or duplicating header badge in main view retains visibility. |
@@ -109,7 +114,7 @@ Evaluation of representative archetypes (Chat-first, Command Center, AI Research
 ## 9. Responsive / Mobile Findings
 
 - **390x844 Mobile Behavior:** Fluid vertical reflow for cards, typography, and controls.
-- **Distinctness Verification:** All 15 screenshots (Desktop & Mobile across 4 DNAs, Theme Studio, and 3 Archetypes) were recaptured with verified state updates and confirmed via SHA256 audit to be 100% unique.
+- **Verified Finding:** On narrow mobile viewports, Streamlit's default behavior collapses the sidebar overlay. This hides the active Theme/DNA selection controls and brand graphic mark until the user manually taps the sidebar expander button, creating an identity discovery friction point on mobile.
 
 ---
 
@@ -157,7 +162,7 @@ Evaluation of representative archetypes (Chat-first, Command Center, AI Research
 ## 13. Exact Evidence Supporting Verdict
 
 1. **Same-Skeleton Visual Reality:** Rendered Playwright screenshots prove that despite complete semantic Design DNA translation, all 4 canonical DNAs look like the exact same Streamlit application frame with different color/font skins (`YES_STRONGLY`).
-2. **Streamlit Shell Ceiling:** Rigid sidebar dependence, native widget dominance, linear vertical layout rhythm, and component styling ceilings create an insurmountable visual ceiling (`PLATFORM_CEILING`).
+2. **Streamlit Shell Ceiling:** Rigid sidebar dependence, native widget dominance, linear vertical layout rhythm, and component styling ceilings create a clear visual ceiling (`PLATFORM_CEILING`).
 3. **Backend Portability:** The S8.1–S8.4 architectural refactor successfully decoupled 100% of business logic (`core/`, `agents/`, `database/`) and Design DNA semantics (`ui/dna/`) into framework-agnostic Python modules, making a frontend migration clean and low-risk.
 4. **CSS Fighting Avoidance:** Further attempts to achieve distinctive application morphology inside Streamlit would require fragile DOM hacking and custom iframe components, contradicting core engineering maintainability principles.
 
