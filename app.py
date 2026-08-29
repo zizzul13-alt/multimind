@@ -110,7 +110,7 @@ def show_login_page():
     if st.button("🚀 Masuk", type="primary", key="login_button"):
         if username:
             try:
-                user_id = Config.validate_user_id(username)
+                display_username, user_id = Config.resolve_supplied_identity(username)
             except InvalidUserIdError as exc:
                 st.error(str(exc))
                 return
@@ -119,7 +119,7 @@ def show_login_page():
             # selection use the validated canonical identity only.
             if st.session_state.user_id != user_id:
                 reset_identity_bound_state(st.session_state)
-            st.session_state.user = username
+            st.session_state.user = display_username
             st.session_state.user_id = user_id
             st.rerun()
         else:
