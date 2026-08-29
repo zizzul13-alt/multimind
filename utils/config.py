@@ -2,7 +2,14 @@
 Global configuration
 """
 import os
+import re
+from pathlib import Path
 import streamlit as st
+
+
+class InvalidUserIdError(ValueError):
+    """Raised when a supplied identity cannot safely name a user namespace."""
+
 
 class Config:
     """App configuration"""
@@ -22,10 +29,43 @@ class Config:
     
     COMPRESSOR_ENABLED = False
     COMPRESSOR_MODEL = "gemini-flash-latest"
+
+    # User IDs form a storage namespace.  Keep this deliberately smaller than
+    # arbitrary display text so an ID can never be interpreted as a path.
+    USER_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
+
+    @classmethod
+    def validate_user_id(cls, user_id):
+        """Return the canonical ID or fail closed without path sanitisation."""
+        if not isinstance(user_id, str):
+            raise InvalidUserIdError("User ID must be a string.")
+
+        canonical_user_id = user_id.lower()
+        if (
+            not cls.USER_ID_PATTERN.fullmatch(canonical_user_id)
+            or ".." in canonical_user_id
+        ):
+            raise InvalidUserIdError(
+                "User ID must use 1-64 letters, numbers, dots, hyphens, or "
+                "underscores; path-like values are not allowed."
+            )
+        return canonical_user_id
+
+    @classmethod
+    def resolve_supplied_identity(cls, username):
+        """Trim harmless UI whitespace, then validate the storage identity."""
+        if not isinstance(username, str):
+            raise InvalidUserIdError("User ID must be a string.")
+
+        display_username = username.strip()
+        if not display_username:
+            raise InvalidUserIdError("Username tidak boleh kosong!")
+        return display_username, cls.validate_user_id(display_username)
     
     @classmethod
     def get_api_keys(cls, user_id):
         """Get API keys for user"""
+        user_id = cls.validate_user_id(user_id)
         try:
             all_secrets = dict(st.secrets)
             
@@ -50,9 +90,20 @@ class Config:
     
     @classmethod
     def get_db_path(cls, user_id):
-        """Get database path for user - SQLite only"""
-        os.makedirs(f"{cls.DB_DIR}/users", exist_ok=True)
-        return f"{cls.DB_DIR}/users/{user_id}.db"
+        """Resolve a validated user's SQLite database within the user DB root."""
+        user_id = cls.validate_user_id(user_id)
+        users_root = (Path(cls.DB_DIR) / "users").resolve()
+        users_root.mkdir(parents=True, exist_ok=True)
+        candidate = (users_root / f"{user_id}.db").resolve()
+
+        # Validation is necessary but not sufficient: preserve this canonical
+        # containment check at the resolver boundary for all callers.
+        try:
+            candidate.relative_to(users_root)
+        except ValueError as exc:
+            raise InvalidUserIdError("User database path escapes the user DB root.") from exc
+
+        return str(candidate)
     
     @classmethod
     def get_pool_db_path(cls):

@@ -26,7 +26,8 @@ from core.templates import TemplateManager
 from database.manager import DatabaseManager
 from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
-from utils.config import Config
+from utils.config import Config, InvalidUserIdError
+from utils.identity_state import initialize_identity_state, reset_identity_bound_state
 from ui.foundation import load_css, render_status_badge, card_container
 from ui.presentation import build_presentation_snapshot, render_archetype, list_archetypes, render_brand_identity
 from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
@@ -45,20 +46,8 @@ st.set_page_config(
 
 if "initialized" not in st.session_state:
     st.session_state.initialized = True
-    st.session_state.user = None
-    st.session_state.user_id = None
-    st.session_state.current_session = None
-    st.session_state.sessions = {}
-    st.session_state.memories = {}
-    st.session_state.new_chat = False
-    st.session_state.chat_mode = "continue"
-    st.session_state.compressor_enabled = False
-    st.session_state.debate_rounds = 1
-    st.session_state.active_agents = ["gemini"]
-    st.session_state.selected_skill = "default"
-    st.session_state.selected_template = None
-    st.session_state.template_variables = {}
-    st.session_state.prompt_text = ""
+
+initialize_identity_state(st.session_state)
 
 if "active_navigation" not in st.session_state:
     st.session_state.active_navigation = "workspace"
@@ -119,9 +108,19 @@ def show_login_page():
     st.subheader("🔐 Silakan Login")
     username = st.text_input("Username", placeholder="Ketik username bebas...", key="login_username_input")
     if st.button("🚀 Masuk", type="primary", key="login_button"):
-        if username and username.strip():
-            st.session_state.user = username.strip()
-            st.session_state.user_id = username.strip().lower()
+        if username:
+            try:
+                display_username, user_id = Config.resolve_supplied_identity(username)
+            except InvalidUserIdError as exc:
+                st.error(str(exc))
+                return
+
+            # Keep the display value for compatibility; storage and provider
+            # selection use the validated canonical identity only.
+            if st.session_state.user_id != user_id:
+                reset_identity_bound_state(st.session_state)
+            st.session_state.user = display_username
+            st.session_state.user_id = user_id
             st.rerun()
         else:
             st.error("Username tidak boleh kosong!")
@@ -296,9 +295,7 @@ def show_sidebar():
         
         st.divider()
         if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
-            st.session_state.user = None
-            st.session_state.user_id = None
-            st.session_state.current_session = None
+            reset_identity_bound_state(st.session_state)
             st.rerun()
 
 def show_session():
