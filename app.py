@@ -23,7 +23,7 @@ from core.file_handler import FileHandler
 from core.release_gate import ReleaseGate
 from core.skills_manager import SkillsManager
 from core.templates import TemplateManager
-from database.manager import DatabaseManager
+from database.manager import DatabaseManager, RestoreValidationError
 from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 from utils.config import Config, InvalidUserIdError
@@ -288,10 +288,13 @@ def show_sidebar():
             uploaded_db = st.file_uploader("📤 Restore Backup", type=["db"], key="restore_db_uploader")
             if uploaded_db:
                 if st.button("🔄 Restore", key="restore_db_btn", use_container_width=True):
-                    with open(db_path, "wb") as f:
-                        f.write(uploaded_db.read())
-                    st.success("✅ Database restored! Refresh page.")
-                    st.rerun()
+                    try:
+                        db.restore_from_bytes(uploaded_db.getvalue())
+                    except RestoreValidationError:
+                        st.error("Backup tidak valid atau tidak kompatibel.")
+                    else:
+                        st.success("✅ Database restored! Refresh page.")
+                        st.rerun()
         
         st.divider()
         if st.button("🚪 Logout", key="sidebar_logout_btn", use_container_width=True):
