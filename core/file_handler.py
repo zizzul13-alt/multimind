@@ -5,6 +5,7 @@ import os
 import struct
 import traceback
 import zipfile
+from itertools import islice
 import pandas as pd
 import streamlit as st
 from utils.error_handler import FileError, error_logger
@@ -25,7 +26,11 @@ class FileHandler:
     
     MAX_FILES = 5
     MAX_SIZE = 10_000_000  # 10MB
+    MAX_OOXML_MEMBERS = 4_096
+    MAX_OOXML_UNCOMPRESSED_SIZE = 100_000_000
     BINARY_FORMATS = {"pdf", "excel", "word", "image", "powerpoint"}
+    OOXML_RESOURCE_LIMIT_EXCEEDED = "ooxml_resource_limit_exceeded"
+    RESOURCE_LIMIT_MESSAGE = "File exceeds supported processing limits."
 
     OOXML_REQUIRED_MEMBERS = {
         ".xlsx": "xl/workbook.xml",
@@ -85,12 +90,7 @@ class FileHandler:
                 return cls._has_legacy_excel_workbook_stream(file)
 
             if extension in cls.OOXML_REQUIRED_MEMBERS:
-                with zipfile.ZipFile(file) as archive:
-                    members = set(archive.namelist())
-                return (
-                    "[Content_Types].xml" in members
-                    and cls.OOXML_REQUIRED_MEMBERS[extension] in members
-                )
+                return cls._validate_ooxml_archive(file, extension)
 
             if fmt == "image":
                 return cls.IMAGE_SIGNATURES[extension](file.read(12))
@@ -103,6 +103,27 @@ class FileHandler:
                 file.seek(original_position)
             except (AttributeError, OSError, ValueError, UnboundLocalError):
                 pass
+
+    @classmethod
+    def _validate_ooxml_archive(cls, file, extension):
+        """Validate OOXML ZIP metadata and required structural members."""
+        with zipfile.ZipFile(file) as archive:
+            members = archive.infolist()
+            if len(members) > cls.MAX_OOXML_MEMBERS:
+                return cls.OOXML_RESOURCE_LIMIT_EXCEEDED
+
+            total_uncompressed_size = 0
+            member_names = set()
+            for member in members:
+                total_uncompressed_size += member.file_size
+                if total_uncompressed_size > cls.MAX_OOXML_UNCOMPRESSED_SIZE:
+                    return cls.OOXML_RESOURCE_LIMIT_EXCEEDED
+                member_names.add(member.filename)
+
+        return (
+            "[Content_Types].xml" in member_names
+            and cls.OOXML_REQUIRED_MEMBERS[extension] in member_names
+        )
 
     @classmethod
     def _has_legacy_excel_workbook_stream(cls, file):
@@ -197,12 +218,20 @@ class FileHandler:
                 })
                 continue
             
-            if fmt in cls.BINARY_FORMATS and not cls._is_valid_binary_candidate(file, fmt):
-                results.append({
-                    "filename": file.name,
-                    "error": "Invalid or mismatched binary file"
-                })
-                continue
+            if fmt in cls.BINARY_FORMATS:
+                binary_validation = cls._is_valid_binary_candidate(file, fmt)
+                if binary_validation == cls.OOXML_RESOURCE_LIMIT_EXCEEDED:
+                    results.append({
+                        "filename": file.name,
+                        "error": cls.RESOURCE_LIMIT_MESSAGE
+                    })
+                    continue
+                if not binary_validation:
+                    results.append({
+                        "filename": file.name,
+                        "error": "Invalid or mismatched binary file"
+                    })
+                    continue
 
             try:
                 content = cls._process_file(file, fmt, gemini_agent)
@@ -257,32 +286,55 @@ class FileHandler:
             try:
                 import pdfplumber
                 with pdfplumber.open(file) as pdf:
-                    text = ""
+                    chunks = []
+                    remaining = 40000
                     for page in pdf.pages[:10]:
                         page_text = page.extract_text()
                         if page_text:
-                            text += page_text + "\n"
-                    return text[:40000] if text else "No text found in PDF"
+                            remaining = cls._append_bounded_text(chunks, page_text, remaining)
+                            remaining = cls._append_bounded_text(chunks, "\n", remaining)
+                            if remaining == 0:
+                                break
+                    text = "".join(chunks)
+                    return text if text else "No text found in PDF"
             except Exception:
                 from PyPDF2 import PdfReader
                 file.seek(0)
                 reader = PdfReader(file)
-                text = ""
+                chunks = []
+                remaining = 40000
                 for page in reader.pages[:10]:
                     page_text = page.extract_text()
                     if page_text:
-                        text += page_text + "\n"
-                return text[:40000] if text else "No text found in PDF"
+                        remaining = cls._append_bounded_text(chunks, page_text, remaining)
+                        remaining = cls._append_bounded_text(chunks, "\n", remaining)
+                        if remaining == 0:
+                            break
+                text = "".join(chunks)
+                return text if text else "No text found in PDF"
         
         elif fmt == "excel":
-            df = pd.read_excel(file)
+            df = pd.read_excel(file, nrows=100)
             return df.head(100).to_string()[:30000]
         
         elif fmt == "word":
             from docx import Document
+            from docx.text.paragraph import Paragraph
             doc = Document(file)
-            text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
-            return text[:30000]
+            chunks = []
+            remaining = 30000
+            for item in doc.iter_inner_content():
+                if not isinstance(item, Paragraph):
+                    continue
+                paragraph_text = item.text
+                if not paragraph_text.strip():
+                    continue
+                if chunks:
+                    remaining = cls._append_bounded_text(chunks, "\n", remaining)
+                remaining = cls._append_bounded_text(chunks, paragraph_text, remaining)
+                if remaining == 0:
+                    break
+            return "".join(chunks)
         
         elif fmt == "image":
             if gemini_agent:
@@ -294,11 +346,26 @@ class FileHandler:
         elif fmt == "powerpoint":
             from pptx import Presentation
             prs = Presentation(file)
-            text = ""
-            for slide in prs.slides[:20]:
+            chunks = []
+            remaining = 30000
+            for slide in islice(prs.slides, 20):
                 for shape in slide.shapes:
                     if hasattr(shape, "text") and shape.text.strip():
-                        text += shape.text + "\n"
-            return text[:30000]
+                        remaining = cls._append_bounded_text(chunks, shape.text, remaining)
+                        remaining = cls._append_bounded_text(chunks, "\n", remaining)
+                        if remaining == 0:
+                            break
+                if remaining == 0:
+                    break
+            return "".join(chunks)
         
         return None
+
+    @staticmethod
+    def _append_bounded_text(chunks, text, remaining):
+        """Append no more than the remaining extraction budget."""
+        if not text or remaining <= 0:
+            return remaining
+        chunk = text[:remaining]
+        chunks.append(chunk)
+        return remaining - len(chunk)
