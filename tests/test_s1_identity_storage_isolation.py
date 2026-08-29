@@ -16,6 +16,13 @@ def test_valid_identity_resolves_to_contained_user_database(tmp_path, monkeypatc
     assert db_path.is_relative_to(users_root)
 
 
+def test_login_identity_trims_harmless_whitespace_before_validation():
+    display_username, user_id = Config.resolve_supplied_identity(" Alice ")
+
+    assert display_username == "Alice"
+    assert user_id == "alice"
+
+
 @pytest.mark.parametrize(
     "hostile_id",
     ["..", "../alice", "foo/bar", r"foo\\bar", "/tmp/alice", r"C:\\Users\\alice", r"\\\\server\\share\\alice"],
@@ -34,6 +41,11 @@ def test_invalid_identity_is_not_silently_rewritten(tmp_path, monkeypatch):
         Config.get_db_path("../alice")
 
     assert not (tmp_path / "data" / "users" / "alice.db").exists()
+
+
+def test_trimmed_hostile_path_identity_remains_rejected():
+    with pytest.raises(InvalidUserIdError):
+        Config.resolve_supplied_identity(" ../alice ")
 
 
 def test_identity_transition_removes_sensitive_state_and_keeps_presentation_state():

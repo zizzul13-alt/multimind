@@ -50,6 +50,17 @@ class Config:
                 "underscores; path-like values are not allowed."
             )
         return canonical_user_id
+
+    @classmethod
+    def resolve_supplied_identity(cls, username):
+        """Trim harmless UI whitespace, then validate the storage identity."""
+        if not isinstance(username, str):
+            raise InvalidUserIdError("User ID must be a string.")
+
+        display_username = username.strip()
+        if not display_username:
+            raise InvalidUserIdError("Username tidak boleh kosong!")
+        return display_username, cls.validate_user_id(display_username)
     
     @classmethod
     def get_api_keys(cls, user_id):
