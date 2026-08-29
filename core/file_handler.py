@@ -3,10 +3,11 @@ File upload and processing
 """
 import os
 import struct
+import traceback
 import zipfile
 import pandas as pd
 import streamlit as st
-from utils.error_handler import FileError
+from utils.error_handler import FileError, error_logger
 from utils.token_counter import TokenCounter
 
 class FileHandler:
@@ -46,6 +47,15 @@ class FileHandler:
     CFBF_END_OF_CHAIN = 0xFFFFFFFE
     CFBF_FAT_SECTOR = 0xFFFFFFFD
     MAX_XLS_DIRECTORY_SECTORS = 128
+    PARSER_ERROR_MESSAGES = {
+        "text": "File could not be read as UTF-8 text.",
+        "code": "File could not be read as UTF-8 text.",
+        "pdf": "File could not be read. It may be malformed or use unsupported features.",
+        "excel": "File could not be read. It may be malformed or use unsupported features.",
+        "word": "File could not be read. It may be malformed or use unsupported features.",
+        "powerpoint": "File could not be read. It may be malformed or use unsupported features.",
+        "image": "Image analysis failed. Please try again.",
+    }
     
     @classmethod
     def get_format(cls, filename):
@@ -208,9 +218,17 @@ class FileHandler:
                 })
             
             except Exception as e:
+                error_logger.log(
+                    "FILE_PROCESSING_ERROR",
+                    f"{fmt} processing failed: {type(e).__name__}",
+                    details=traceback.format_exc(),
+                )
                 results.append({
                     "filename": file.name,
-                    "error": str(e)
+                    "error": cls.PARSER_ERROR_MESSAGES.get(
+                        fmt,
+                        "File could not be processed. Please try again.",
+                    )
                 })
         
         return {
@@ -245,13 +263,16 @@ class FileHandler:
                         if page_text:
                             text += page_text + "\n"
                     return text[:40000] if text else "No text found in PDF"
-            except:
+            except Exception:
                 from PyPDF2 import PdfReader
+                file.seek(0)
                 reader = PdfReader(file)
                 text = ""
                 for page in reader.pages[:10]:
-                    text += page.extract_text() + "\n"
-                return text[:40000]
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n"
+                return text[:40000] if text else "No text found in PDF"
         
         elif fmt == "excel":
             df = pd.read_excel(file)

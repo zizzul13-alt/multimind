@@ -469,8 +469,11 @@ def process_chat(prompt, uploaded_files, context_mode):
             for f in file_results.get("files", []):
                 if "content" in f:
                     file_context += f"\n--- FILE: {f['filename']} ---\n{f['content']}\n"
-        except:
-            pass
+                elif "error" in f:
+                    st.warning(f"{f['filename']}: {f['error']}")
+        except Exception as e:
+            error_logger.log("FILE_UPLOAD_ERROR", f"File upload handling failed: {type(e).__name__}")
+            st.warning("Files could not be processed. Please try again.")
 
     context = ""
     if context_mode == "continue" and st.session_state.current_session:
