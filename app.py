@@ -24,7 +24,7 @@ from core.file_handler import FileHandler
 from core.release_gate import ReleaseGate
 from core.skills_manager import SkillsManager
 from core.templates import TemplateManager
-from database.manager import DatabaseManager, RestoreValidationError
+from database.manager import DatabaseManager, RestoreOperationError, RestoreValidationError
 from utils.token_counter import TokenCounter
 from utils.error_handler import error_logger
 from utils.config import Config, InvalidUserIdError
@@ -91,6 +91,12 @@ def get_agents(user_id):
 def get_db_manager(user_id):
     db_path = Config.get_db_path(user_id)
     return DatabaseManager(db_path)
+
+
+def invalidate_restored_database_state(state):
+    """Discard runtime objects that were hydrated from the replaced database."""
+    state.current_session = None
+    state.memories = {}
 
 @st.cache_resource
 def get_skills_manager():
@@ -293,7 +299,10 @@ def show_sidebar():
                         db.restore_from_bytes(uploaded_db.getvalue())
                     except RestoreValidationError:
                         st.error("Backup tidak valid atau tidak kompatibel.")
+                    except RestoreOperationError:
+                        st.error("Database restore could not be completed. Please try again.")
                     else:
+                        invalidate_restored_database_state(st.session_state)
                         st.success("✅ Database restored! Refresh page.")
                         st.rerun()
         

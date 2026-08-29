@@ -13,6 +13,10 @@ class RestoreValidationError(ValueError):
     """Raised when an uploaded restore candidate is invalid or incompatible."""
 
 
+class RestoreOperationError(RuntimeError):
+    """Raised when staging, activation, or post-activation verification fails."""
+
+
 REQUIRED_RESTORE_SCHEMA = {
     "sessions": {"id", "name", "mode", "config", "created_at", "updated_at"},
     "chats": {
@@ -103,27 +107,56 @@ class DatabaseManager:
         conn.close()
 
     def restore_from_bytes(self, backup_bytes):
-        """Validate an uploaded backup before replacing this manager's database.
-
-        This deliberately validates a separate temporary candidate first. The
-        subsequent replacement retains the existing non-atomic behavior; crash
-        safety and recovery are outside this validation boundary.
-        """
+        """Stage and validate an uploaded backup before single-step activation."""
         if not isinstance(backup_bytes, bytes):
             raise RestoreValidationError("Backup content is invalid.")
         if len(backup_bytes) > MAX_RESTORE_CANDIDATE_BYTES:
             raise RestoreValidationError("Backup is too large to restore.")
 
-        file_descriptor, candidate_path = tempfile.mkstemp(suffix=".db")
+        db_directory = os.path.dirname(os.path.abspath(self.db_path))
         try:
-            with os.fdopen(file_descriptor, "wb") as candidate_file:
-                candidate_file.write(backup_bytes)
+            file_descriptor, candidate_path = tempfile.mkstemp(
+                prefix=".multimind-restore-",
+                suffix=".db",
+                dir=db_directory,
+            )
+        except OSError as exc:
+            raise RestoreOperationError("Backup staging failed.") from exc
+        try:
+            try:
+                candidate_file = os.fdopen(file_descriptor, "wb")
+            except OSError as exc:
+                os.close(file_descriptor)
+                raise RestoreOperationError("Backup staging failed.") from exc
+
+            try:
+                with candidate_file:
+                    bytes_written = candidate_file.write(backup_bytes)
+                    if bytes_written != len(backup_bytes):
+                        raise RestoreOperationError("Backup staging write was incomplete.")
+            except OSError as exc:
+                raise RestoreOperationError("Backup staging failed.") from exc
             validate_restore_candidate(candidate_path)
-            with open(candidate_path, "rb") as candidate_file, open(self.db_path, "wb") as active_file:
-                active_file.write(candidate_file.read())
+            try:
+                os.replace(candidate_path, self.db_path)
+            except OSError as exc:
+                raise RestoreOperationError("Database replacement failed.") from exc
+
+            # os.replace consumed the candidate; never attempt a direct-write
+            # fallback if activation or verification has a problem.
+            candidate_path = None
+            try:
+                validate_restore_candidate(self.db_path)
+            except (RestoreValidationError, OSError) as exc:
+                raise RestoreOperationError(
+                    "Database replacement could not be verified."
+                ) from exc
         finally:
-            if os.path.exists(candidate_path):
-                os.remove(candidate_path)
+            if candidate_path and os.path.exists(candidate_path):
+                try:
+                    os.remove(candidate_path)
+                except OSError:
+                    pass
         return True
 
     def save_chat(self, session_id, chat_data):
