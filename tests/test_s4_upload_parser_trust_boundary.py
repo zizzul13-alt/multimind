@@ -1,4 +1,5 @@
 from io import BytesIO
+import struct
 from unittest.mock import patch
 import zipfile
 
@@ -30,6 +31,45 @@ def _minimal_pdf():
     )
 
 
+def _legacy_excel_cfbf(stream_name="Workbook"):
+    """Build a minimal CFBF candidate with a named legacy Excel stream."""
+    end_of_chain = 0xFFFFFFFE
+    fat_sector = 0xFFFFFFFD
+
+    header = bytearray(512)
+    header[:8] = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+    struct.pack_into("<H", header, 24, 0x003E)
+    struct.pack_into("<H", header, 26, 3)
+    header[28:30] = b"\xfe\xff"
+    struct.pack_into("<H", header, 30, 9)
+    struct.pack_into("<H", header, 32, 6)
+    struct.pack_into("<I", header, 44, 1)
+    struct.pack_into("<I", header, 48, 0)
+    struct.pack_into("<I", header, 60, end_of_chain)
+    struct.pack_into("<I", header, 68, end_of_chain)
+    struct.pack_into("<I", header, 76, 1)
+
+    directory = bytearray(512)
+    root_name = "Root Entry\x00".encode("utf-16le")
+    directory[:len(root_name)] = root_name
+    struct.pack_into("<H", directory, 64, len(root_name))
+    directory[66] = 5
+    struct.pack_into("<I", directory, 76, 1)
+
+    workbook_name = f"{stream_name}\x00".encode("utf-16le")
+    directory[128:128 + len(workbook_name)] = workbook_name
+    struct.pack_into("<H", directory, 192, len(workbook_name))
+    directory[194] = 2
+
+    fat = bytearray(512)
+    struct.pack_into("<I", fat, 0, end_of_chain)
+    struct.pack_into("<I", fat, 4, fat_sector)
+    for offset in range(8, 512, 4):
+        struct.pack_into("<I", fat, offset, 0xFFFFFFFF)
+
+    return bytes(header + directory + fat)
+
+
 @pytest.mark.parametrize("payload", [b"not a PDF", b"%PDF-1.4\nmissing trailer"])
 def test_mismatched_or_malformed_pdf_bytes_are_rejected_before_parser_dispatch(payload):
     upload = Upload("mismatch.pdf", payload)
@@ -51,15 +91,27 @@ def test_valid_pdf_candidate_reaches_parser_dispatch():
     assert result["files"][0]["content"] == "parsed"
 
 
-@pytest.mark.parametrize(
-    ("filename", "payload"),
-    [
-        ("legacy.xls", b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"),
-        ("image.png", b"\x89PNG\r\n\x1a\nvalid"),
-    ],
-)
-def test_valid_legacy_excel_and_image_signatures_reach_dispatch(filename, payload):
-    upload = Upload(filename, payload)
+def test_legacy_excel_workbook_stream_reaches_parser_dispatch():
+    upload = Upload("legacy.xls", _legacy_excel_cfbf())
+
+    with patch.object(FileHandler, "_process_file", return_value="parsed") as parser:
+        FileHandler.handle([upload])
+
+    parser.assert_called_once()
+
+
+def test_non_excel_cfbf_renamed_xls_is_rejected_before_parser_dispatch():
+    upload = Upload("mismatch.xls", _legacy_excel_cfbf("WordDocument"))
+
+    with patch.object(FileHandler, "_process_file", return_value="parser reached") as parser:
+        result = FileHandler.handle([upload])
+
+    parser.assert_not_called()
+    assert result["files"] == [{"filename": "mismatch.xls", "error": "Invalid or mismatched binary file"}]
+
+
+def test_valid_image_signature_reaches_parser_dispatch():
+    upload = Upload("image.png", b"\x89PNG\r\n\x1a\nvalid")
 
     with patch.object(FileHandler, "_process_file", return_value="parsed") as parser:
         FileHandler.handle([upload])
