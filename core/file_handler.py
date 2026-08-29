@@ -2,6 +2,7 @@
 File upload and processing
 """
 import os
+import zipfile
 import pandas as pd
 import streamlit as st
 from utils.error_handler import FileError
@@ -22,6 +23,22 @@ class FileHandler:
     
     MAX_FILES = 5
     MAX_SIZE = 10_000_000  # 10MB
+    BINARY_FORMATS = {"pdf", "excel", "word", "image", "powerpoint"}
+
+    OOXML_REQUIRED_MEMBERS = {
+        ".xlsx": "xl/workbook.xml",
+        ".docx": "word/document.xml",
+        ".pptx": "ppt/presentation.xml",
+    }
+
+    IMAGE_SIGNATURES = {
+        ".jpg": lambda header: header.startswith(b"\xff\xd8\xff"),
+        ".jpeg": lambda header: header.startswith(b"\xff\xd8\xff"),
+        ".png": lambda header: header.startswith(b"\x89PNG\r\n\x1a\n"),
+        ".gif": lambda header: header.startswith((b"GIF87a", b"GIF89a")),
+        ".bmp": lambda header: header.startswith(b"BM"),
+        ".webp": lambda header: header.startswith(b"RIFF") and header[8:12] == b"WEBP",
+    }
     
     @classmethod
     def get_format(cls, filename):
@@ -31,6 +48,44 @@ class FileHandler:
             if ext in extensions:
                 return fmt
         return None
+
+    @classmethod
+    def _is_valid_binary_candidate(cls, file, fmt):
+        """Perform lightweight, non-executing validation before binary dispatch."""
+        extension = os.path.splitext(file.name)[1].lower()
+        try:
+            original_position = file.tell()
+            file.seek(0)
+
+            if fmt == "pdf":
+                header = file.read(1024)
+                file.seek(0, os.SEEK_END)
+                tail_start = max(file.tell() - 1024, 0)
+                file.seek(tail_start)
+                return b"%PDF-" in header and b"%%EOF" in file.read(1024)
+
+            if extension == ".xls":
+                return file.read(8) == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+
+            if extension in cls.OOXML_REQUIRED_MEMBERS:
+                with zipfile.ZipFile(file) as archive:
+                    members = set(archive.namelist())
+                return (
+                    "[Content_Types].xml" in members
+                    and cls.OOXML_REQUIRED_MEMBERS[extension] in members
+                )
+
+            if fmt == "image":
+                return cls.IMAGE_SIGNATURES[extension](file.read(12))
+
+            return False
+        except (AttributeError, OSError, ValueError, zipfile.BadZipFile):
+            return False
+        finally:
+            try:
+                file.seek(original_position)
+            except (AttributeError, OSError, ValueError, UnboundLocalError):
+                pass
     
     @classmethod
     def handle(cls, uploaded_files, gemini_agent=None):
@@ -57,6 +112,13 @@ class FileHandler:
                 })
                 continue
             
+            if fmt in cls.BINARY_FORMATS and not cls._is_valid_binary_candidate(file, fmt):
+                results.append({
+                    "filename": file.name,
+                    "error": "Invalid or mismatched binary file"
+                })
+                continue
+
             try:
                 content = cls._process_file(file, fmt, gemini_agent)
                 tokens = TokenCounter.count(content) if content else 0
