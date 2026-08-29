@@ -6,6 +6,7 @@ surfaces (composer morphology, processing feedback metadata, and turn lifecycle)
 across all 7 canonical MultiMind archetypes.
 """
 from typing import Dict, Any, Callable, Optional, Tuple
+from html import escape
 import streamlit as st
 
 from ui.presentation.models import PresentationSnapshot, InteractionContext
@@ -113,7 +114,7 @@ def _render_template_variables_and_preview(templates_mgr: Any, selected_template
         if default_prompt:
             card_container(
                 f"<div class='mm-typo-label'>📋 Template Preview:</div>"
-                f"<pre class='mm-typo-mono'>{default_prompt}</pre>",
+                f"<pre class='mm-typo-mono'>{escape(default_prompt)}</pre>",
                 variant="muted"
             )
     return default_prompt
