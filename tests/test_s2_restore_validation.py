@@ -1,6 +1,7 @@
 import sqlite3
 
 import pytest
+import database.manager as manager_module
 
 from database.manager import (
     DatabaseManager,
@@ -48,6 +49,21 @@ def test_non_sqlite_or_empty_backup_is_rejected_without_mutating_active_database
 
     with pytest.raises(RestoreValidationError):
         active.restore_from_bytes(invalid_bytes)
+
+    assert _active_session_names(active) == ["Active data"]
+
+
+def test_oversized_backup_is_rejected_before_temporary_write_or_active_mutation(tmp_path, monkeypatch):
+    active = _active_database(tmp_path / "active.db")
+    monkeypatch.setattr(manager_module, "MAX_RESTORE_CANDIDATE_BYTES", 4)
+
+    def fail_if_temporary_candidate_is_created(*args, **kwargs):
+        raise AssertionError("oversized backup must not create a candidate file")
+
+    monkeypatch.setattr(manager_module.tempfile, "mkstemp", fail_if_temporary_candidate_is_created)
+
+    with pytest.raises(RestoreValidationError):
+        active.restore_from_bytes(b"12345")
 
     assert _active_session_names(active) == ["Active data"]
 

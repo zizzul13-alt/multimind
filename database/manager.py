@@ -22,6 +22,10 @@ REQUIRED_RESTORE_SCHEMA = {
     },
 }
 
+# Bound untrusted restore material at this trust boundary without introducing a
+# general upload/resource-limiting subsystem.
+MAX_RESTORE_CANDIDATE_BYTES = 100 * 1024 * 1024
+
 
 def validate_restore_candidate(candidate_path):
     """Fail closed unless an isolated candidate is an intact MultiMind database."""
@@ -107,6 +111,8 @@ class DatabaseManager:
         """
         if not isinstance(backup_bytes, bytes):
             raise RestoreValidationError("Backup content is invalid.")
+        if len(backup_bytes) > MAX_RESTORE_CANDIDATE_BYTES:
+            raise RestoreValidationError("Backup is too large to restore.")
 
         file_descriptor, candidate_path = tempfile.mkstemp(suffix=".db")
         try:
