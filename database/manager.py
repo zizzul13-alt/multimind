@@ -4,7 +4,56 @@ Database manager - SQLite Simple
 import sqlite3
 import os
 import json
+import tempfile
 from datetime import datetime
+from pathlib import Path
+
+
+class RestoreValidationError(ValueError):
+    """Raised when an uploaded restore candidate is invalid or incompatible."""
+
+
+REQUIRED_RESTORE_SCHEMA = {
+    "sessions": {"id", "name", "mode", "config", "created_at", "updated_at"},
+    "chats": {
+        "id", "session_id", "prompt", "prompt_compressed", "mode",
+        "context_mode", "final_answer", "debate_data", "tokens_used", "cost",
+        "created_at",
+    },
+}
+
+
+def validate_restore_candidate(candidate_path):
+    """Fail closed unless an isolated candidate is an intact MultiMind database."""
+    candidate_uri = Path(candidate_path).resolve().as_uri()
+    try:
+        conn = sqlite3.connect(f"{candidate_uri}?mode=ro", uri=True)
+        try:
+            integrity_result = [row[0] for row in conn.execute("PRAGMA integrity_check")]
+            if integrity_result != ["ok"]:
+                raise RestoreValidationError("Backup integrity check failed.")
+
+            tables = {
+                row[0]
+                for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'table'"
+                )
+            }
+            for table_name, required_columns in REQUIRED_RESTORE_SCHEMA.items():
+                if table_name not in tables:
+                    raise RestoreValidationError("Backup schema is incompatible.")
+                columns = {
+                    row[1] for row in conn.execute(f"PRAGMA table_info({table_name})")
+                }
+                if not required_columns.issubset(columns):
+                    raise RestoreValidationError("Backup schema is incompatible.")
+        finally:
+            conn.close()
+    except RestoreValidationError:
+        raise
+    except sqlite3.Error as exc:
+        raise RestoreValidationError("Backup is not a valid SQLite database.") from exc
+
 
 class DatabaseManager:
     """SQLite database manager"""
@@ -48,6 +97,28 @@ class DatabaseManager:
         
         conn.commit()
         conn.close()
+
+    def restore_from_bytes(self, backup_bytes):
+        """Validate an uploaded backup before replacing this manager's database.
+
+        This deliberately validates a separate temporary candidate first. The
+        subsequent replacement retains the existing non-atomic behavior; crash
+        safety and recovery are outside this validation boundary.
+        """
+        if not isinstance(backup_bytes, bytes):
+            raise RestoreValidationError("Backup content is invalid.")
+
+        file_descriptor, candidate_path = tempfile.mkstemp(suffix=".db")
+        try:
+            with os.fdopen(file_descriptor, "wb") as candidate_file:
+                candidate_file.write(backup_bytes)
+            validate_restore_candidate(candidate_path)
+            with open(candidate_path, "rb") as candidate_file, open(self.db_path, "wb") as active_file:
+                active_file.write(candidate_file.read())
+        finally:
+            if os.path.exists(candidate_path):
+                os.remove(candidate_path)
+        return True
 
     def save_chat(self, session_id, chat_data):
         """Save chat"""
