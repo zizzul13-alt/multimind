@@ -6,6 +6,7 @@ import streamlit as st
 import uuid
 import json
 import os
+from html import escape
 from datetime import datetime
 
 from agents.gemini import GeminiAgent
@@ -377,7 +378,7 @@ def show_new_chat():
     if selected_template and selected_template != "" and default_prompt:
         card_container(
             f"<div class='mm-typo-label'>📋 Template Preview:</div>"
-            f"<pre class='mm-typo-mono'>{default_prompt}</pre>"
+            f"<pre class='mm-typo-mono'>{escape(default_prompt)}</pre>"
             f"<div class='mm-typo-caption mm-text-muted'>👆 Prompt otomatis masuk ke kolom di bawah, bisa langsung diedit.</div>",
             variant="muted"
         )
