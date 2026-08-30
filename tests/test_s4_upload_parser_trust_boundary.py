@@ -91,8 +91,9 @@ def test_valid_pdf_candidate_reaches_parser_dispatch():
     assert result["files"][0]["content"] == "parsed"
 
 
-def test_legacy_excel_workbook_stream_reaches_parser_dispatch():
-    upload = Upload("legacy.xls", _legacy_excel_cfbf())
+@pytest.mark.parametrize("stream_name", ["Workbook", "Book"])
+def test_legacy_excel_workbook_stream_variants_reach_parser_dispatch(stream_name):
+    upload = Upload("legacy.xls", _legacy_excel_cfbf(stream_name))
 
     with patch.object(FileHandler, "_process_file", return_value="parsed") as parser:
         FileHandler.handle([upload])
@@ -136,8 +137,15 @@ def test_valid_ooxml_candidate_reaches_parser_dispatch(filename, required_member
     parser.assert_called_once()
 
 
-def test_zip_without_expected_ooxml_structure_is_rejected_before_parser_dispatch():
-    upload = Upload("mismatch.docx", _ooxml_bytes("xl/workbook.xml"))
+@pytest.mark.parametrize(
+    ("filename", "wrong_member"),
+    [
+        ("mismatch.docx", "xl/workbook.xml"),
+        ("mismatch.xlsx", "word/document.xml"),
+    ],
+)
+def test_ooxml_extension_container_mismatches_are_rejected_before_parser_dispatch(filename, wrong_member):
+    upload = Upload(filename, _ooxml_bytes(wrong_member))
 
     with patch.object(FileHandler, "_process_file", return_value="parser reached") as parser:
         result = FileHandler.handle([upload])
@@ -154,6 +162,24 @@ def test_image_extension_mismatch_does_not_reach_provider():
         FileHandler.handle([upload], gemini_agent)
 
     processor.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("filename", "payload"),
+    [
+        ("photo.jpg", b"\x89PNG\r\n\x1a\nvalid"),
+        ("photo.png", b"\xff\xd8\xffvalid"),
+        ("photo.webp", b"GIF89avalid"),
+    ],
+)
+def test_image_signature_extension_mismatches_are_rejected_before_parser_dispatch(filename, payload):
+    upload = Upload(filename, payload)
+
+    with patch.object(FileHandler, "_process_file", return_value="parser reached") as parser:
+        result = FileHandler.handle([upload])
+
+    parser.assert_not_called()
+    assert result["files"] == [{"filename": filename, "error": "Invalid or mismatched binary file"}]
 
 
 def test_direct_filehandler_invocation_applies_binary_validation():
@@ -175,3 +201,13 @@ def test_existing_file_count_and_size_limits_remain_enforced():
 
     parser.assert_not_called()
     assert result["files"][0]["error"] == "File too large (max 10MB)"
+
+
+def test_exact_max_size_valid_binary_candidate_reaches_parser_dispatch():
+    upload = Upload("at-limit.pdf", _minimal_pdf(), size=FileHandler.MAX_SIZE)
+
+    with patch.object(FileHandler, "_process_file", return_value="parsed") as parser:
+        result = FileHandler.handle([upload])
+
+    parser.assert_called_once()
+    assert result["files"][0]["content"] == "parsed"
