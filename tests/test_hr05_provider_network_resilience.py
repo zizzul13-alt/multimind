@@ -99,6 +99,52 @@ def test_unified_all_fail_is_terminal_and_sanitized():
     assert "SUPER_SECRET_PROVIDER_INTERNAL_ERROR" not in result["text"]
 
 
+def test_unified_fallback_preserves_request_and_stops_after_usable_success():
+    class RecordingProvider:
+        def __init__(self, response):
+            self.response = response
+            self.calls = []
+
+        def generate(self, prompt, system_prompt=None, mode="coding", max_tokens=4096):
+            self.calls.append({
+                "prompt": prompt,
+                "system_prompt": system_prompt,
+                "mode": mode,
+                "max_tokens": max_tokens,
+            })
+            return dict(self.response)
+
+    first = RecordingProvider(_error_result("Cloudflare"))
+    second = RecordingProvider({
+        "status": "success", "text": "usable response", "agent": "Groq",
+        "tokens": 1, "cost": 0.0,
+    })
+    unused = RecordingProvider({
+        "status": "success", "text": "must not be used", "agent": "Unused",
+        "tokens": 1, "cost": 0.0,
+    })
+    unified = UnifiedAgent({})
+    unified.providers = [
+        {"name": "☁️ Cloudflare", "agent": first},
+        {"name": "⚡ Groq", "agent": second},
+        {"name": "🔍 Gemini", "agent": unused},
+    ]
+    unified.stats = {
+        provider["name"]: {"success": 0, "error": 0, "rate_limited": False, "last_error": ""}
+        for provider in unified.providers
+    }
+
+    result = unified.generate("prompt", "system", mode="research", max_tokens=77)
+
+    expected_request = {
+        "prompt": "prompt", "system_prompt": "system", "mode": "research", "max_tokens": 77,
+    }
+    assert result["text"] == "usable response"
+    assert first.calls == [expected_request]
+    assert second.calls == [expected_request]
+    assert unused.calls == []
+
+
 @pytest.mark.parametrize(
     ("provider_class", "module_name"),
     [
