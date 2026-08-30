@@ -264,9 +264,10 @@ def test_post_replace_verification_failure_is_controlled_without_rollback(tmp_pa
 
     monkeypatch.setattr(manager_module, "validate_restore_candidate", fail_only_for_active)
 
-    with pytest.raises(RestoreOperationError, match="could not be verified"):
+    with pytest.raises(RestoreOperationError, match="could not be verified") as exc_info:
         active.restore_from_bytes(backup_bytes)
 
+    assert exc_info.value.database_replaced is True
     assert _active_session_names(active) == ["Restored session"]
 
 

@@ -16,6 +16,10 @@ class RestoreValidationError(ValueError):
 class RestoreOperationError(RuntimeError):
     """Raised when staging, activation, or post-activation verification fails."""
 
+    def __init__(self, message, *, database_replaced=False):
+        super().__init__(message)
+        self.database_replaced = database_replaced
+
 
 REQUIRED_RESTORE_SCHEMA = {
     "sessions": {"id", "name", "mode", "config", "created_at", "updated_at"},
@@ -149,7 +153,8 @@ class DatabaseManager:
                 validate_restore_candidate(self.db_path)
             except (RestoreValidationError, OSError) as exc:
                 raise RestoreOperationError(
-                    "Database replacement could not be verified."
+                    "Database replacement could not be verified.",
+                    database_replaced=True,
                 ) from exc
         finally:
             if candidate_path and os.path.exists(candidate_path):

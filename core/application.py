@@ -8,6 +8,7 @@ from core.compressor import PromptCompressor
 from core.debate import DebateOrchestrator
 from core.file_handler import FileHandler
 from core.memory import get_or_hydrate_session_memory, persist_chat_and_update_memory
+from database.manager import RestoreOperationError, RestoreValidationError
 from providers.base import BaseProvider
 from utils.error_handler import error_logger
 
@@ -36,17 +37,38 @@ class ChatResult:
     persisted: bool = False
 
 
+@dataclass
+class ApplicationRuntime:
+    """Plain runtime state derived from the active user database."""
+    current_session: object = None
+    memories: dict = field(default_factory=dict)
+
+    def invalidate_database_derived_state(self):
+        self.current_session = None
+        self.memories.clear()
+
+
+@dataclass
+class RestoreResult:
+    status: str
+    runtime_invalidated: bool = False
+
+
 class MultiMindApplication:
     """Plain-Python seam for chat execution and minimal session lifecycle."""
 
     def __init__(
-        self, agents=None, runtime_memories=None, db=None, db_factory=None,
+        self, agents=None, runtime_memories=None, runtime=None, db=None, db_factory=None,
         compressor=PromptCompressor, file_handler=FileHandler,
         debate_factory=DebateOrchestrator,
         persist_chat=persist_chat_and_update_memory,
     ):
         self.agents = agents or {}
-        self.runtime_memories = runtime_memories if runtime_memories is not None else {}
+        self.runtime = runtime
+        self.runtime_memories = (
+            runtime.memories if runtime is not None
+            else (runtime_memories if runtime_memories is not None else {})
+        )
         self.db = db
         self.db_factory = db_factory
         self.compressor = compressor
@@ -70,6 +92,25 @@ class MultiMindApplication:
         """Hydrate the supplied persisted session into this runtime's memory."""
         get_or_hydrate_session_memory(self.runtime_memories, self._database(), session["id"])
         return session
+
+    def restore_database(self, backup_bytes, runtime=None):
+        """Restore a database and invalidate any runtime state derived from it."""
+        active_runtime = runtime or self.runtime
+        if active_runtime is None:
+            active_runtime = ApplicationRuntime(memories=self.runtime_memories)
+
+        try:
+            self._database().restore_from_bytes(backup_bytes)
+        except RestoreValidationError:
+            return RestoreResult(status="invalid_backup")
+        except RestoreOperationError as exc:
+            if exc.database_replaced:
+                active_runtime.invalidate_database_derived_state()
+                return RestoreResult(status="operation_failed", runtime_invalidated=True)
+            return RestoreResult(status="operation_failed")
+
+        active_runtime.invalidate_database_derived_state()
+        return RestoreResult(status="success", runtime_invalidated=True)
 
     def execute_chat(self, request: ChatRequest) -> ChatResult:
         gemini = self.agents.get("gemini")

@@ -140,6 +140,35 @@ def test_image_analysis_exception_is_sanitized():
     assert result["files"][0]["error"] == FileHandler.PARSER_ERROR_MESSAGES["image"]
 
 
+def test_image_analysis_failure_result_is_not_emitted_as_file_content():
+    class FailingGemini:
+        def analyze_image(self, file):
+            return {
+                "status": "error",
+                "text": "provider internal path /secret",
+            }
+
+    result = _result_for(Upload("image.png"), FailingGemini())
+
+    assert result["files"][0]["error"] == FileHandler.PARSER_ERROR_MESSAGES["image"]
+    assert "secret" not in result["files"][0]["error"]
+
+
+def test_validated_image_reaches_provider_and_uses_normalized_content():
+    calls = []
+
+    class Gemini:
+        def analyze_image(self, file):
+            calls.append(file)
+            return {"status": "success", "text": "visible text"}
+
+    upload = Upload("image.png")
+    result = _result_for(upload, Gemini())
+
+    assert calls == [upload]
+    assert result["files"][0]["content"] == "visible text"
+
+
 def test_mixed_uploads_retain_success_when_one_parser_fails():
     good = Upload("good.txt", b"usable text")
     bad = Upload("bad.xlsx")
