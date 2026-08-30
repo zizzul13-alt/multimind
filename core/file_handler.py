@@ -338,7 +338,12 @@ class FileHandler:
         elif fmt == "image":
             if gemini_agent:
                 result = gemini_agent.analyze_image(file)
-                return result["text"][:10000]
+                if not isinstance(result, dict) or result.get("status") != "success":
+                    raise ValueError("Image analysis did not return a usable response")
+                text = result.get("text")
+                if not isinstance(text, str) or not text.strip():
+                    raise ValueError("Image analysis did not return text")
+                return text[:10000]
             else:
                 return "[Image - requires Gemini Vision]"
         

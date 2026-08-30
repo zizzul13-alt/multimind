@@ -1,7 +1,6 @@
 """
 Gemini API wrapper - Compatibility Adapter
 """
-import google.generativeai as genai
 from providers.gemini import GeminiProvider
 
 class GeminiAgent(GeminiProvider):

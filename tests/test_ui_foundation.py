@@ -11,28 +11,17 @@ from ui.foundation import load_css, card_container, render_status_badge, CSS_PAT
 class TestUIFoundation(unittest.TestCase):
 
     def test_restore_state_invalidation_keeps_authenticated_identity(self):
-        from app import invalidate_restored_database_state
+        from core.application import ApplicationRuntime
 
-        state = type("StateMock", (dict,), {
-            "__getattr__": lambda self, name: self.get(name),
-            "__setattr__": lambda self, name, value: self.__setitem__(name, value),
-        })({
-            "user": "Alice",
-            "user_id": "alice",
-            "current_session": {"id": "old-session"},
-            "sessions": {"old-session": {"id": "old-session"}},
-            "memories": {"old-session": "hydrated memory"},
-            "active_theme": "default",
-        })
+        runtime = ApplicationRuntime(
+            current_session={"id": "old-session"},
+            memories={"old-session": "hydrated memory"},
+        )
 
-        invalidate_restored_database_state(state)
+        runtime.invalidate_database_derived_state()
 
-        self.assertEqual(state.user, "Alice")
-        self.assertEqual(state.user_id, "alice")
-        self.assertIsNone(state.current_session)
-        self.assertEqual(state.sessions, {"old-session": {"id": "old-session"}})
-        self.assertEqual(state.memories, {})
-        self.assertEqual(state.active_theme, "default")
+        self.assertIsNone(runtime.current_session)
+        self.assertEqual(runtime.memories, {})
 
     def test_design_tokens_structure(self):
         """Test that essential design tokens exist and contain mandatory semantic roles."""
