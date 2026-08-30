@@ -76,15 +76,12 @@ class UnifiedAgent:
                 continue
             
             try:
-                # Panggil agent sesuai tipe
-                if name == "☁️ Cloudflare":
-                    response = provider["agent"].generate(prompt, system_prompt, mode, max_tokens)
-                elif name == "🌐 OpenRouter":
-                    response = provider["agent"].generate(prompt, system_prompt, mode, max_tokens)
-                elif name == "🤗 HuggingFace":
-                    response = provider["agent"].generate(prompt, system_prompt, mode, max_tokens)
-                else:
-                    response = provider["agent"].generate(prompt, system_prompt, max_tokens)
+                response = provider["agent"].generate(
+                    prompt=prompt,
+                    system_prompt=system_prompt,
+                    mode=mode,
+                    max_tokens=max_tokens,
+                )
                 
                 # Cek rate limit
                 if response.get("status") == "error":
