@@ -487,10 +487,13 @@ def process_chat(prompt, uploaded_files, context_mode):
 
     session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
     active = st.session_state.active_agents
+    direct_runtime_prompt = final_prompt
+    if context:
+        direct_runtime_prompt = f"CONTEXT:\n{context[:3000]}\n\nTASK:\n{final_prompt}"
 
     # ===== AGENT ROUTING =====
     if "unified" in active:
-        response = unified.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
+        response = unified.generate(prompt=direct_runtime_prompt, system_prompt=None, mode=session_mode)
         debate_result = {
             "responses": [response],
             "final_answer": response.get("text", "") if BaseProvider.has_usable_response(response) else TERMINAL_PROVIDER_FAILURE_TEXT,
@@ -499,7 +502,7 @@ def process_chat(prompt, uploaded_files, context_mode):
             "status": response.get("status", "error")
         }
     elif "remote" in active:
-        response = remote.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
+        response = remote.generate(prompt=direct_runtime_prompt, system_prompt=None, mode=session_mode)
         debate_result = {
             "responses": [response],
             "final_answer": response.get("text", "") if BaseProvider.has_usable_response(response) else TERMINAL_PROVIDER_FAILURE_TEXT,
