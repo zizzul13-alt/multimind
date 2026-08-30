@@ -173,16 +173,16 @@ def test_gemini_request_receives_timeout(monkeypatch):
     provider = GeminiProvider("")
     captured = {}
     provider.model_name = "Gemini"
-    provider.model = SimpleNamespace(
-        generate_content=lambda prompt, request_options: captured.update(
-            prompt=prompt, request_options=request_options
-        ) or SimpleNamespace(text="usable response")
-    )
+    provider.client = SimpleNamespace(models=SimpleNamespace(
+        generate_content=lambda **kwargs: captured.update(kwargs) or SimpleNamespace(text="usable response")
+    ))
 
     result = provider.generate("prompt")
 
     assert result["status"] == "success"
-    assert captured["request_options"] == {"timeout": Config.API_TIMEOUT}
+    assert captured["model"] == "Gemini"
+    assert captured["contents"] == "prompt"
+    assert captured["config"].http_options.timeout == Config.API_TIMEOUT * 1000
 
 
 @pytest.mark.parametrize(

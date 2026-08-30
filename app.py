@@ -20,11 +20,11 @@ from core.debate import DebateOrchestrator
 from core.compressor import PromptCompressor
 from core.memory import persist_chat_and_update_memory
 from core.file_handler import FileHandler
-from core.application import ChatRequest, MultiMindApplication
+from core.application import ApplicationRuntime, ChatRequest, MultiMindApplication
 from core.release_gate import ReleaseGate
 from core.skills_manager import SkillsManager
 from core.templates import TemplateManager
-from database.manager import DatabaseManager, RestoreOperationError, RestoreValidationError
+from database.manager import DatabaseManager
 from utils.token_counter import TokenCounter
 from utils.config import Config, InvalidUserIdError
 from utils.identity_state import initialize_identity_state, reset_identity_bound_state
@@ -91,11 +91,6 @@ def get_db_manager(user_id):
     db_path = Config.get_db_path(user_id)
     return DatabaseManager(db_path)
 
-
-def invalidate_restored_database_state(state):
-    """Discard runtime objects that were hydrated from the replaced database."""
-    state.current_session = None
-    state.memories = {}
 
 @st.cache_resource
 def get_skills_manager():
@@ -293,14 +288,22 @@ def show_sidebar():
             uploaded_db = st.file_uploader("📤 Restore Backup", type=["db"], key="restore_db_uploader")
             if uploaded_db:
                 if st.button("🔄 Restore", key="restore_db_btn", use_container_width=True):
-                    try:
-                        db.restore_from_bytes(uploaded_db.getvalue())
-                    except RestoreValidationError:
+                    runtime = ApplicationRuntime(
+                        current_session=st.session_state.current_session,
+                        memories=st.session_state.memories,
+                    )
+                    restore_result = get_application(
+                        st.session_state.user_id, agents={}, db=db, runtime=runtime,
+                    ).restore_database(uploaded_db.getvalue())
+                    if restore_result.runtime_invalidated:
+                        st.session_state.current_session = runtime.current_session
+                        st.session_state.memories = runtime.memories
+
+                    if restore_result.status == "invalid_backup":
                         st.error("Backup tidak valid atau tidak kompatibel.")
-                    except RestoreOperationError:
+                    elif restore_result.status == "operation_failed":
                         st.error("Database restore could not be completed. Please try again.")
                     else:
-                        invalidate_restored_database_state(st.session_state)
                         st.success("✅ Database restored! Refresh page.")
                         st.rerun()
         
@@ -441,11 +444,12 @@ def show_new_chat():
             st.session_state.new_chat = False
             st.rerun()
 
-def get_application(user_id, agents=None, db=None):
+def get_application(user_id, agents=None, db=None, runtime=None):
     """Build the plain-Python application boundary with host-owned runtime objects."""
     return MultiMindApplication(
         agents=get_agents(user_id) if agents is None else agents,
         runtime_memories=st.session_state.memories,
+        runtime=runtime,
         db=db,
         db_factory=lambda: get_db_manager(user_id),
         # Explicit injection preserves host-level compatibility seams for tests.

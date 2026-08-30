@@ -4,7 +4,6 @@ Global configuration
 import os
 import re
 from pathlib import Path
-import streamlit as st
 
 
 class InvalidUserIdError(ValueError):
@@ -67,6 +66,7 @@ class Config:
         """Get API keys for user"""
         user_id = cls.validate_user_id(user_id)
         try:
+            import streamlit as st
             all_secrets = dict(st.secrets)
             
             if user_id in all_secrets:
