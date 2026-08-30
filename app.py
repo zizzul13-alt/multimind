@@ -3,8 +3,6 @@ MultiMind AI - Multi-Agent Debate System
 Main Streamlit Application
 """
 import streamlit as st
-import uuid
-import json
 import os
 from html import escape
 from datetime import datetime
@@ -17,18 +15,17 @@ from agents.openrouter import OpenRouterAgent
 from agents.huggingface import HuggingFaceAgent
 from agents.remote_agent import RemoteAgent
 from agents.unified_agent import UnifiedAgent
-from providers.base import BaseProvider
 from agents.router import TERMINAL_PROVIDER_FAILURE_TEXT
 from core.debate import DebateOrchestrator
 from core.compressor import PromptCompressor
-from core.memory import get_or_hydrate_session_memory, persist_chat_and_update_memory
+from core.memory import persist_chat_and_update_memory
 from core.file_handler import FileHandler
+from core.application import ChatRequest, MultiMindApplication
 from core.release_gate import ReleaseGate
 from core.skills_manager import SkillsManager
 from core.templates import TemplateManager
 from database.manager import DatabaseManager, RestoreOperationError, RestoreValidationError
 from utils.token_counter import TokenCounter
-from utils.error_handler import error_logger
 from utils.config import Config, InvalidUserIdError
 from utils.identity_state import initialize_identity_state, reset_identity_bound_state
 from ui.foundation import load_css, render_status_badge, card_container
@@ -175,8 +172,7 @@ def show_sidebar():
             new_mode = st.selectbox("Mode", ["coding", "research", "thinking"], key="sidebar_new_session_mode")
             if st.button("Create", key="sidebar_create_session_btn", use_container_width=True):
                 if new_name:
-                    session_id = str(uuid.uuid4())
-                    db.create_session(session_id, new_name, new_mode)
+                    get_application(st.session_state.user_id, agents={}, db=db).create_session(new_name, new_mode)
                     st.success("Created!")
                     st.rerun()
 
@@ -193,7 +189,7 @@ def show_sidebar():
             btn_kind = "primary" if is_active else "secondary"
             if st.button(label, key=unique_key, use_container_width=True, type=btn_kind, help=s_name):
                 st.session_state.current_session = s
-                get_or_hydrate_session_memory(st.session_state.memories, db, s['id'])
+                get_application(st.session_state.user_id, agents={}, db=db).select_session(s)
                 # Switch to workspace view when selecting a session
                 st.session_state.active_navigation = "workspace"
                 st.rerun()
@@ -445,108 +441,38 @@ def show_new_chat():
             st.session_state.new_chat = False
             st.rerun()
 
+def get_application(user_id, agents=None, db=None):
+    """Build the plain-Python application boundary with host-owned runtime objects."""
+    return MultiMindApplication(
+        agents=get_agents(user_id) if agents is None else agents,
+        runtime_memories=st.session_state.memories,
+        db=db,
+        db_factory=lambda: get_db_manager(user_id),
+        # Explicit injection preserves host-level compatibility seams for tests.
+        compressor=PromptCompressor, file_handler=FileHandler,
+        debate_factory=DebateOrchestrator, persist_chat=persist_chat_and_update_memory,
+    )
+
+
 def process_chat(prompt, uploaded_files, context_mode):
-    agents = get_agents(st.session_state.user_id)
-    unified = agents.get("unified")
-    remote = agents.get("remote")
-    gemini = agents.get("gemini")
-    deepseek = agents.get("deepseek")
-    groq = agents.get("groq")
-    cloudflare = agents.get("cloudflare")
-    openrouter = agents.get("openrouter")
-    huggingface = agents.get("huggingface")
-
-    final_prompt = prompt
-    if st.session_state.compressor_enabled and gemini and prompt:
-        try:
-            compression = PromptCompressor.compress(prompt, gemini)
-            final_prompt = compression["compressed"]
-        except:
-            final_prompt = prompt
-
-    file_context = ""
-    if uploaded_files:
-        try:
-            file_results = FileHandler.handle(uploaded_files, gemini)
-            for f in file_results.get("files", []):
-                if "content" in f:
-                    file_context += f"\n--- FILE: {f['filename']} ---\n{f['content']}\n"
-                elif "error" in f:
-                    st.warning(f"{f['filename']}: {f['error']}")
-        except Exception as e:
-            error_logger.log("FILE_UPLOAD_ERROR", f"File upload handling failed: {type(e).__name__}")
-            st.warning("Files could not be processed. Please try again.")
-
-    context = ""
-    if context_mode == "continue" and st.session_state.current_session:
-        memory = st.session_state.memories.get(st.session_state.current_session['id'])
-        if memory:
-            context = memory.get_context()
-    if file_context:
-        context = file_context + "\n" + context
-
-    session_mode = st.session_state.current_session.get('mode', 'coding') if st.session_state.current_session else 'coding'
-    active = st.session_state.active_agents
-    direct_runtime_prompt = final_prompt
-    if context:
-        direct_runtime_prompt = f"CONTEXT:\n{context[:3000]}\n\nTASK:\n{final_prompt}"
-
-    # ===== AGENT ROUTING =====
-    if "unified" in active:
-        response = unified.generate(prompt=direct_runtime_prompt, system_prompt=None, mode=session_mode)
-        debate_result = {
-            "responses": [response],
-            "final_answer": response.get("text", "") if BaseProvider.has_usable_response(response) else TERMINAL_PROVIDER_FAILURE_TEXT,
-            "total_tokens": response.get("tokens", 0),
-            "total_cost": response.get("cost", 0),
-            "status": response.get("status", "error")
-        }
-    elif "remote" in active:
-        response = remote.generate(prompt=direct_runtime_prompt, system_prompt=None, mode=session_mode)
-        debate_result = {
-            "responses": [response],
-            "final_answer": response.get("text", "") if BaseProvider.has_usable_response(response) else TERMINAL_PROVIDER_FAILURE_TEXT,
-            "total_tokens": response.get("tokens", 0),
-            "total_cost": response.get("cost", 0),
-            "status": response.get("status", "error")
-        }
-    else:
-        orchestrator = DebateOrchestrator(
-            gemini_agent=gemini, deepseek_agent=deepseek, groq_agent=groq,
-            cloudflare_agent=cloudflare, openrouter_agent=openrouter,
-            huggingface_agent=huggingface
-        )
-        debate_result = orchestrator.debate(
-            prompt=final_prompt, context=context[:3000], mode=session_mode,
-            rounds=st.session_state.debate_rounds, agents=active,
-            skill=st.session_state.get("selected_skill", "default")
-        )
-
-    if debate_result.get("status") != "success":
+    """Render semantic application results for the current Streamlit host."""
+    session = st.session_state.current_session
+    result = get_application(st.session_state.user_id).execute_chat(ChatRequest(
+        original_prompt=prompt,
+        uploads=uploaded_files or [],
+        context_mode=context_mode,
+        session_id=session["id"] if session else None,
+        session_mode=session.get("mode", "coding") if session else "coding",
+        compressor_enabled=st.session_state.compressor_enabled,
+        active_agents=st.session_state.active_agents,
+        debate_rounds=st.session_state.debate_rounds,
+        selected_skill=st.session_state.get("selected_skill", "default"),
+    ))
+    for warning in result.warnings:
+        st.warning(warning)
+    if result.status != "success":
         st.error(TERMINAL_PROVIDER_FAILURE_TEXT)
         return
-
-    # ===== SAVE TO DATABASE =====
-    if st.session_state.current_session:
-        db = get_db_manager(st.session_state.user_id)
-        chat_data = {
-            "id": str(uuid.uuid4()),
-            "prompt": prompt,
-            "prompt_compressed": json.dumps({"compressed": final_prompt}) if final_prompt != prompt else "",
-            "mode": context_mode,
-            "context_mode": context_mode,
-            "final_answer": debate_result.get("final_answer", ""),
-            "debate_data": json.dumps(debate_result),
-            "tokens_used": debate_result.get("total_tokens", 0),
-            "cost": debate_result.get("total_cost", 0)
-        }
-        persist_chat_and_update_memory(
-            db,
-            st.session_state.current_session['id'],
-            st.session_state.memories,
-            chat_data
-        )
-
     st.session_state.new_chat = False
     st.success("✅ Debate complete!")
     st.rerun()
