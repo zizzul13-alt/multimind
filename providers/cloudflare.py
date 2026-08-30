@@ -1,6 +1,7 @@
 import requests
 from providers.base import BaseProvider
 from utils.token_counter import TokenCounter
+from utils.config import Config
 
 class CloudflareProvider(BaseProvider):
     """Cloudflare Workers AI Provider"""
@@ -59,15 +60,26 @@ class CloudflareProvider(BaseProvider):
             }
 
             url = f"{self.base_url}/{self.account_id}/ai/run/{model}"
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
-            data = response.json()
+            response = requests.post(url, json=payload, headers=headers, timeout=Config.API_TIMEOUT)
+            if not response.ok:
+                self.set_availability(False, f"HTTP {response.status_code}")
+                return self.failure_response("http_status", status_code=response.status_code)
+
+            try:
+                data = response.json()
+            except ValueError:
+                self.set_availability(False, "Malformed response")
+                return self.failure_response("malformed_response")
+            if not isinstance(data, dict):
+                self.set_availability(False, "Malformed response")
+                return self.failure_response("malformed_response")
 
             if data.get("success"):
                 result = data.get("result", {})
-                if isinstance(result, dict):
-                    text = result.get("response", "")
-                else:
-                    text = str(result)
+                text = result.get("response") if isinstance(result, dict) else None
+                if not isinstance(text, str) or not text.strip():
+                    self.set_availability(False, "Empty or malformed response")
+                    return self.failure_response("empty_response")
 
                 self.set_availability(True)
                 return {
@@ -78,24 +90,9 @@ class CloudflareProvider(BaseProvider):
                     "cost": 0.0
                 }
             else:
-                errors = data.get("errors", [{}])
-                error_msg = errors[0].get("message", "Unknown error") if errors else "Unknown error"
-                self.set_availability(False, error_msg)
-                return {
-                    "status": "error",
-                    "text": f"Cloudflare error: {error_msg}",
-                    "agent": self.model_name,
-                    "tokens": 0,
-                    "cost": 0.0
-                }
+                self.set_availability(False, "Provider rejected request")
+                return self.failure_response("provider_error")
 
         except Exception as e:
-            error_msg = str(e)
-            self.set_availability(False, error_msg)
-            return {
-                "status": "error",
-                "text": f"Cloudflare error: {error_msg[:200]}",
-                "agent": self.model_name,
-                "tokens": 0,
-                "cost": 0.0
-            }
+            self.set_availability(False, type(e).__name__)
+            return self.failure_response("network_or_sdk_exception", exception_type=type(e).__name__)

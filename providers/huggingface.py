@@ -2,6 +2,7 @@ import requests
 import time
 from providers.base import BaseProvider
 from utils.token_counter import TokenCounter
+from utils.config import Config
 
 class HuggingFaceProvider(BaseProvider):
     """HuggingFace Inference API Provider"""
@@ -54,17 +55,22 @@ class HuggingFaceProvider(BaseProvider):
                     f"https://api-inference.huggingface.co/models/{model}",
                     headers=headers,
                     json=payload,
-                    timeout=30
+                    timeout=Config.API_TIMEOUT
                 )
 
                 if response.status_code == 200:
-                    result = response.json()
-                    if isinstance(result, list) and len(result) > 0:
-                        text = result[0].get("generated_text", "")
-                    else:
-                        text = str(result)
+                    try:
+                        result = response.json()
+                    except ValueError:
+                        self.set_availability(False, "Malformed response")
+                        return self.failure_response("malformed_response")
+                    text = result[0].get("generated_text") if (
+                        isinstance(result, list)
+                        and result
+                        and isinstance(result[0], dict)
+                    ) else None
 
-                    if text and len(text) > 10:
+                    if isinstance(text, str) and text.strip():
                         self.set_availability(True)
                         return {
                             "status": "success",
@@ -73,6 +79,8 @@ class HuggingFaceProvider(BaseProvider):
                             "tokens": len(text.split()),
                             "cost": 0.0
                         }
+                    self.set_availability(False, "Malformed or empty response")
+                    return self.failure_response("malformed_response")
 
                 if response.status_code == 503:
                     time.sleep(3)
@@ -82,25 +90,23 @@ class HuggingFaceProvider(BaseProvider):
                     time.sleep(5)
                     continue
 
+                if 400 <= response.status_code < 500:
+                    self.set_availability(False, f"HTTP {response.status_code}")
+                    return self.failure_response("http_status", status_code=response.status_code)
+
+                if 500 <= response.status_code < 600:
+                    time.sleep(3)
+                    continue
+
+                self.set_availability(False, f"HTTP {response.status_code}")
+                return self.failure_response("http_status", status_code=response.status_code)
+
             except Exception as e:
                 if attempt < 2:
                     time.sleep(2)
                     continue
-                error_msg = str(e)
-                self.set_availability(False, error_msg)
-                return {
-                    "status": "error",
-                    "text": f"HF error: {error_msg[:100]}",
-                    "agent": self.model_name,
-                    "tokens": 0,
-                    "cost": 0.0
-                }
+                self.set_availability(False, type(e).__name__)
+                return self.failure_response("network_or_sdk_exception", exception_type=type(e).__name__)
 
-        self.set_availability(False, "HF timeout after 3 retries")
-        return {
-            "status": "error",
-            "text": "HF timeout after 3 retries",
-            "agent": self.model_name,
-            "tokens": 0,
-            "cost": 0.0
-        }
+        self.set_availability(False, "Retryable provider failure")
+        return self.failure_response("retry_exhausted")

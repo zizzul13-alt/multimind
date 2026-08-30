@@ -10,7 +10,8 @@ from utils.error_handler import error_logger
 from core.release_gate import ReleaseGate
 from core.skills_manager import SkillsManager
 from agents.role_agent import RoleAgent
-from agents.router import ModelRouter
+from agents.router import ModelRouter, TERMINAL_PROVIDER_FAILURE_TEXT
+from providers.base import BaseProvider
 
 
 class DebateOrchestrator:
@@ -123,7 +124,7 @@ class DebateOrchestrator:
                         provider_name = response.get("agent", "Unknown Provider")
                         response["agent"] = f"{agent_inst.role} ({provider_name})"
 
-                        if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                        if BaseProvider.has_usable_response(response):
                             candidates.append({
                                 "role": agent_inst.role,
                                 "provider": provider_name,
@@ -159,7 +160,7 @@ Select the best candidate or generate a final, polished response resolving any r
                         provider_name = response.get("agent", "Unknown Provider")
                         response["agent"] = f"{agent_inst.role} ({provider_name})"
 
-                        if response.get("status") == "success" and response.get("text") and len(response.get("text", "")) > 50:
+                        if BaseProvider.has_usable_response(response):
                             judge_text = response.get("text", "")
 
                     debate_log["responses"].append(response)
@@ -167,9 +168,13 @@ Select the best candidate or generate a final, polished response resolving any r
                     debate_log["total_cost"] += response.get("cost", 0.0)
 
                 except Exception as e:
+                    error_logger.log(
+                        "DEBATE_STAGE_FAILURE",
+                        f"role={agent_inst.role} exception_type={type(e).__name__}"
+                    )
                     debate_log["responses"].append({
                         "status": "error",
-                        "text": str(e)[:100],
+                        "text": "Provider temporarily unavailable. Trying another provider.",
                         "agent": f"{agent_inst.role} (Error)",
                         "tokens": 0,
                         "cost": 0.0
@@ -196,17 +201,16 @@ Select the best candidate or generate a final, polished response resolving any r
                 if not passed:
                     final_answer += f"\n\n---\n**Issues Found:**\n" + "\n".join(issues)
             else:
-                final_answer = candidate_for_gate if candidate_for_gate else "❌ Semua agent gagal merespons. Coba lagi nanti."
+                final_answer = candidate_for_gate if candidate_for_gate else TERMINAL_PROVIDER_FAILURE_TEXT
 
             debate_log["final_answer"] = final_answer
-            debate_log["status"] = "success"
+            debate_log["status"] = "success" if candidates else "error"
             debate_log["end_time"] = datetime.now().isoformat()
 
         except Exception as e:
-            error_msg = str(e)[:200]
-            error_logger.log("DEBATE_ERROR", str(e))
+            error_logger.log("DEBATE_ERROR", f"exception_type={type(e).__name__}")
             debate_log["status"] = "error"
-            debate_log["final_answer"] = f"Error: {error_msg}"
+            debate_log["final_answer"] = TERMINAL_PROVIDER_FAILURE_TEXT
 
         return debate_log
 

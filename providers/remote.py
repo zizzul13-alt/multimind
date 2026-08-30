@@ -1,5 +1,7 @@
 import requests
 from providers.base import BaseProvider
+from utils.config import Config
+from utils.error_handler import error_logger
 
 class RemoteProvider(BaseProvider):
     """Remote Provider calling PythonAnywhere or similar APIs"""
@@ -30,13 +32,22 @@ class RemoteProvider(BaseProvider):
                     "mode": mode,
                     "agent": "gemini"
                 },
-                timeout=30
+                timeout=Config.API_TIMEOUT
             )
 
             if response.status_code == 200:
-                data = response.json()
+                try:
+                    data = response.json()
+                except ValueError:
+                    self.set_availability(False, "Malformed response")
+                    error_logger.log("PROVIDER_FAILURE", "provider=Remote category=malformed_response")
+                    return self.failure_response("malformed_response")
                 self.set_availability(True)
-                text = data.get("response", "")
+                text = data.get("response") if isinstance(data, dict) else None
+                if not isinstance(text, str) or not text.strip():
+                    self.set_availability(False, "Malformed or empty response")
+                    error_logger.log("PROVIDER_FAILURE", "provider=Remote category=malformed_response")
+                    return self.failure_response("malformed_response")
                 return {
                     "status": "success",
                     "text": text,
@@ -45,22 +56,10 @@ class RemoteProvider(BaseProvider):
                     "cost": 0.0
                 }
             else:
-                error_msg = f"API error: {response.status_code}"
-                self.set_availability(False, error_msg)
-                return {
-                    "status": "error",
-                    "text": error_msg,
-                    "agent": "Remote",
-                    "tokens": 0,
-                    "cost": 0.0
-                }
+                self.set_availability(False, f"HTTP {response.status_code}")
+                error_logger.log("PROVIDER_FAILURE", f"provider=Remote category=http_status status_code={response.status_code}")
+                return self.failure_response("http_status", status_code=response.status_code)
         except Exception as e:
-            error_msg = str(e)
-            self.set_availability(False, error_msg)
-            return {
-                "status": "error",
-                "text": f"Remote error: {error_msg[:100]}",
-                "agent": "Remote",
-                "tokens": 0,
-                "cost": 0.0
-            }
+            self.set_availability(False, type(e).__name__)
+            error_logger.log("PROVIDER_FAILURE", f"provider=Remote category=network_or_sdk_exception exception_type={type(e).__name__}")
+            return self.failure_response("network_or_sdk_exception", exception_type=type(e).__name__)

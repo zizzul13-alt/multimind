@@ -9,6 +9,8 @@ from agents.cloudflare import CloudflareAgent
 from agents.openrouter import OpenRouterAgent
 from agents.huggingface import HuggingFaceAgent
 from agents.deepseek import DeepSeekAgent
+from providers.base import BaseProvider
+from agents.router import TERMINAL_PROVIDER_FAILURE_TEXT, _log_provider_failure
 
 class UnifiedAgent:
     """Handle semua AI provider dalam 1 class"""
@@ -87,27 +89,36 @@ class UnifiedAgent:
                 # Cek rate limit
                 if response.get("status") == "error":
                     error_text = response.get("text", "")
+                    failure_category = response.get("failure_category", "provider_error")
                     
                     # Deteksi rate limit (429)
                     if "429" in error_text or "rate" in error_text.lower():
                         self.stats[name]["rate_limited"] = True
                         self.stats[name]["last_error"] = "Rate limited"
+                        _log_provider_failure(name, response)
                         continue  # Skip ke provider berikutnya
                     
                     # Error biasa → skip
                     self.stats[name]["error"] += 1
-                    self.stats[name]["last_error"] = error_text[:100]
+                    self.stats[name]["last_error"] = failure_category
+                    _log_provider_failure(name, response)
                     continue
                 
                 # Sukses!
-                if response.get("status") == "success":
+                if BaseProvider.has_usable_response(response):
                     self.stats[name]["success"] += 1
                     response["agent"] = name
                     return response
+
+                self.stats[name]["error"] += 1
+                self.stats[name]["last_error"] = "Empty or malformed response"
+                _log_provider_failure(name, {"failure_category": "empty_response"})
+                continue
                     
             except Exception as e:
                 self.stats[name]["error"] += 1
-                self.stats[name]["last_error"] = str(e)[:100]
+                self.stats[name]["last_error"] = type(e).__name__
+                _log_provider_failure(name, exception_type=type(e).__name__)
                 continue
         
         # Reset rate limit flags setelah semua gagal
@@ -116,7 +127,7 @@ class UnifiedAgent:
         
         return {
             "status": "error",
-            "text": "❌ Semua provider gagal",
+            "text": TERMINAL_PROVIDER_FAILURE_TEXT,
             "agent": "Unified",
             "tokens": 0,
             "cost": 0

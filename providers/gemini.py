@@ -1,6 +1,7 @@
 import google.generativeai as genai
 from providers.base import BaseProvider
 from utils.token_counter import TokenCounter
+from utils.config import Config
 
 class GeminiProvider(BaseProvider):
     """Google Gemini AI Provider"""
@@ -33,8 +34,14 @@ class GeminiProvider(BaseProvider):
             }
         try:
             full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-            response = self.model.generate_content(full_prompt)
-            text = response.text if response.text else "No response"
+            response = self.model.generate_content(
+                full_prompt,
+                request_options={"timeout": Config.API_TIMEOUT}
+            )
+            text = response.text
+            if not isinstance(text, str) or not text.strip():
+                self.set_availability(False, "Empty response")
+                return self.failure_response("empty_response")
             self.set_availability(True)
             return {
                 "status": "success",
@@ -44,15 +51,8 @@ class GeminiProvider(BaseProvider):
                 "cost": 0.0
             }
         except Exception as e:
-            error_msg = str(e)
-            self.set_availability(False, error_msg)
-            return {
-                "status": "error",
-                "text": f"Gemini error: {error_msg[:200]}",
-                "agent": f"Gemini ({self.model_name})",
-                "tokens": 0,
-                "cost": 0.0
-            }
+            self.set_availability(False, type(e).__name__)
+            return self.failure_response("network_or_sdk_exception", exception_type=type(e).__name__)
 
     def compress_prompt(self, original_prompt: str) -> dict:
         return {

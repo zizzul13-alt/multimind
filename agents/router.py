@@ -1,4 +1,19 @@
 from providers.base import BaseProvider
+from utils.error_handler import error_logger
+
+
+TERMINAL_PROVIDER_FAILURE_TEXT = "AI providers are temporarily unavailable. Please try again."
+
+
+def _log_provider_failure(name, response=None, exception_type=None):
+    category = response.get("failure_category", "provider_error") if isinstance(response, dict) else "provider_exception"
+    details = f"provider={name} category={category}"
+    if isinstance(response, dict) and response.get("status_code") is not None:
+        details += f" status_code={response['status_code']}"
+    safe_exception_type = exception_type or (response.get("exception_type") if isinstance(response, dict) else None)
+    if safe_exception_type:
+        details += f" exception_type={safe_exception_type}"
+    error_logger.log("PROVIDER_FAILURE", details)
 
 class ModelRouter:
     """
@@ -51,29 +66,38 @@ class ModelRouter:
 
                 if response.get("status") == "error":
                     error_text = response.get("text", "")
+                    failure_category = response.get("failure_category", "provider_error")
 
                     if "429" in error_text or "rate" in error_text.lower():
                         self.stats[name]["rate_limited"] = True
                         self.stats[name]["last_error"] = "Rate limited"
                         provider.set_availability(False, "Rate limited")
+                        _log_provider_failure(name, response)
                         continue
 
                     self.stats[name]["error"] += 1
-                    self.stats[name]["last_error"] = error_text[:100]
-                    provider.set_availability(False, error_text[:100])
+                    self.stats[name]["last_error"] = failure_category
+                    provider.set_availability(False, failure_category)
+                    _log_provider_failure(name, response)
                     continue
 
-                if response.get("status") == "success":
+                if BaseProvider.has_usable_response(response):
                     self.stats[name]["success"] += 1
                     self.stats[name]["rate_limited"] = False
                     provider.set_availability(True)
                     return response
 
-            except Exception as e:
-                error_msg = str(e)
                 self.stats[name]["error"] += 1
-                self.stats[name]["last_error"] = error_msg[:100]
-                provider.set_availability(False, error_msg[:100])
+                self.stats[name]["last_error"] = "Empty or malformed response"
+                provider.set_availability(False, "Empty or malformed response")
+                _log_provider_failure(name, {"failure_category": "empty_response"})
+                continue
+
+            except Exception as e:
+                self.stats[name]["error"] += 1
+                self.stats[name]["last_error"] = type(e).__name__
+                provider.set_availability(False, type(e).__name__)
+                _log_provider_failure(name, exception_type=type(e).__name__)
                 continue
 
         # Reset rate limit flags after all failed
@@ -85,7 +109,7 @@ class ModelRouter:
 
         return {
             "status": "error",
-            "text": "❌ Semua provider gagal",
+            "text": TERMINAL_PROVIDER_FAILURE_TEXT,
             "agent": "Router",
             "tokens": 0,
             "cost": 0.0

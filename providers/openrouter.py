@@ -1,6 +1,7 @@
 from openai import OpenAI
 from providers.base import BaseProvider
 from utils.token_counter import TokenCounter
+from utils.config import Config
 
 class OpenRouterProvider(BaseProvider):
     """OpenRouter API Provider (Access free models)"""
@@ -16,7 +17,9 @@ class OpenRouterProvider(BaseProvider):
         try:
             self.client = OpenAI(
                 api_key=api_key,
-                base_url="https://openrouter.ai/api/v1"
+                base_url="https://openrouter.ai/api/v1",
+                timeout=Config.API_TIMEOUT,
+                max_retries=0,
             )
             self.models = {
                 "coding": "qwen/qwen3-coder:free",
@@ -60,7 +63,14 @@ class OpenRouterProvider(BaseProvider):
                 }
             )
 
-            text = response.choices[0].message.content
+            try:
+                text = response.choices[0].message.content
+            except (AttributeError, IndexError, TypeError):
+                self.set_availability(False, "Malformed response")
+                return self.failure_response("malformed_response")
+            if not isinstance(text, str) or not text.strip():
+                self.set_availability(False, "Empty response")
+                return self.failure_response("empty_response")
             self.set_availability(True)
 
             return {
@@ -72,12 +82,5 @@ class OpenRouterProvider(BaseProvider):
             }
 
         except Exception as e:
-            error_msg = str(e)
-            self.set_availability(False, error_msg)
-            return {
-                "status": "error",
-                "text": f"OpenRouter error: {error_msg[:150]}",
-                "agent": self.model_name,
-                "tokens": 0,
-                "cost": 0.0
-            }
+            self.set_availability(False, type(e).__name__)
+            return self.failure_response("network_or_sdk_exception", exception_type=type(e).__name__)
