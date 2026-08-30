@@ -1,6 +1,7 @@
 from openai import OpenAI
 from providers.base import BaseProvider
 from utils.token_counter import TokenCounter
+from utils.config import Config
 
 class GroqProvider(BaseProvider):
     """Groq API Provider"""
@@ -16,7 +17,9 @@ class GroqProvider(BaseProvider):
         try:
             self.client = OpenAI(
                 api_key=api_key,
-                base_url="https://api.groq.com/openai/v1"
+                base_url="https://api.groq.com/openai/v1",
+                timeout=Config.API_TIMEOUT,
+                max_retries=0,
             )
             self.model = "meta-llama/llama-4-scout-17b-16e-instruct"
             self.model_name = "Groq (Llama 4 Scout)"
@@ -49,7 +52,14 @@ class GroqProvider(BaseProvider):
                 temperature=0.7
             )
 
-            text = response.choices[0].message.content
+            try:
+                text = response.choices[0].message.content
+            except (AttributeError, IndexError, TypeError):
+                self.set_availability(False, "Malformed response")
+                return self.failure_response("malformed_response")
+            if not isinstance(text, str) or not text.strip():
+                self.set_availability(False, "Empty response")
+                return self.failure_response("empty_response")
             self.set_availability(True)
 
             return {
@@ -61,12 +71,5 @@ class GroqProvider(BaseProvider):
             }
 
         except Exception as e:
-            error_msg = str(e)
-            self.set_availability(False, error_msg)
-            return {
-                "status": "error",
-                "text": f"[Groq unavailable: {error_msg[:100]}]",
-                "agent": self.model_name,
-                "tokens": 0,
-                "cost": 0.0
-            }
+            self.set_availability(False, type(e).__name__)
+            return self.failure_response("network_or_sdk_exception", exception_type=type(e).__name__)
