@@ -14,8 +14,10 @@ from providers.gemini import GeminiProvider
 from providers.groq import GroqProvider
 from providers.openrouter import OpenRouterProvider
 from providers.deepseek import DeepSeekProvider
+from providers.cloudflare import CloudflareProvider
 from providers.huggingface import HuggingFaceProvider
 from providers.remote import RemoteProvider
+from core.memory import SessionMemory
 from utils.config import Config
 
 
@@ -183,6 +185,43 @@ def test_gemini_request_receives_timeout(monkeypatch):
     assert captured["request_options"] == {"timeout": Config.API_TIMEOUT}
 
 
+@pytest.mark.parametrize(
+    ("provider_factory", "post_target", "response"),
+    [
+        (
+            lambda: CloudflareProvider("key", "account"),
+            "providers.cloudflare.requests.post",
+            SimpleNamespace(ok=True, status_code=200, json=lambda: {"success": True, "result": {"response": "usable"}}),
+        ),
+        (
+            lambda: HuggingFaceProvider("key"),
+            "providers.huggingface.requests.post",
+            SimpleNamespace(status_code=200, json=lambda: [{"generated_text": "usable"}]),
+        ),
+        (
+            lambda: RemoteProvider("https://remote.example"),
+            "providers.remote.requests.post",
+            SimpleNamespace(status_code=200, json=lambda: {"response": "usable"}),
+        ),
+    ],
+    ids=["cloudflare", "huggingface", "remote"],
+)
+def test_requests_providers_pass_configured_timeout(monkeypatch, provider_factory, post_target, response):
+    captured = {}
+
+    def post(*args, **kwargs):
+        captured["args"] = args
+        captured["kwargs"] = kwargs
+        return response
+
+    monkeypatch.setattr(post_target, post)
+
+    result = provider_factory().generate("prompt")
+
+    assert result["status"] == "success"
+    assert captured["kwargs"]["timeout"] == Config.API_TIMEOUT
+
+
 def test_remote_malformed_response_is_not_success(monkeypatch):
     provider = RemoteProvider("https://remote.example")
     monkeypatch.setattr(
@@ -263,7 +302,7 @@ def test_valid_candidate_survives_exhausted_judge_routes():
     assert result["responses"][-1]["status"] == "error"
 
 
-def _terminal_app_state(active_agents):
+def _terminal_app_state(active_agents, memory):
     class SessionState(SimpleNamespace):
         def get(self, key, default=None):
             return getattr(self, key, default)
@@ -275,13 +314,18 @@ def _terminal_app_state(active_agents):
         active_agents=active_agents,
         debate_rounds=1,
         selected_skill="default",
-        memories={},
+        memories={"session-1": memory},
     )
 
 
 def _assert_process_chat_terminal_failure(monkeypatch, agents, active_agents):
+    sentinel = SessionMemory()
+    sentinel.add_chat("sentinel prompt", "sentinel response")
+    original_short_term = list(sentinel.short_term)
+    original_long_term = sentinel.long_term
+    original_decisions = list(sentinel.decisions)
     ui = SimpleNamespace(
-        session_state=_terminal_app_state(active_agents),
+        session_state=_terminal_app_state(active_agents, sentinel),
         error=Mock(),
         success=Mock(),
         warning=Mock(),
@@ -304,6 +348,10 @@ def _assert_process_chat_terminal_failure(monkeypatch, agents, active_agents):
         "SUPER_SECRET_PROVIDER_INTERNAL_ERROR" not in str(call)
         for call in (*ui.error.call_args_list, *persist.call_args_list)
     )
+    assert ui.session_state.memories["session-1"] is sentinel
+    assert sentinel.short_term == original_short_term
+    assert sentinel.long_term == original_long_term
+    assert sentinel.decisions == original_decisions
 
 
 def test_process_chat_unified_terminal_failure_skips_persistence(monkeypatch):

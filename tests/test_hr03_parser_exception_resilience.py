@@ -1,10 +1,11 @@
-import ast
 import sys
 import types
 from io import BytesIO
-from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+import app
 from core.file_handler import FileHandler
 
 
@@ -48,6 +49,27 @@ def test_pdf_primary_failure_uses_pypdf2_fallback(monkeypatch):
     result = _result_for(Upload("document.pdf"))
 
     assert result["files"][0]["content"] == "fallback text\n"
+
+
+def test_pdf_primary_parser_does_not_catch_keyboard_interrupt(monkeypatch):
+    fallback_calls = []
+
+    class InterruptingPdfPlumber:
+        @staticmethod
+        def open(file):
+            raise KeyboardInterrupt("stop parsing")
+
+    monkeypatch.setitem(sys.modules, "pdfplumber", InterruptingPdfPlumber)
+    monkeypatch.setitem(
+        sys.modules,
+        "PyPDF2",
+        types.SimpleNamespace(PdfReader=lambda file: fallback_calls.append(file)),
+    )
+
+    with pytest.raises(KeyboardInterrupt):
+        _result_for(Upload("document.pdf"))
+
+    assert fallback_calls == []
 
 
 def test_pdf_both_parser_failures_return_sanitized_error(monkeypatch):
@@ -140,35 +162,57 @@ def test_invalid_binary_is_rejected_before_parser_dispatch():
     assert result["files"][0]["error"] == "Invalid or mismatched binary file"
 
 
-def test_process_chat_upload_block_surfaces_errors_and_keeps_content():
-    source = Path("app.py").read_text(encoding="utf-8")
-    module = ast.parse(source)
-    process_chat = next(node for node in module.body if isinstance(node, ast.FunctionDef) and node.name == "process_chat")
-    upload_block = next(
-        node for node in process_chat.body
-        if isinstance(node, ast.If) and isinstance(node.test, ast.Name) and node.test.id == "uploaded_files"
-    )
-    function = ast.FunctionDef(
-        name="run_upload_block",
-        args=ast.arguments(posonlyargs=[], args=[ast.arg(arg="uploaded_files"), ast.arg(arg="gemini")], vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]),
-        body=[ast.Assign(targets=[ast.Name(id="file_context", ctx=ast.Store())], value=ast.Constant(value="")), *upload_block.body, ast.Return(value=ast.Name(id="file_context", ctx=ast.Load()))],
-        decorator_list=[],
-    )
-    compiled = ast.fix_missing_locations(ast.Module(body=[function], type_ignores=[]))
+def test_process_chat_upload_block_surfaces_errors_and_keeps_content(monkeypatch):
+    class SessionState(types.SimpleNamespace):
+        def get(self, key, default=None):
+            return getattr(self, key, default)
+
+    captured = {}
+
+    class RecordingOrchestrator:
+        def __init__(self, **_agents):
+            pass
+
+        def debate(self, **kwargs):
+            captured.update(kwargs)
+            return {
+                "status": "success", "final_answer": "usable answer",
+                "total_tokens": 1, "total_cost": 0.0,
+            }
 
     warnings = []
-    namespace = {
-        "FileHandler": types.SimpleNamespace(handle=lambda files, agent: {"files": [
-            {"filename": "good.txt", "content": "usable"},
-            {"filename": "bad.pdf", "error": "File could not be read."},
-        ]}),
-        "st": types.SimpleNamespace(warning=warnings.append),
-        "error_logger": types.SimpleNamespace(log=lambda *args, **kwargs: None),
-    }
-    exec(compile(compiled, "app.py", "exec"), namespace)
+    ui = types.SimpleNamespace(
+        session_state=SessionState(
+            user_id="test-user",
+            compressor_enabled=False,
+            current_session={"id": "session-1", "mode": "coding"},
+            active_agents=["cloudflare"],
+            debate_rounds=1,
+            selected_skill="default",
+            memories={"session-1": types.SimpleNamespace(get_context=lambda: "prior context")},
+        ),
+        warning=warnings.append,
+        error=lambda _message: None,
+        success=lambda _message: None,
+        rerun=lambda: None,
+    )
+    agents = {name: None for name in (
+        "unified", "remote", "gemini", "deepseek", "groq", "cloudflare",
+        "openrouter", "huggingface",
+    )}
+    agents["cloudflare"] = object()
+    parser = patch("core.file_handler.pd.read_excel", side_effect=RuntimeError("internal /secret"))
+    monkeypatch.setattr(app, "st", ui)
+    monkeypatch.setattr(app, "get_agents", lambda _user_id: agents)
+    monkeypatch.setattr(app, "DebateOrchestrator", RecordingOrchestrator)
+    monkeypatch.setattr(app, "get_db_manager", lambda _user_id: object())
+    monkeypatch.setattr(app, "persist_chat_and_update_memory", lambda *_args: True)
 
-    context = namespace["run_upload_block"]([object()], None)
+    with patch.object(FileHandler, "_is_valid_binary_candidate", return_value=True), parser as read_excel:
+        app.process_chat("prompt", [Upload("good.txt", b"usable"), Upload("bad.xlsx")], "continue")
 
-    assert "--- FILE: good.txt ---" in context
-    assert "usable" in context
-    assert warnings == ["bad.pdf: File could not be read."]
+    read_excel.assert_called_once()
+    assert "--- FILE: good.txt ---\nusable" in captured["context"]
+    assert "prior context" in captured["context"]
+    assert warnings == [f"bad.xlsx: {FileHandler.PARSER_ERROR_MESSAGES['excel']}"]
+    assert all("secret" not in warning for warning in warnings)
