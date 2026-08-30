@@ -17,6 +17,8 @@ from agents.openrouter import OpenRouterAgent
 from agents.huggingface import HuggingFaceAgent
 from agents.remote_agent import RemoteAgent
 from agents.unified_agent import UnifiedAgent
+from providers.base import BaseProvider
+from agents.router import TERMINAL_PROVIDER_FAILURE_TEXT
 from core.debate import DebateOrchestrator
 from core.compressor import PromptCompressor
 from core.memory import get_or_hydrate_session_memory, persist_chat_and_update_memory
@@ -491,7 +493,7 @@ def process_chat(prompt, uploaded_files, context_mode):
         response = unified.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
         debate_result = {
             "responses": [response],
-            "final_answer": response.get("text", ""),
+            "final_answer": response.get("text", "") if BaseProvider.has_usable_response(response) else TERMINAL_PROVIDER_FAILURE_TEXT,
             "total_tokens": response.get("tokens", 0),
             "total_cost": response.get("cost", 0),
             "status": response.get("status", "error")
@@ -500,7 +502,7 @@ def process_chat(prompt, uploaded_files, context_mode):
         response = remote.generate(prompt=final_prompt, system_prompt=None, mode=session_mode)
         debate_result = {
             "responses": [response],
-            "final_answer": response.get("text", ""),
+            "final_answer": response.get("text", "") if BaseProvider.has_usable_response(response) else TERMINAL_PROVIDER_FAILURE_TEXT,
             "total_tokens": response.get("tokens", 0),
             "total_cost": response.get("cost", 0),
             "status": response.get("status", "error")
@@ -516,6 +518,10 @@ def process_chat(prompt, uploaded_files, context_mode):
             rounds=st.session_state.debate_rounds, agents=active,
             skill=st.session_state.get("selected_skill", "default")
         )
+
+    if debate_result.get("status") != "success":
+        st.error(TERMINAL_PROVIDER_FAILURE_TEXT)
+        return
 
     # ===== SAVE TO DATABASE =====
     if st.session_state.current_session:
