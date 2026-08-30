@@ -1,7 +1,10 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
+import streamlit as st
 
+import app
 from utils.config import Config, InvalidUserIdError
 from utils.identity_state import reset_identity_bound_state
 
@@ -84,3 +87,47 @@ def test_identity_transition_removes_sensitive_state_and_keeps_presentation_stat
     assert state["active_navigation"] == "theme_studio"
     assert state["active_archetype"] == "command_center"
     assert state["theme_studio_draft"] == {"color": "#123456"}
+
+
+def test_login_transition_from_alice_to_bob_does_not_reuse_alice_runtime_state_or_storage(tmp_path, monkeypatch):
+    """Exercise the login boundary, rather than only the reset helper."""
+    monkeypatch.setattr(Config, "DB_DIR", str(tmp_path / "data"))
+    alice_database = app.get_db_manager("alice")
+    alice_database.create_session("alice-session", "Alice private session")
+
+    st.session_state.clear()
+    st.session_state.update({
+        "user": "Alice",
+        "user_id": "alice",
+        "current_session": {"id": "alice-session"},
+        "sessions": {"alice-session": {"prompt": "Alice secret"}},
+        "memories": {"alice-session": "Alice private memory"},
+        "prompt_main": "Alice private draft",
+        "last_generated": "Alice private result",
+        "new_chat_files": ["Alice upload"],
+        "active_theme": "midnight",
+    })
+
+    try:
+        with patch.object(app, "card_container"), \
+             patch.object(app.st, "subheader"), \
+             patch.object(app.st, "divider"), \
+             patch.object(app.st, "text_input", return_value="Bob"), \
+             patch.object(app.st, "button", return_value=True), \
+             patch.object(app.st, "rerun") as rerun:
+            app.show_login_page()
+
+        assert st.session_state.user == "Bob"
+        assert st.session_state.user_id == "bob"
+        assert st.session_state.current_session is None
+        assert st.session_state.sessions == {}
+        assert st.session_state.memories == {}
+        assert st.session_state.prompt_main == ""
+        assert st.session_state.last_generated == ""
+        assert "new_chat_files" not in st.session_state
+        assert st.session_state.active_theme == "midnight"
+        assert app.get_db_manager(st.session_state.user_id).get_sessions() == []
+        assert [session["name"] for session in alice_database.get_sessions()] == ["Alice private session"]
+        rerun.assert_called_once()
+    finally:
+        st.session_state.clear()
