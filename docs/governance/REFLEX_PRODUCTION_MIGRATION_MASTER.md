@@ -138,6 +138,22 @@ Selected model: **B — One Master Brief + serial PR/bundle execution.**
 - One long continuous implementation branch with only commit checkpoints is not the canonical model because it weakens review and rollback clarity.
 - This execution-model lock does NOT itself authorize Codex or production cutover. Codex still requires explicit `[4]`/user authorization; production cutover still requires the Final Governor Migration Gate.
 
+### Serial branch / PR discipline — LOCKED
+
+- RJ-N starts from the latest accepted migration baseline produced by the preceding accepted bundle/checkpoint.
+- Only one implementation bundle is active at a time under the canonical migration flow.
+- Do not implement RJ-(N+1) in parallel with an unaccepted RJ-N.
+- Every PR or reviewable change package must identify its starting commit/baseline.
+- Changes must remain attributable to the owning RJ bundle; downstream work must not hide or absorb upstream defects.
+- Governor acceptance of the current bundle precedes progression to RJ-(N+1).
+- When repository merge/rebase drift occurs between accepted bundles, reconcile that drift before beginning the next implementation bundle.
+- When a bundle changes repository code/configuration/artifacts that need integration, use a separately reviewable PR/change package rather than accumulating the whole migration into one branch.
+- A bundle that genuinely requires no repository change does not need a meaningless code PR. RJ-0 may consist of reconciliation/census/evidence only; later proof-heavy bundles may likewise produce evidence/deployment artifacts rather than feature code when appropriate.
+- The canonical unit is therefore a reviewable **change/evidence package**, with a PR required when repository changes need to be merged.
+
+Canonical progression:
+`RJ-0 → Governor acceptance → RJ-1 package/PR → STOP → Governor acceptance → accepted integration → RJ-2 from that accepted baseline → ... → RJ-6 → Final Governor Migration Gate`.
+
 ## RJ-0 — Reconcile / Freeze / Parity Census — LOCKED
 
 RJ-0 is the execution-start reconciliation and denominator freeze. It is not a rerun of closed platform research.
