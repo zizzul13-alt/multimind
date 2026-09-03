@@ -138,6 +138,25 @@ Selected model: **B — One Master Brief + serial PR/bundle execution.**
 - One long continuous implementation branch with only commit checkpoints is not the canonical model because it weakens review and rollback clarity.
 - This execution-model lock does NOT itself authorize Codex or production cutover. Codex still requires explicit `[4]`/user authorization; production cutover still requires the Final Governor Migration Gate.
 
+## Production user journey / Theme Studio — LOCKED
+
+Theme Studio is a first-class production user surface in the intended MultiMind journey. It is not merely an internal Design-DNA research/tooling surface and must not be silently deferred from the Reflex migration.
+
+Locked intended journey:
+`LOGIN → SELECT THEME + THEME STUDIO → APPLY → MULTIMIND + THEME STUDIO`
+
+Required migration behavior includes:
+- theme selection after login.
+- Theme Studio access in the pre-MultiMind selection/studio stage.
+- applying the selected theme.
+- entering MultiMind with the applied theme.
+- preserving/applying the selected theme across the handoff as required by the production behavior.
+- Theme Studio remaining accessible from the MultiMind experience.
+
+Theme selection, Theme Studio, apply-theme behavior, theme-to-MultiMind handoff, and MultiMind-to-Theme-Studio access are therefore required production parity surfaces for the Reflex migration.
+
+Design-DNA research/specification work must not be conflated with the production Theme Studio surface. This lock does not create or imply a separate "Design machinery" subsystem.
+
 ## RJ-1 stable scope
 
 RJ-1 is not merely a `list_sessions()` patch. Production presentation currently contains persistence/configuration coupling that must be replaced by narrow presentation-independent use-case seams.
@@ -195,6 +214,7 @@ Do not create abstraction merely for architectural aesthetics. A new seam is jus
 
 - RJ-1: generic config/secrets portability.
 - RJ-1: production application read/export seams and shared composition root.
+- RJ-3: preserve the locked Theme Studio production journey and functional parity.
 - RJ-4: exact durable production storage/runtime deployment contract.
 - RJ-4/RJ-6: production restart/recreate persistence proof.
 - RJ-6: explicit rollback drill.
