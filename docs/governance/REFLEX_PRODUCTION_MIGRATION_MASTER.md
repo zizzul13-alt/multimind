@@ -100,7 +100,7 @@ Status: ACC KEEP MASTER.
 Roro Jonggrang means one inherited migration program executed serially through hard bundle gates. It does NOT mean a one-shot uncontrolled rewrite.
 
 Canonical chain:
-1. RJ-0 — Reconcile / Freeze
+1. RJ-0 — Reconcile / Freeze / Parity Census
 2. RJ-1 — Portability + Application Boundary
 3. RJ-2 — Reflex Production Host
 4. RJ-3 — Functional Presentation Parity
@@ -137,6 +137,100 @@ Selected model: **B — One Master Brief + serial PR/bundle execution.**
 - One mega-session/mega-PR for the full migration is rejected as the canonical execution model.
 - One long continuous implementation branch with only commit checkpoints is not the canonical model because it weakens review and rollback clarity.
 - This execution-model lock does NOT itself authorize Codex or production cutover. Codex still requires explicit `[4]`/user authorization; production cutover still requires the Final Governor Migration Gate.
+
+## RJ-0 — Reconcile / Freeze / Parity Census — LOCKED
+
+RJ-0 is the execution-start reconciliation and denominator freeze. It is not a rerun of closed platform research.
+
+Required work:
+1. Reconcile actual current production `main` HEAD.
+2. Compare current repository state against this Governor Master and inherited closed evidence.
+3. Distinguish governance/documentation-only drift from implementation drift.
+4. Detect material repository drift that affects locked migration boundaries or assumptions.
+5. Inventory the actual production-facing user journey and capabilities present at execution start.
+6. Freeze the RJ-3 functional parity denominator from that census plus explicitly locked intended migration requirements.
+7. Record the exact starting commit.
+
+RJ-0 must distinguish two categories rather than falsifying parity:
+- capability/surface already present in the production implementation → existing baseline behavior to preserve/migrate.
+- explicitly locked intended production requirement not yet fully implemented in the Streamlit baseline → migration requirement/gap, not falsely described as existing parity.
+
+Minimum census scope includes:
+- locked journey: `LOGIN → SELECT THEME + THEME STUDIO → APPLY → MULTIMIND + THEME STUDIO`.
+- identity/login/logout.
+- session creation/listing/selection/history.
+- chat execution.
+- continue/standalone context behavior.
+- session mode.
+- compressor.
+- active-agent selection.
+- debate rounds.
+- selected skill.
+- uploads.
+- busy/duplicate-run behavior.
+- warnings/errors.
+- final answer/debate rendering.
+- token/cost rendering where production exposes it.
+- backup/restore.
+- mobile/tablet/browser production usability surfaces.
+
+RJ-0 output must record:
+- CURRENT HEAD.
+- MASTER COMPATIBILITY.
+- PRODUCTION-FACING CAPABILITY CENSUS.
+- RJ-3 PARITY DENOMINATOR.
+- DRIFT = YES/NO, with classification if YES.
+
+STOP condition:
+If current implementation drift materially invalidates a locked architecture assumption or closed evidence, do not silently adapt the migration. STOP for Governor review.
+
+## Standard RJ bundle completion evidence — LOCKED
+
+Every implementation bundle RJ-1 through RJ-6 must end with a standardized completion report/evidence package and STOP before the next bundle begins.
+
+Required report structure:
+
+### BASE
+- starting commit.
+- branch / PR or reviewable change package.
+- inherited previous RJ PASS/checkpoint.
+
+### IMPLEMENTATION
+- files changed.
+- contracts changed.
+- dependencies changed.
+- explicitly preserved/non-changed components where relevant.
+
+### VERIFICATION
+- targeted tests.
+- adversarial tests/review appropriate to the bundle.
+- full regression.
+- runtime/browser/deployment proof where applicable.
+
+### DIFF AUDIT
+- unexpected changes.
+- DB/schema changes.
+- core/provider changes.
+- dependency/version drift.
+
+Any unexpected DB schema, core/provider, or framework-version change requires explicit explanation and must not be normalized as incidental migration work.
+
+### RESIDUALS
+- blockers.
+- non-blockers.
+- deferred items.
+- scope discoveries classified under the locked A/B/C/D scope law.
+
+### VERDICT
+One of:
+- PASS.
+- FAIL.
+- GOVERNOR_REVIEW_REQUIRED.
+
+### STOP
+Do not begin RJ-(N+1) until the current bundle has been reviewed/accepted under the serial execution model.
+
+The purpose of the standardized report is to preserve comparable evidence across bundles and avoid repeating migration research/interrogation from zero at every checkpoint.
 
 ## Production user journey / Theme Studio — LOCKED
 
