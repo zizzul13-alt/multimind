@@ -124,6 +124,20 @@ A discovery during implementation does not automatically expand scope:
 - Nice refactor → reject/defer.
 - New evidence invalidating a closed assumption → STOP for Governor review.
 
+### Implementation execution model — LOCKED
+Selected model: **B — One Master Brief + serial PR/bundle execution.**
+
+- One cumulative Roro Jonggrang Master Implementation Brief governs the entire RJ-0 → RJ-6 campaign.
+- Do not regenerate/re-research the migration architecture from zero for every bundle.
+- Implementation nevertheless proceeds through separate serial bundle checkpoints.
+- Each implementation bundle must end with its own report/evidence and STOP for Governor review before the next implementation bundle proceeds.
+- Prefer a separately reviewable PR/change package per implementation bundle rather than one mega-PR spanning RJ-1 through RJ-6.
+- RJ-0 is reconciliation/freeze rather than a feature implementation bundle; it may feed the first implementation package without requiring a meaningless code PR when no code changes are necessary.
+- A later bundle may not silently repair an earlier failed bundle; ownership returns to the earlier bundle and its verification is rerun.
+- One mega-session/mega-PR for the full migration is rejected as the canonical execution model.
+- One long continuous implementation branch with only commit checkpoints is not the canonical model because it weakens review and rollback clarity.
+- This execution-model lock does NOT itself authorize Codex or production cutover. Codex still requires explicit `[4]`/user authorization; production cutover still requires the Final Governor Migration Gate.
+
 ## RJ-1 stable scope
 
 RJ-1 is not merely a `list_sessions()` patch. Production presentation currently contains persistence/configuration coupling that must be replaced by narrow presentation-independent use-case seams.
