@@ -34,6 +34,28 @@ Codex should begin at:
 
 Historical/raw files are consulted only when implementation needs provenance, lineage, supersession history, or a detail not reproduced in the current canonical contract.
 
+## Final-current authority map
+
+This table answers the implementation question "which file is the final/current state for this family?" Historical files remain available below in chronological order.
+
+| Family / concern | Final/current authority | Status |
+|---|---|---|
+| Global governance / resolver / safety | `governance/CANONICAL_CONSTITUTION.md` | `FINAL_CURRENT` |
+| Corpus membership / user-facing grouping | `CORPUS_INDEX.md` | `FINAL_CURRENT` |
+| Global calibrated state | `calibration/GLOBAL_CALIBRATION_LEDGER.md` | `FINAL_CURRENT` |
+| Global EQ3 closure semantics | `calibration/GLOBAL_EQ3_CLOSURE.md` | `FINAL_CURRENT` |
+| Migration order | `migration/MIGRATION_BATCH_MAP.md` | `FINAL_CURRENT` |
+| Wave D fixtures | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_D_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
+| Wave E — Izzul | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_E_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
+| Wave F — Miko | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_F_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
+| Wave G — Country-Web research closure | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK`; other same-name variants remain historical |
+| Historical Track M | `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_v1_DEEP_ACCEPTANCE_CHECKPOINT_v1.md` + later archival barrier artifacts | `AUTHORITATIVE_SUPPORTING`; historical corpus remains unresolved |
+| Track M_R — reconstructed named materials | `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_R_EQ3_FULL_PASS_LOCK_CHECKPOINT_v1.md` plus later Batch-3 calibration lock | `FINAL_CURRENT / MASTER_LOCK` |
+| Wave H recovery closure | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_H_RESEARCH_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
+| Track T-I music/temporal closure | `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_T_I_v3_DEEP_FULL_PASS_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
+| Final global denominator | current calibration/census canonical docs; historical 273/271 source lineage remains archived separately | `FINAL_CURRENT` |
+| Raw archive/source-ID state | `archive/RAW_SOURCE_MANIFEST_v2.md` | `FINAL_CURRENT` for archive bookkeeping |
+
 ## Chronological program map
 
 ### Foundation / B-series era
@@ -76,7 +98,7 @@ Final current source for implementation: Global Calibration Batch 2 + current ca
 Chronology:
 - `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_D_BRANCH_BRIEF_v1.md` — `BRANCH_BRIEF`
 - historical expressive-tension result(s) — archive as discovered
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_D_LOCK_CHECKPOINT_v1.md` — `MASTER_LOCK`
+- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_D_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
 
 Current final state:
 - F03/F06/F13 = 3/3 EQ3 CPP
@@ -87,7 +109,7 @@ Current final state:
 Chronology:
 - Wave E v1…v5 reports/briefs — historical progression, archive as recovered
 - `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_E_HER_SUMMON_DEEP_CLOSURE_BRIEF_v6.md` — `BRANCH_BRIEF`
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_E_LOCK_CHECKPOINT_v1.md` — `MASTER_LOCK`
+- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_E_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
 
 Current final state:
 - Izzul corpus = 36/36 EQ3
@@ -102,8 +124,8 @@ Chronology:
 - Wave F v1 result — `PENDING_FULL_SOURCE_ACCESS`
 - `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_F_MIKO_RESIDUAL_EQUALIZATION_BRIEF_v2.md` — `BRANCH_BRIEF`
 - `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_F_v2_DEEP_HQ_STRESS_TEST_v1.md` — `HISTORICAL_VALID`
-- later v3/v4/final artifacts — archive as recovered
-- final Wave-F lock — current corpus closure source when mirrored
+- later v3/v4 artifacts — archive as recovered
+- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_F_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
 
 Current final state:
 - Miko corpus = 23/23 EQ3
@@ -117,9 +139,9 @@ Chronology includes multiple verified-distinct lock variants. Preserve all.
 
 - Wave G v1 census/result — `PENDING_FULL_SOURCE_ACCESS`
 - Wave G v2 equalization variants — `PENDING_FULL_SOURCE_ACCESS`
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1.md` — `MASTER_LOCK`
 - `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1(1).md` — `VARIANT_VERIFIED_DISTINCT`
 - `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1(20260902-074208).md` — `VARIANT_VERIFIED_DISTINCT`
+- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
 
 Current final state:
 - final confirmed Country-Web EQ2 denominator = 5
@@ -150,8 +172,8 @@ Chronology:
 - `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_R_EQ3_IMPLEMENTER_INDEPENDENCE_TORTURE_BRIEF_v5.md` — `BRANCH_BRIEF`
 - v5 result → 18/25 EQ3
 - v6 final-seven closure
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_R_EQ3_FULL_PASS_LOCK_CHECKPOINT_v1.md` — `MASTER_LOCK`
-- `archive/raw/MULTIMIND_DESIGN_DNA_GLOBAL_CALIBRATION_BATCH_3_LOCK_CHECKPOINT_v1.md` — later global-calibration `MASTER_LOCK`
+- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_R_EQ3_FULL_PASS_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK` for research closure
+- `archive/raw/MULTIMIND_DESIGN_DNA_GLOBAL_CALIBRATION_BATCH_3_LOCK_CHECKPOINT_v1.md` — later calibration `MASTER_LOCK`
 
 Current final state:
 - Track M_R = 25/25 EQ3
@@ -166,7 +188,8 @@ Chronology:
 - Wave H census result v1 — `PENDING_FULL_SOURCE_ACCESS`
 - `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_H_MD_FIRST_DEEP_EXTERNAL_RECOVERY_FORENSICS_BRIEF_v2.md` — `BRANCH_BRIEF`
 - `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_H_v2_DEEP_FORENSICS_ACCEPTANCE_CHECKPOINT_v1.md` — `MASTER_LOCK` intermediate
-- Wave H v3 closure + final research lock — archive/current lock as available
+- Wave H v3 closure result — archive as recovered
+- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_H_RESEARCH_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
 
 Current final state:
 - Continuous Knowledge Traversal, Liyelaa, Dumbara = 3/3 research closure
@@ -182,7 +205,8 @@ Chronology:
 - Track T dual-lane census result v1 — `PENDING_FULL_SOURCE_ACCESS`
 - `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_T_I_16_EQ3_FULL_EQUALIZATION_BRIEF_v2.md` — `BRANCH_BRIEF`
 - Track T-I v2 result — `PENDING_FULL_SOURCE_ACCESS`
-- Track T-I v3 projection hardening/result + final lock — archive/current lock as recovered
+- Track T-I v3 projection hardening result — archive as recovered
+- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_T_I_v3_DEEP_FULL_PASS_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
 
 Current final state:
 - T-I = exact 16 Izzul Magnum references, 16/16 EQ3
