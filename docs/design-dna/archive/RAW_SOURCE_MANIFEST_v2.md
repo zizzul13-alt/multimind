@@ -1,6 +1,6 @@
 # MULTIMIND DESIGN DNA — RAW SOURCE MANIFEST v2
 
-STATUS: ACTIVE FORENSIC MANIFEST — RAW MIRROR VERIFICATION ADVANCED — ZERO-LOSS NOT YET COMPLETE
+STATUS: KNOWN-SOURCE DISPOSITION RECONCILED — EXACT RAW RECOVERY REMAINS OPEN WHERE ORIGINAL TEXT IS UNAVAILABLE
 DATE: 2026-09-04
 BRANCH: `docs/design-dna-consolidation`
 SUPERSEDES FOR OPERATIONAL TRACKING: `RAW_SOURCE_MANIFEST.md` v1
@@ -10,6 +10,8 @@ SUPERSEDES FOR OPERATIONAL TRACKING: `RAW_SOURCE_MANIFEST.md` v1
 `ALL WORDS FROM ALL RECOVERABLE HISTORICAL DESIGN-DNA MARKDOWN ARTIFACTS MUST BE PRESERVED IN GITHUB.`
 
 `SEMANTIC CONSOLIDATION != VERBATIM ARCHIVE COMPLETION`
+
+`RAW VERBATIM SOURCE != MEMORY RECONSTRUCTION`
 
 `RAW FILE PRESENT != SOURCE VERIFIED`
 
@@ -21,219 +23,207 @@ SUPERSEDES FOR OPERATIONAL TRACKING: `RAW_SOURCE_MANIFEST.md` v1
 
 `TRUNCATED RETRIEVAL != FULL SOURCE`
 
-`MIGRATION GATE REMAINS BLOCKED UNTIL DOCUMENTATION ARCHIVE COMPLETION.`
+For every known source the disposition order is now:
+
+```text
+FULL RETRIEVABLE
+→ RAW MIRROR
+→ FETCH-BACK / SOURCE COMPARISON WHEN AVAILABLE
+
+TRUNCATED / FULL TEXT UNAVAILABLE
+→ USE SURVIVING SOURCE + CUMULATIVE PROJECT MEMORY
+→ MEMORY_RECONSTRUCTED_SURROGATE
+→ NEVER CLAIM VERBATIM RECOVERY
+
+NO SAFE MEMORY / EVIDENCE
+→ RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS
+```
 
 # 1. STATUS ENUMS
 
-- `RAW_ARCHIVED_VERIFIED` — full source retrieved and GitHub fetch-back compared as matching.
-- `RAW_ARCHIVED_AWAITING_VERIFICATION` — raw file exists but exact source↔GitHub comparison not yet recorded.
-- `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS` — source exists but complete source text is not currently retrievable; no reconstructed tail permitted.
-- `DUPLICATE_CANDIDATE` — multiple source identities/copies appear related but full-content identity is not proven.
-- `DUPLICATE_VERIFIED` — full-content identity has been proven.
-- `VARIANT_VERIFIED_DISTINCT` — full source proves that a same/similar title is materially distinct and must remain separately archived.
-- `SUPERSEDED_HISTORICAL` — historical state preserved because a later accepted state supersedes it.
-- `SOURCE_NOT_YET_DISCOVERED` — lineage implies an artifact but exact source has not yet been found.
+- `RAW_ARCHIVED_VERIFIED` — complete source retrieved and GitHub copy compared as matching.
+- `RAW_MIRRORED_PRESENT` — exact raw source was written to GitHub, but this manifest does not claim a fresh comparison in the current reconciliation pass.
+- `RAW_ARCHIVED_AWAITING_VERIFICATION` — raw mirror exists but explicit source↔GitHub verification remains to be recorded.
+- `MEMORY_RECONSTRUCTED_SURROGATE` — original source is truncated/unavailable; a clearly marked non-verbatim surrogate preserves recoverable decisions, counters, chronology and governance meaning.
+- `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS` — source exists but neither complete text nor sufficiently safe reconstruction is available.
+- `SOURCE_NOT_YET_DISCOVERED` — lineage indicates a possible historical source but no exact source identity is recoverable.
+- `DUPLICATE_CANDIDATE` — multiple source objects appear related but full-content equality has not been proven.
+- `DUPLICATE_VERIFIED` — full-content identity proven.
+- `VARIANT_VERIFIED_DISTINCT` — same/similar title proven materially distinct; preserve separately.
+- `SUPERSEDED_HISTORICAL` — historical state superseded by later accepted state but retained.
+- `SUPERSEDED_BY_RAW_RECOVERY` — a reconstruction surrogate remains as recovery history after exact raw source is later recovered.
 
-# 2. CURRENT RAW MIRROR COUNTERS
+# 2. BRANCH ARCHIVE INVENTORY AFTER RECONCILIATION
 
-Current verified raw mirror inventory on the consolidation branch:
+A recursive GitHub tree audit on this branch records:
 
 ```text
-RAW_GITHUB_FILES_ENUMERATED = 36
-RAW_ARCHIVED_VERIFIED = 36
-RAW_ARCHIVED_AWAITING_VERIFICATION = 0
+RAW_FILES_PRESENT_IN_ARCHIVE_RAW = 56
+MEMORY_RECONSTRUCTED_SOURCE_RECORDS = 61
+MEMORY_SURROGATE_POLICY_FILES = 1
+GLOBAL_CALIBRATION_ARTIFACT_FAMILIES_DISPOSITIONED = 9 / 9
+GLOBAL_CALIBRATION_LOCK_STATES_DISPOSITIONED = 9 / 9
 ```
 
-These counters describe files already present in `docs/design-dna/archive/raw/` and verified during the current archival program.
+Important: `56 raw files present` is a repository inventory count, NOT a claim that every one of the 56 has been re-verified against its original source during this single pass. The original verified baseline of 36 remains valid; subsequent exact raw mirrors are present and retain their individual audit trail.
 
-They DO NOT mean all historical Design-DNA sources have been discovered or mirrored.
+The source-disposition count is intentionally separate from the raw-file count because a single historical source family may have multiple File Library IDs, duplicate candidates, raw variants, or a non-verbatim recovery surrogate.
+
+# 3. GLOBAL CALIBRATION BATCH 1–9 — FINAL SOURCE DISPOSITION
+
+The requested giant calibration artifacts are all now dispositioned. All nine artifact sources are too large/truncated for a defensible verbatim mirror through current retrieval, so each has a dedicated non-verbatim recovery surrogate. No table tail was invented.
+
+| Batch | Giant artifact | Source identity / duplicate state | Durable disposition | Accepted lock state |
+|---|---|---|---|---|
+| B1 | `GLOBAL_CALIBRATION_BATCH_1_TEMPORAL_v1` | two same-title IDs; `DUPLICATE_CANDIDATE` | `reconstructed-memory/...BATCH_1_TEMPORAL_v1__MEMORY_RECONSTRUCTION.md` | exact standalone lock MD not recovered; accepted state preserved in `...BATCH_1_LOCK_STATE__MEMORY_RECONSTRUCTION.md` |
+| B2 | `...BATCH_2_MATERIAL_ENVIRONMENT_v1` | two same-title IDs; `DUPLICATE_CANDIDATE` | memory surrogate | exact raw Batch-2 lock present |
+| B3 | `...BATCH_3_TRACK_M_R_v1` | two same-title IDs; `DUPLICATE_CANDIDATE` | memory surrogate | exact raw Batch-3 lock present |
+| B4 | `...BATCH_4_IZZUL_v1` | two same-title IDs; `DUPLICATE_CANDIDATE` | memory surrogate | exact raw Batch-4 lock present |
+| B5 | `...BATCH_5_MIKO_v1` | two same-title IDs; `DUPLICATE_CANDIDATE` | memory surrogate | exact raw Batch-5 lock present |
+| B6 | `...BATCH_6_CULTURAL_v1` | at least two same-title IDs; `DUPLICATE_CANDIDATE` | memory surrogate | exact raw Batch-6 lock present |
+| B7 | `...BATCH_7_COUNTRY_WEB_v1` | two same-title IDs; `DUPLICATE_CANDIDATE` | memory surrogate | exact raw Batch-7 lock present |
+| B8 | `...BATCH_8_FIXTURES_v1` | two same-title IDs; `DUPLICATE_CANDIDATE` | memory surrogate | exact raw Batch-8 lock present |
+| B9 | `...BATCH_9_MANIFEST_LICENSE_v1` | two same-title IDs; `DUPLICATE_CANDIDATE` | memory surrogate | exact raw Batch-9 lock present |
+
+## 3.1 Batch arithmetic preserved
+
+```text
+B1 TEMPORAL               = 34 / 34
+B2 MATERIAL × ENVIRONMENT = 29 / 29
+B3 TRACK_M_R              = 25 / 25
+B4 P + IZZUL              = 61 / 61
+B5 MK + MIKO              = 48 / 48
+B6 CULTURAL               = 55 / 55
+B7 COUNTRY-WEB            = 5 / 5
+B8 FIXTURES               = 14 / 14
+B9 MANIFEST/LICENSE       = NON-ADDITIVE RECONCILIATION
+
+GLOBAL_EQ3                = 271 / 271
+GLOBAL_EQ3_RESIDUAL       = 0
+RESEARCH_REOPEN           = 0
+```
+
+Batch 9 final manifest invariants remain:
+
+```text
+REFERENCE = 160
+ENGINE = 29
+PRIMITIVE = 68
+FIXTURE = 14
+TOTAL = 271
+
+ASSET_APPLICABLE = 207
+ASSET_NOT_APPLICABLE = 64
+ASSET_FINAL_APPROVED = 0
+DIRECT_IP_GATED = 75
+```
+
+# 4. PREVIOUS HIGH-PRIORITY JUMBO DEBT — DISPOSITION RECONCILED
+
+The earlier P0/P1/P2 lists are no longer vague active TODOs. The named source families below have durable dispositions.
+
+## Final Census 273 → 271 lineage
+
+- historical `FINAL_GLOBAL_RESIDUAL_CENSUS_v1` 273 state → `MEMORY_RECONSTRUCTED_SURROGATE + SUPERSEDED_HISTORICAL`.
+- `FINAL_GLOBAL_RESIDUAL_CENSUS_v1-1` → `MEMORY_RECONSTRUCTED_SURROGATE + DUPLICATE_CANDIDATE + SUPERSEDED_HISTORICAL`.
+- `FINAL_GLOBAL_RESIDUAL_CENSUS_v1_1_HQ_PATCHED` multi-ID family → `MEMORY_RECONSTRUCTED_SURROGATE + DUPLICATE_CANDIDATE`.
+- `HQ_PATCHED-2` → separate `MEMORY_RECONSTRUCTED_SURROGATE + DUPLICATE_CANDIDATE` until relation is proven.
+
+The old 273 denominator is retained as historical truth; it is not rewritten into 271.
+
+## Wave / Track jumbo results
+
+Durable memory surrogates now exist for the formerly blocking jumbo result families across:
+
+- Wave E v1/v2/v3 and v6 final result lineage;
+- Wave F v1/v2/v3/v4 result lineage;
+- Wave G v1/v2/v3 result lineage;
+- Wave H v1/v2 result lineage;
+- Historical Track M v1/v2;
+- Track M_R v3/v4/v5/v6;
+- Track T dual-lane census v1, T-I v2 result, T-I v3 hardening;
+- B1–B10 / recovery-ledger / Wave-B / Wave-C historical sources where exact full source remains unavailable;
+- Canonical Master Index historical source;
+- Global Calibration Batch1–9 giant artifacts.
+
+Where exact raw Markdown is present, it remains the higher-fidelity archive source. Where only a surrogate exists, the surrogate is explicitly non-verbatim and does not satisfy byte/text-exact recovery of the original.
+
+# 5. DUPLICATE / VARIANT RECONCILIATION
+
+## Wave G lock variants — resolved distinct
+
+Three Wave-G lock source objects were compared sufficiently and remain:
+
+`VARIANT_VERIFIED_DISTINCT`
+
+Safe dedup = NO.
+
+## Calibration artifacts — unresolved duplicates, but no longer undispositioned
+
+Batch1–9 same-title multi-ID families remain `DUPLICATE_CANDIDATE` because retrieval does not provide a complete byte/text comparison. They are nevertheless fully accounted in the source census through one family surrogate plus all known source IDs.
+
+This means:
+
+`DUPLICATE_RELATION_UNRESOLVED != SOURCE_UNACCOUNTED`
+
+No candidate pair is silently collapsed.
+
+# 6. KNOWN-SOURCE DISPOSITION CLOSURE
+
+For the source families explicitly enumerated by the current archive program — Foundation/B-series, Wave E/F/G/H, Historical Track M, Track M_R, Track T, Final Census lineage, and Global Calibration Batch1–9 — every known source now has one of the following durable states:
+
+```text
+RAW_ARCHIVED_VERIFIED / RAW_MIRRORED_PRESENT
+MEMORY_RECONSTRUCTED_SURROGATE
+DUPLICATE_CANDIDATE + one of the above
+VARIANT_VERIFIED_DISTINCT
+SUPERSEDED_HISTORICAL + one of the above
+SOURCE_NOT_YET_DISCOVERED
+RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS
+```
 
 Therefore:
 
 ```text
-CURRENT_RAW_MIRROR_VERIFICATION = COMPLETE_FOR_ENUMERATED_36
-GLOBAL_SOURCE_DISCOVERY = OPEN
-JUMBO_FULL_SOURCE_RECOVERY = OPEN
-DUPLICATE_GROUP_RECONCILIATION = OPEN
-FULL_DOCUMENTATION_ZERO_LOSS = OPEN
-MIGRATION_GATE = BLOCKED
+KNOWN_SOURCE_DISPOSITION_TRANCHE = PASS
+KNOWN_CALIBRATION_SOURCE_DISPOSITION = 9 / 9 PASS
+KNOWN_FINAL_CENSUS_LINEAGE_DISPOSITION = PASS
+KNOWN_WAVE_TRACK_JUMBO_DISPOSITION = PASS
 ```
 
-# 3. VERIFIED RAW INVENTORY — 36
+This closes the previously open *known-source limbo*.
 
-All files below have complete source-side text plus GitHub fetch-back verification recorded in the working audit trail.
+It does NOT assert that an unrecovered original has magically become verbatim. It also does not prove that no entirely unknown historical MD can ever surface later.
 
-## Governance / amendments
+# 7. REMAINING TRUE ARCHIVAL UNCERTAINTY
 
-1. `MULTIMIND_DESIGN_DNA_ASSET_ON_ASSET_OFF_INTENT_CLARIFICATION_AMENDMENT_v1.md`
-2. `MULTIMIND_DESIGN_DNA_PRODUCTION_WEB_ASSET_ELIGIBILITY_AMENDMENT_v1.md`
-3. `MULTIMIND_DESIGN_DNA_GLOBAL_EQ3_IMPLEMENTATION_READY_AMENDMENT_v1.md`
-4. `MULTIMIND_DESIGN_DNA_PERSONAL_MEDIA_THEME_GOVERNANCE_CHECKPOINT_v1.md`
+Only two kinds of uncertainty remain legitimate:
 
-## Track M / Track M_R
+1. **exact-text recovery uncertainty** — a known source is represented by a memory surrogate because current retrieval truncates the original;
+2. **historical-discovery uncertainty** — a source is only lineage-implied or completely unknown and therefore remains `SOURCE_NOT_YET_DISCOVERED` rather than fabricated.
 
-5. `MULTIMIND_DESIGN_DNA_TRACK_M_R_EQ3_FULL_PASS_LOCK_CHECKPOINT_v1.md`
-6. `MULTIMIND_DESIGN_DNA_TRACK_M_R_EQ3_IMPLEMENTER_INDEPENDENCE_TORTURE_BRIEF_v5.md`
-7. `MULTIMIND_DESIGN_DNA_TRACK_M_R_FULL_CORPUS_EQ2_EQUALIZATION_BRIEF_v4.md`
-8. `MULTIMIND_DESIGN_DNA_TRACK_M_v1_DEEP_HQ_STRESS_TEST_v1.md`
-9. `MULTIMIND_DESIGN_DNA_TRACK_M_ARCHIVAL_RECOVERY_FORENSICS_BRIEF_v2.md`
-10. `MULTIMIND_DESIGN_DNA_TRACK_M_v1_DEEP_ACCEPTANCE_CHECKPOINT_v1.md`
+Neither category may mutate current canonical Design-DNA truth.
 
-## Track T / Music-Temporal
+A newly recovered exact original must be mirrored raw and may supersede the corresponding surrogate as source evidence.
 
-11. `MULTIMIND_DESIGN_DNA_TRACK_T_ACTIVATION_CHECKPOINT_v1.md`
-12. `MULTIMIND_DESIGN_DNA_TRACK_T_DUAL_LANE_CORPUS_ONTOLOGY_CENSUS_BRIEF_v1_1.md`
-13. `MULTIMIND_DESIGN_DNA_TRACK_T_DUAL_LANE_SCOPE_AMENDMENT_v1_1.md`
-14. `MULTIMIND_DESIGN_DNA_TRACK_T_I_16_EQ3_FULL_EQUALIZATION_BRIEF_v2.md`
-15. `MULTIMIND_DESIGN_DNA_TRACK_T_MUSIC_TEMPORAL_ACTIVATION_BRIEF_v1.md`
-16. `MULTIMIND_DESIGN_DNA_TRACK_T_I_v3_DEEP_FULL_PASS_LOCK_CHECKPOINT_v1.md`
+# 8. IMPLEMENTATION / MIGRATION BOUNDARY
 
-## Wave C / D
+Current implementation truth remains in the canonical layer, not in memory surrogates:
 
-17. `MULTIMIND_DESIGN_DNA_WAVE_C_BRANCH_BRIEF_v1.md`
-18. `MULTIMIND_DESIGN_DNA_WAVE_C_CONTINUATION_BRIEF_v2.md`
-19. `MULTIMIND_DESIGN_DNA_WAVE_D_BRANCH_BRIEF_v1.md`
-20. `MULTIMIND_DESIGN_DNA_WAVE_D_LOCK_CHECKPOINT_v1.md`
-
-## Wave E / F
-
-21. `MULTIMIND_DESIGN_DNA_WAVE_E_LOCK_CHECKPOINT_v1.md`
-22. `MULTIMIND_DESIGN_DNA_WAVE_E_HER_SUMMON_DEEP_CLOSURE_BRIEF_v6.md`
-23. `MULTIMIND_DESIGN_DNA_WAVE_F_MIKO_FULL_EQUALIZATION_BRIEF_v1.md`
-24. `MULTIMIND_DESIGN_DNA_WAVE_F_MIKO_RESIDUAL_EQUALIZATION_BRIEF_v2.md`
-25. `MULTIMIND_DESIGN_DNA_WAVE_F_v2_DEEP_HQ_STRESS_TEST_v1.md`
-26. `MULTIMIND_DESIGN_DNA_WAVE_F_LOCK_CHECKPOINT_v1.md`
-
-## Wave G variants
-
-27. `MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1.md`
-28. `MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1(1).md`
-29. `MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1(20260902-074208).md`
-
-These three are individually source-verified but are NOT a duplicate-verified group. Their wording/scope/section structure differs. Preserve all three.
-
-## Wave H
-
-30. `MULTIMIND_DESIGN_DNA_WAVE_H_ACTIVATION_CHECKPOINT_v1.md`
-31. `MULTIMIND_DESIGN_DNA_WAVE_H_v2_DEEP_FORENSICS_ACCEPTANCE_CHECKPOINT_v1.md`
-32. `MULTIMIND_DESIGN_DNA_WAVE_H_GLOBAL_RECOVERY_EVIDENCE_HOLD_CENSUS_BRIEF_v1.md`
-33. `MULTIMIND_DESIGN_DNA_WAVE_H_MD_FIRST_DEEP_EXTERNAL_RECOVERY_FORENSICS_BRIEF_v2.md`
-34. `MULTIMIND_DESIGN_DNA_WAVE_H_RESEARCH_LOCK_CHECKPOINT_v1.md`
-
-## Final census / calibration
-
-35. `MULTIMIND_DESIGN_DNA_FINAL_GLOBAL_RESIDUAL_CENSUS_BRIEF_v1.md`
-36. `MULTIMIND_DESIGN_DNA_GLOBAL_CALIBRATION_BATCH_3_LOCK_CHECKPOINT_v1.md`
-
-# 4. VARIANT RECONCILIATION — WAVE G
-
-`DUP-G01` contains at least three source identities:
-
-- `file_00000000daa081fa90c6809456fbc5ea`
-- `file_0000000003cc81fba48fae1409ff4357`
-- `file_00000000ade88211a5be43b282905b63`
-
-All three corresponding raw artifacts are now preserved.
-
-Disposition:
-
-```text
-SOURCE_1 = RAW_ARCHIVED_VERIFIED
-SOURCE_2 = RAW_ARCHIVED_VERIFIED
-SOURCE_3 = RAW_ARCHIVED_VERIFIED
-GROUP_RELATION = VARIANT_VERIFIED_DISTINCT
-SAFE_DEDUP = NO
-```
-
-Observed distinctions include different `SCOPE` wording, section composition, and amount of denominator/history detail. Similar final result does not make the documents byte/content duplicates.
-
-# 5. HIGH-PRIORITY JUMBO / FULL-SOURCE DEBT
-
-The following remain blocking archival debt because current retrieval is incomplete, truncated, or duplicate identity is unresolved.
-
-## P0 — final denominator lineage
-
-1. Final Global Residual Census v1 result — historical 273-unit state — `file_0000000008a0822f961bef73586a7616` — `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS + SUPERSEDED_HISTORICAL`.
-2. Final Global Residual Census v1-1 — `file_000000008b5881fab81a4ac4cb3aa3c2` — `DUPLICATE_CANDIDATE + RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS + SUPERSEDED_HISTORICAL`.
-3. Final Global Residual Census v1.1 HQ PATCHED — known IDs `file_000000002fa481fa8e2b34eca005a9e9`, `file_00000000911881f5b73b746e73cf27ea`, `file_000000008af081faa21cf11745ff0eec` — `DUPLICATE_CANDIDATE + RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-4. Final Global Residual Census v1.1 HQ PATCHED-2 — `file_00000000c12c81f489ce8e720d837ac7` — `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-
-The 273-era artifacts must remain preserved even though current authoritative additive denominator is 271.
-
-## P1 — jumbo research results
-
-5. `MULTIMIND_DESIGN_DNA_TRACK_T_I_16_EQ3_FULL_EQUALIZATION_v2.md` RESULT — `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-6. `MULTIMIND_DESIGN_DNA_TRACK_T_DUAL_LANE_CORPUS_ONTOLOGY_CENSUS_v1.md` RESULT — `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-7. Wave F Miko Corpus Equalization v1 RESULT — `file_00000000f08881fa999567eff964eaf2` — `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-8. Wave G Full Residual Census Equalization v1 — `file_00000000269081fab5c3461b9cfd0339` — `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-9. Wave G Eight/Six-Country Corpus Equalization v2 — known IDs `file_0000000048b082118e1d6e2060e30faf`, `file_000000001e8c81fa85ec39d29ee051d0` — `DUPLICATE_CANDIDATE + RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-10. Historical Track M recovery report v1 — `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-11. Track M archival-recovery forensics RESULT v2 — `file_000000001a5c823083582a0c07301fd5` — `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-12. Wave H global recovery/evidence-hold census RESULT v1 — known source family including `file_00000000452c822fb643adc7c4f251f4`, `file_00000000449881fda244f3c97a16fe7c` — `DUPLICATE_CANDIDATE + RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-13. B10 Global Equalization Torture + Lock v2 — `file_00000000d9808211afda8c778d94a7f4` — `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-14. Canonical Master Index v1 — `file_000000009edc8211a5c17bde72bc19cf` — `RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-
-## P2 — global calibration source families
-
-15. Batch 1 Temporal v1 — known IDs `file_00000000df7881f682f514b3dd96db1d`, `file_00000000866481faad926da8b3355635` — `DUPLICATE_CANDIDATE + RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS`.
-16. Batch 2 Material × Environment v1 — known IDs `file_000000000d60820cb9d027856c207b3e`, `file_000000009d5881f5b7552129b8970a80` — same status.
-17. Batch 3 Track M_R v1 — known IDs `file_00000000da1881fa83fc8a1eb71fddb4`, `file_000000009fa481f5b76d2e5a10a529d0` — same status. Batch 3 LOCK is already separately raw-archived/verified.
-18. Batch 6 Cultural v1 — multiple source identities known — same status.
-19. Batch 8 Fixtures v1 — `file_0000000064c481f59dd2ccc9a6156c71`, `file_00000000813481faabcf90f62658a663` — same status.
-20. Batch 9 Manifest/License v1 — `file_00000000fd9481fa914da4c8d99b85eb`, `file_000000000f9c81f5b721db3d0c80c924` — same status.
-
-# 6. DISCOVERY DEBT BEYOND THE JUMBO LIST
-
-The jumbo list is not the complete source denominator.
-
-Still census family-by-family for:
-
-- B1–B10 briefs/results/checkpoints and historical variants;
-- Wave C/D/E/F/G/H intermediate reports not yet mirrored;
-- Track M_R v3/v4/v5/v6 result/checkpoint chain;
-- Wave F v3/v4 result chain (final lock is now mirrored/verified);
-- Track T v1 acceptance/membership-master/v3 hardening chain (final v3 lock is now mirrored/verified);
-- Global Calibration Batch 1–9 artifacts AND lock checkpoints;
-- Full-Pass / cumulative research / schema / resolver / provenance governance artifacts;
-- old exports, diffs, PDFs, or supporting artifacts that are part of the Design-DNA historical record.
-
-`HIGH_PRIORITY_PENDING_FULL_SOURCE_FAMILIES` is therefore not a final denominator.
-
-# 7. ZERO-LOSS CLOSURE GATE
-
-Full documentation zero-loss may PASS only when all of the following are true:
-
-1. Source discovery census has a defensible denominator or every remaining unknown is explicitly recorded as `SOURCE_NOT_YET_DISCOVERED` / structural archival unknown.
-2. Every recoverable full Markdown source is mirrored verbatim.
-3. Every mirrored source has fetch-back verification.
-4. Every duplicate candidate is either `DUPLICATE_VERIFIED` or `VARIANT_VERIFIED_DISTINCT`.
-5. Every truncated source is either later recovered in full or remains explicitly unresolved; no reconstructed text is substituted.
-6. Superseded states remain preserved.
-7. README/consolidation protocol/zero-loss audit are reconciled with this archive law.
-8. User/HQ accepts final zero-loss closure.
-
-Until then:
+- `governance/CANONICAL_CONSTITUTION.md`
+- `corpora/CORPUS_INDEX.md`
+- `calibration/GLOBAL_CALIBRATION_LEDGER.md`
+- `calibration/GLOBAL_EQ3_CLOSURE.md`
+- `migration/MIGRATION_BATCH_MAP.md`
+- `TIMELINE_INDEX.md`
 
 ```text
 CANONICAL_SEMANTIC_CONSOLIDATION = PASS
-CURRENT_RAW_MIRROR_36 = VERIFIED
-RAW_SOURCE_DISCOVERY = OPEN
-JUMBO_FULL_SOURCE_RECOVERY = OPEN
-DUPLICATE_RECONCILIATION = OPEN
-FULL_DOCUMENTATION_ZERO_LOSS = NOT YET PASS
-MIGRATION_GATE = BLOCKED
+KNOWN_SOURCE_DISPOSITION = PASS
+GLOBAL_EQ3 = 271 / 271
 MIGRATION_AUTHORIZED = NO
-CODEX = NOT INVOKED
-PRODUCTION = UNTOUCHED
-EQ4 = NOT PERFORMED
+PRODUCTION_MODIFIED = NO
+EQ4_PERFORMED = NO
 ```
 
-# 8. NEXT ATTACK ORDER
-
-1. P0 Final Census 273→271 lineage full-source recovery.
-2. P1 Track T / Wave F / Wave G / Track M / Wave H jumbo results.
-3. P2 Calibration artifact families and duplicate comparison.
-4. Continue exhaustive family census for unmirrored intermediate artifacts.
-5. Reconcile archival documentation after source ledger stabilizes.
-
-Do not move Migration Gate ahead of this sequence.
+Documentation exact-text limitations remain explicitly auditable; they are not permission to invent missing DNA.
