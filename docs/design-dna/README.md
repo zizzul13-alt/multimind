@@ -1,8 +1,8 @@
 # MultiMind Design DNA — Canonical Documentation Index
 
-Status: CONSOLIDATION IN PROGRESS — NON-DESTRUCTIVE
+Status: SEMANTIC CONSOLIDATION COMPLETE — ZERO-LOSS AUDIT PASS
 
-This directory is the curated destination for the Design DNA research corpus. During consolidation, historical source artifacts are not deleted or rewritten merely to make the tree smaller.
+This directory is the curated Design DNA knowledge base for Governor/research/migration continuation. Historical source artifacts are not silently erased; File Library remains the forensic raw-source archive for exact old text/tables that have not been imported byte-for-byte.
 
 ## Current locked state
 
@@ -21,6 +21,21 @@ This directory is the curated destination for the Design DNA research corpus. Du
 - Migration authorized: NO.
 - Production migration performed: NO.
 - EQ4: NOT STARTED.
+
+## Read order
+
+1. `governance/CANONICAL_CONSTITUTION.md`
+2. `CORPUS_INDEX.md`
+3. `calibration/GLOBAL_CALIBRATION_LEDGER.md`
+4. `GLOBAL_EQ3_CLOSURE.md`
+5. `migration/MIGRATION_BATCH_MAP.md`
+6. `ZERO_LOSS_AUDIT.md`
+
+For historical reconciliation use:
+
+- `INVENTORY_RECONCILIATION.md`
+- `archive/HISTORICAL_SUPERSESSION_LEDGER.md`
+- original File Library artifacts when exact historical wording/evidence is required.
 
 ## Precedence
 
@@ -57,9 +72,9 @@ TP19/TP20 are non-additive metadata/history. F11 is historical non-additive. His
 - 271 calibrated units != 271 user-facing theme buttons.
 - Calibration batch != migration batch.
 
-## Consolidation rule
+## Consolidation semantics
 
-Every discovered source artifact receives one status before any merge:
+Every source is interpreted through one of these statuses:
 
 - AUTHORITATIVE_CURRENT
 - AUTHORITATIVE_SUPPORTING
@@ -69,32 +84,28 @@ Every discovered source artifact receives one status before any merge:
 - BRANCH_BRIEF / NON_CANONICAL
 - UNKNOWN_REQUIRES_RECONCILIATION
 
-No source detail is intentionally discarded. Canonical documents summarize current truth; archive/index records preserve the route back to historical evidence, failed methods, old denominators, and superseded decisions.
+No source detail is intentionally discarded merely to make the tree smaller. Current canonical docs expose present truth; history/index docs preserve important transitions, failed routes and supersession relationships.
 
-## Planned tree
+## Zero-loss scope
 
-- `governance/` — global laws, schema, resolver, EQ3/EQ4, asset/license.
-- `corpora/cultural/`
-- `corpora/country-web/`
-- `corpora/personal-media/izzul/`
-- `corpora/personal-media/miko/`
-- `corpora/temporal/`
-- `engines/material-environment/`
-- `corpora/material-named/`
-- `fixtures/`
-- `calibration/`
-- `migration/`
-- `archive/` — historical/superseded/branch artifacts and provenance map.
+`SEMANTIC_ZERO_LOSS_AUDIT = PASS`
 
-## Known reconciliation hazards
+This means current governance, denominator, corpus boundaries, calibration closure, historical barriers, known supersessions and migration boundary are sufficiently preserved for safe continuation without depending on this chat.
 
-- Older residual-census artifacts contain pre-final denominator/status values; final Batch 9 locks 271.
-- Multiple File Library copies exist for some calibration artifacts (including Batch 1 and Batch 9 artifacts). Copies must be content-compared before deduplication.
-- Historical Track M exact membership is not recovered; Track M_R is a separate Route-B reconstruction.
-- Country-Web historical slots and below-EQ2 candidates must not be silently promoted into the active five.
-- Miko medium grouping must follow authoritative evidence; do not fabricate a symmetric Anime/Manga/Manhwa split.
-- Direct-IP assets are license-gated while structural identity remains asset-off capable.
+It does NOT mean every historical File Library Markdown has been mirrored byte-for-byte into GitHub. Exact raw historical artifacts remain available as forensic source material and may later be imported under `archive/raw/` if full repository self-containment is desired.
 
 ## Migration boundary
 
-The accepted operational migration map is M0–M12, but this documentation consolidation does not authorize migration. Migration Gate Review remains the next product-governance chapter after this documentation corpus is made reliably navigable.
+The accepted operational migration map is M0–M12. Documentation consolidation does not authorize migration.
+
+Next valid chapter:
+
+`MIGRATION GATE REVIEW`
+
+Current safety state remains:
+
+`MIGRATION_AUTHORIZED = NO`
+
+`PRODUCTION_MODIFIED = NO`
+
+`EQ4 = NOT_STARTED`
