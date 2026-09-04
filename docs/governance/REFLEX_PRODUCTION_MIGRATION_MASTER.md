@@ -38,7 +38,8 @@ The brief inherits this ledger and all compatible locked decisions below. It doe
 ## Locked production baseline
 
 - Repository: `zizzul13-alt/multimind`
-- Baseline: `main@6a040a7f53b77e54d0b4f695e2eefd67b3fa1046`
+- Historical code implementation baseline before governance-only commits: `main@6a040a7f53b77e54d0b4f695e2eefd67b3fa1046`.
+- RJ-0 execution-start repository HEAD: `766717f2989e0dac3bcf7b5b809b9aa0996dcc6d`.
 - Current presentation: Streamlit.
 - `MultiMindApplication` remains the presentation-independent application boundary.
 - Target architecture remains direct in-process Python: Reflex → application/composition boundary → existing core/providers/SQLite.
@@ -162,107 +163,181 @@ Selected model: **B — One Master Brief + serial PR/bundle execution.**
 Canonical progression:
 `RJ-0 → Governor acceptance → RJ-1 package/PR → STOP → Governor acceptance → accepted integration → RJ-2 from that accepted baseline → ... → RJ-6 → Final Governor Migration Gate`.
 
-## RJ-0 — Reconcile / Freeze / Parity Census — LOCKED
+## RJ-0 — Reconcile / Freeze / Parity Census — CLOSED / PASS / LOCKED
 
-RJ-0 is the execution-start reconciliation and denominator freeze. It is not a rerun of closed platform research.
+RJ-0 is complete. It reconciled the actual repository, classified drift, inventoried the production-facing surface, and froze the RJ-3 parity denominator without reopening closed platform research.
 
-Required work:
-1. Reconcile actual current production `main` HEAD.
-2. Compare current repository state against this Governor Master and inherited closed evidence.
-3. Distinguish governance/documentation-only drift from implementation drift.
-4. Detect material repository drift that affects locked migration boundaries or assumptions.
-5. Inventory the actual production-facing user journey and capabilities present at execution start.
-6. Freeze the RJ-3 functional parity denominator from that census plus explicitly locked intended migration requirements.
-7. Record the exact starting commit.
+### RJ-0 final status
 
-RJ-0 must distinguish two categories rather than falsifying parity:
-- capability/surface already present in the production implementation → existing baseline behavior to preserve/migrate.
-- explicitly locked intended production requirement not yet fully implemented in the Streamlit baseline → migration requirement/gap, not falsely described as existing parity.
+- CURRENT HEAD at execution-start reconciliation: `766717f2989e0dac3bcf7b5b809b9aa0996dcc6d`.
+- Historical code implementation baseline: `6a040a7f53b77e54d0b4f695e2eefd67b3fa1046`.
+- Drift between those points: governance/documentation only.
+- Implementation drift affecting locked migration assumptions: NO.
+- Master compatibility: YES.
+- Architecture invalidated: NO.
+- STOP condition triggered: NO.
+- Hard blockers: 0.
+- Verdict: PASS.
 
-Minimum census scope includes:
-- locked journey: `LOGIN → SELECT THEME + THEME STUDIO → APPLY → MULTIMIND + THEME STUDIO`.
-- identity/login/logout.
-- session creation/listing/selection/history.
-- chat execution.
-- continue/standalone context behavior.
+Subsequent Governor Markdown persistence commits after the execution-start census do not alter the RJ-0 implementation denominator; they record accepted governance findings.
+
+### Three-level parity model — LOCKED
+
+RJ-3 parity is not satisfied merely because equivalent buttons exist.
+
+Reflex must preserve three levels of accepted production contract:
+1. **Capability parity** — production-facing capabilities remain available.
+2. **Behavioral parity** — interaction and application semantics remain correct.
+3. **Presentation-contract parity** — accepted archetype, Design-DNA, composition and projection semantics remain preserved.
+
+Pixel-for-pixel reproduction of Streamlit is NOT required. Accepted presentation contracts are required.
+
+This does not reopen the CLOSED UI/UX or Design-DNA work. Migration consumes those accepted production contracts as inherited evidence.
+
+### RJ-3 parity denominator — FROZEN
+
+#### A. Identity and navigation
+- identity/login/logout semantics.
+- session/workspace navigation.
+- locked migration journey: `LOGIN → PRE-WORKSPACE THEME / THEME STUDIO STAGE → EXPLICIT APPLY → MULTIMIND WORKSPACE → THEME STUDIO REMAINS ACCESSIBLE`.
+
+The pre-workspace stage/handoff is a locked migration requirement/gap rather than falsely claimed current Streamlit behavior.
+
+#### B. Session lifecycle
+- create session.
+- list sessions.
+- select session.
+- session history retrieval/rendering.
+- semantic continuity including A→B→A session switching behavior.
+
+#### C. Input and composition
+- prompt entry.
+- prompt template selection.
+- template description.
+- template variable extraction/input.
+- generated template preview.
+- generated prompt remains editable before send.
+- continue vs standalone context behavior.
 - session mode.
-- compressor.
+- compressor control.
 - active-agent selection.
-- debate rounds.
+- debate-round selection.
 - selected skill.
-- uploads.
-- busy/duplicate-run behavior.
-- warnings/errors.
-- final answer/debate rendering.
-- token/cost rendering where production exposes it.
-- backup/restore.
-- mobile/tablet/browser production usability surfaces.
+- supported multi-file upload behavior.
 
-RJ-0 output must record:
-- CURRENT HEAD.
-- MASTER COMPATIBILITY.
-- PRODUCTION-FACING CAPABILITY CENSUS.
-- RJ-3 PARITY DENOMINATOR.
-- DRIFT = YES/NO, with classification if YES.
+#### D. Usage feedback
+Current production exposes pre-send estimates, not a proven post-run actual-token/cost UI contract.
+Required parity:
+- estimated prompt tokens.
+- estimated file tokens.
+- estimated total tokens.
+- estimated cost.
+- moderate/high token-usage warnings.
 
-STOP condition:
-If current implementation drift materially invalidates a locked architecture assumption or closed evidence, do not silently adapt the migration. STOP for Governor review.
+Post-run actual token/cost display is NOT part of the frozen baseline denominator absent new evidence.
 
-### RJ-0 Theme Studio deep census checkpoint — LOCKED
+#### E. Execution and status semantics
+- real `MultiMindApplication` execution.
+- application warnings surfaced to presentation.
+- terminal application/provider failure feedback.
+- success feedback.
+- truthful processing/busy feedback.
+- Reflex migration additionally inherits the closed Integration Proof requirement for persistent busy state and duplicate-run protection.
 
-Reconciled against current `main` at execution-start HEAD `766717f2989e0dac3bcf7b5b809b9aa0996dcc6d`.
+The stronger Reflex busy/duplicate guard is a locked migration requirement; it must not be falsely described as existing sophisticated Streamlit busy-state behavior.
 
-Repository drift from the historical code baseline is governance/documentation-only at this checkpoint; no implementation drift was found that invalidates the accepted migration architecture.
+#### F. Persisted result lifecycle
+The production contract is not merely immediate `ChatResult` rendering.
 
-Theme Studio census correction:
-- Theme Studio is already a real production-facing interactive surface, not merely a preview or future requirement.
-- Existing production behavior includes role-based Identity/Cultural DNA selection, Web/Information DNA selection, UI/UX Archetype selection, editable presentation controls, isolated draft state, live preview, explicit Apply Composition, and explicit Discard/Reset.
-- Apply atomically promotes the draft to active presentation state including active theme, active archetype and active composition.
-- Applied custom themes use unique runtime IDs and current-session ownership/discoverability semantics.
-- Therefore Reflex migration MUST preserve these Theme Studio behaviors; it must not downgrade Theme Studio into a simple theme dropdown.
+Required lifecycle semantics:
+`ChatRequest → execute_chat() → persistence → success/rerun/state transition → session history read → PresentationSnapshot → projection → interaction-shell/history/result rendering`.
 
-The locked intended journey remains:
-`LOGIN → SELECT THEME + THEME STUDIO → APPLY → MULTIMIND + THEME STUDIO`.
+RJ-1 therefore must provide the generic history-read seam required by the Reflex host. Presentation must not bypass that need by reading private persistence directly.
 
-The actual current Streamlit journey differs in orchestration: authentication enters the MultiMind shell, from which Workspace and Theme Studio are available; Theme Studio performs edit/preview/apply inside that authenticated shell. Therefore the migration gap is NOT “build Theme Studio” or “add Apply”. The migration gap is the **entry/handoff orchestration**: provide the locked post-login pre-workspace theme/studio stage, carry the explicitly applied result into the MultiMind workspace, and keep Theme Studio accessible afterwards.
+#### G. Presentation contracts / archetypes
+The existing production presentation architecture includes presentation models/builders/projections/resolution/shell behavior and seven canonical archetypes:
+- `chat_first`
+- `command_center`
+- `ai_workspace`
+- `ai_research_lab`
+- `agent_canvas`
+- `terminal_hacker`
+- `minimal_saas`
 
-Theme Studio state ownership clarification:
-- Current Theme Studio implementation is Streamlit-hosted and uses `st.session_state` for draft/active presentation state.
-- This does NOT expand RJ-1 into a Theme Studio/core state refactor.
-- Theme draft, active theme, active archetype, active composition, preview state and navigation/handoff remain presentation concerns.
-- Reflex may implement equivalent host-owned presentation state; behavioral contracts must be preserved, not the literal `st.session_state` implementation.
-- Do not move Theme Studio presentation state into core merely to remove Streamlit imports from Theme Studio UI/state modules.
+Archetypes are not merely color themes. Existing presentation behavior includes archetype-aware composer morphology, grouping/disclosure behavior, wording and truthful processing labels while backend/application semantics remain presentation-independent.
 
-RJ ownership after deep census:
-- RJ-1 remains focused on config/secrets portability, shared application composition, session/history read seams, backup export, and persistence/application boundary cleanup.
-- RJ-3 owns Reflex Theme Studio presentation parity, editor/preview/apply/discard behavior, theme handoff, and the locked pre-workspace journey.
+Reflex must preserve accepted archetype/Design-DNA/projection semantics without moving archetype-specific branching into backend/core.
 
-Theme Studio RJ-3 baseline denominator now explicitly includes:
+#### H. Theme Studio
+Existing production baseline to preserve:
 - production-accessible Theme Studio.
-- role-based DNA composition.
+- role-based Identity/Cultural DNA composition.
+- Web/Information DNA composition.
 - archetype selection.
-- editable presentation tokens.
+- editable presentation controls/tokens.
 - isolated draft.
 - live preview.
-- explicit Apply.
+- explicit Apply Composition.
 - explicit Discard/Reset.
-- Apply updates active theme.
-- Apply updates active archetype.
-- Apply updates active composition.
-- applied custom-theme session isolation/discoverability semantics.
-- Theme Studio remains reachable from MultiMind.
+- Apply promotes active theme.
+- Apply promotes active archetype.
+- Apply promotes active composition.
+- applied custom-theme current-session isolation/discoverability semantics.
+- Theme Studio remains reachable from the MultiMind experience.
 
-Additional locked migration requirement/gap:
-`LOGIN → PRE-WORKSPACE THEME / THEME STUDIO STAGE → EXPLICIT APPLY → MULTIMIND WORKSPACE → THEME STUDIO REMAINS ACCESSIBLE`.
+Locked migration addition:
+- after login, expose the pre-workspace Theme/Theme Studio stage.
+- explicit Apply carries the selected composition into MultiMind workspace.
+- Theme Studio remains accessible after handoff.
 
-Checkpoint verdict:
-- architecture invalidated: NO.
-- Theme Studio rebuild required: NO.
-- Theme Studio behavioral migration required: YES.
-- journey gap type: ENTRY / HANDOFF ORCHESTRATION.
-- RJ-1 scope expansion: NO.
-- RJ-3 denominator strengthened: YES.
-- new hard blockers: 0.
+Theme Studio rebuild from zero is NOT required. Behavioral migration is required.
+
+#### I. Data operations
+- backup/export capability.
+- safe restore capability and semantic result handling.
+- user isolation.
+- existing DB namespace/schema semantics.
+- restore/runtime invalidation semantics as owned by the generic application boundary.
+
+#### J. Runtime UX acceptance
+- production browser usability.
+- phone usability.
+- tablet usability.
+- no migration regression that makes required controls, busy state, result/history or Theme Studio unreachable.
+
+Closed Reflex browser/mobile integration evidence is inherited; RJ-3/RJ-5 must validate the implemented production host rather than rerunning framework selection.
+
+### Explicit exclusions from initial parity denominator
+
+Unless new repository evidence or an explicitly accepted requirement changes them, these are NOT required initial RJ-3 parity:
+- post-run actual token/cost UI.
+- granular streaming/fine-grained progress events; IP-17 remains deferred/non-blocking.
+- pixel-for-pixel Streamlit reproduction.
+- literal Streamlit `st.session_state` implementation details.
+- dev-only Theme Preview Spike guarded by `MULTIMIND_DEV_SPIKE`.
+
+### Theme Studio state ownership clarification
+
+Current Theme Studio uses Streamlit-hosted presentation state. Theme draft, active theme, active archetype, active composition, preview state and navigation/handoff remain presentation concerns.
+
+Reflex may implement equivalent host-owned presentation state. Do not move these concerns into core merely to eliminate Streamlit imports from UI modules.
+
+### RJ ownership after RJ-0 closure
+
+RJ-1 remains focused on:
+- config/secrets portability.
+- shared application composition root.
+- session/history read seams.
+- backup/export seam.
+- removal of presentation-owned persistence access while preserving Streamlit compatibility.
+
+RJ-3 owns:
+- full functional/behavioral/presentation-contract parity on Reflex.
+- seven-archetype presentation behavior.
+- Theme Studio presentation parity.
+- locked pre-workspace Theme Studio entry/handoff journey.
+
+RJ-0 found no reason to expand RJ-1 into a broad UI/core refactor.
 
 ## Standard RJ bundle completion evidence — LOCKED
 
@@ -388,10 +463,12 @@ Do not create abstraction merely for architectural aesthetics. A new seam is jus
 
 - RJ-1: generic config/secrets portability.
 - RJ-1: production application read/export seams and shared composition root.
-- RJ-3: preserve full existing Theme Studio behavior plus implement the locked pre-workspace entry/handoff journey.
+- RJ-2: Reflex production host implementation on the accepted generic seams.
+- RJ-3: full frozen three-level parity denominator including Theme Studio and pre-workspace handoff.
 - RJ-4: exact durable production storage/runtime deployment contract.
 - RJ-4/RJ-6: production restart/recreate persistence proof.
-- RJ-6: explicit rollback drill.
+- RJ-5: dual-host/torture parity evidence.
+- RJ-6: explicit cutover/rollback drill.
 - IP-17: deferred generic streaming/progress seam; non-blocking.
 
 Current known hard blockers: 0.
