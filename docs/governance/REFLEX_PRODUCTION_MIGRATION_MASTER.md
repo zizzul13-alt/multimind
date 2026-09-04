@@ -77,7 +77,7 @@ Locked shape:
 
 Required semantics:
 - Streamlit may use a Streamlit secrets adapter.
-- Reflex/container deployment may use environment/deployment secrets.
+- Reflex/container deployment may use environment/secrets.
 - tests may inject a mapping/source.
 - existing per-user → `default` fallback semantics must remain.
 - identity validation and DB path containment remain generic and preserved.
@@ -208,6 +208,62 @@ RJ-0 output must record:
 STOP condition:
 If current implementation drift materially invalidates a locked architecture assumption or closed evidence, do not silently adapt the migration. STOP for Governor review.
 
+### RJ-0 Theme Studio deep census checkpoint — LOCKED
+
+Reconciled against current `main` at execution-start HEAD `766717f2989e0dac3bcf7b5b809b9aa0996dcc6d`.
+
+Repository drift from the historical code baseline is governance/documentation-only at this checkpoint; no implementation drift was found that invalidates the accepted migration architecture.
+
+Theme Studio census correction:
+- Theme Studio is already a real production-facing interactive surface, not merely a preview or future requirement.
+- Existing production behavior includes role-based Identity/Cultural DNA selection, Web/Information DNA selection, UI/UX Archetype selection, editable presentation controls, isolated draft state, live preview, explicit Apply Composition, and explicit Discard/Reset.
+- Apply atomically promotes the draft to active presentation state including active theme, active archetype and active composition.
+- Applied custom themes use unique runtime IDs and current-session ownership/discoverability semantics.
+- Therefore Reflex migration MUST preserve these Theme Studio behaviors; it must not downgrade Theme Studio into a simple theme dropdown.
+
+The locked intended journey remains:
+`LOGIN → SELECT THEME + THEME STUDIO → APPLY → MULTIMIND + THEME STUDIO`.
+
+The actual current Streamlit journey differs in orchestration: authentication enters the MultiMind shell, from which Workspace and Theme Studio are available; Theme Studio performs edit/preview/apply inside that authenticated shell. Therefore the migration gap is NOT “build Theme Studio” or “add Apply”. The migration gap is the **entry/handoff orchestration**: provide the locked post-login pre-workspace theme/studio stage, carry the explicitly applied result into the MultiMind workspace, and keep Theme Studio accessible afterwards.
+
+Theme Studio state ownership clarification:
+- Current Theme Studio implementation is Streamlit-hosted and uses `st.session_state` for draft/active presentation state.
+- This does NOT expand RJ-1 into a Theme Studio/core state refactor.
+- Theme draft, active theme, active archetype, active composition, preview state and navigation/handoff remain presentation concerns.
+- Reflex may implement equivalent host-owned presentation state; behavioral contracts must be preserved, not the literal `st.session_state` implementation.
+- Do not move Theme Studio presentation state into core merely to remove Streamlit imports from Theme Studio UI/state modules.
+
+RJ ownership after deep census:
+- RJ-1 remains focused on config/secrets portability, shared application composition, session/history read seams, backup export, and persistence/application boundary cleanup.
+- RJ-3 owns Reflex Theme Studio presentation parity, editor/preview/apply/discard behavior, theme handoff, and the locked pre-workspace journey.
+
+Theme Studio RJ-3 baseline denominator now explicitly includes:
+- production-accessible Theme Studio.
+- role-based DNA composition.
+- archetype selection.
+- editable presentation tokens.
+- isolated draft.
+- live preview.
+- explicit Apply.
+- explicit Discard/Reset.
+- Apply updates active theme.
+- Apply updates active archetype.
+- Apply updates active composition.
+- applied custom-theme session isolation/discoverability semantics.
+- Theme Studio remains reachable from MultiMind.
+
+Additional locked migration requirement/gap:
+`LOGIN → PRE-WORKSPACE THEME / THEME STUDIO STAGE → EXPLICIT APPLY → MULTIMIND WORKSPACE → THEME STUDIO REMAINS ACCESSIBLE`.
+
+Checkpoint verdict:
+- architecture invalidated: NO.
+- Theme Studio rebuild required: NO.
+- Theme Studio behavioral migration required: YES.
+- journey gap type: ENTRY / HANDOFF ORCHESTRATION.
+- RJ-1 scope expansion: NO.
+- RJ-3 denominator strengthened: YES.
+- new hard blockers: 0.
+
 ## Standard RJ bundle completion evidence — LOCKED
 
 Every implementation bundle RJ-1 through RJ-6 must end with a standardized completion report/evidence package and STOP before the next bundle begins.
@@ -300,7 +356,7 @@ Exact names may change if implementation evidence requires it, but the capabilit
 
 ### RJ-1D — Backup boundary
 Presentation must not own direct SQLite backup-file reading.
-Provide a narrow generic database export/backup operation while preserving the existing safe restore application contract.
+Provide a narrow generic export/download operation while preserving the existing safe restore application contract.
 
 ### RJ-1E — Compatibility
 RJ-1 must preserve:
@@ -332,7 +388,7 @@ Do not create abstraction merely for architectural aesthetics. A new seam is jus
 
 - RJ-1: generic config/secrets portability.
 - RJ-1: production application read/export seams and shared composition root.
-- RJ-3: preserve the locked Theme Studio production journey and functional parity.
+- RJ-3: preserve full existing Theme Studio behavior plus implement the locked pre-workspace entry/handoff journey.
 - RJ-4: exact durable production storage/runtime deployment contract.
 - RJ-4/RJ-6: production restart/recreate persistence proof.
 - RJ-6: explicit rollback drill.
