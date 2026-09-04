@@ -1,11 +1,11 @@
 # MultiMind Design DNA — Documentation Consolidation Protocol
 
-Status: GOVERNOR MASTER RULE — ACTIVE
+Status: GOVERNOR MASTER RULE — ACTIVE / KNOWN-SOURCE DISPOSITION CLOSED
 Date: 2026-09-04
 
 ## Decision
 
-The Design DNA corpus will be consolidated directly into the MultiMind GitHub repository as a modular, navigable knowledge base instead of relying on a growing collection of chat-local Markdown artifacts or compressing all history into one lossy monolithic summary.
+The Design DNA corpus is consolidated into the MultiMind GitHub repository as a modular, navigable knowledge base rather than depending on unordered chat-local Markdown or one lossy monolithic summary.
 
 Working branch:
 
@@ -15,31 +15,76 @@ Target root:
 
 `docs/design-dna/`
 
-Migration Gate and production migration remain frozen while this consolidation is incomplete.
+Documentation consolidation is separate from production migration. No Codex/production work is authorized merely because archival closure is achieved.
 
 ## Objective
 
-Preserve the maximum recoverable detail from the accumulated Design DNA research while making future Governor/research/migration sessions able to navigate the corpus without rereading dozens of unordered Markdown files.
+Preserve all recoverable historical Design-DNA detail while making current truth easy to navigate.
 
-The governing requirement is:
+Hard law:
 
 `NO DETAIL LOSS BY CLEANUP`
 
-Cleanup means classification, indexing, reconciliation, modularization and explicit supersession. It does NOT mean deleting inconvenient history.
+Cleanup means classification, indexing, reconciliation, modularization and explicit supersession. It does not mean deleting inconvenient history.
 
-## Required workflow
+## Three-layer preservation model
 
-`DISCOVER → INVENTORY → CLASSIFY → CONTENT-COMPARE → RECONCILE → CANONICALIZE → CROSS-LINK → ZERO-LOSS AUDIT → REVIEW → PR/MERGE`
+### Layer A — Canonical current truth
 
-Every discovered artifact must be classified before consolidation as one of:
+Current governance, corpus membership, calibration state and migration packaging.
 
-- AUTHORITATIVE_CURRENT
-- AUTHORITATIVE_SUPPORTING
-- HISTORICAL_VALID
-- SUPERSEDED_TRACE
-- DUPLICATE_BYTE_OR_CONTENT
-- BRANCH_BRIEF / NON_CANONICAL
-- UNKNOWN_REQUIRES_RECONCILIATION
+Primary files:
+- `README.md`
+- `governance/CANONICAL_CONSTITUTION.md`
+- `corpora/CORPUS_INDEX.md`
+- `calibration/GLOBAL_CALIBRATION_LEDGER.md`
+- `calibration/GLOBAL_EQ3_CLOSURE.md`
+- `migration/MIGRATION_BATCH_MAP.md`
+- `TIMELINE_INDEX.md`
+
+### Layer B — Raw historical archive
+
+`archive/raw/`
+
+Exact source text where the complete original is retrievable. Raw files are never rewritten to look current.
+
+### Layer C — Memory-reconstructed archive
+
+`archive/reconstructed-memory/`
+
+Explicitly non-verbatim surrogates for historical sources whose full original text is unavailable/truncated.
+
+Hard distinction:
+
+`RAW VERBATIM SOURCE != MEMORY RECONSTRUCTION != CURRENT CANON`
+
+A memory surrogate preserves only safely recoverable decisions, counters, relationships, chronology and governance meaning. It never claims to reproduce missing original prose.
+
+## Required source-disposition workflow
+
+```text
+DISCOVER
+→ INVENTORY
+→ CLASSIFY
+→ TRY FULL RETRIEVAL
+
+IF FULL:
+  RAW MIRROR
+  → VERIFY WHEN POSSIBLE
+
+IF TRUNCATED:
+  CHECK SURVIVING SOURCE + CUMULATIVE PROJECT MEMORY
+  → MEMORY_RECONSTRUCTED_SURROGATE
+
+IF MEMORY/EVIDENCE INSUFFICIENT:
+  RAW_ARCHIVE_PENDING_FULL_SOURCE_ACCESS
+
+THEN:
+  RECONCILE
+  → CROSS-LINK
+  → TIMELINE
+  → ZERO-LOSS AUDIT
+```
 
 ## Source precedence
 
@@ -47,21 +92,32 @@ Every discovered artifact must be classified before consolidation as one of:
 2. Latest explicit user/HQ decision.
 3. Latest accepted MASTER LOCK/checkpoint.
 4. Latest accepted research/calibration artifact.
-5. Older artifacts as cumulative research/history.
+5. Older artifacts as cumulative history.
+6. Memory reconstruction only for historical recovery where exact source is unavailable.
 
-A newer artifact may supersede a status, denominator, interpretation or contract field without making the older artifact worthless. The old artifact remains an audit trail unless it is proven to be a true duplicate.
+A memory surrogate never outranks a later exact source or current canon.
 
 ## Duplicate rule
 
 Same filename is not sufficient evidence of duplication.
 
-Before marking duplicate, compare content or otherwise establish semantic/byte identity. If two copies differ, both remain until their relationship is reconciled.
+- equality proven → `DUPLICATE_VERIFIED`;
+- difference proven → `VARIANT_VERIFIED_DISTINCT`;
+- full comparison unavailable → `DUPLICATE_CANDIDATE` and preserve all known source identities.
+
+`DUPLICATE_CANDIDATE != SOURCE_UNACCOUNTED`.
+
+Do not delete a candidate merely to make the manifest cleaner.
 
 ## Supersession rule
 
-Superseded claims are not silently rewritten out of history.
+A later accepted state may supersede status, denominator or interpretation without deleting the historical artifact.
 
-Example class: earlier residual censuses may contain pre-final denominators while the accepted Batch 9 manifest locks the current denominator at 271. Canonical docs expose the final value; archive/index records explain the historical transition.
+Canonical example:
+
+`273 historical denominator → HQ-corrected 271 → Global Calibration 271/271`.
+
+All states remain historically traceable; only 271 is current implementation truth.
 
 ## Cumulative research inheritance
 
@@ -69,74 +125,74 @@ Failed methods, dead routes, false positives, evidence traps, negative fixtures,
 
 A failed research route is not documentation garbage.
 
-## Canonical vs archive
-
-Canonical documents answer: "What is true/current now?"
-
-Archive/history answers: "How did we get here, what failed, what was superseded, and where can the original evidence path be recovered?"
-
-Both are required.
-
-## Structure policy
-
-The curated knowledge base is modular by responsibility/family rather than by chat chronology:
-
-- governance/
-- corpora/cultural/
-- corpora/country-web/
-- corpora/personal-media/izzul/
-- corpora/personal-media/miko/
-- corpora/temporal/
-- engines/material-environment/
-- corpora/material-named/
-- fixtures/
-- calibration/
-- migration/
-- archive/
-
-Operational packaging does not change ontology or canonical IDs.
-
-## Git policy
-
-Consolidation occurs on a dedicated documentation branch. Do not merge directly to `main` while inventory/reconciliation remains incomplete.
-
-The existing production `docs/design_dna.md` is not overwritten merely because a new curated tree exists. Its relationship to the new corpus must first be explicitly classified/reconciled.
-
-A PR/merge is permitted only after the documentation audit can state with evidence that authoritative current state is represented and known historical/superseded material has a traceable preservation route.
-
 ## Current closure anchor
 
-The consolidation must preserve these locked facts unless newer explicit evidence supersedes them:
+Accepted current state:
 
-- Global additive denominator: 271.
-- Global EQ3: 271/271 PASS.
-- Reference: 160.
-- Engine: 29.
-- Primitive: 68.
-- Fixture: 14.
-- Manifest residual: 0.
-- Research/EQ3 reopen: 0.
-- Asset applicable: 207.
-- Asset not applicable: 64.
-- Final production assets approved: 0.
-- Direct-IP gated references: 75.
-- Migration Gate Review ready: YES.
-- Migration authorized: NO.
-- Production migration performed: NO.
-- EQ4: NOT STARTED.
+```text
+GLOBAL_DENOMINATOR = 271
+GLOBAL_EQ3 = 271 / 271
+REFERENCE = 160
+ENGINE = 29
+PRIMITIVE = 68
+FIXTURE = 14
+MANIFEST_RESIDUAL = 0
+RESEARCH_REOPEN = 0
+ASSET_APPLICABLE = 207
+ASSET_NOT_APPLICABLE = 64
+ASSET_FINAL_APPROVED = 0
+DIRECT_IP_GATED = 75
+MIGRATION_AUTHORIZED = NO
+PRODUCTION_MIGRATION_PERFORMED = NO
+EQ4 = NOT_STARTED
+```
+
+## Current archival closure state
+
+The known named/source-known Design-DNA corpus now has a durable disposition.
+
+```text
+KNOWN_NAMED_SOURCE_CENSUS = COMPLETE
+KNOWN_SOURCE_WITHOUT_DISPOSITION = 0
+KNOWN_SOURCE_DISPOSITION_AUDIT = PASS
+GLOBAL_CALIBRATION_ARTIFACT_FAMILIES = 9 / 9 DISPOSITIONED
+CURRENTLY_DISCOVERED_CORPUS_ZERO_LOSS_AUDIT = PASS_WITH_EXPLICIT_RAW_EXACT_TEXT_EXCEPTIONS
+```
+
+Unknown historical artifacts that may surface later are handled as condition-driven archival recovery. They are not an infinite unnamed blocker.
+
+## Git / merge policy
+
+Consolidation remains on its dedicated documentation branch until the user/Governor explicitly merges it.
+
+The existing production `docs/design_dna.md` is not silently overwritten by consolidation.
+
+Current state:
+
+```text
+BRANCH = docs/design-dna-consolidation
+BRANCH_MERGED_TO_MAIN = NO
+DOCUMENTATION_CONTENT_ARCHIVE_BLOCKER = CLEARED
+```
+
+A merge is now a separate user/Governor action, not an archival-research task.
 
 ## Migration firewall
 
-Documentation consolidation is NOT migration authorization.
+Documentation closure is NOT migration authorization.
 
-No Design DNA implementation, Reflex production migration, EQ4 claim or production architecture mutation follows merely from the documentation branch existing.
+Required order:
 
-Required order remains:
+`DOCUMENTATION CLOSURE → USER/GOVERNOR ACCEPTANCE + MERGE → MIGRATION GATE REVIEW → SEPARATE AUTHORIZATION → IMPLEMENTATION → EQ4`
 
-`DOCUMENTATION CONSOLIDATION → ZERO-LOSS AUDIT → GOVERNOR ACCEPTANCE → MIGRATION GATE REVIEW → SEPARATE AUTHORIZATION → IMPLEMENTATION/EQ4`
+No Design-DNA runtime migration, Reflex production work or EQ4 claim follows automatically from this protocol.
 
 ## Future-chat operating rule
 
-Future sessions should begin at `docs/design-dna/README.md`, then load only the canonical family/governance documents relevant to the task. Historical artifacts are opened when provenance, contradiction, recovery, or forensic detail requires them.
+Future sessions begin at `docs/design-dna/README.md` and load only the relevant current canonical documents.
 
-This replaces dependence on one giant chat context without sacrificing the underlying historical corpus.
+Use `TIMELINE_INDEX.md` for chronology.
+Use `archive/RAW_SOURCE_MANIFEST_v2.md` + `SOURCE_CENSUS_LEDGER_v1.md` for source status.
+Use raw/surrogate historical files only when provenance, contradiction, cumulative research or forensic detail requires them.
+
+This removes dependence on giant chat context without pretending historical source loss never occurred.
