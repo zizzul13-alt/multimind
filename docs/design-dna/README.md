@@ -1,8 +1,8 @@
 # MultiMind Design DNA — Canonical Documentation Index
 
-Status: SEMANTIC CONSOLIDATION COMPLETE — ZERO-LOSS AUDIT PASS
+Status: CANONICAL SEMANTIC CONSOLIDATION PASS / VERBATIM RAW ARCHIVE IN PROGRESS
 
-This directory is the curated Design DNA knowledge base for Governor/research/migration continuation. Historical source artifacts are not silently erased; File Library remains the forensic raw-source archive for exact old text/tables that have not been imported byte-for-byte.
+This directory is the curated Design DNA knowledge base and the primary navigation surface for Governor/research/Codex migration work. Historical source artifacts are preserved under `archive/raw/` in chronological lineage; File Library remains a forensic source only for historical Markdown that has not yet been mirrored verbatim.
 
 ## Current locked state
 
@@ -17,25 +17,43 @@ This directory is the curated Design DNA knowledge base for Governor/research/mi
 - Asset applicability: 207 applicable / 64 not applicable.
 - Final production assets approved: 0.
 - Direct-IP gated references: 75.
-- Migration Gate Review ready: YES.
+- Migration Gate Review readiness from Design-DNA research: YES.
+- Documentation archive gate: BLOCKED until verbatim archive/manifest closure.
 - Migration authorized: NO.
 - Production migration performed: NO.
 - EQ4: NOT STARTED.
 
-## Read order
+## Codex read order — current truth first
 
-1. `governance/CANONICAL_CONSTITUTION.md`
-2. `CORPUS_INDEX.md`
-3. `calibration/GLOBAL_CALIBRATION_LEDGER.md`
-4. `GLOBAL_EQ3_CLOSURE.md`
-5. `migration/MIGRATION_BATCH_MAP.md`
-6. `ZERO_LOSS_AUDIT.md`
+Codex MUST begin here and follow this order. Do not infer current truth by replaying raw historical Markdown.
 
-For historical reconciliation use:
+1. `governance/CANONICAL_CONSTITUTION.md` — current global laws, resolver, safety, accessibility, provenance.
+2. `corpora/CORPUS_INDEX.md` — current corpus membership/grouping and additive/non-additive boundaries.
+3. `calibration/GLOBAL_CALIBRATION_LEDGER.md` — current 271/271 calibration arithmetic and batch closure.
+4. `calibration/GLOBAL_EQ3_CLOSURE.md` — current EQ3 implementation-ready closure meaning.
+5. `migration/MIGRATION_BATCH_MAP.md` — operational migration order and user-facing/internal grouping.
+6. `TIMELINE_INDEX.md` — chronological Design-DNA lineage and which historical artifact was superseded by what.
+7. `archive/RAW_SOURCE_MANIFEST_v2.md` — raw mirror/source-ID/duplicate/full-source recovery status.
+8. `ZERO_LOSS_AUDIT.md` — documentation archive closure state.
 
-- `INVENTORY_RECONCILIATION.md`
-- `archive/HISTORICAL_SUPERSESSION_LEDGER.md`
-- original File Library artifacts when exact historical wording/evidence is required.
+Historical/raw files are supporting evidence. Codex should consult them only when a canonical contract points to provenance/lineage detail, when implementation needs a detail intentionally not duplicated in the canonical layer, or when a Governor asks for historical reconciliation.
+
+## Timeline model
+
+Every Design-DNA Markdown belongs to a chronology. Preserve that chronology rather than flattening old and new documents into one undifferentiated pile.
+
+Status vocabulary:
+
+- `FINAL_CURRENT`
+- `MASTER_LOCK`
+- `AUTHORITATIVE_SUPPORTING`
+- `HISTORICAL_VALID`
+- `SUPERSEDED_HISTORICAL`
+- `BRANCH_BRIEF`
+- `VARIANT_VERIFIED_DISTINCT`
+- `PENDING_FULL_SOURCE_ACCESS`
+
+`TIMELINE_INDEX.md` is the human/Codex map from historical research order to current final documents.
 
 ## Precedence
 
@@ -72,37 +90,39 @@ TP19/TP20 are non-additive metadata/history. F11 is historical non-additive. His
 - 271 calibrated units != 271 user-facing theme buttons.
 - Calibration batch != migration batch.
 
-## Consolidation semantics
+## Archive model
 
-Every source is interpreted through one of these statuses:
+The documentation system has three separate layers:
 
-- AUTHORITATIVE_CURRENT
-- AUTHORITATIVE_SUPPORTING
-- HISTORICAL_VALID
-- SUPERSEDED_TRACE
-- DUPLICATE_BYTE_OR_CONTENT
-- BRANCH_BRIEF / NON_CANONICAL
-- UNKNOWN_REQUIRES_RECONCILIATION
+`CANONICAL INDEX / CONTRACTS` = current truth Codex should implement.
 
-No source detail is intentionally discarded merely to make the tree smaller. Current canonical docs expose present truth; history/index docs preserve important transitions, failed routes and supersession relationships.
+`TIMELINE INDEX` = chronological map explaining how current truth was reached and which document is final/current.
+
+`RAW ARCHIVE` = verbatim historical evidence; never silently rewritten to look current.
+
+Every recoverable historical Design-DNA Markdown must ultimately be mirrored verbatim. A truncated retrieval is recorded as `PENDING_FULL_SOURCE_ACCESS`, not reconstructed from memory.
 
 ## Zero-loss scope
 
-`SEMANTIC_ZERO_LOSS_AUDIT = PASS`
+`CANONICAL_SEMANTIC_CONSOLIDATION = PASS`
 
-This means current governance, denominator, corpus boundaries, calibration closure, historical barriers, known supersessions and migration boundary are sufficiently preserved for safe continuation without depending on this chat.
+`RAW_VERBATIM_ARCHIVE = IN_PROGRESS`
 
-It does NOT mean every historical File Library Markdown has been mirrored byte-for-byte into GitHub. Exact raw historical artifacts remain available as forensic source material and may later be imported under `archive/raw/` if full repository self-containment is desired.
+`FULL_DOCUMENTATION_ZERO_LOSS = OPEN`
+
+`MIGRATION_GATE = BLOCKED_BY_DOCUMENTATION_ARCHIVE_COMPLETION`
+
+The earlier semantic-only zero-loss interpretation is superseded by the user's later explicit requirement that all recoverable words from all historical Design-DNA Markdown be preserved in GitHub.
 
 ## Migration boundary
 
 The accepted operational migration map is M0–M12. Documentation consolidation does not authorize migration.
 
-Next valid chapter:
+When archive closure is complete, the next valid chapter is:
 
 `MIGRATION GATE REVIEW`
 
-Current safety state remains:
+Current safety state:
 
 `MIGRATION_AUTHORIZED = NO`
 
