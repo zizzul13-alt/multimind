@@ -27,6 +27,14 @@ For every substantive Governor result/decision:
 - ACC KEEP MASTER does NOT authorize production migration.
 - Accepted state is cumulative. Prior accepted state may only be superseded by newer evidence plus explicit acceptance.
 
+## Accepted Master Implementation Brief
+
+`docs/governance/REFLEX_RORO_JONGGRANG_MIGRATION_BRIEF.md` is the accepted **MULTIMIND REFLEX — RORO JONGGRANG PRODUCTION MIGRATION BRIEF v1** and is the cumulative implementation instruction for RJ-0 through RJ-6.
+
+Status: `ACC KEEP MASTER`.
+
+The brief inherits this ledger and all compatible locked decisions below. It does NOT authorize Codex by itself and does NOT authorize production cutover. Codex dispatch still requires explicit `[4]`/user authorization; production replacement still requires the Final Governor Migration Gate.
+
 ## Locked production baseline
 
 - Repository: `zizzul13-alt/multimind`
