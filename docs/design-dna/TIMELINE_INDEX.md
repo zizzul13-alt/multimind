@@ -1,284 +1,350 @@
 # MultiMind Design DNA — Timeline Index
 
-STATUS: ACTIVE CHRONOLOGICAL NAVIGATION INDEX
-PURPOSE: Order Design-DNA documentation by research/governance chronology while clearly marking the latest authoritative/final state for Codex, Governor, and future maintainers.
+STATUS: CURRENT CHRONOLOGICAL / AUTHORITY NAVIGATION INDEX
+DATE RECONCILED: 2026-09-04
+PURPOSE: preserve historical research order while making the current implementation authority unambiguous.
 
-## Navigation law
+## 0. Navigation law
 
-Historical Markdown is preserved in chronological order. Later accepted decisions may supersede earlier claims without deleting the earlier artifact.
+Historical Markdown is never deleted merely because a later accepted state supersedes it.
 
-Use these status labels:
+Status labels:
 
-- `FINAL_CURRENT` — current authoritative state for implementation/migration reading.
-- `MASTER_LOCK` — accepted durable lock/checkpoint; current unless a later lock supersedes it.
-- `AUTHORITATIVE_SUPPORTING` — current law/supporting contract, not the single final corpus result.
-- `HISTORICAL_VALID` — valid historical state useful for cumulative inheritance.
-- `SUPERSEDED_HISTORICAL` — preserved historical state superseded by later accepted state.
-- `BRANCH_BRIEF` — execution/research instruction, not final canon.
-- `VARIANT_VERIFIED_DISTINCT` — same/similar filename but distinct historical content; preserve separately.
-- `PENDING_FULL_SOURCE_ACCESS` — known historical source whose exact full text is not yet recoverable.
+- `FINAL_CURRENT` — current authoritative implementation/migration reading state.
+- `MASTER_LOCK` — accepted durable checkpoint; authoritative within its scope unless superseded.
+- `AUTHORITATIVE_SUPPORTING` — current law/supporting contract, not the single final result for a corpus.
+- `HISTORICAL_VALID` — valid historical state retained for cumulative inheritance.
+- `SUPERSEDED_HISTORICAL` — preserved but replaced for current authority by a later state.
+- `BRANCH_BRIEF` — research/execution instruction; not final canon.
+- `RAW_ARCHIVED_VERIFIED` / `RAW_MIRRORED_PRESENT` — historical exact-source layer.
+- `MEMORY_RECONSTRUCTED_SURROGATE` — non-verbatim recovery layer used only when original full text is unavailable/truncated.
+- `VARIANT_VERIFIED_DISTINCT` — similarly named artifacts proven different; preserve all.
+- `DUPLICATE_CANDIDATE` — same/near title source identities whose full equality is not proven.
+- `SOURCE_NOT_YET_DISCOVERED` — lineage suggests a possible source but exact artifact identity is not recovered.
 
-## Codex entrypoint
+Hard law:
 
-Codex MUST NOT infer current Design-DNA truth by reading raw history sequentially.
+`MEMORY SURROGATE != RAW SOURCE != CURRENT CANON`.
 
-Codex should begin at:
+## 1. Codex / implementer entrypoint
+
+Codex MUST NOT discover current Design-DNA truth by replaying historical MDs in sequence.
+
+Current read order:
 
 1. `README.md`
 2. `governance/CANONICAL_CONSTITUTION.md`
-3. `CORPUS_INDEX.md`
+3. `corpora/CORPUS_INDEX.md`
 4. `calibration/GLOBAL_CALIBRATION_LEDGER.md`
 5. `calibration/GLOBAL_EQ3_CLOSURE.md`
 6. `migration/MIGRATION_BATCH_MAP.md`
-7. `archive/RAW_SOURCE_MANIFEST_v2.md`
+7. `TIMELINE_INDEX.md`
+8. `archive/RAW_SOURCE_MANIFEST_v2.md`
 
-Historical/raw files are consulted only when implementation needs provenance, lineage, supersession history, or a detail not reproduced in the current canonical contract.
+Raw/surrogate history is consulted only for provenance, lineage, supersession, failed-route knowledge, or details not reproduced in current canonical contracts.
 
-## Final-current authority map
-
-This table answers the implementation question "which file is the final/current state for this family?" Historical files remain available below in chronological order.
+## 2. Final-current authority map
 
 | Family / concern | Final/current authority | Status |
 |---|---|---|
-| Global governance / resolver / safety | `governance/CANONICAL_CONSTITUTION.md` | `FINAL_CURRENT` |
-| Corpus membership / user-facing grouping | `CORPUS_INDEX.md` | `FINAL_CURRENT` |
-| Global calibrated state | `calibration/GLOBAL_CALIBRATION_LEDGER.md` | `FINAL_CURRENT` |
-| Global EQ3 closure semantics | `calibration/GLOBAL_EQ3_CLOSURE.md` | `FINAL_CURRENT` |
-| Migration order | `migration/MIGRATION_BATCH_MAP.md` | `FINAL_CURRENT` |
-| Wave D fixtures | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_D_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
+| Global constitution / resolver / safety | `governance/CANONICAL_CONSTITUTION.md` | `FINAL_CURRENT` |
+| Corpus membership and user-facing grouping | `corpora/CORPUS_INDEX.md` | `FINAL_CURRENT` |
+| Global calibrated denominator/state | `calibration/GLOBAL_CALIBRATION_LEDGER.md` | `FINAL_CURRENT` |
+| Meaning of EQ3 closure | `calibration/GLOBAL_EQ3_CLOSURE.md` | `FINAL_CURRENT` |
+| Migration dependency/order map | `migration/MIGRATION_BATCH_MAP.md` | `FINAL_CURRENT` |
+| Wave D | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_D_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
 | Wave E — Izzul | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_E_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
 | Wave F — Miko | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_F_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
-| Wave G — Country-Web research closure | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK`; other same-name variants remain historical |
-| Historical Track M | `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_v1_DEEP_ACCEPTANCE_CHECKPOINT_v1.md` + later archival barrier artifacts | `AUTHORITATIVE_SUPPORTING`; historical corpus remains unresolved |
-| Track M_R — reconstructed named materials | `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_R_EQ3_FULL_PASS_LOCK_CHECKPOINT_v1.md` plus later Batch-3 calibration lock | `FINAL_CURRENT / MASTER_LOCK` |
-| Wave H recovery closure | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_H_RESEARCH_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
-| Track T-I music/temporal closure | `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_T_I_v3_DEEP_FULL_PASS_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
-| Final global denominator | current calibration/census canonical docs; historical 273/271 source lineage remains archived separately | `FINAL_CURRENT` |
-| Raw archive/source-ID state | `archive/RAW_SOURCE_MANIFEST_v2.md` | `FINAL_CURRENT` for archive bookkeeping |
+| Wave G — Country-Web | final `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1.md` + Batch7 lock | `FINAL_CURRENT / MASTER_LOCK` |
+| Historical Track M | latest historical Track-M checkpoint + archival barrier record | `AUTHORITATIVE_SUPPORTING`; corpus cardinality remains unknown |
+| Track M_R | `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_R_EQ3_FULL_PASS_LOCK_CHECKPOINT_v1.md` + Batch3 lock | `FINAL_CURRENT / MASTER_LOCK` |
+| Wave H | `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_H_RESEARCH_LOCK_CHECKPOINT_v1.md` | `FINAL_CURRENT / MASTER_LOCK` |
+| Track T-I | `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_T_I_v3_DEEP_FULL_PASS_LOCK_CHECKPOINT_v1.md` + Batch1 current calibration state | `FINAL_CURRENT / MASTER_LOCK` |
+| Final global denominator | current calibration ledger + Batch9 lock | `FINAL_CURRENT` = 271 |
+| Archive/source bookkeeping | `archive/RAW_SOURCE_MANIFEST_v2.md` + `archive/SOURCE_CENSUS_LEDGER_v1.md` | `FINAL_CURRENT` for archival status |
 
-## Chronological program map
+## 3. Foundation / Recovery / B-series era — 2026-09-01
 
-### Foundation / B-series era
+This era established the mechanism-composition constitution, 15-axis direction, semantic ownership, Reading Sanctuary, accessibility veto, historical Cultural and Country-Web surfaces, normalized Material/Environment engines, Personal Media corpora, benchmark marriages, first executable projection slice and global equalization doctrine.
 
-Early Design-DNA research established the cultural tiers, Country-Web corpus, Material/Environment engines, personal-media corpora, benchmark marriages, resolver/equalization rules, and first executable projection contracts.
+Historical chain:
 
-Current final/canonical state is not taken directly from early B-series artifacts when later Wave/Track/Calibration locks exist.
+```text
+Recovery Ledgers v2→v7
+→ B1 Tier S
+→ B2 Tier A
+→ B3 Tier B + Routing
+→ B4 Country-Web
+→ B4D Web Corpus Deepening
+→ B5 Material + Environment
+→ B6 Benchmark Marriages
+→ B7 Izzul Corpus
+→ B8 Miko Deep + Evidence Closure
+→ Canonical Master Index / Unresolved Gap Ledger
+→ B9 First Executable Projection Slice
+→ B10 Global Equalization
+→ B10 Torture + Lock
+→ Wave-B topology/archetype proving
+```
 
-Known important lineage:
-- B1 Cultural Tier S
-- B2 Cultural Tier A
-- B3 Tier B + routing
-- B4 Country-Web
-- B4D Country-Web corpus deepening
-- B5 Material + Environment
-- B6 Benchmark marriages
-- B7 Izzul corpus
-- B8 Miko corpus
-- B9 first executable projection slice
-- B10 Global Equalization Torture + Lock
+Current archive state:
+- exact full source where recoverable lives under `archive/raw/`;
+- truncated/unavailable historical records above have clearly labeled files under `archive/reconstructed-memory/`;
+- no memory reconstruction is current implementation authority.
 
-Status: historical/supporting lineage; later Wave and Global Calibration documents determine current final maturity.
+B10's durable law remains historical/supporting: `FIRST EXECUTABLE != FINAL CORPUS`; RPP and CPP are separate; reference identity is not erased by primitive dedup.
 
-### Wave C — normalized Material × Environment
-
-Chronology:
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_C_BRANCH_BRIEF_v1.md` — `BRANCH_BRIEF`
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_C_CONTINUATION_BRIEF_v2.md` — `BRANCH_BRIEF`
-- later Wave-C result/closure artifacts — archive as discovered
-
-Current final state:
-- Material M1–M15 = 15/15 EQ3
-- Environment E1–E14 = 14/14 EQ3
-- total = 29/29
-
-Final current source for implementation: Global Calibration Batch 2 + current calibration ledger, not the early Wave-C briefs.
-
-### Wave D — expressive/productive-tension fixtures
+## 4. Wave C — normalized Material × Environment
 
 Chronology:
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_D_BRANCH_BRIEF_v1.md` — `BRANCH_BRIEF`
-- historical expressive-tension result(s) — archive as discovered
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_D_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
 
-Current final state:
-- F03/F06/F13 = 3/3 EQ3 CPP
-- EQ4 = 0
+1. `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_C_BRANCH_BRIEF_v1.md` — `BRANCH_BRIEF`.
+2. `archive/reconstructed-memory/MULTIMIND_DESIGN_DNA_WAVE_C_MATERIAL_ENVIRONMENT_DEEP_v1__MEMORY_RECONSTRUCTION.md` — historical result surrogate.
+3. `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_C_CONTINUATION_BRIEF_v2.md` — `BRANCH_BRIEF`.
+4. `archive/reconstructed-memory/MULTIMIND_DESIGN_DNA_WAVE_C_MATERIAL_ENVIRONMENT_DEEP_v2__MEMORY_RECONSTRUCTION.md` — closure surrogate.
+5. Global Calibration Batch2 artifact surrogate + exact Batch2 lock — later authority.
 
-### Wave E — Izzul Personal Media
+Final current maturity:
+- M1–M15 = 15/15 EQ3
+- E1–E14 = 14/14 EQ3
+- total 29/29
 
-Chronology:
-- Wave E v1…v5 reports/briefs — historical progression, archive as recovered
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_E_HER_SUMMON_DEEP_CLOSURE_BRIEF_v6.md` — `BRANCH_BRIEF`
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_E_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
+Firewall: `WAVE C COMPLETE != HISTORICAL TRACK M RECOVERED`.
 
-Current final state:
-- Izzul corpus = 36/36 EQ3
-- Anime 15 / Manga 11 / Manhwa 10
-- residual = 0
-- EQ4 = 0
+## 5. Wave D — expressive/productive-tension fixtures
 
-### Wave F — Miko Personal Media
+1. `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_D_BRANCH_BRIEF_v1.md` — brief.
+2. expressive-tension result lineage — historical.
+3. `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_D_LOCK_CHECKPOINT_v1.md` — final Wave-D authority.
 
-Chronology:
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_F_MIKO_FULL_EQUALIZATION_BRIEF_v1.md` — `BRANCH_BRIEF`
-- Wave F v1 result — `PENDING_FULL_SOURCE_ACCESS`
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_F_MIKO_RESIDUAL_EQUALIZATION_BRIEF_v2.md` — `BRANCH_BRIEF`
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_F_v2_DEEP_HQ_STRESS_TEST_v1.md` — `HISTORICAL_VALID`
-- later v3/v4 artifacts — archive as recovered
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_F_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
+Final state: F03/F06/F13 = 3/3 EQ3 CPP; EQ4=0.
 
-Current final state:
-- Miko corpus = 23/23 EQ3
-- residual = 0
-- EQ4 = 0
-- medium-family law: Manhwa/Webtoon strong; Manga supported but thinner; Anime not established by current corpus evidence.
+## 6. Wave E — Izzul Personal Media
 
-### Wave G — Country-Web residual closure
+Historical maturity progression:
 
-Chronology includes multiple verified-distinct lock variants. Preserve all.
+```text
+v1  =  6 / 36 EQ3
+v2  = 29 / 36 EQ3
+v3  = 34 / 36 EQ3
+v4  = 34 / 36 EQ3
+v5  = 35 / 36 EQ3
+v6  = 36 / 36 EQ3
+```
 
-- Wave G v1 census/result — `PENDING_FULL_SOURCE_ACCESS`
-- Wave G v2 equalization variants — `PENDING_FULL_SOURCE_ACCESS`
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1(1).md` — `VARIANT_VERIFIED_DISTINCT`
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1(20260902-074208).md` — `VARIANT_VERIFIED_DISTINCT`
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_G_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
+Chronology / source disposition:
 
-Current final state:
-- final confirmed Country-Web EQ2 denominator = 5
-- 5/5 EQ3: Switzerland, USA, Japan, China, Aotearoa New Zealand
-- Morocco/Poland/Italy reclassified below EQ2
-- residual confirmed EQ2 = 0
+1. v1 result → `archive/reconstructed-memory/...WAVE_E_IZZUL_CORPUS_EQUALIZATION_v1__MEMORY_RECONSTRUCTION.md`.
+2. v2 brief → exact raw; v2 result → memory surrogate.
+3. v3 brief → exact raw; v3 result → memory surrogate.
+4. v4 final-micro brief → exact raw; v4 result → exact raw.
+5. v5 residual-closure brief → exact raw; v5 result → exact raw.
+6. v6 Her Summon brief → exact raw; v6 result → memory surrogate.
+7. `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_E_LOCK_CHECKPOINT_v1.md` → `FINAL_CURRENT / MASTER_LOCK`.
+8. Global Calibration Batch4 artifact surrogate + exact Batch4 lock → later calibration authority.
 
-### Historical Track M
+Final current state: 36/36 EQ3; Anime15 / Manga11 / Manhwa10; residual0; EQ4=0.
 
-Chronology:
-- Track M recovery v1 report — `PENDING_FULL_SOURCE_ACCESS`
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_v1_DEEP_HQ_STRESS_TEST_v1.md` — `HISTORICAL_VALID`
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_v1_DEEP_ACCEPTANCE_CHECKPOINT_v1.md` — `MASTER_LOCK` for v1 checkpoint only
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_ARCHIVAL_RECOVERY_FORENSICS_BRIEF_v2.md` — `BRANCH_BRIEF`
-- Track M archival recovery result v2 — `PENDING_FULL_SOURCE_ACCESS`
+## 7. Wave F — Miko Personal Media
 
-Current final state:
-- historical Track M remains an unknown-cardinality archival barrier
-- it is NOT Track M_R and NOT M1–M15
-- no fabricated historical membership is allowed
+Historical maturity progression:
 
-### Track M_R — reconstructed named Material corpus
+```text
+v1 =  5 / 23 EQ3
+v2 = 10 / 23 EQ3
+v3 = 20 / 23 EQ3
+v4 = 23 / 23 EQ3
+```
 
 Chronology:
-- reconstructed census v3 and acceptance checkpoint — archive as recovered
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_R_FULL_CORPUS_EQ2_EQUALIZATION_BRIEF_v4.md` — `BRANCH_BRIEF`
-- EQ2 result v4 — historical result
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_R_EQ3_IMPLEMENTER_INDEPENDENCE_TORTURE_BRIEF_v5.md` — `BRANCH_BRIEF`
-- v5 result → 18/25 EQ3
-- v6 final-seven closure
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_M_R_EQ3_FULL_PASS_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK` for research closure
-- `archive/raw/MULTIMIND_DESIGN_DNA_GLOBAL_CALIBRATION_BATCH_3_LOCK_CHECKPOINT_v1.md` — later calibration `MASTER_LOCK`
+- v1 full-equalization brief exact raw + v1 result memory surrogate;
+- v2 residual brief and HQ stress-test exact raw + v2 result memory surrogate;
+- v3 collision/evidence brief exact raw + v3 result memory surrogate;
+- v4 final-three brief exact raw + v4 result memory surrogate;
+- final Wave-F Lock exact raw;
+- Global Calibration Batch5 artifact surrogate + exact Batch5 lock later calibrates MK25+Miko23.
 
-Current final state:
-- Track M_R = 25/25 EQ3
-- residual = 0
-- EQ4 = 0
+Final current state: Miko 23/23 EQ3; residual0; EQ4=0. Manhwa/Webtoon is the strongest established medium family; Manga supported but thinner; Anime not established and must not be invented.
 
-### Wave H — recovery/evidence holds
+## 8. Wave G — Country-Web
 
-Chronology:
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_H_ACTIVATION_CHECKPOINT_v1.md` — `MASTER_LOCK` activation checkpoint
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_H_GLOBAL_RECOVERY_EVIDENCE_HOLD_CENSUS_BRIEF_v1.md` — `BRANCH_BRIEF`
-- Wave H census result v1 — `PENDING_FULL_SOURCE_ACCESS`
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_H_MD_FIRST_DEEP_EXTERNAL_RECOVERY_FORENSICS_BRIEF_v2.md` — `BRANCH_BRIEF`
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_H_v2_DEEP_FORENSICS_ACCEPTANCE_CHECKPOINT_v1.md` — `MASTER_LOCK` intermediate
-- Wave H v3 closure result — archive as recovered
-- `archive/raw/MULTIMIND_DESIGN_DNA_WAVE_H_RESEARCH_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
+Historical denominator evolution:
 
-Current final state:
-- Continuous Knowledge Traversal, Liyelaa, Dumbara = 3/3 research closure
-- Wave H research residual = 0
-
-### Track T — Music / Temporal
+```text
+v1 working EQ2 surface = 8
+v2 confirmed EQ2 denominator = 6
+v3 final additive denominator = 5
+final = 5 / 5 EQ3
+```
 
 Chronology:
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_T_MUSIC_TEMPORAL_ACTIVATION_BRIEF_v1.md` — `BRANCH_BRIEF`
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_T_ACTIVATION_CHECKPOINT_v1.md` — `MASTER_LOCK` activation checkpoint
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_T_DUAL_LANE_SCOPE_AMENDMENT_v1_1.md` — `AUTHORITATIVE_SUPPORTING`
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_T_DUAL_LANE_CORPUS_ONTOLOGY_CENSUS_BRIEF_v1_1.md` — `BRANCH_BRIEF`
-- Track T dual-lane census result v1 — `PENDING_FULL_SOURCE_ACCESS`
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_T_I_16_EQ3_FULL_EQUALIZATION_BRIEF_v2.md` — `BRANCH_BRIEF`
-- Track T-I v2 result — `PENDING_FULL_SOURCE_ACCESS`
-- Track T-I v3 projection hardening result — archive as recovered
-- `archive/raw/MULTIMIND_DESIGN_DNA_TRACK_T_I_v3_DEEP_FULL_PASS_LOCK_CHECKPOINT_v1.md` — `FINAL_CURRENT / MASTER_LOCK`
+- v1 result → memory surrogate;
+- v2 result → memory surrogate; multiple source IDs stay `DUPLICATE_CANDIDATE`;
+- v3 final-two brief → exact raw;
+- v3 result → memory surrogate;
+- three Wave-G lock files → exact raw and `VARIANT_VERIFIED_DISTINCT`; none may be deleted/deduped;
+- final lock + Global Calibration Batch7 lock determine current authority.
 
-Current final state:
-- T-I = exact 16 Izzul Magnum references, 16/16 EQ3
-- TP01–TP18 additive temporal primitives
-- TP19/TP20 non-additive metadata/history
-- T-G remains exploratory/nonblocking
-- EQ4 = 0
+Final five: Switzerland, USA, Japan, China, Aotearoa New Zealand. Six historical Country-Web slots remain `UNKNOWN_NOT_RECOVERED`.
 
-### Final Global Residual Census
+## 9. Historical Track M
 
-Chronology must preserve denominator evolution:
+Chronology:
+- historical recovery v1 result → memory surrogate;
+- v1 HQ stress test → exact raw;
+- v1 acceptance checkpoint → exact raw;
+- archival-forensics brief v2 → exact raw;
+- archival-forensics result v2 → memory surrogate.
 
-1. early v1 result = historical 273-unit state — `SUPERSEDED_HISTORICAL / PENDING_FULL_SOURCE_ACCESS`
-2. v1-1 variant = historical 273-unit state — `SUPERSEDED_HISTORICAL / DUPLICATE_CANDIDATE`
-3. v1.1 HQ-patched family = denominator corrected to 271 — current lineage, multiple source IDs remain under duplicate comparison
-4. HQ-patched-2 variant — preserve separately until relation is proven
+Current truth:
 
-Current final denominator:
-- D_REFERENCE = 160
-- D_ENGINE = 29
-- D_PRIMITIVE = 68
-- D_FIXTURE = 14
-- D_ROUTED = 0
-- D_TOTAL_UNIQUE = 271
+```text
+HISTORICAL TRACK M CARDINALITY = UNKNOWN
+HISTORICAL TRACK M != TRACK_M_R != M1–M15
+```
 
-### Global Calibration B1–B9
+No final/canonical implementation should infer an exact lost historical corpus from reconstructed engines/references.
 
-Chronological calibration sequence:
+## 10. Track M_R — reconstructed named Material corpus
 
-1. Batch 1 Temporal = 34/34
-2. Batch 2 Material × Environment = 29/29
-3. Batch 3 Track M_R = 25/25
-4. Batch 4 P + Izzul = 61/61
-5. Batch 5 MK + Miko = 48/48
-6. Batch 6 Cultural = 55/55
-7. Batch 7 Country-Web = 5/5
-8. Batch 8 Fixtures = 14/14
-9. Batch 9 Manifest/License = non-additive reconciliation
+Chronology:
+- reconstructed census/result v3 → memory surrogate;
+- full-corpus EQ2 brief v4 → exact raw;
+- v4 result → memory surrogate;
+- EQ3 torture brief v5 → exact raw;
+- v5 result → memory surrogate;
+- v6 final-seven result → memory surrogate;
+- final full-pass lock → exact raw;
+- Global Calibration Batch3 artifact surrogate + exact Batch3 lock → later calibration authority.
 
-Current final state:
-`GLOBAL_EQ3 = 271 / 271`
-`RESIDUAL = 0`
-`RESEARCH_REOPEN = 0`
+Important historical discrepancy retained: the v5 branch report's 25/25 claim was not accepted by HQ; HQ accepted 18/25 at that checkpoint. v6 genuinely closed the final seven to 25/25.
 
-For current implementation truth use:
-- `calibration/GLOBAL_CALIBRATION_LEDGER.md`
-- `calibration/GLOBAL_EQ3_CLOSURE.md`
+Final current state: 25/25 EQ3; residual0; EQ4=0.
 
-Raw calibration artifacts/locks remain historical/provenance evidence and must all be mirrored before documentation zero-loss closes.
+## 11. Wave H — recovery / evidence holds
 
-## Final/current implementation reading map
+Historical states are deliberately non-collapsed:
 
-Codex should treat these as the current navigation surface:
+```text
+v1 census: WAVE_H_ELIGIBLE = 0
+v2 evidence recovery: actionable denominator = 3
+final: CKT + Liyelaa + Dumbara = 3 / 3 closed
+```
 
-| Concern | Current document |
-|---|---|
-| Global governance / resolver / safety | `governance/CANONICAL_CONSTITUTION.md` |
-| Current corpus membership and grouping | `CORPUS_INDEX.md` |
-| Current calibrated 271/271 status | `calibration/GLOBAL_CALIBRATION_LEDGER.md` |
-| Current EQ3 closure meaning | `calibration/GLOBAL_EQ3_CLOSURE.md` |
-| Migration order and user-facing grouping | `migration/MIGRATION_BATCH_MAP.md` |
-| Chronological history | `TIMELINE_INDEX.md` |
-| Raw archive state / source IDs / duplicates | `archive/RAW_SOURCE_MANIFEST_v2.md` |
-| Superseded-state relationships | `archive/HISTORICAL_SUPERSESSION_LEDGER.md` |
-| Zero-loss archive closure status | `ZERO_LOSS_AUDIT.md` |
+Chronology:
+- activation checkpoint exact raw;
+- v1 census brief exact raw + v1 result memory surrogate;
+- v2 MD-first brief exact raw + v2 result memory surrogate;
+- v2 acceptance checkpoint exact raw;
+- final research lock exact raw.
 
-## Archive closure boundary
+Final authority: Wave-H Research Lock; historical v1 zero-eligible state remains valid for its date and is not deleted.
 
-Timeline ordering does NOT replace the raw archive requirement.
+## 12. Track T — Music / Temporal
 
-`RAW ARCHIVE = verbatim evidence`
-`TIMELINE INDEX = chronology/navigation`
-`CANONICAL INDEX = current truth/navigation`
+Chronology:
+- Music/Temporal Activation Brief v1 exact raw;
+- Track-T Activation Checkpoint exact raw;
+- Dual-Lane Scope Amendment v1.1 exact raw;
+- Dual-Lane Census Brief v1.1 exact raw;
+- dual-lane census result v1 memory surrogate;
+- T-I 16/16 brief v2 exact raw;
+- T-I v2 result memory surrogate;
+- T-I v3 hardening result memory surrogate;
+- final v3 full-pass lock exact raw;
+- Global Calibration Batch1 giant artifact memory surrogate;
+- exact standalone Batch1 lock MD not recovered, so accepted Batch1 lock state is preserved by `...GLOBAL_CALIBRATION_BATCH_1_LOCK_STATE__MEMORY_RECONSTRUCTION.md` without pretending that filename was historical.
 
-Codex reads canonical/index files first. Raw history is supporting evidence, not an invitation to re-resolve settled governance.
+Final current state:
+- T-I = 16/16 EQ3;
+- TP01–TP18 additive;
+- TP19/TP20 non-additive historical metadata/contract lineage;
+- T-G exploratory/nonblocking;
+- Batch1 total = 34/34.
+
+## 13. Final Global Residual Census — denominator history
+
+Do not flatten this evolution:
+
+```text
+historical v1 / v1-1 = 273
+HQ reconciliation      = 271
+final calibration      = 271 / 271 EQ3
+```
+
+Durable source representations:
+- historical 273 v1 → memory surrogate, `SUPERSEDED_HISTORICAL`;
+- historical 273 v1-1 → memory surrogate + `DUPLICATE_CANDIDATE`;
+- Final Census Brief v1 → exact raw;
+- HQ-patched 271 multi-ID family → memory surrogate + `DUPLICATE_CANDIDATE`;
+- HQ-patched-2 → separate memory surrogate until relation is proven.
+
+Current denominator authority:
+
+```text
+REFERENCE = 160
+ENGINE = 29
+PRIMITIVE = 68
+FIXTURE = 14
+TOTAL = 271
+```
+
+## 14. Global Calibration Batch1–9 — final timeline
+
+| Batch | Scope/result | Giant artifact source | Accepted lock/current-state source |
+|---|---|---|---|
+| B1 | Temporal TP18 + T-I16 = 34/34 | memory surrogate; source pair duplicate-candidate | accepted lock-state memory surrogate; later locks inherit B1 as locked |
+| B2 | Material15 + Environment14 = 29/29 | memory surrogate; duplicate-candidate family | exact raw Batch2 lock |
+| B3 | Track M_R25 = 25/25 | memory surrogate; duplicate-candidate family | exact raw Batch3 lock |
+| B4 | P25 + Izzul36 = 61/61 | memory surrogate; duplicate-candidate family | exact raw Batch4 lock |
+| B5 | MK25 + Miko23 = 48/48 | memory surrogate; duplicate-candidate family | exact raw Batch5 lock |
+| B6 | Cultural55 = 55/55 | memory surrogate; duplicate-candidate family | exact raw Batch6 lock |
+| B7 | Country-Web5 = 5/5 | memory surrogate; duplicate-candidate family | exact raw Batch7 lock |
+| B8 | Fixtures14 = 14/14 | memory surrogate; duplicate-candidate family | exact raw Batch8 lock |
+| B9 | Manifest/License non-additive | memory surrogate; duplicate-candidate family | exact raw Batch9 lock |
+
+Final accepted calibration state:
+
+```text
+GLOBAL_EQ3 = 271 / 271
+GLOBAL_EQ3_RESIDUAL = 0
+RESEARCH_REOPEN = 0
+ASSET_APPLICABLE = 207
+ASSET_NOT_APPLICABLE = 64
+DIRECT_IP_GATED = 75
+```
+
+The giant artifact surrogates preserve recovered contract meaning and arithmetic but do NOT replace the original row-by-row raw source if that source becomes fully retrievable later.
+
+## 15. Archive chronology vs implementation truth
+
+Three layers must remain distinct:
+
+```text
+CURRENT CANONICAL INDEXES
+= what implementers use now
+
+RAW HISTORICAL ARCHIVE
+= exact source evidence where recoverable
+
+MEMORY-RECONSTRUCTED ARCHIVE
+= explicit non-verbatim recovery when exact text is unavailable
+```
+
+Current implementation reading remains the canonical layer. Historical chronology explains how the current state was reached; it does not ask Codex to re-decide settled governance.
+
+## 16. Census / archive state after reconciliation
+
+```text
+KNOWN_NAMED_SOURCE_CENSUS = COMPLETE
+KNOWN_SOURCE_WITHOUT_DISPOSITION = 0
+KNOWN_SOURCE_DISPOSITION = PASS
+GLOBAL_CALIBRATION_SOURCE_FAMILIES = 9 / 9 DISPOSITIONED
+UNKNOWN_HISTORICAL_DISCOVERY = CONDITION_DRIVEN
+RAW_EXACT_RECOVERY_FOR_SURROGATE_ONLY_SOURCES = OPEN IF BETTER ACCESS APPEARS
+MIGRATION_AUTHORIZED = NO
+PRODUCTION = UNTOUCHED
+EQ4 = NOT PERFORMED
+```
+
+A future newly discovered historical MD is added in chronological position and classified without rewriting current canon unless it contains genuinely contradictory evidence.
