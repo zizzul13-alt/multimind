@@ -339,6 +339,143 @@ RJ-3 owns:
 
 RJ-0 found no reason to expand RJ-1 into a broad UI/core refactor.
 
+## RJ-1 — Portability + Application Boundary — IMPLEMENTATION CONTRACT LOCKED
+
+RJ-1 is now the active implementation-preparation bundle. This lock defines the smallest evidence-based implementation contract; it does NOT authorize implementation until explicit `[4] CODEX`/user authorization.
+
+### RJ-1 accepted starting baseline
+
+- Repository state entering RJ-1 preparation: Governor-docs HEAD `ed344e5465823be820d4b20a6f9a022467c9234c`.
+- Production code remains materially identical to the RJ-0 implementation census; the intervening changes are Governor Markdown persistence.
+- RJ-0 is CLOSED / PASS / LOCKED.
+
+### Current application seam evidence
+
+`MultiMindApplication` is already plain Python and owns:
+- `create_session()`.
+- `select_session()` including session-memory hydration.
+- `restore_database()` including runtime invalidation semantics.
+- `execute_chat()` including compression, uploads, continue-context use, routing/debate execution, persistence and result semantics.
+
+It does NOT yet expose the presentation-required generic operations for:
+- listing sessions.
+- reading session chats/history.
+- exporting/downloading the active database backup.
+
+Those are the minimal application read/export gaps to close in RJ-1.
+
+### RJ-1A — Configuration source seam
+
+Current `Config.get_api_keys(user_id)` imports Streamlit internally and reads `st.secrets`. This is the concrete frontend-specific portability blocker.
+
+Required implementation contract:
+- introduce the smallest plain-Python configuration/secret source abstraction or injectable mapping/source needed to resolve API keys independently of Streamlit.
+- preserve validated user IDs before secret lookup.
+- preserve existing per-user → `default` fallback semantics.
+- preserve the same empty-key shape when no configured secrets exist.
+- Streamlit remains supported through a Streamlit adapter/source at the presentation/composition edge.
+- Reflex/container may supply environment/secrets without core/provider knowledge of Reflex.
+- tests must be able to inject a plain mapping/source without importing Streamlit.
+- `Config.get_db_path`, identity validation and path containment remain generic; do not rewrite them merely for symmetry.
+
+Do not introduce a broad configuration framework or dependency-injection container.
+
+### RJ-1B — Shared composition root
+
+Current Streamlit presentation constructs agents/database/application wiring itself. RJ-1 must establish one presentation-independent composition path such as `build_application_for_user(...)` or evidence-equivalent naming.
+
+The shared composition path owns:
+- resolving API configuration from the supplied generic source.
+- constructing the existing provider/agent set with unchanged provider semantics.
+- constructing the user-scoped database from the existing validated DB path contract.
+- constructing `ApplicationRuntime` / `MultiMindApplication` with existing compressor, file handler, debate orchestration and persistence behavior.
+
+Streamlit and future Reflex must consume this shared composition path rather than independently duplicating provider/database/application wiring.
+
+Do not move presentation state such as active theme, archetype, navigation, composer controls or Theme Studio draft into the composition root.
+
+### RJ-1C — Minimal application read seams
+
+Add narrow public application operations sufficient for presentation parity:
+- `list_sessions()` → presentation-readable persisted session list.
+- `get_session_chats(session_id)` or evidence-equivalent → presentation-readable persisted history for a supplied session.
+
+Requirements:
+- operations delegate to existing persistence ownership rather than duplicating SQL.
+- no presentation caller needs `MultiMindApplication._database()`.
+- no new database schema.
+- no new persistence owner.
+- session selection continues to own memory hydration through `select_session()`; listing/reading must not silently mutate runtime memory unless existing semantics explicitly require it.
+
+### RJ-1D — Generic backup/export seam
+
+Add a narrow public application operation such as `export_database()` or evidence-equivalent so presentation no longer resolves `Config.get_db_path()` and opens the SQLite file directly.
+
+Requirements:
+- presentation receives exportable backup bytes/data through the application boundary.
+- existing safe `restore_database()` contract remains the restore owner.
+- preserve existing SQLite format and user namespace; no conversion/export format redesign.
+- do not expose arbitrary filesystem paths to presentation as the replacement abstraction.
+
+### RJ-1E — Streamlit migration onto the seams
+
+RJ-1 is incomplete if generic seams exist but `app.py` continues bypassing them for the targeted operations.
+
+Migrate Streamlit presentation to use the accepted generic seams for:
+- application construction/composition.
+- session listing.
+- session history reads.
+- database backup/export.
+
+Preserve existing production behavior and keep Streamlit runnable as rollback baseline.
+
+### RJ-1F — Required tests / acceptance evidence
+
+Targeted tests must cover at minimum:
+- generic API-key source: per-user hit.
+- generic API-key source: default fallback.
+- generic API-key source: no secrets → stable empty-key mapping.
+- generic API-key source can execute without Streamlit import/dependency.
+- shared composition root uses the supplied generic configuration source and existing validated user DB namespace.
+- `list_sessions()` delegates correctly and does not create/mutate sessions.
+- `get_session_chats()` delegates correctly and does not hydrate/mutate memory as a side effect.
+- export/backup returns the expected current SQLite backup bytes/data through the application boundary.
+- restore behavior/runtime invalidation remains unchanged.
+- existing direct and debate execution boundary tests remain PASS.
+- Streamlit targeted smoke/import or equivalent architecture tests demonstrate targeted direct DB/config bypasses are removed.
+- full regression suite PASS.
+
+### RJ-1 diff guard
+
+Expected change areas are narrow and should primarily involve:
+- configuration source/adapters.
+- composition-root module/path.
+- `core/application.py` public read/export operations.
+- `app.py` adoption of those seams.
+- focused tests.
+
+Unexpected changes require explanation. In particular:
+- database schema change → STOP/GOVERNOR_REVIEW unless proven unavoidable.
+- provider routing/behavior change → STOP/GOVERNOR_REVIEW unless proven required.
+- debate/core-memory semantic rewrite → STOP/GOVERNOR_REVIEW.
+- Reflex dependency/UI implementation in RJ-1 → scope violation; belongs to RJ-2+.
+- Theme Studio presentation rewrite in RJ-1 → scope violation; belongs to RJ-3.
+- FastAPI/REST/HTTP glue → prohibited absent new accepted evidence.
+- framework version upgrade → prohibited in RJ-1.
+
+### RJ-1 completion report
+
+RJ-1 implementation must end with the standard bundle report:
+BASE → IMPLEMENTATION → VERIFICATION → DIFF AUDIT → RESIDUALS → VERDICT → STOP.
+
+No RJ-2 implementation begins before Governor acceptance of RJ-1.
+
+Current RJ-1 preparation verdict:
+- implementation contract: READY / LOCKED.
+- known hard blockers: 0.
+- Codex authorized: NO.
+- production migration authorized: NO.
+
 ## Standard RJ bundle completion evidence — LOCKED
 
 Every implementation bundle RJ-1 through RJ-6 must end with a standardized completion report/evidence package and STOP before the next bundle begins.
@@ -406,63 +543,9 @@ Theme selection, Theme Studio, apply-theme behavior, theme-to-MultiMind handoff,
 
 Design-DNA research/specification work must not be conflated with the production Theme Studio surface. This lock does not create or imply a separate "Design machinery" subsystem.
 
-## RJ-1 stable scope
-
-RJ-1 is not merely a `list_sessions()` patch. Production presentation currently contains persistence/configuration coupling that must be replaced by narrow presentation-independent use-case seams.
-
-### RJ-1A — Config portability
-- generic secret/config source.
-- preserve per-user/default semantics.
-- preserve validated identity semantics and DB path containment.
-
-### RJ-1B — Composition root
-Create/reuse one presentation-independent application composition path for a validated user, responsible for configuration resolution, agent construction, database construction and application/runtime wiring.
-
-Do not duplicate provider/database setup separately in Streamlit and Reflex.
-
-### RJ-1C — Application read boundary
-Required presentation use cases include:
-- `create_session()`
-- `list_sessions()`
-- `select_session()`
-- session chat/history retrieval through a generic seam such as `get_session_chats()`.
-
-Exact names may change if implementation evidence requires it, but the capability/boundary is locked.
-
-### RJ-1D — Backup boundary
-Presentation must not own direct SQLite backup-file reading.
-Provide a narrow generic export/download operation while preserving the existing safe restore application contract.
-
-### RJ-1E — Compatibility
-RJ-1 must preserve:
-- runnable Streamlit baseline.
-- DB paths and schema.
-- user isolation.
-- provider configuration behavior.
-- identity behavior.
-- persistence semantics.
-
-### Boundary law
-Presentation MAY own visual/navigation/form/busy/theme/archetype state.
-
-Presentation MUST NOT own:
-- DB path resolution semantics.
-- direct DB session/history reads.
-- direct DB backup-file reads.
-- persistence lifecycle.
-- provider routing/orchestration.
-- memory persistence.
-- restore mechanics.
-
-Do not expose `MultiMindApplication._database()` to presentation and do not turn `DatabaseManager` into a new presentation API. Add the smallest generic use-case seam when evidence shows a presentation operation requires persistence access.
-
-### Anti-overengineering law
-Do not create abstraction merely for architectural aesthetics. A new seam is justified only when current presentation directly owns persistence, a presentation-specific dependency blocks Reflex portability, or migration proof supplies a concrete requirement.
-
 ## Remaining migration residuals
 
-- RJ-1: generic config/secrets portability.
-- RJ-1: production application read/export seams and shared composition root.
+- RJ-1 implementation is ready but not yet authorized; generic config source, shared composition root, application read/export seams and Streamlit adoption remain to be implemented.
 - RJ-2: Reflex production host implementation on the accepted generic seams.
 - RJ-3: full frozen three-level parity denominator including Theme Studio and pre-workspace handoff.
 - RJ-4: exact durable production storage/runtime deployment contract.
