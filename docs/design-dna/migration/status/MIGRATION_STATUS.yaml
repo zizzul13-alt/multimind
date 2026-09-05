@@ -3,7 +3,7 @@ project: MULTIMIND
 track: DESIGN_DNA_MIGRATION
 authority: GOVERNOR
 updated_at: 2026-09-05
-authoritative_main_at_update: cf365c88826eb68686952cb0e411f47404117fbd
+authoritative_main_at_update: 83eba265aab870e63201f711ebedc1fbb681060c
 
 global_state:
   global_eq3:
@@ -15,8 +15,8 @@ global_state:
     total: 271
     status: NOT_CLAIMED
   production_cutover: false
-  current_closed_batch: M3
-  next_eligible_batch: M4
+  current_closed_batch: M4
+  next_eligible_batch: M5
 
 status_vocabulary:
   accepted: ACC_CLOSED_INTEGRATED
@@ -100,10 +100,14 @@ batches:
     scope_summary: CULTURAL_TIER_S_16_SCALE_OUT
     eq4_credit: 0
   M4:
-    governor_status: NOT_STARTED
-    accepted: false
-    closed: false
-    integrated: false
+    governor_status: ACC_CLOSED_INTEGRATED
+    accepted: true
+    closed: true
+    integrated: true
+    integration_commit: 83eba265aab870e63201f711ebedc1fbb681060c
+    pull_request: 66
+    manifest: docs/design-dna/migration/status/M4_ACC.yaml
+    implementation_report: docs/design-dna/migration/M4_IMPLEMENTATION_REPORT.md
     scope_summary: PRIMITIVES_68
     eq4_credit: 0
   M5:
@@ -164,6 +168,6 @@ batches:
     eq4_credit: 0
 
 next_action:
-  batch: M4
+  batch: M5
   authorized_by_this_file: false
-  instruction: USER_ALREADY_AUTHORIZED_M3_PLUS_M4_BUNDLE_EXTERNALLY; FILE_ITSELF_DOES_NOT_SELF_AUTHORIZE
+  instruction: USER_ALREADY_AUTHORIZED_M4_PLUS_M5_BUNDLE_EXTERNALLY; FILE_ITSELF_DOES_NOT_SELF_AUTHORIZE
