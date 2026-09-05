@@ -12,20 +12,28 @@ laws:
   - PUBLIC_APP_MUST_EVENTUALLY_SURVIVE_PRIVATE_DNA_PACKAGE_ABSENCE_WITH_SAFE_DEFAULT_THEME
   - EXTRACTION_MUST_NOT_REQUIRE_DATABASE_PROVIDER_OR_AI_CORE_CHANGES
   - PRIVATE_EXTRACTION_DOES_NOT_GRANT_EQ4
+  - LEGACY_COMPATIBILITY_PATHS_MAY_ONLY_REEXPORT_QUARANTINED_IMPLEMENTATION
 
 private_extraction_roots:
   canonical_runtime:
     - design_dna/**
   legacy_design_dna_runtime:
     - ui/dna/**
-  theme_studio:
-    - ui/theme_studio/**
+  quarantined_runtime:
+    - dna_quarantine/**
+  theme_studio_implementation:
+    - dna_quarantine/theme_studio/**
   research_governance:
     - docs/design-dna/**
   dna_specific_tests:
     - tests/test_design_dna*.py
     - tests/test_*dna*.py
     - tests/test_*theme_studio*.py
+
+legacy_compatibility_paths:
+  theme_studio:
+    - ui/theme_studio/**
+  rule: SHIMS_ONLY_NO_BUSINESS_OR_PRESENTATION_IMPLEMENTATION
 
 related_surfaces_to_decouple:
   public_host_bridge_candidates:
@@ -44,15 +52,20 @@ related_surfaces_to_decouple:
 
 quarantine_migration_plan:
   Q0_inventory_and_freeze:
-    status: IN_PROGRESS
+    status: COMPLETE
     deliverables:
       - this_manifest
       - dependency_spread_guard
   Q1_theme_studio_move:
-    status: NOT_STARTED
+    status: IMPLEMENTED_PENDING_DURABLE_INTEGRATION
     target_private_path: dna_quarantine/theme_studio/**
     compatibility_path: ui/theme_studio/**
     strategy: MOVE_IMPLEMENTATION_AND_LEAVE_THIN_REEXPORT_SHIMS
+    invariants:
+      - PUBLIC_IMPORT_PATHS_REMAIN_COMPATIBLE
+      - LEGACY_STATE_AND_SURFACE_MODULES_ARE_SHIMS_ONLY
+      - APP_CORE_PROVIDER_DATABASE_BEHAVIOR_UNCHANGED
+      - Q0_DEPENDENCY_SPREAD_FREEZE_REMAINS_ACTIVE
   Q2_legacy_ui_dna_move:
     status: NOT_STARTED
     target_private_path: dna_quarantine/legacy_ui_dna/**
