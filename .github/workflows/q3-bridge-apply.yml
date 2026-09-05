@@ -1,0 +1,75 @@
+name: Q3 Bridge Apply
+on:
+  push:
+    branches: [dna-q3-theme-bridge]
+    paths: [.github/workflows/q3-bridge-apply.yml]
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dna-q3-theme-bridge
+      - name: Apply exact Q3 import-boundary edits
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding="utf-8")
+              if old not in text:
+                  raise SystemExit(f"expected text missing in {path}: {old!r}")
+              p.write_text(text.replace(old, new), encoding="utf-8")
+
+          replace(
+              "app.py",
+              "from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered\nfrom ui.themes import list_themes\nfrom ui.theme_studio.surface import render_theme_studio_surface\n\n# Ensure S6.2 proof Design DNA and themes are registered prior to runtime selector\nensure_proof_dna_and_themes_registered()",
+              "from ui.dna_bridge import ensure_dna_registered, render_theme_studio_surface\nfrom ui.themes import list_themes\n\n# Optional DNA bootstrap: absence of the private package is a valid host state.\nensure_dna_registered()",
+          )
+          replace(
+              "ui/presentation/brand.py",
+              "from ui.dna.resolver import resolve_material, resolve_source_dna, MaterialResolutionResult\nfrom ui.dna.models import DesignDNA\nfrom ui.themes import Theme",
+              "from ui.dna_bridge import resolve_material, resolve_source_dna\nfrom ui.themes import Theme",
+          )
+          replace(
+              "ui/presentation/brand.py",
+              "    theme_or_dna_input: Union[str, Theme, DesignDNA, None],",
+              "    theme_or_dna_input: Union[str, Theme, object, None],",
+          )
+          replace(
+              "ui/presentation/brand.py",
+              ") -> MaterialResolutionResult:",
+              ") -> object:",
+          )
+          replace(
+              "ui/themes/registry.py",
+              "    from ui.dna.resolver import resolve_source_dna, resolve_identity_projection\n    source_dna = resolve_source_dna(theme)\n    id_proj = resolve_identity_projection(source_dna)",
+              "    from ui.dna_bridge import resolve_source_dna, resolve_identity_projection\n    source_dna = resolve_source_dna(theme)\n    id_proj = resolve_identity_projection(source_dna)",
+          )
+          replace(
+              "tests/test_design_dna_quarantine_boundary.py",
+              "LEGACY_PUBLIC_BRIDGE_FILES = {\n    \"app.py\",\n    \"ui/presentation/brand.py\",\n    \"ui/themes/registry.py\",\n}",
+              "PUBLIC_DNA_BRIDGE = \"ui/dna_bridge.py\"\nLEGACY_PUBLIC_BRIDGE_FILES = set()",
+          )
+          replace(
+              "tests/test_design_dna_quarantine_boundary.py",
+              "        if _is_quarantine_path(rel) or rel in LEGACY_PUBLIC_BRIDGE_FILES:\n            continue",
+              "        if _is_quarantine_path(rel) or rel == PUBLIC_DNA_BRIDGE:\n            continue",
+          )
+          replace(
+              "tests/test_design_dna_quarantine_boundary.py",
+              "def test_public_bridge_allowlist_is_small_and_explicit():\n    assert LEGACY_PUBLIC_BRIDGE_FILES == {\"app.py\", \"ui/presentation/brand.py\", \"ui/themes/registry.py\"}\n    assert len(LEGACY_PUBLIC_BRIDGE_FILES) == 3",
+              "def test_public_bridge_allowlist_is_small_and_explicit():\n    assert PUBLIC_DNA_BRIDGE == \"ui/dna_bridge.py\"\n    assert LEGACY_PUBLIC_BRIDGE_FILES == set()\n    for rel in (\"app.py\", \"ui/presentation/brand.py\", \"ui/themes/registry.py\"):\n        assert _dna_imports(ROOT / rel) == (), rel",
+          )
+
+          Path(".github/workflows/q3-bridge-apply.yml").unlink()
+      - name: Commit applied Q3 boundary
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add app.py ui/presentation/brand.py ui/themes/registry.py tests/test_design_dna_quarantine_boundary.py .github/workflows/q3-bridge-apply.yml
+          git commit -m "refactor(dna): route public host through optional bridge"
+          git push
