@@ -28,6 +28,8 @@ THEME_STUDIO_SHIMS = (
     "ui/theme_studio/state.py",
     "ui/theme_studio/surface.py",
 )
+Q1_INTEGRATION_COMMIT = "2354dfc2e7d5f38e7ffb373f22eee4d19e0fb51e"
+Q1_ACC_PATH = "docs/design-dna/quarantine/Q1_ACC.yaml"
 
 
 def _python_files():
@@ -106,6 +108,20 @@ def test_quarantine_manifest_exists_and_locks_private_extraction_goal():
     assert "status: ACTIVE_QUARANTINE" in text
     assert "NO_NEW_DNA_DEPENDENCY_OUTSIDE_DECLARED_QUARANTINE_OR_PUBLIC_BRIDGE" in text
     assert "Q0_inventory_and_freeze:\n    status: COMPLETE" in text
-    assert "Q1_theme_studio_move:" in text
-    assert "status: IMPLEMENTED_PENDING_DURABLE_INTEGRATION" in text
+    assert "Q1_theme_studio_move:\n    status: COMPLETE" in text
+    assert f"integration_commit: {Q1_INTEGRATION_COMMIT}" in text
+    assert f"acc_manifest: {Q1_ACC_PATH}" in text
+    assert "Q2_legacy_ui_dna_move:\n    status: NOT_STARTED" in text
     assert "Q4_private_repository_cut:" in text
+
+
+def test_q1_acc_manifest_matches_integrated_runtime_and_closed_state():
+    acc = ROOT / Q1_ACC_PATH
+    text = acc.read_text(encoding="utf-8")
+    assert "status: ACC_CLOSED_INTEGRATED" in text
+    assert "accepted: true" in text
+    assert "closed: true" in text
+    assert "integrated: true" in text
+    assert f"integration_commit: {Q1_INTEGRATION_COMMIT}" in text
+    assert "post_merge_exact_main:" in text
+    assert "passed: 28299" in text
