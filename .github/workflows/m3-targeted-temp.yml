@@ -20,6 +20,6 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
       - name: M3 focused + compatibility
-        run: python -m pytest tests/test_design_dna_m3_tier_s.py tests/test_design_dna_m2_proving_slice.py tests/test_design_dna_m1_engines.py tests/test_design_dna_m0_runtime.py -q
+        run: python -m pytest tests/test_design_dna_m3_tier_s.py tests/test_design_dna_m3_registration_surface.py tests/test_design_dna_m2_proving_slice.py tests/test_design_dna_m1_engines.py tests/test_design_dna_m0_runtime.py -q
       - name: Dependency sanity
         run: pip check
