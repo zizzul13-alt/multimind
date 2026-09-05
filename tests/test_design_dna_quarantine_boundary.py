@@ -127,6 +127,23 @@ def test_q2_public_shims_and_quarantine_exports_preserve_object_identity():
     assert PublicRegistry is PrivateRegistry
 
 
+def test_q2_repaired_resolver_no_longer_self_imports_through_public_ui_dna_shims():
+    path = ROOT / "dna_quarantine/legacy_ui_dna/resolver.py"
+    text = path.read_text(encoding="utf-8")
+    tree = ast.parse(text, filename=str(path))
+    imports = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            imports.append(node.module)
+        elif isinstance(node, ast.Import):
+            imports.extend(alias.name for alias in node.names)
+    assert all(not (name == "ui.dna" or name.startswith("ui.dna.")) for name in imports)
+    assert "from .models import" in text
+    assert "from .registry import get_registry as get_dna_registry" in text
+    assert "from .mapper import dna_to_theme" in text
+    assert text.index("def resolve_composition") < text.index("from ui.presentation.resolver import")
+
+
 def test_quarantine_manifest_exists_and_locks_private_extraction_goal():
     text = (ROOT / "docs/design-dna/quarantine/DNA_QUARANTINE_MANIFEST.yaml").read_text(encoding="utf-8")
     assert "status: ACTIVE_QUARANTINE" in text
@@ -136,7 +153,8 @@ def test_quarantine_manifest_exists_and_locks_private_extraction_goal():
     assert f"integration_commit: {Q1_INTEGRATION_COMMIT}" in text
     assert f"acc_manifest: {Q1_ACC_PATH}" in text
     assert "Q2_legacy_ui_dna_move:\n    status: IMPLEMENTED_PENDING_ACCEPTANCE" in text
-    assert "INTERNAL_LEGACY_SELF_IMPORTS_STILL_ROUTE_THROUGH_UI_DNA_SHIMS_UNTIL_Q4" in text
+    assert "SOURCE_SNAPSHOT_MOVE_WITH_BOUNDED_IMPORT_CYCLE_REPAIR" in text
+    assert "NON_RESOLVER_INTERNAL_LEGACY_SELF_IMPORTS_STILL_ROUTE_THROUGH_UI_DNA_SHIMS_UNTIL_Q4" in text
     assert "Q4_private_repository_cut:" in text
 
 
