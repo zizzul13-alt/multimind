@@ -291,8 +291,9 @@ class TestSemanticConsumptionGate(unittest.TestCase):
 
     def test_T11_presentation_policy_audit_backed_by_code_references(self):
         """T11: PresentationPolicy audit verifies active vs unconsumed policy fields across codebase."""
-        # 1. Theme Studio consumes metadata_prominence, status_richness, secondary_compactness
-        with open("ui/theme_studio/surface.py", "r", encoding="utf-8") as f:
+        # 1. Quarantined Theme Studio implementation consumes metadata_prominence, status_richness, secondary_compactness.
+        # The legacy ui/theme_studio path is intentionally only a Q1 compatibility shim.
+        with open("dna_quarantine/theme_studio/surface.py", "r", encoding="utf-8") as f:
             ts_code = f.read()
             self.assertIn("projection.presentation_policy.metadata_prominence", ts_code)
             self.assertIn("projection.presentation_policy.status_richness", ts_code)
