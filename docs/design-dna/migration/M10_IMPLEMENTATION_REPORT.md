@@ -69,17 +69,17 @@ The seven v6-hardened references are MR-004, MR-005, MR-006, MR-012, MR-014, MR-
 
 M10 deliberately does **not** change the M0 resolver and does **not** claim `CompositionRequest.modifiers` activate reference branches. Selector-sensitive rows carry static accepted-scope policy metadata and fail-closed wording.
 
-Locked v6 contracts include:
+Locked v6 contracts and M10 project selections are:
 
 - Damascene: true/mechanical inlay only; painted or overlay line is not inlay.
 - Masi: `MASI_KESA_STENCIL`; mask/stencil is above the sheet; underlying rubbing is a causal mismatch.
 - Siapo collision slice: Tasina/Elei rubbing; relief source is below the sheet; stencil-above causality is a mismatch.
 - Kente: safe shared invariant is narrow woven strips sewn into macro-cloth; branch-specific weaving details require evidence.
-- Kuba: one supported construction branch at a time; no cross-variant synthesis.
+- Kuba: M10 fixes the supported multi-panel stitched/appliquéd wrapper branch; single-panel cut-pile/embroidery behavior is explicitly excluded from that selected construction. This is a project slice, not a universal Kuba grammar.
 - Turkmen: object-level technical selector is required; subgroup or gul/motif identity cannot infer knot type.
-- Japanese wooden-architecture conservation: one supported operation at a time; there is no universal “Japanese joint” abstraction.
+- Japanese wooden-architecture conservation: M10 fixes the supported structural-woodwork conservation operation; roofing/thatching, plastering, lacquer painting, tatami, and other inventory skills are not synthesized into it. There is no universal “Japanese joint” abstraction.
 
-Arbitrary runtime modifiers may change the deterministic request fingerprint, as they already did in M0, but they do not alter the reference-owned mechanism set.
+Arbitrary runtime modifiers may change the deterministic request fingerprint, as they already did in M0, but they do not alter the reference-owned mechanism set or activate a hidden alternate branch.
 
 ## 5. Asset policy
 
@@ -119,13 +119,13 @@ Construction cues are presentation-only and may not outrank semantic truth, acce
 - Masi/Siapo causal distinction;
 - Damascene inlay negative;
 - Kente shared-invariant guard;
-- Kuba variant non-synthesis;
+- fixed Kuba branch + variant non-synthesis;
 - Turkmen subgroup/knot firewall;
-- Japanese conservation no-universal-joint firewall;
+- fixed structural-woodwork Japanese conservation operation + no-universal-joint firewall;
 - optical accessibility demotion for urushi and mezza filigrana;
 - arbitrary modifiers cannot activate a hidden selector branch.
 
-Exact CI counts are intentionally not claimed until CI completes.
+The first full torture run (#101) intentionally exposed three wording/trace misses (MR-004 inlay token, MR-017 weave token, MR-021 process token). The contracts were strengthened rather than weakening the guard. Final clean-head and post-merge counts are recorded only after those proofs complete.
 
 ## 8. Low-maintenance result
 
