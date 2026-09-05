@@ -20,14 +20,14 @@ from core.templates import TemplateManager
 from utils.token_counter import TokenCounter
 from utils.config import Config, InvalidUserIdError
 from utils.identity_state import initialize_identity_state, reset_identity_bound_state
+from ui.dna_bridge import ensure_optional_dna_registered, render_optional_theme_studio
 from ui.foundation import load_css, render_status_badge, card_container
 from ui.presentation import build_presentation_snapshot, render_archetype, list_archetypes, render_brand_identity
-from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
 from ui.themes import list_themes
-from ui.theme_studio.surface import render_theme_studio_surface
 
-# Ensure S6.2 proof Design DNA and themes are registered prior to runtime selector
-ensure_proof_dna_and_themes_registered()
+# Optional DNA enrichments are registered when the quarantined package is present.
+# Public runtime remains on the canonical safe/default theme when it is absent.
+ensure_optional_dna_registered()
 
 st.set_page_config(
     page_title=Config.APP_NAME,
@@ -449,6 +449,17 @@ def process_chat(prompt, uploaded_files, context_mode):
     st.rerun()
 
 
+def _render_theme_studio_unavailable() -> None:
+    """Public safe fallback when optional private Theme Studio is unavailable."""
+    card_container(
+        "<div class='mm-typo-heading'>🎨 Theme Studio unavailable</div>"
+        "<div class='mm-typo-body-small mm-text-muted'>"
+        "This build is using the safe default presentation. Core workspace, sessions, "
+        "and chat remain available.</div>",
+        variant="muted",
+    )
+
+
 def main():
     if st.session_state.user:
         with st.sidebar:
@@ -496,7 +507,7 @@ def main():
         active_nav = st.session_state.get("active_navigation", "workspace")
 
         if active_nav == "theme_studio":
-            render_theme_studio_surface()
+            render_optional_theme_studio(fallback=_render_theme_studio_unavailable)
         elif st.session_state.current_session:
             session = st.session_state.current_session
             memory = st.session_state.memories.get(session['id'])

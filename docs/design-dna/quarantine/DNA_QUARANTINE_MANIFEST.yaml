@@ -110,8 +110,38 @@ quarantine_migration_plan:
       - APP_CORE_PROVIDER_DATABASE_BEHAVIOR_UNCHANGED
       - Q0_DEPENDENCY_SPREAD_FREEZE_REMAINS_ACTIVE
   Q3_theme_bridge_decoupling:
-    status: NOT_STARTED
+    status: IMPLEMENTED_PENDING_ACCEPTANCE
+    implementation_base: a1c4ded779ed5490779532d0ccad6053886e1bf3
     strategy: REDUCE_APP_AND_UI_THEMES_TO_SMALL_INTERFACE_AND_SAFE_DEFAULT_FALLBACK
+    public_bridge: ui/dna_bridge.py
+    decoupled_public_surfaces:
+      - app.py
+      - ui/presentation/brand.py
+      - ui/themes/registry.py
+    public_contracts:
+      - ensure_optional_dna_registered
+      - resolve_brand_material
+      - resolve_theme_identity_projection
+      - render_optional_theme_studio
+    safe_defaults:
+      material_status: fallback
+      material_required: false
+      hierarchy_contrast: strong
+      border_stroke_style: solid
+      energy_emphasis: balanced
+      surface_treatment: flat
+      transition_speed: deliberate
+    invariants:
+      - ONE_PUBLIC_BRIDGE_OWNS_ALL_PRIVATE_DNA_IMPORTS
+      - PRIVATE_DNA_IMPORTS_ARE_LAZY
+      - BRIDGE_IS_HOST_NEUTRAL_NO_STREAMLIT_NO_REFLEX
+      - APP_BRAND_AND_THEME_REGISTRY_HAVE_ZERO_DEEP_DNA_IMPORTS
+      - PRIVATE_PACKAGE_ABSENCE_RETURNS_SAFE_DEFAULTS
+      - UNRELATED_IMPORT_FAILURES_ARE_NOT_SWALLOWED
+      - CURRENT_PRIVATE_AVAILABLE_BEHAVIOR_IS_PRESERVED
+      - THEME_STUDIO_ABSENCE_DOES_NOT_DISABLE_CORE_WORKSPACE
+      - Q4_REMAINS_OWNER_OF_PHYSICAL_PRIVATE_PACKAGE_ABSENCE_PROOF
+    implementation_report: docs/design-dna/quarantine/Q3_IMPLEMENTATION_REPORT.md
   Q4_private_repository_cut:
     status: NOT_STARTED
     strategy: MAKE_QUARANTINE_SELF_CONTAINED_AND_PROVE_PUBLIC_SAFE_FALLBACK_WITH_PRIVATE_PACKAGE_ABSENT
