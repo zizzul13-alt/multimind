@@ -1,0 +1,65 @@
+schema_version: 1
+project: MULTIMIND
+track: DESIGN_DNA_MIGRATION
+batch: M1
+governor_status: ACC_CLOSED_INTEGRATED
+accepted: true
+closed: true
+integrated: true
+accepted_at: 2026-09-05
+integration_commit: c0acc30ad2fbb9f159c728df73e0b4ee5c8ec11c
+pull_request: 61
+base_commit: fc636b60b1e6a397d419073dcaa5e4f806a950ec
+
+scope:
+  name: MATERIAL_15_PLUS_ENVIRONMENT_14_ENGINES
+  material_engines: 15
+  environment_engines: 14
+  total_engines: 29
+  implementation_report: docs/design-dna/migration/M1_IMPLEMENTATION_REPORT.md
+
+evidence:
+  focused_test:
+    file: tests/test_design_dna_m1_engines.py
+    passed: 289
+    total: 289
+    result: PASS
+  m0_compatibility:
+    passed: 36
+    total: 36
+    result: PASS
+  material_environment_pair_torture:
+    passed: 210
+    total: 210
+    result: PASS
+  full_regression_checkpoint:
+    passed: 657
+    total: 657
+    result: PASS
+  dependency_check: PASS
+  merged_to_main: true
+  governor_acceptance: PASS
+
+contract_locks:
+  material_is_construction_physics_not_texture_wallpaper: true
+  environment_is_illumination_atmosphere_visibility_not_country_wallpaper: true
+  normalized_material_engines_are_not_track_m_r_or_historical_track_m: true
+  asset_off_identity_required: true
+
+boundaries:
+  per_engine_host_component_created: false
+  database_schema_change: false
+  provider_semantic_change: false
+  core_application_semantic_change: false
+  asset_files_added: false
+
+exclusions:
+  - M2_NOT_INCLUDED
+  - RJ3_NOT_INCLUDED
+  - ASSET_ENRICHMENT_NOT_INCLUDED
+  - PRODUCTION_CUTOVER_NOT_AUTHORIZED
+  - EQ4_NOT_GRANTED
+
+eq4_credit: 0
+next_gate: M2
+next_gate_was_self_authorized: false
