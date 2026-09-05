@@ -48,6 +48,10 @@ Long-running execution uses a supported Reflex background event. The event claim
 
 Uploads are consumed in a normal upload event. `rx.UploadFile` objects are converted to a small synchronous in-memory adapter before background execution, preserving the existing `FileHandler` contract and avoiding an unsupported background UploadFile lifetime.
 
+## Verification boundary
+
+RJ-2 acceptance requires targeted host-contract tests, successful Reflex app import/dry compilation on the pinned framework, full repository regression, dependency sanity, and Governor review. Successful RJ-2 verification does not by itself authorize RJ-3, Design-DNA M0, deployment cutover, or production data migration.
+
 ## Scope boundary
 
 RJ-2 includes only the production-host spine:
