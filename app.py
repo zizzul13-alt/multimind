@@ -9,7 +9,11 @@ from datetime import datetime
 
 from agents.router import TERMINAL_PROVIDER_FAILURE_TEXT
 from core.application import ApplicationRuntime, ChatRequest
-from core.composition import build_agents, build_application_for_user
+from core.compressor import PromptCompressor
+from core.debate import DebateOrchestrator
+from core.file_handler import FileHandler
+from core.memory import persist_chat_and_update_memory
+from core.composition import build_agents, build_application_for_user, build_database_for_user
 from core.release_gate import ReleaseGate
 from core.skills_manager import SkillsManager
 from core.templates import TemplateManager
@@ -68,6 +72,11 @@ def get_agents(user_id):
     return build_agents(api_keys)
 
 
+def get_db_manager(user_id):
+    """Compatibility lifecycle seam; presentation data access stays in the application."""
+    return build_database_for_user(user_id)
+
+
 @st.cache_resource
 def get_skills_manager():
     return SkillsManager()
@@ -86,7 +95,12 @@ def get_application(user_id, agents=None, db=None, runtime=None):
         runtime_memories=st.session_state.memories,
         runtime=runtime,
         db=db,
+        db_factory=None if db is not None else lambda: get_db_manager(user_id),
         agents=get_agents(user_id) if agents is None else agents,
+        compressor=PromptCompressor,
+        file_handler=FileHandler,
+        debate_factory=DebateOrchestrator,
+        persist_chat=persist_chat_and_update_memory,
     )
 
 
