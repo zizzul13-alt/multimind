@@ -176,6 +176,28 @@ IZZUL_MECHANISM_BY_ID: Mapping[str, str] = {item: value[0] for item, value in _P
 IZZUL_PRIMITIVE_FINGERPRINT_BY_ID: Mapping[str, Tuple[str, ...]] = {item: value[2] for item, value in _PROFILE.items()}
 IZZUL_EVIDENCE_MODE_BY_ID: Mapping[str, str] = {item: value[3] for item, value in _PROFILE.items()}
 
+# Declarative exception metadata keeps the family free of runtime per-reference
+# branch logic while preserving the hard source-specific locks.
+_EXTRA_PROVENANCE_BY_ID: Mapping[str, Tuple[str, ...]] = {
+    "IZM01": (_PROV_V3,),
+    "IZW01": (_PROV_V5,),
+    "IZW05": (_PROV_V3,),
+    "IZW06": (_PROV_V3,),
+    "IZW08": (_PROV_V3,),
+    "IZW09": (_PROV_V6,),
+    "IZW10": (_PROV_V3,),
+}
+_EXTRA_GUARD_BY_ID: Mapping[str, str] = {
+    "IZW01": (
+        "strategic-context-must-correspond-to-real-existing-planning-or-context-information-"
+        "never-fictional-game-state"
+    ),
+    "IZW09": (
+        "P16-environmental-causality-is-conditional-and-may-activate-only-when-real-context-"
+        "is-causal-or-informative"
+    ),
+}
+
 
 def _slug(value: str) -> str:
     return "-".join("".join(ch.lower() if ch.isalnum() else " " for ch in value).split())
@@ -192,29 +214,24 @@ def _zones(axis: Axis) -> Tuple[SemanticZone, ...]:
 
 
 def _provenance(reference_id: str) -> str:
-    if reference_id == "IZW01":
-        return f"{_PROVENANCE_BASE};{_PROV_V5}"
-    if reference_id == "IZW09":
-        return f"{_PROVENANCE_BASE};{_PROV_V6}"
-    if reference_id in {"IZM01", "IZW05", "IZW06", "IZW08", "IZW10"}:
-        return f"{_PROVENANCE_BASE};{_PROV_V3}"
-    return _PROVENANCE_BASE
+    extras = _EXTRA_PROVENANCE_BY_ID.get(reference_id, ())
+    return ";".join((_PROVENANCE_BASE, *extras))
 
 
 def _identity_directive(reference_id: str, mechanism_label: str, evidence_mode: str) -> str:
     title = IZZUL_TITLE_BY_ID[reference_id]
     fingerprint = ",".join(IZZUL_PRIMITIVE_FINGERPRINT_BY_ID[reference_id])
-    base = (
-        f"project-{_slug(mechanism_label)}-as-the-{_slug(title)}-reference-identity-using-only-existing-semantic-content;"
-        f"primitive-fingerprint={fingerprint};evidence-mode={evidence_mode};"
-        "reference-shapes-presentation-only-never-domain-state-actions-permissions-provider-behavior-or-user-data;"
-        "never-require-or-reproduce-characters-panels-logos-source-lettering-costumes-franchise-palette-or-copied-composition"
-    )
-    if reference_id == "IZW01":
-        base += ";strategic-context-must-correspond-to-real-existing-planning-or-context-information-never-fictional-game-state"
-    if reference_id == "IZW09":
-        base += ";P16-environmental-causality-is-conditional-and-may-activate-only-when-real-context-is-causal-or-informative"
-    return base
+    parts = [
+        f"project-{_slug(mechanism_label)}-as-the-{_slug(title)}-reference-identity-using-only-existing-semantic-content",
+        f"primitive-fingerprint={fingerprint}",
+        f"evidence-mode={evidence_mode}",
+        "reference-shapes-presentation-only-never-domain-state-actions-permissions-provider-behavior-or-user-data",
+        "never-require-or-reproduce-characters-panels-logos-source-lettering-costumes-franchise-palette-or-copied-composition",
+    ]
+    guard = _EXTRA_GUARD_BY_ID.get(reference_id)
+    if guard:
+        parts.append(guard)
+    return ";".join(parts)
 
 
 def _fallback_directive(reference_id: str) -> str:
