@@ -1,14 +1,15 @@
 """Deterministic Design-DNA M0 marriage resolver.
 
-The resolver is intentionally pure with respect to application state and host
-frameworks: it consumes immutable-ish contract values and returns ThemeProjection.
+The resolver is host-neutral and application-state neutral. It consumes validated
+contracts and produces a deterministic ThemeProjection plus explainability data.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 import hashlib
 import json
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 from design_dna.models import (
     AssetDecision,
@@ -27,6 +28,7 @@ from design_dna.models import (
     SemanticContext,
     SemanticZone,
     ThemeProjection,
+    Viewport,
 )
 from design_dna.registry import DNARegistry, RegistryError
 
@@ -40,40 +42,66 @@ class _Candidate:
     degradation: DegradationState
 
 
+def _enum_value(value) -> str:
+    return value.value if isinstance(value, Enum) else str(value)
+
+
+def _safe_text(value, fallback: str = "") -> str:
+    return value if isinstance(value, str) and value.strip() else fallback
+
+
+def _safe_viewport(context: SemanticContext) -> Viewport:
+    return context.viewport if isinstance(context.viewport, Viewport) else Viewport.DESKTOP
+
+
+def _safe_strings(values) -> list[str]:
+    try:
+        return sorted(str(value) for value in values)
+    except TypeError:
+        return [str(values)]
+
+
 def _composition_id(request: CompositionRequest) -> str:
-    engines = ",".join(sorted(request.engine_ids))
-    primitives = ",".join(sorted(request.primitive_ids))
-    return f"{request.selected_reference_id}|E:{engines}|P:{primitives}|A:{request.archetype_id}"
+    return (
+        f"{_safe_text(request.selected_reference_id, '<invalid>')}"
+        f"|E:{','.join(_safe_strings(request.engine_ids))}"
+        f"|P:{','.join(_safe_strings(request.primitive_ids))}"
+        f"|A:{_safe_text(request.archetype_id, '<invalid>')}"
+    )
 
 
 def _unit_payload(unit: DNAUnit) -> dict:
     return {
         "id": unit.id,
-        "kind": unit.kind.value,
+        "kind": _enum_value(unit.kind),
         "family": unit.family,
         "lineage": unit.lineage,
         "provenance_pointer": unit.provenance_pointer,
         "identity_survival": unit.identity_survival,
-        "compatible_unit_ids": sorted(unit.compatible_unit_ids),
-        "conflicting_unit_ids": sorted(unit.conflicting_unit_ids),
+        "compatible_unit_ids": _safe_strings(unit.compatible_unit_ids),
+        "conflicting_unit_ids": _safe_strings(unit.conflicting_unit_ids),
         "mechanisms": [
             {
                 "id": m.id,
-                "axis": m.axis.value,
-                "zones": sorted(z.value for z in m.zones),
+                "axis": _enum_value(m.axis),
+                "zones": sorted(_enum_value(z) for z in m.zones),
                 "directive": m.directive,
                 "fallback_directive": m.fallback_directive,
                 "ownership_rank": m.ownership_rank,
-                "viewports": sorted(m.viewports),
-                "states": sorted(m.states),
-                "compatible_with": sorted(m.compatible_with),
-                "conflicts_with": sorted(m.conflicts_with),
+                "viewports": _safe_strings(m.viewports),
+                "states": _safe_strings(m.states),
+                "compatible_with": _safe_strings(m.compatible_with),
+                "conflicts_with": _safe_strings(m.conflicts_with),
                 "accessibility_safe": m.accessibility_safe,
                 "reading_safe": m.reading_safe,
                 "requires_asset_slot": m.requires_asset_slot,
                 "host_capability": m.host_capability,
             }
             for m in sorted(unit.mechanisms, key=lambda item: item.id)
+        ],
+        "axis_absences": [
+            {"axis": _enum_value(a.axis), "state": _enum_value(a.state)}
+            for a in sorted(unit.axis_absences, key=lambda item: _enum_value(item.axis))
         ],
         "assets": [
             {
@@ -92,26 +120,26 @@ def _unit_payload(unit: DNAUnit) -> dict:
 
 def _request_payload(request: CompositionRequest) -> dict:
     return {
-        "selected_reference_id": request.selected_reference_id,
-        "engine_ids": sorted(request.engine_ids),
-        "primitive_ids": sorted(request.primitive_ids),
-        "archetype_id": request.archetype_id,
-        "asset_state": request.asset_state.value,
-        "modifiers": dict(sorted(request.modifiers.items())),
+        "selected_reference_id": str(request.selected_reference_id),
+        "engine_ids": _safe_strings(request.engine_ids),
+        "primitive_ids": _safe_strings(request.primitive_ids),
+        "archetype_id": str(request.archetype_id),
+        "asset_state": _enum_value(request.asset_state),
+        "modifiers": dict(sorted((str(k), str(v)) for k, v in dict(request.modifiers).items())),
     }
 
 
 def _context_payload(context: SemanticContext) -> dict:
     return {
-        "active_zones": sorted(z.value for z in context.active_zones),
-        "viewport": context.viewport.value,
-        "interaction_state": context.interaction_state,
-        "reading_heavy_zones": sorted(z.value for z in context.reading_heavy_zones),
+        "active_zones": sorted(_enum_value(z) for z in context.active_zones),
+        "viewport": _enum_value(context.viewport),
+        "interaction_state": str(context.interaction_state),
+        "reading_heavy_zones": sorted(_enum_value(z) for z in context.reading_heavy_zones),
         "reduced_motion": context.reduced_motion,
         "accessibility_required": context.accessibility_required,
-        "language": context.language,
-        "script": context.script,
-        "host_capabilities": sorted(context.host_capabilities),
+        "language": str(context.language),
+        "script": str(context.script),
+        "host_capabilities": _safe_strings(context.host_capabilities),
     }
 
 
@@ -119,10 +147,10 @@ def _constraints_payload(constraints: RuntimeConstraints) -> dict:
     return {
         "contradiction_budget": constraints.contradiction_budget,
         "dominance_cap": constraints.dominance_cap,
-        "blocked_axes": sorted(a.value for a in constraints.blocked_axes),
-        "blocked_mechanism_ids": sorted(constraints.blocked_mechanism_ids),
+        "blocked_axes": sorted(_enum_value(a) for a in constraints.blocked_axes),
+        "blocked_mechanism_ids": _safe_strings(constraints.blocked_mechanism_ids),
         "reading_sanctuary": constraints.reading_sanctuary,
-        "safe_baseline_directive": constraints.safe_baseline_directive,
+        "safe_baseline_directive": str(constraints.safe_baseline_directive),
     }
 
 
@@ -133,12 +161,12 @@ def _fingerprint(payload: dict) -> str:
 
 def _issue_payload(issue: ResolutionIssue) -> dict:
     return {
-        "code": issue.code.value,
+        "code": _enum_value(issue.code),
         "message": issue.message,
         "source_unit_id": issue.source_unit_id,
         "mechanism_id": issue.mechanism_id,
-        "axis": issue.axis.value if issue.axis else None,
-        "zone": issue.zone.value if issue.zone else None,
+        "axis": _enum_value(issue.axis) if issue.axis else None,
+        "zone": _enum_value(issue.zone) if issue.zone else None,
     }
 
 
@@ -149,20 +177,22 @@ def _asset_decision_payload(decision: AssetDecision) -> dict:
         "source_unit_id": decision.source_unit_id,
         "action": decision.action,
         "directive": decision.directive,
-        "degradation": decision.degradation.value,
+        "degradation": _enum_value(decision.degradation),
         "reason": decision.reason,
     }
 
 
 def _mechanism_payload(mechanism: ResolvedMechanism) -> dict:
     return {
-        "axis": mechanism.axis.value,
-        "zone": mechanism.zone.value,
+        "axis": _enum_value(mechanism.axis),
+        "zone": _enum_value(mechanism.zone),
+        "viewport": _enum_value(mechanism.viewport),
+        "interaction_state": mechanism.interaction_state,
         "directive": mechanism.directive,
         "source_unit_id": mechanism.source_unit_id,
         "mechanism_id": mechanism.mechanism_id,
         "ownership_rank": mechanism.ownership_rank,
-        "degradation": mechanism.degradation.value,
+        "degradation": _enum_value(mechanism.degradation),
     }
 
 
@@ -183,23 +213,31 @@ def _make_projection(
 ) -> ThemeProjection:
     canonical_mechanisms = tuple(sorted(
         mechanisms,
-        key=lambda item: (item.axis.value, item.zone.value, -item.ownership_rank, item.source_unit_id, item.mechanism_id),
+        key=lambda item: (
+            _enum_value(item.axis), _enum_value(item.zone), _enum_value(item.viewport),
+            item.interaction_state, -item.ownership_rank, item.source_unit_id, item.mechanism_id,
+        ),
     ))
     canonical_assets = tuple(sorted(assets, key=lambda item: (item.slot, item.source_unit_id, item.asset_id)))
-    canonical_warnings = tuple(sorted(warnings, key=lambda item: (item.code.value, item.source_unit_id, item.mechanism_id, item.message)))
-    canonical_rejections = tuple(sorted(rejections, key=lambda item: (item.code.value, item.source_unit_id, item.mechanism_id, item.message)))
+    canonical_warnings = tuple(sorted(
+        warnings,
+        key=lambda item: (_enum_value(item.code), item.source_unit_id, item.mechanism_id, item.message),
+    ))
+    canonical_rejections = tuple(sorted(
+        rejections,
+        key=lambda item: (_enum_value(item.code), item.source_unit_id, item.mechanism_id, item.message),
+    ))
     canonical_provenance = tuple(sorted(
         provenance,
         key=lambda item: (
             item.source_unit_id,
             item.mechanism_id,
-            item.axis.value if item.axis else "",
-            item.zone.value if item.zone else "",
+            _enum_value(item.axis) if item.axis else "",
+            _enum_value(item.zone) if item.zone else "",
             item.action,
             item.reason,
         ),
     ))
-
     payload = {
         "request": _request_payload(request),
         "context": _context_payload(context),
@@ -213,7 +251,10 @@ def _make_projection(
     return ThemeProjection(
         composition_id=_composition_id(request),
         fingerprint=_fingerprint(payload),
-        viewport=context.viewport,
+        archetype_id=_safe_text(request.archetype_id, "invalid"),
+        viewport=_safe_viewport(context),
+        interaction_state=_safe_text(context.interaction_state, "invalid"),
+        safe_baseline_directive=_safe_text(constraints.safe_baseline_directive, "semantic-default"),
         mechanisms=canonical_mechanisms,
         asset_decisions=canonical_assets,
         provenance=canonical_provenance,
@@ -225,89 +266,44 @@ def _make_projection(
     )
 
 
-def _resolve_assets(
-    units: Sequence[DNAUnit],
-    asset_state: AssetState,
-) -> Tuple[Tuple[AssetDecision, ...], Tuple[ResolutionIssue, ...], Dict[str, AssetDecision]]:
+def _resolve_assets(units: Sequence[DNAUnit], asset_state: AssetState):
     by_slot: Dict[str, List[Tuple[DNAUnit, AssetIntent]]] = {}
     for unit in units:
         for asset in unit.assets:
             by_slot.setdefault(asset.slot, []).append((unit, asset))
-
     decisions: List[AssetDecision] = []
     warnings: List[ResolutionIssue] = []
     lookup: Dict[str, AssetDecision] = {}
-
     for slot in sorted(by_slot):
-        candidates = sorted(
-            by_slot[slot],
-            key=lambda pair: (-pair[1].ownership_rank, pair[0].id, pair[1].asset_id),
-        )
+        candidates = sorted(by_slot[slot], key=lambda pair: (-pair[1].ownership_rank, pair[0].id, pair[1].asset_id))
         unit, asset = candidates[0]
         if len(candidates) > 1:
             warnings.append(ResolutionIssue(
-                code=FailureCode.OWNERSHIP_COLLISION,
-                message=f"Asset slot '{slot}' had {len(candidates)} owners; deterministic owner '{unit.id}' selected",
-                source_unit_id=unit.id,
+                FailureCode.OWNERSHIP_COLLISION,
+                f"Asset slot '{slot}' had {len(candidates)} owners; deterministic owner '{unit.id}' selected",
+                unit.id,
             ))
-
         if not asset.production_eligible:
-            decision = AssetDecision(
-                slot=slot,
-                asset_id=asset.asset_id,
-                source_unit_id=unit.id,
-                action="structural_fallback",
-                directive=asset.fallback_directive,
-                degradation=DegradationState.ASSET_OFF_STRUCTURAL,
-                reason="asset is not production-eligible",
-            )
+            decision = AssetDecision(slot, asset.asset_id, unit.id, "structural_fallback", asset.fallback_directive,
+                                     DegradationState.ASSET_OFF_STRUCTURAL, "asset is not production-eligible")
             warnings.append(ResolutionIssue(
-                code=FailureCode.LICENSE_SCOPE_VIOLATION,
-                message=f"Asset '{asset.asset_id}' is not production-eligible; structural fallback applied",
-                source_unit_id=unit.id,
+                FailureCode.LICENSE_SCOPE_VIOLATION,
+                f"Asset '{asset.asset_id}' is not production-eligible; structural fallback applied",
+                unit.id,
             ))
         elif asset_state is AssetState.AVAILABLE:
-            decision = AssetDecision(
-                slot=slot,
-                asset_id=asset.asset_id,
-                source_unit_id=unit.id,
-                action="use_asset",
-                directive=asset.asset_id,
-                degradation=DegradationState.FULL,
-            )
+            decision = AssetDecision(slot, asset.asset_id, unit.id, "use_asset", asset.asset_id, DegradationState.FULL)
         elif asset_state is AssetState.LOADING:
-            decision = AssetDecision(
-                slot=slot,
-                asset_id=asset.asset_id,
-                source_unit_id=unit.id,
-                action="safe_substitute",
-                directive=asset.fallback_directive,
-                degradation=DegradationState.SAFE_SUBSTITUTE,
-                reason="asset still loading",
-            )
+            decision = AssetDecision(slot, asset.asset_id, unit.id, "safe_substitute", asset.fallback_directive,
+                                     DegradationState.SAFE_SUBSTITUTE, "asset still loading")
         elif asset_state is AssetState.PARTIAL:
-            decision = AssetDecision(
-                slot=slot,
-                asset_id=asset.asset_id,
-                source_unit_id=unit.id,
-                action="safe_substitute",
-                directive=asset.fallback_directive,
-                degradation=DegradationState.SAFE_SUBSTITUTE,
-                reason="partial asset failure",
-            )
+            decision = AssetDecision(slot, asset.asset_id, unit.id, "safe_substitute", asset.fallback_directive,
+                                     DegradationState.SAFE_SUBSTITUTE, "partial asset failure")
         else:
-            decision = AssetDecision(
-                slot=slot,
-                asset_id=asset.asset_id,
-                source_unit_id=unit.id,
-                action="structural_fallback",
-                directive=asset.fallback_directive,
-                degradation=DegradationState.ASSET_OFF_STRUCTURAL,
-                reason="asset-off mode",
-            )
+            decision = AssetDecision(slot, asset.asset_id, unit.id, "structural_fallback", asset.fallback_directive,
+                                     DegradationState.ASSET_OFF_STRUCTURAL, "asset-off mode")
         decisions.append(decision)
         lookup[slot] = decision
-
     return tuple(decisions), tuple(warnings), lookup
 
 
@@ -317,338 +313,203 @@ def _is_relevant(mechanism: MechanismContract, zone: SemanticZone, context: Sema
     return viewport_ok and state_ok and zone in context.active_zones
 
 
+def _hard_drop(*, unit, mechanism, zone, reason, warnings, provenance) -> None:
+    warnings.append(ResolutionIssue(
+        FailureCode.FORBIDDEN_PROJECTION, reason, unit.id, mechanism.id, mechanism.axis, zone,
+    ))
+    provenance.append(ProvenanceRecord(
+        "demoted", unit.id, mechanism.id, mechanism.axis, zone, reason,
+    ))
+
+
 def _candidate_from_mechanism(
-    *,
-    unit: DNAUnit,
-    mechanism: MechanismContract,
-    zone: SemanticZone,
-    context: SemanticContext,
-    constraints: RuntimeConstraints,
-    asset_lookup: Dict[str, AssetDecision],
-    warnings: List[ResolutionIssue],
-    rejections: List[ResolutionIssue],
-    provenance: List[ProvenanceRecord],
+    *, unit, mechanism, zone, context, constraints, asset_lookup, warnings, rejections, provenance,
 ) -> _Candidate | None:
     directive = mechanism.directive
     degradation = DegradationState.FULL
 
-    def demote_or_drop(reason: str, state: DegradationState, code: FailureCode) -> _Candidate | None:
+    def demote_or_drop(reason: str, state: DegradationState, code: FailureCode):
         nonlocal directive, degradation
-        warnings.append(ResolutionIssue(
-            code=code,
-            message=reason,
-            source_unit_id=unit.id,
-            mechanism_id=mechanism.id,
-            axis=mechanism.axis,
-            zone=zone,
-        ))
+        warnings.append(ResolutionIssue(code, reason, unit.id, mechanism.id, mechanism.axis, zone))
         if mechanism.fallback_directive:
             directive = mechanism.fallback_directive
             degradation = state
-            provenance.append(ProvenanceRecord(
-                action="fallback",
-                source_unit_id=unit.id,
-                mechanism_id=mechanism.id,
-                axis=mechanism.axis,
-                zone=zone,
-                reason=reason,
-            ))
+            provenance.append(ProvenanceRecord("fallback", unit.id, mechanism.id, mechanism.axis, zone, reason))
             return _Candidate(unit, mechanism, zone, directive, degradation)
-        provenance.append(ProvenanceRecord(
-            action="demoted",
-            source_unit_id=unit.id,
-            mechanism_id=mechanism.id,
-            axis=mechanism.axis,
-            zone=zone,
-            reason=reason,
-        ))
+        provenance.append(ProvenanceRecord("demoted", unit.id, mechanism.id, mechanism.axis, zone, reason))
         return None
 
     if mechanism.axis in constraints.blocked_axes or mechanism.id in constraints.blocked_mechanism_ids:
-        return demote_or_drop(
-            "runtime hard-veto blocked mechanism projection",
-            DegradationState.SAFE_BASELINE,
-            FailureCode.FORBIDDEN_PROJECTION,
-        )
-
+        _hard_drop(unit=unit, mechanism=mechanism, zone=zone,
+                   reason="runtime hard-veto blocked mechanism projection",
+                   warnings=warnings, provenance=provenance)
+        return None
     if mechanism.host_capability and mechanism.host_capability not in context.host_capabilities:
-        return demote_or_drop(
-            f"host capability '{mechanism.host_capability}' unavailable",
-            DegradationState.SAFE_BASELINE,
-            FailureCode.FORBIDDEN_PROJECTION,
-        )
-
+        return demote_or_drop(f"host capability '{mechanism.host_capability}' unavailable",
+                              DegradationState.SAFE_BASELINE, FailureCode.FORBIDDEN_PROJECTION)
     if context.accessibility_required and not mechanism.accessibility_safe:
-        return demote_or_drop(
-            "accessibility super-veto demoted unsafe mechanism",
-            DegradationState.ACCESSIBILITY_DEMOTED,
-            FailureCode.FORBIDDEN_PROJECTION,
-        )
-
+        return demote_or_drop("accessibility super-veto demoted unsafe mechanism",
+                              DegradationState.ACCESSIBILITY_DEMOTED, FailureCode.FORBIDDEN_PROJECTION)
     if context.reduced_motion and mechanism.axis is Axis.MOTION_TEMPORAL:
-        return demote_or_drop(
-            "reduced-motion preference demoted temporal mechanism",
-            DegradationState.ACCESSIBILITY_DEMOTED,
-            FailureCode.FORBIDDEN_PROJECTION,
-        )
-
+        return demote_or_drop("reduced-motion preference demoted temporal mechanism",
+                              DegradationState.ACCESSIBILITY_DEMOTED, FailureCode.FORBIDDEN_PROJECTION)
     is_reading_zone = zone is SemanticZone.U7 or zone in context.reading_heavy_zones
     if constraints.reading_sanctuary and is_reading_zone and not mechanism.reading_safe:
-        return demote_or_drop(
-            "Reading Sanctuary demoted high-intensity mechanism",
-            DegradationState.READING_SANCTUARY_DEMOTED,
-            FailureCode.FORBIDDEN_PROJECTION,
-        )
-
+        return demote_or_drop("Reading Sanctuary demoted high-intensity mechanism",
+                              DegradationState.READING_SANCTUARY_DEMOTED, FailureCode.FORBIDDEN_PROJECTION)
     if mechanism.requires_asset_slot:
-        asset_decision = asset_lookup.get(mechanism.requires_asset_slot)
-        if asset_decision is None:
-            issue = ResolutionIssue(
-                code=FailureCode.ASSET_DEPENDENCY_FAILURE,
-                message=f"Required asset slot '{mechanism.requires_asset_slot}' is not declared",
-                source_unit_id=unit.id,
-                mechanism_id=mechanism.id,
-                axis=mechanism.axis,
-                zone=zone,
-            )
+        decision = asset_lookup.get(mechanism.requires_asset_slot)
+        if decision is None:
+            issue = ResolutionIssue(FailureCode.ASSET_DEPENDENCY_FAILURE,
+                                    f"Required asset slot '{mechanism.requires_asset_slot}' is not declared",
+                                    unit.id, mechanism.id, mechanism.axis, zone)
             if mechanism.fallback_directive:
                 warnings.append(issue)
                 directive = mechanism.fallback_directive
                 degradation = DegradationState.ASSET_OFF_STRUCTURAL
-                provenance.append(ProvenanceRecord(
-                    action="fallback",
-                    source_unit_id=unit.id,
-                    mechanism_id=mechanism.id,
-                    axis=mechanism.axis,
-                    zone=zone,
-                    reason=issue.message,
-                ))
+                provenance.append(ProvenanceRecord("fallback", unit.id, mechanism.id, mechanism.axis, zone, issue.message))
             else:
                 rejections.append(issue)
-                provenance.append(ProvenanceRecord(
-                    action="rejected",
-                    source_unit_id=unit.id,
-                    mechanism_id=mechanism.id,
-                    axis=mechanism.axis,
-                    zone=zone,
-                    reason=issue.message,
-                ))
+                provenance.append(ProvenanceRecord("rejected", unit.id, mechanism.id, mechanism.axis, zone, issue.message))
                 return None
-        elif asset_decision.action != "use_asset":
-            directive = mechanism.fallback_directive or asset_decision.directive
+        elif decision.action != "use_asset":
+            directive = mechanism.fallback_directive or decision.directive
             if not directive:
-                issue = ResolutionIssue(
-                    code=FailureCode.ASSET_DEPENDENCY_FAILURE,
-                    message=f"Asset slot '{mechanism.requires_asset_slot}' degraded without structural fallback",
-                    source_unit_id=unit.id,
-                    mechanism_id=mechanism.id,
-                    axis=mechanism.axis,
-                    zone=zone,
-                )
+                issue = ResolutionIssue(FailureCode.ASSET_DEPENDENCY_FAILURE,
+                                        f"Asset slot '{mechanism.requires_asset_slot}' degraded without structural fallback",
+                                        unit.id, mechanism.id, mechanism.axis, zone)
                 rejections.append(issue)
+                provenance.append(ProvenanceRecord("rejected", unit.id, mechanism.id, mechanism.axis, zone, issue.message))
                 return None
-            degradation = asset_decision.degradation
-            provenance.append(ProvenanceRecord(
-                action="fallback",
-                source_unit_id=unit.id,
-                mechanism_id=mechanism.id,
-                axis=mechanism.axis,
-                zone=zone,
-                reason=asset_decision.reason,
-            ))
-
+            degradation = decision.degradation
+            provenance.append(ProvenanceRecord("fallback", unit.id, mechanism.id, mechanism.axis, zone,
+                                               decision.reason or "asset degraded"))
     return _Candidate(unit, mechanism, zone, directive, degradation)
 
 
 def _mechanisms_conflict(left: _Candidate, right: _Candidate) -> bool:
-    if right.mechanism.id in left.mechanism.conflicts_with:
+    if right.mechanism.id in left.mechanism.conflicts_with or left.mechanism.id in right.mechanism.conflicts_with:
         return True
-    if left.mechanism.id in right.mechanism.conflicts_with:
-        return True
-    if right.unit.id in left.unit.conflicting_unit_ids:
-        return True
-    if left.unit.id in right.unit.conflicting_unit_ids:
+    if right.unit.id in left.unit.conflicting_unit_ids or left.unit.id in right.unit.conflicting_unit_ids:
         return True
     if left.mechanism.compatible_with and right.mechanism.id not in left.mechanism.compatible_with:
         return True
     if right.mechanism.compatible_with and left.mechanism.id not in right.mechanism.compatible_with:
         return True
+    if left.unit.compatible_unit_ids and right.unit.id not in left.unit.compatible_unit_ids:
+        return True
+    if right.unit.compatible_unit_ids and left.unit.id not in right.unit.compatible_unit_ids:
+        return True
     return False
 
 
-def resolve(
-    registry: DNARegistry,
-    request: CompositionRequest,
-    context: SemanticContext,
-    constraints: RuntimeConstraints | None = None,
-) -> ThemeProjection:
-    """Resolve canonical DNA into a host-neutral deterministic ThemeProjection."""
+def resolve(registry: DNARegistry, request: CompositionRequest, context: SemanticContext,
+            constraints: RuntimeConstraints | None = None) -> ThemeProjection:
+    """Resolve canonical DNA into a deterministic host-neutral projection."""
     constraints = constraints or RuntimeConstraints()
     warnings: List[ResolutionIssue] = []
     rejections: List[ResolutionIssue] = []
     provenance: List[ProvenanceRecord] = []
     units: Tuple[DNAUnit, ...] = ()
-
     try:
+        if not isinstance(registry, DNARegistry):
+            raise TypeError("registry must be DNARegistry")
+        if not isinstance(request, CompositionRequest):
+            raise TypeError("request must be CompositionRequest")
+        if not isinstance(context, SemanticContext):
+            raise TypeError("context must be SemanticContext")
+        if not isinstance(constraints, RuntimeConstraints):
+            raise TypeError("constraints must be RuntimeConstraints")
         request.validate()
         context.validate()
         constraints.validate()
         units = registry.select(request)
     except (RegistryError, TypeError, ValueError) as exc:
-        rejections.append(ResolutionIssue(
-            code=FailureCode.UNEXPLAINABLE_COMPOSITION,
-            message=str(exc),
-        ))
+        rejections.append(ResolutionIssue(FailureCode.UNEXPLAINABLE_COMPOSITION, str(exc)))
         return _make_projection(
-            request=request,
-            context=context,
-            constraints=constraints,
-            units=units,
-            mechanisms=(),
-            assets=(),
-            provenance=(),
-            warnings=(),
-            rejections=rejections,
-            accessibility_applied=False,
-            reading_sanctuary_applied=False,
-            reduced_motion_applied=False,
+            request=request if isinstance(request, CompositionRequest) else CompositionRequest("invalid"),
+            context=context if isinstance(context, SemanticContext) else SemanticContext(),
+            constraints=constraints if isinstance(constraints, RuntimeConstraints) else RuntimeConstraints(),
+            units=(), mechanisms=(), assets=(), provenance=(), warnings=(), rejections=rejections,
+            accessibility_applied=False, reading_sanctuary_applied=False, reduced_motion_applied=False,
         )
 
     asset_decisions, asset_warnings, asset_lookup = _resolve_assets(units, request.asset_state)
     warnings.extend(asset_warnings)
+    for decision in asset_decisions:
+        provenance.append(ProvenanceRecord(
+            decision.action, decision.source_unit_id, f"asset:{decision.slot}", None, None,
+            decision.reason or "asset resolution",
+        ))
 
     grouped: Dict[Tuple[Axis, SemanticZone], List[_Candidate]] = {}
     relevant_count = 0
     accessibility_applied = False
     reading_sanctuary_applied = False
     reduced_motion_applied = False
-
     for unit in units:
         for mechanism in sorted(unit.mechanisms, key=lambda item: item.id):
             for zone in sorted(mechanism.zones, key=lambda item: item.value):
                 if not _is_relevant(mechanism, zone, context):
                     continue
                 relevant_count += 1
-                if context.accessibility_required and not mechanism.accessibility_safe:
-                    accessibility_applied = True
-                if context.reduced_motion and mechanism.axis is Axis.MOTION_TEMPORAL:
-                    reduced_motion_applied = True
-                if constraints.reading_sanctuary and (zone is SemanticZone.U7 or zone in context.reading_heavy_zones) and not mechanism.reading_safe:
-                    reading_sanctuary_applied = True
-
+                accessibility_applied |= bool(context.accessibility_required and not mechanism.accessibility_safe)
+                reduced_motion_applied |= bool(context.reduced_motion and mechanism.axis is Axis.MOTION_TEMPORAL)
+                reading_sanctuary_applied |= bool(
+                    constraints.reading_sanctuary
+                    and (zone is SemanticZone.U7 or zone in context.reading_heavy_zones)
+                    and not mechanism.reading_safe
+                )
                 candidate = _candidate_from_mechanism(
-                    unit=unit,
-                    mechanism=mechanism,
-                    zone=zone,
-                    context=context,
-                    constraints=constraints,
-                    asset_lookup=asset_lookup,
-                    warnings=warnings,
-                    rejections=rejections,
-                    provenance=provenance,
+                    unit=unit, mechanism=mechanism, zone=zone, context=context, constraints=constraints,
+                    asset_lookup=asset_lookup, warnings=warnings, rejections=rejections, provenance=provenance,
                 )
                 if candidate is not None:
                     grouped.setdefault((mechanism.axis, zone), []).append(candidate)
 
     resolved: List[ResolvedMechanism] = []
     contradiction_count = 0
-
     for key in sorted(grouped, key=lambda item: (item[0].value, item[1].value)):
-        candidates = sorted(
-            grouped[key],
-            key=lambda item: (-item.mechanism.ownership_rank, item.unit.id, item.mechanism.id),
-        )
+        candidates = sorted(grouped[key], key=lambda item: (-item.mechanism.ownership_rank, item.unit.id, item.mechanism.id))
         winners: List[_Candidate] = []
         for candidate in candidates:
             conflicting = next((winner for winner in winners if _mechanisms_conflict(candidate, winner)), None)
             if conflicting is not None:
                 contradiction_count += 1
-                reason = (
-                    f"Mechanism '{candidate.mechanism.id}' conflicts with winning mechanism "
-                    f"'{conflicting.mechanism.id}' on {key[0].value}/{key[1].value}"
-                )
-                warnings.append(ResolutionIssue(
-                    code=FailureCode.OWNERSHIP_COLLISION,
-                    message=reason,
-                    source_unit_id=candidate.unit.id,
-                    mechanism_id=candidate.mechanism.id,
-                    axis=key[0],
-                    zone=key[1],
-                ))
-                provenance.append(ProvenanceRecord(
-                    action="demoted",
-                    source_unit_id=candidate.unit.id,
-                    mechanism_id=candidate.mechanism.id,
-                    axis=key[0],
-                    zone=key[1],
-                    reason=reason,
-                ))
+                reason = (f"Mechanism '{candidate.mechanism.id}' conflicts with winning mechanism "
+                          f"'{conflicting.mechanism.id}' on {key[0].value}/{key[1].value}")
+                warnings.append(ResolutionIssue(FailureCode.OWNERSHIP_COLLISION, reason, candidate.unit.id,
+                                                candidate.mechanism.id, key[0], key[1]))
+                provenance.append(ProvenanceRecord("demoted", candidate.unit.id, candidate.mechanism.id,
+                                                   key[0], key[1], reason))
                 continue
             if len(winners) >= constraints.dominance_cap:
                 reason = f"Dominance cap {constraints.dominance_cap} reached on {key[0].value}/{key[1].value}"
-                warnings.append(ResolutionIssue(
-                    code=FailureCode.OWNERSHIP_COLLISION,
-                    message=reason,
-                    source_unit_id=candidate.unit.id,
-                    mechanism_id=candidate.mechanism.id,
-                    axis=key[0],
-                    zone=key[1],
-                ))
-                provenance.append(ProvenanceRecord(
-                    action="demoted",
-                    source_unit_id=candidate.unit.id,
-                    mechanism_id=candidate.mechanism.id,
-                    axis=key[0],
-                    zone=key[1],
-                    reason=reason,
-                ))
+                warnings.append(ResolutionIssue(FailureCode.OWNERSHIP_COLLISION, reason, candidate.unit.id,
+                                                candidate.mechanism.id, key[0], key[1]))
+                provenance.append(ProvenanceRecord("demoted", candidate.unit.id, candidate.mechanism.id,
+                                                   key[0], key[1], reason))
                 continue
             winners.append(candidate)
-
         for winner in winners:
             resolved.append(ResolvedMechanism(
-                axis=winner.mechanism.axis,
-                zone=winner.zone,
-                directive=winner.directive,
-                source_unit_id=winner.unit.id,
-                mechanism_id=winner.mechanism.id,
-                ownership_rank=winner.mechanism.ownership_rank,
-                degradation=winner.degradation,
+                winner.mechanism.axis, winner.zone, context.viewport, context.interaction_state,
+                winner.directive, winner.unit.id, winner.mechanism.id, winner.mechanism.ownership_rank,
+                winner.degradation,
             ))
-            provenance.append(ProvenanceRecord(
-                action="applied",
-                source_unit_id=winner.unit.id,
-                mechanism_id=winner.mechanism.id,
-                axis=winner.mechanism.axis,
-                zone=winner.zone,
-                reason="deterministic ownership winner",
-            ))
+            provenance.append(ProvenanceRecord("applied", winner.unit.id, winner.mechanism.id,
+                                               winner.mechanism.axis, winner.zone,
+                                               "deterministic ownership winner"))
 
     if contradiction_count > constraints.contradiction_budget:
-        rejections.append(ResolutionIssue(
-            code=FailureCode.CONTRADICTION_OVERFLOW,
-            message=(
-                f"Contradiction count {contradiction_count} exceeds budget "
-                f"{constraints.contradiction_budget}"
-            ),
-        ))
-
+        rejections.append(ResolutionIssue(FailureCode.CONTRADICTION_OVERFLOW,
+                                          f"Contradiction count {contradiction_count} exceeds budget {constraints.contradiction_budget}"))
     if relevant_count > 0 and not resolved:
-        rejections.append(ResolutionIssue(
-            code=FailureCode.FALLBACK_IDENTITY_COLLAPSE,
-            message="All relevant mechanisms were removed; structural identity did not survive",
-        ))
-
+        rejections.append(ResolutionIssue(FailureCode.FALLBACK_IDENTITY_COLLAPSE,
+                                          "All relevant mechanisms were removed; structural identity did not survive"))
     return _make_projection(
-        request=request,
-        context=context,
-        constraints=constraints,
-        units=units,
-        mechanisms=resolved,
-        assets=asset_decisions,
-        provenance=provenance,
-        warnings=warnings,
-        rejections=rejections,
+        request=request, context=context, constraints=constraints, units=units, mechanisms=resolved,
+        assets=asset_decisions, provenance=provenance, warnings=warnings, rejections=rejections,
         accessibility_applied=accessibility_applied,
         reading_sanctuary_applied=reading_sanctuary_applied,
         reduced_motion_applied=reduced_motion_applied,
