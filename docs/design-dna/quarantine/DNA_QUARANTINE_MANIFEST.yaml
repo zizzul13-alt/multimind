@@ -18,7 +18,7 @@ private_extraction_roots:
   canonical_runtime:
     - design_dna/**
   legacy_design_dna_runtime:
-    - ui/dna/**
+    - dna_quarantine/legacy_ui_dna/**
   quarantined_runtime:
     - dna_quarantine/**
   theme_studio_implementation:
@@ -33,6 +33,8 @@ private_extraction_roots:
 legacy_compatibility_paths:
   theme_studio:
     - ui/theme_studio/**
+  legacy_ui_dna:
+    - ui/dna/**
   rule: SHIMS_ONLY_NO_BUSINESS_OR_PRESENTATION_IMPLEMENTATION
 
 related_surfaces_to_decouple:
@@ -68,22 +70,43 @@ quarantine_migration_plan:
       repaired_clean_head: 28299_PASS
       post_merge_exact_main: 28299_PASS
       pip_check: CLEAN
-    invariants:
-      - PUBLIC_IMPORT_PATHS_REMAIN_COMPATIBLE
-      - LEGACY_STATE_AND_SURFACE_MODULES_ARE_SHIMS_ONLY
-      - APP_CORE_PROVIDER_DATABASE_BEHAVIOR_UNCHANGED
-      - Q0_DEPENDENCY_SPREAD_FREEZE_REMAINS_ACTIVE
   Q2_legacy_ui_dna_move:
-    status: NOT_STARTED
+    status: IMPLEMENTED_PENDING_ACCEPTANCE
     target_private_path: dna_quarantine/legacy_ui_dna/**
     compatibility_path: ui/dna/**
-    strategy: MOVE_IMPLEMENTATION_AND_LEAVE_THIN_REEXPORT_SHIMS
+    strategy: SOURCE_SNAPSHOT_MOVE_WITH_BOUNDED_IMPORT_CYCLE_REPAIR_AND_THIN_REEXPORT_SHIMS
+    source_commit: 69efa690e77b4a0101ad5c6e356599e0974ceb63
+    source_blob_census:
+      __init__.py: c41bc2118165c6bcbc49b756a8c348aff2839922
+      bootstrap.py: 44e3c64eed47c7867bafd4ab6b272d0ffb9e284f
+      mapper.py: 01714750bcc39c140d9745384b37548c2cbc789c
+      models.py: efa0eee7aed51311992ea3193a7bc43a2515b1a3
+      proofs.py: 3fb6d0748b2dae5a9565c403eef97dc938ece19a
+      registry.py: 610e8d2fc4c5a2cb0ae1d98d8252705527bc07e2
+      resolver.py: 7a0632aac9c1ba2f81686c43f5dc65fef4088d61
+    repair_record:
+      trigger: PR79_CI_RUN_91_IMPORT_CYCLE_DURING_TEST_COLLECTION
+      runtime_semantic_defect: false
+      repair_scope:
+        - RESOLVER_INTERNAL_UI_DNA_IMPORTS_CHANGED_TO_RELATIVE_QUARANTINE_IMPORTS
+        - UI_PRESENTATION_RESOLVER_IMPORT_LAZY_LOADED_INSIDE_RESOLVE_COMPOSITION
+      behavioral_contract_changed: false
+      source_snapshot_preserved_for_forensic_comparison: true
+    extraction_debt:
+      - NON_RESOLVER_INTERNAL_LEGACY_SELF_IMPORTS_STILL_ROUTE_THROUGH_UI_DNA_SHIMS_UNTIL_Q4
+    invariants:
+      - PUBLIC_IMPORT_PATHS_REMAIN_COMPATIBLE
+      - UI_DNA_MODULES_ARE_SHIMS_ONLY
+      - SIX_NON_RESOLVER_SOURCE_MODULES_RETAIN_PRE_Q2_SOURCE_SNAPSHOTS
+      - RESOLVER_REPAIR_IS_IMPORT_TOPOLOGY_ONLY_AND_PRESERVES_PUBLIC_BEHAVIOR
+      - APP_CORE_PROVIDER_DATABASE_BEHAVIOR_UNCHANGED
+      - Q0_DEPENDENCY_SPREAD_FREEZE_REMAINS_ACTIVE
   Q3_theme_bridge_decoupling:
     status: NOT_STARTED
     strategy: REDUCE_APP_AND_UI_THEMES_TO_SMALL_INTERFACE_AND_SAFE_DEFAULT_FALLBACK
   Q4_private_repository_cut:
     status: NOT_STARTED
-    strategy: MOVE_QUARANTINED_IMPLEMENTATION_DOCS_TESTS_FIXTURES_ASSETS_TO_PRIVATE_PACKAGE_AND_RETAIN_PUBLIC_BRIDGE_ONLY
+    strategy: MAKE_QUARANTINE_SELF_CONTAINED_AND_PROVE_PUBLIC_SAFE_FALLBACK_WITH_PRIVATE_PACKAGE_ABSENT
 
 batch_policy:
   M8_M12:
