@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Tuple, Any
 import streamlit as st
 
 from ui import tokens
+from ui.dna_bridge import resolve_theme_identity_projection
 from ui.themes.models import Theme, ThemeMetadata
 
 logger = logging.getLogger(__name__)
@@ -112,13 +113,11 @@ class ThemeRegistry:
         """
         theme = self.get_theme(theme_id)
 
-        # Base default token dicts (deep copied to avoid mutation)
         resolved_colors = copy.deepcopy(tokens.COLORS)
         resolved_typography = copy.deepcopy(tokens.TYPOGRAPHY)
         resolved_spacing = copy.deepcopy(tokens.SPACING)
         resolved_radius = copy.deepcopy(tokens.RADIUS)
 
-        # If resolving non-default theme, apply non-mutating overrides
         if theme.id != DEFAULT_THEME_ID:
             if theme.colors:
                 resolved_colors.update(theme.colors)
@@ -150,7 +149,6 @@ class ThemeRegistry:
         return theme, resolved_token_groups
 
 
-# Single global registry instance
 _global_registry = ThemeRegistry()
 
 
@@ -165,7 +163,7 @@ def register_theme(theme: Theme) -> None:
 
 
 def list_themes() -> List[Theme]:
-    """Helper to list themes in the global registry, filtered to built-in themes plus session-owned custom themes."""
+    """Helper to list themes, filtered to built-ins plus session-owned custom themes."""
     all_themes = _global_registry.list_themes()
 
     session_customs = set()
@@ -200,6 +198,8 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
     """Generates `--mm-*` CSS custom properties and typography rules for the resolved theme.
 
     Keeps CSS output format 100% compatible with ui.tokens.generate_tokens_css().
+    Optional DNA semantics are consumed only through the Q3 public bridge, which
+    supplies deterministic safe defaults when private DNA is unavailable.
     """
     theme, resolved = resolve_theme(theme_id)
 
@@ -208,31 +208,23 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
     spacing = resolved["spacing"]
     radius = resolved["radius"]
 
-    from ui.dna.resolver import resolve_source_dna, resolve_identity_projection
-    source_dna = resolve_source_dna(theme)
-    id_proj = resolve_identity_projection(source_dna)
+    id_proj = resolve_theme_identity_projection(theme)
 
     css_lines = [":root {"]
 
-    # Fonts
     css_lines.append(f"  --mm-font-base: {typography['font_family_base']};")
     css_lines.append(f"  --mm-font-mono: {typography['font_family_mono']};")
 
-    # Spacing
     for k, v in spacing.items():
         css_lines.append(f"  --mm-space-{k}: {v};")
 
-    # Radius
     for k, v in radius.items():
         css_lines.append(f"  --mm-radius-{k}: {v};")
 
-    # Colors (includes all surface, background, and border semantic role colors)
     for k, v in colors.items():
         css_name = k.replace("_", "-")
         css_lines.append(f"  --mm-color-{css_name}: {v};")
 
-    # Identity Semantic Presentation Custom Properties (Derived from IdentityPresentationProjection)
-    # 1. hierarchy_contrast
     if id_proj.hierarchy_contrast == "dramatic":
         css_lines.append("  --mm-heading-font-weight: 900;")
         css_lines.append("  --mm-heading-letter-spacing: 0.04em;")
@@ -243,7 +235,6 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
         css_lines.append("  --mm-heading-font-weight: 700;")
         css_lines.append("  --mm-heading-letter-spacing: normal;")
 
-    # 2. border_stroke_style (PARTIAL shape character - valid CSS properties consumed in ui/style.css)
     css_lines.append("  --mm-shape-border-style: solid;")
     if id_proj.border_stroke_style == "crisp":
         css_lines.append("  --mm-shape-border-width: 1px;")
@@ -255,7 +246,6 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
         css_lines.append("  --mm-shape-border-width: 1px;")
         css_lines.append("  --mm-shape-border-color: var(--mm-color-border);")
 
-    # 3. energy_emphasis (visual_energy hover transform/shadow)
     if id_proj.energy_emphasis == "aggressive":
         css_lines.append("  --mm-energy-hover-lift: translate(-1px, -1px);")
         css_lines.append("  --mm-energy-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);")
@@ -269,7 +259,6 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
         css_lines.append("  --mm-energy-hover-lift: translateY(-1px);")
         css_lines.append("  --mm-energy-hover-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);")
 
-    # 4. surface_treatment (PARTIAL surface elevation shadow)
     if id_proj.surface_treatment in ("layered", "poster"):
         css_lines.append("  --mm-surface-elevation-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);")
     elif id_proj.surface_treatment == "atmospheric":
@@ -277,7 +266,6 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
     else:
         css_lines.append("  --mm-surface-elevation-shadow: none;")
 
-    # 5. transition_speed (interaction_intensity - preserves background-color transition)
     if id_proj.transition_speed == "assertive":
         css_lines.append("  --mm-transition-spec: background-color 0.1s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.1s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.1s cubic-bezier(0.4, 0, 0.2, 1), transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);")
     elif id_proj.transition_speed == "gentle":
@@ -287,7 +275,6 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
 
     css_lines.append("}")
 
-    # Typography class rules
     for role, props in typography.get("roles", {}).items():
         class_name = role.replace("_", "-")
         font_fam = "var(--mm-font-mono)" if role == "mono" else "var(--mm-font-base)"
