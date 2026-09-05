@@ -12,25 +12,33 @@ class InvalidUserIdError(ValueError):
 
 class Config:
     """App configuration"""
-    
+
     APP_NAME = "MultiMind AI"
     APP_VERSION = "1.0.0"
     DB_DIR = "data"
-    
+
     API_TIMEOUT = 30
     MAX_RETRIES = 3
     MAX_PROMPT_LENGTH = 5000
     MAX_CONTEXT_TOKENS = 800
-    
+
     DEFAULT_AGENTS = ["gemini"]
     FALLBACK_AGENTS = ["gemini", "groq", "cloudflare", "openrouter", "huggingface"]
     DEBATE_ROUNDS_DEFAULT = 1
-    
+
     COMPRESSOR_ENABLED = False
     COMPRESSOR_MODEL = "gemini-flash-latest"
 
-    # User IDs form a storage namespace.  Keep this deliberately smaller than
-    # arbitrary display text so an ID can never be interpreted as a path.
+    EMPTY_API_KEYS = {
+        "gemini_key": "",
+        "deepseek_key": "",
+        "groq_key": "",
+        "cloudflare_key": "",
+        "cloudflare_account_id": "",
+        "openrouter_key": "",
+        "huggingface_key": "",
+    }
+
     USER_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 
     @classmethod
@@ -60,34 +68,27 @@ class Config:
         if not display_username:
             raise InvalidUserIdError("Username tidak boleh kosong!")
         return display_username, cls.validate_user_id(display_username)
-    
+
     @classmethod
-    def get_api_keys(cls, user_id):
-        """Get API keys for user"""
+    def get_api_keys(cls, user_id, secrets_source=None):
+        """Resolve per-user/default API settings from a plain mapping or callable."""
         user_id = cls.validate_user_id(user_id)
+        if secrets_source is None:
+            return dict(cls.EMPTY_API_KEYS)
+
         try:
-            import streamlit as st
-            all_secrets = dict(st.secrets)
-            
-            if user_id in all_secrets:
-                return dict(st.secrets[user_id])
-            
-            if "default" in all_secrets:
-                return dict(st.secrets["default"])
-            
+            source = secrets_source() if callable(secrets_source) else secrets_source
+            all_secrets = dict(source or {})
+            selected = all_secrets.get(user_id)
+            if selected is None:
+                selected = all_secrets.get("default")
+            if selected is not None:
+                return dict(selected)
         except Exception:
             pass
-        
-        return {
-            "gemini_key": "",
-            "deepseek_key": "",
-            "groq_key": "",
-            "cloudflare_key": "",
-            "cloudflare_account_id": "",
-            "openrouter_key": "",
-            "huggingface_key": ""
-        }
-    
+
+        return dict(cls.EMPTY_API_KEYS)
+
     @classmethod
     def get_db_path(cls, user_id):
         """Resolve a validated user's SQLite database within the user DB root."""
@@ -96,15 +97,13 @@ class Config:
         users_root.mkdir(parents=True, exist_ok=True)
         candidate = (users_root / f"{user_id}.db").resolve()
 
-        # Validation is necessary but not sufficient: preserve this canonical
-        # containment check at the resolver boundary for all callers.
         try:
             candidate.relative_to(users_root)
         except ValueError as exc:
             raise InvalidUserIdError("User database path escapes the user DB root.") from exc
 
         return str(candidate)
-    
+
     @classmethod
     def get_pool_db_path(cls):
         """Get shared pool database path"""
