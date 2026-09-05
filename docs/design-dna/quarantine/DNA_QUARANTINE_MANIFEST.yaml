@@ -110,8 +110,18 @@ quarantine_migration_plan:
       - APP_CORE_PROVIDER_DATABASE_BEHAVIOR_UNCHANGED
       - Q0_DEPENDENCY_SPREAD_FREEZE_REMAINS_ACTIVE
   Q3_theme_bridge_decoupling:
-    status: NOT_STARTED
+    status: DURABLE_CLOSED
+    accepted: true
+    integration_commit: 69e01db253d9a143a65da03399b6354ad79e3313
+    pull_request: 84
+    acc_manifest: docs/design-dna/quarantine/Q3_ACC.yaml
+    public_bridge: ui/dna_bridge.py
     strategy: REDUCE_APP_AND_UI_THEMES_TO_SMALL_INTERFACE_AND_SAFE_DEFAULT_FALLBACK
+    evidence:
+      clean_head: 37551_PASS_RUN_110
+      post_merge_exact_main: 37551_PASS_RUN_111
+      pip_check: CLEAN
+      public_safe_fallback: PASS
   Q4_private_repository_cut:
     status: NOT_STARTED
     strategy: MAKE_QUARANTINE_SELF_CONTAINED_AND_PROVE_PUBLIC_SAFE_FALLBACK_WITH_PRIVATE_PACKAGE_ABSENT
