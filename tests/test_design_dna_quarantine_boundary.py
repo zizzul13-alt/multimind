@@ -28,6 +28,16 @@ THEME_STUDIO_SHIMS = (
     "ui/theme_studio/state.py",
     "ui/theme_studio/surface.py",
 )
+LEGACY_UI_DNA_SHIMS = tuple(
+    f"ui/dna/{name}" for name in (
+        "__init__.py", "bootstrap.py", "mapper.py", "models.py", "proofs.py", "registry.py", "resolver.py"
+    )
+)
+LEGACY_UI_DNA_IMPL = tuple(
+    f"dna_quarantine/legacy_ui_dna/{name}" for name in (
+        "__init__.py", "bootstrap.py", "mapper.py", "models.py", "proofs.py", "registry.py", "resolver.py"
+    )
+)
 Q1_INTEGRATION_COMMIT = "2354dfc2e7d5f38e7ffb373f22eee4d19e0fb51e"
 Q1_ACC_PATH = "docs/design-dna/quarantine/Q1_ACC.yaml"
 
@@ -75,11 +85,7 @@ def test_no_new_dna_or_theme_studio_dependency_spread_outside_declared_boundary(
 
 
 def test_public_bridge_allowlist_is_small_and_explicit():
-    assert LEGACY_PUBLIC_BRIDGE_FILES == {
-        "app.py",
-        "ui/presentation/brand.py",
-        "ui/themes/registry.py",
-    }
+    assert LEGACY_PUBLIC_BRIDGE_FILES == {"app.py", "ui/presentation/brand.py", "ui/themes/registry.py"}
     assert len(LEGACY_PUBLIC_BRIDGE_FILES) == 3
 
 
@@ -94,30 +100,48 @@ def test_q1_theme_studio_real_implementation_is_quarantined():
 
 def test_q1_legacy_theme_studio_modules_are_thin_reexport_shims():
     for rel in THEME_STUDIO_SHIMS:
-        path = ROOT / rel
-        text = path.read_text(encoding="utf-8")
+        text = (ROOT / rel).read_text(encoding="utf-8")
         assert len(text) < 1500, f"{rel} regrew implementation: {len(text)} bytes"
         assert "dna_quarantine.theme_studio" in text
         assert "streamlit" not in text
         assert "st." not in text
 
 
+def test_q2_legacy_ui_dna_real_implementation_is_quarantined_and_public_paths_are_shims():
+    for rel in LEGACY_UI_DNA_IMPL:
+        assert (ROOT / rel).is_file(), rel
+        assert (ROOT / rel).stat().st_size > 100, rel
+    for rel in LEGACY_UI_DNA_SHIMS:
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        assert len(text) < 500, f"{rel} regrew implementation: {len(text)} bytes"
+        assert "dna_quarantine.legacy_ui_dna" in text
+        assert "streamlit" not in text
+
+
+def test_q2_public_shims_and_quarantine_exports_preserve_object_identity():
+    from ui.dna.models import DesignDNA as PublicDesignDNA
+    from dna_quarantine.legacy_ui_dna.models import DesignDNA as PrivateDesignDNA
+    from ui.dna.registry import DNARegistry as PublicRegistry
+    from dna_quarantine.legacy_ui_dna.registry import DNARegistry as PrivateRegistry
+    assert PublicDesignDNA is PrivateDesignDNA
+    assert PublicRegistry is PrivateRegistry
+
+
 def test_quarantine_manifest_exists_and_locks_private_extraction_goal():
-    manifest = ROOT / "docs/design-dna/quarantine/DNA_QUARANTINE_MANIFEST.yaml"
-    text = manifest.read_text(encoding="utf-8")
+    text = (ROOT / "docs/design-dna/quarantine/DNA_QUARANTINE_MANIFEST.yaml").read_text(encoding="utf-8")
     assert "status: ACTIVE_QUARANTINE" in text
     assert "NO_NEW_DNA_DEPENDENCY_OUTSIDE_DECLARED_QUARANTINE_OR_PUBLIC_BRIDGE" in text
     assert "Q0_inventory_and_freeze:\n    status: COMPLETE" in text
     assert "Q1_theme_studio_move:\n    status: COMPLETE" in text
     assert f"integration_commit: {Q1_INTEGRATION_COMMIT}" in text
     assert f"acc_manifest: {Q1_ACC_PATH}" in text
-    assert "Q2_legacy_ui_dna_move:\n    status: NOT_STARTED" in text
+    assert "Q2_legacy_ui_dna_move:\n    status: IMPLEMENTED_PENDING_ACCEPTANCE" in text
+    assert "INTERNAL_LEGACY_SELF_IMPORTS_STILL_ROUTE_THROUGH_UI_DNA_SHIMS_UNTIL_Q4" in text
     assert "Q4_private_repository_cut:" in text
 
 
 def test_q1_acc_manifest_matches_integrated_runtime_and_closed_state():
-    acc = ROOT / Q1_ACC_PATH
-    text = acc.read_text(encoding="utf-8")
+    text = (ROOT / Q1_ACC_PATH).read_text(encoding="utf-8")
     assert "status: ACC_CLOSED_INTEGRATED" in text
     assert "accepted: true" in text
     assert "closed: true" in text
