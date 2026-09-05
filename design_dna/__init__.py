@@ -1,10 +1,12 @@
 """Canonical host-neutral Design-DNA runtime API (M0)."""
 from design_dna.models import (
     ALL_ZONES,
+    AbsenceState,
     AssetDecision,
     AssetIntent,
     AssetState,
     Axis,
+    AxisAbsence,
     CompositionRequest,
     DNAUnit,
     DegradationState,
@@ -31,10 +33,12 @@ from design_dna.resolver import resolve
 
 __all__ = [
     "ALL_ZONES",
+    "AbsenceState",
     "AssetDecision",
     "AssetIntent",
     "AssetState",
     "Axis",
+    "AxisAbsence",
     "CompositionRequest",
     "DNARegistry",
     "DNAUnit",
