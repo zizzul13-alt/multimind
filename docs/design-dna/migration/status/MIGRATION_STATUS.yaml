@@ -2,8 +2,8 @@ schema_version: 1
 project: MULTIMIND
 track: DESIGN_DNA_MIGRATION
 authority: GOVERNOR
-updated_at: 2026-09-05
-authoritative_main_at_update: 1377bc78d46fc129be074172380de3f17ba2b0a2
+updated_at: 2026-09-06
+authoritative_main_at_update: 40d4fd8a58a4d8cb4a2f29d89944cfbe1d0ed4cc
 
 global_state:
   global_eq3:
@@ -15,8 +15,8 @@ global_state:
     total: 271
     status: NOT_CLAIMED
   production_cutover: false
-  current_closed_batch: M9
-  next_eligible_batch: M10
+  current_closed_batch: M10
+  next_eligible_batch: M11
   quarantine_next_gate: Q3_THEME_BRIDGE_DECOUPLING
 
 status_vocabulary:
@@ -167,11 +167,19 @@ batches:
     scope_summary: CULTURAL_TIER_B_10
     eq4_credit: 0
   M10:
-    governor_status: NOT_STARTED
-    accepted: false
-    closed: false
-    integrated: false
+    governor_status: ACC_CLOSED_INTEGRATED
+    accepted: true
+    closed: true
+    integrated: true
+    integration_commit: 40d4fd8a58a4d8cb4a2f29d89944cfbe1d0ed4cc
+    pull_request: 81
+    manifest: docs/design-dna/migration/status/M10_ACC.yaml
+    implementation_report: docs/design-dna/migration/M10_IMPLEMENTATION_REPORT.md
     scope_summary: TRACK_M_R_25
+    clean_head_tests: 37547
+    clean_head_ci_run: 105
+    exact_main_tests: 37547
+    exact_main_ci_run: 106
     eq4_credit: 0
   M11:
     governor_status: NOT_STARTED
@@ -201,6 +209,10 @@ quarantine_sequence:
     acc_manifest: docs/design-dna/quarantine/Q2_ACC.yaml
     exact_main_tests: 30752
     exact_main_ci_run: 95
+    closure_commit: 3b95ae1155bae7b5a37d646a46ba21c1964b6953
+    closure_pull_request: 80
+    closure_exact_main_tests: 30754
+    closure_exact_main_ci_run: 100
   Q3:
     status: NOT_STARTED
     required_before_batch: M11
@@ -209,7 +221,7 @@ quarantine_sequence:
     required_before_batch: M12
 
 next_action:
-  gate: M10_TRACK_M_R_25
-  then_gate: Q3_THEME_BRIDGE_DECOUPLING
+  gate: Q3_THEME_BRIDGE_DECOUPLING
+  then_gate: M11_FIXTURES_14
   authorized_by_user_sequence: true
-  instruction: EXECUTE_M10_DURABLY_THEN_Q3_WITHOUT_SKIPPING_PROOF
+  instruction: EXECUTE_Q3_DURABLY_THEN_M11_WITHOUT_SKIPPING_PROOF
