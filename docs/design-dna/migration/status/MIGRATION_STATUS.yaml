@@ -3,7 +3,7 @@ project: MULTIMIND
 track: DESIGN_DNA_MIGRATION
 authority: GOVERNOR
 updated_at: 2026-09-06
-authoritative_main_at_update: 40d4fd8a58a4d8cb4a2f29d89944cfbe1d0ed4cc
+authoritative_main_at_update: 69e01db253d9a143a65da03399b6354ad79e3313
 
 global_state:
   global_eq3:
@@ -17,7 +17,7 @@ global_state:
   production_cutover: false
   current_closed_batch: M10
   next_eligible_batch: M11
-  quarantine_next_gate: Q3_THEME_BRIDGE_DECOUPLING
+  quarantine_next_gate: Q4_PRIVATE_REPOSITORY_CUT
 
 status_vocabulary:
   accepted: ACC_CLOSED_INTEGRATED
@@ -214,14 +214,19 @@ quarantine_sequence:
     closure_exact_main_tests: 30754
     closure_exact_main_ci_run: 100
   Q3:
-    status: NOT_STARTED
+    status: DURABLE_CLOSED
+    integration_commit: 69e01db253d9a143a65da03399b6354ad79e3313
+    pull_request: 84
+    acc_manifest: docs/design-dna/quarantine/Q3_ACC.yaml
+    exact_main_tests: 37551
+    exact_main_ci_run: 111
     required_before_batch: M11
   Q4:
     status: NOT_STARTED
     required_before_batch: M12
 
 next_action:
-  gate: Q3_THEME_BRIDGE_DECOUPLING
-  then_gate: M11_FIXTURES_14
+  gate: M11_FIXTURES_14
+  then_gate: Q4_PRIVATE_REPOSITORY_CUT
   authorized_by_user_sequence: true
-  instruction: EXECUTE_Q3_DURABLY_THEN_M11_WITHOUT_SKIPPING_PROOF
+  instruction: EXECUTE_M11_DURABLY_THEN_Q4_WITHOUT_SKIPPING_PROOF
