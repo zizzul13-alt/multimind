@@ -1,0 +1,146 @@
+schema_version: 1
+project: MULTIMIND
+track: DESIGN_DNA_MIGRATION
+batch: M9
+governor_status: ACC_CLOSED_INTEGRATED
+accepted: true
+closed: true
+integrated: true
+accepted_at: 2026-09-05
+integration_commit: 129ef11135c45164ea9a631d398844453e658691
+pull_request: 77
+base_commit: b6ad08144268df20e0f57a7f6134d2cac5cc5464
+
+scope:
+  name: CULTURAL_TIER_B_10
+  count: 10
+  implementation_report: docs/design-dna/migration/M9_IMPLEMENTATION_REPORT.md
+  canonical_ids:
+    - CB01
+    - CB02
+    - CB03
+    - CB04
+    - CB06
+    - CB07
+    - CB08
+    - CB09
+    - CB10
+    - CB11
+  routed_non_additive:
+    CB05: GENERIC_BARKCLOTH_TO_MATERIAL_M9
+  epistemic_modes:
+    recovered_mechanism_example: 5
+    bounded_translation: 5
+
+epistemic_boundary:
+  exact_additive_membership_locked: true
+  tier_b_is_historical_research_tier_not_quality_rank: true
+  project_abstraction_not_universal_cultural_truth: true
+  missing_row_level_mechanism_wording_fabricated: false
+  bounded_translation_explicit_in_runtime_trace: true
+  barkcloth_routing_preserved: true
+
+evidence:
+  initial_full_regression:
+    source_head: ba6834f1e517d460ebd54a4a2f277d3d48e6a528
+    passed: 30747
+    total: 30747
+    result: PASS
+    dependency_check: PASS
+  governor_audit_repair:
+    finding: BARKCLOTH_LINEAGE_ASSERTION_CASE_SENSITIVE_AND_WEAKER_THAN_INTENDED
+    runtime_defect: false
+    repair_commit: a134b3e540e9c115b6d4e122c43bec84ba97e4bd
+    repair: ADD_CASE_INSENSITIVE_ROUTING_AND_NON_ADDITIVE_HARDENING_TESTS
+    repair_weakened_tests: false
+  clean_head_full_regression:
+    source_head: a134b3e540e9c115b6d4e122c43bec84ba97e4bd
+    merge_ref: e152f5353907c934a7c12aa1dbf4b1529b922591
+    passed: 30749
+    total: 30749
+    result: PASS
+  exact_post_merge_main_regression:
+    commit: 129ef11135c45164ea9a631d398844453e658691
+    passed: 30749
+    total: 30749
+    result: PASS
+  dependency_check: PASS
+  deep_matrix:
+    combined_registry:
+      references: 135
+      engines: 29
+      primitives: 68
+      unique_units: 232
+      result: PASS
+    viewport_projections: 30
+    asset_state_projections: 40
+    reference_primitive_compositions: 680
+    reference_engine_compositions: 290
+    tier_b_pair_differentiation_checks: 45
+    a_to_b_to_a_determinism_checks: 45
+    tier_b_prior_reference_firewall_checks: 1250
+    each_reference_all_68_primitives: PASS
+    each_reference_all_29_engines: PASS
+    reading_sanctuary_accessibility_all_10: PASS
+    reduced_motion_all_10: PASS
+    exact_epistemic_partition: PASS
+    barkcloth_routing_firewall: PASS
+    masi_noncollapse: PASS
+    liyelaa_dumbara_lineage_separation: PASS
+    turkmen_subgroup_scope_lock: PASS
+  merged_to_main: true
+  governor_diff_audit: PASS
+  governor_acceptance: PASS
+
+governor_audit:
+  m9_only_runtime_scope: true
+  resolver_semantics_mutated: false
+  host_semantics_mutated: false
+  database_schema_mutated: false
+  provider_semantics_mutated: false
+  core_application_semantics_mutated: false
+  per_reference_component_classes_added: false
+  source_overclaim_found: false
+  tests_weakened: false
+
+contract_locks:
+  cultural_tier_b_not_material_engine: true
+  routed_generic_barkcloth_not_additive_cultural_reference: true
+  masi_not_generic_tapa_or_generic_barkcloth: true
+  liyelaa_jehun_lineage_preserved: true
+  dumbara_rata_kalala_lineage_preserved: true
+  turkmen_subgroup_scope_not_collapsed: true
+  asset_applicable_not_asset_required: true
+  actual_asset_files_required: 0
+  asset_off_structural_identity: true
+  deterministic_projection: true
+  semantic_truth_must_preexist: true
+
+quarantine:
+  q0_status: COMPLETE
+  q1_status: DURABLE_CLOSED
+  q2_status: NOT_STARTED
+  new_undeclared_dna_spread_allowed: false
+
+boundaries:
+  actual_asset_files_added: false
+  q2_started_by_m9: false
+  m10_started_by_m9: false
+  rj3_change: false
+  eq4_granted: false
+  production_cutover_authorized: false
+
+exclusions:
+  - Q2_NOT_INCLUDED
+  - M10_NOT_INCLUDED
+  - Q3_NOT_INCLUDED
+  - M11_NOT_INCLUDED
+  - Q4_NOT_INCLUDED
+  - M12_NOT_INCLUDED
+  - RJ3_NOT_INCLUDED
+  - EQ4_NOT_GRANTED
+  - PRODUCTION_CUTOVER_NOT_AUTHORIZED
+
+eq4_credit: 0
+next_gate: Q2_LEGACY_UI_DNA_MOVE_THEN_M10
+next_gate_authorized_by_this_manifest: false
