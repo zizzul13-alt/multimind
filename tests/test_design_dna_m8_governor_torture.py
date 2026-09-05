@@ -86,11 +86,13 @@ def _sources(projection):
 
 
 def _identity(projection, reference_id):
-    return tuple(
+    # One logical mechanism may be emitted once per eligible semantic zone.
+    # Torture assertions compare unique logical directives, not projection multiplicity.
+    return tuple(sorted({
         item.directive
         for item in projection.mechanisms
         if item.source_unit_id == reference_id and item.mechanism_id.endswith("-identity")
-    )
+    }))
 
 
 def test_combined_m0_to_m8_registry_exact_counts_and_collision_free():
@@ -220,10 +222,10 @@ def test_siapo_and_ngatu_bounded_large_field_translation_do_not_collapse():
 def test_cultural_material_and_country_firewall_is_runtime_visible():
     for reference_id in CULTURAL_TIER_A_IDS:
         projection = _project(reference_id)
-        directives = [
+        directives = {
             item.directive
             for item in projection.mechanisms
             if item.source_unit_id == reference_id and item.mechanism_id.endswith("-semantic-firewall")
-        ]
+        }
         assert len(directives) == 1
-        assert "may-not-promote-engine-or-country-lens-into-reference-truth" in directives[0]
+        assert "may-not-promote-engine-or-country-lens-into-reference-truth" in next(iter(directives))
