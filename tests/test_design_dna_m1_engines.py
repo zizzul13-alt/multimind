@@ -1,3 +1,5 @@
+import pytest
+
 from design_dna import (
     ASSET_ON_APPLICABLE,
     ASSET_ON_NOT_APPLICABLE,
@@ -190,6 +192,32 @@ def test_environment_contracts_have_no_live_feed_dependency():
     assert "without-weather-feed" in e5
     assert "without-live-weather-dependency" in e6
     assert "without-live-location-or-weather-feed" in e14
+
+
+@pytest.mark.parametrize("engine_id", M1_ENGINE_IDS)
+def test_every_engine_resolves_individually(engine_id):
+    projection = _projection(engine_id)
+    assert projection.is_valid
+    assert any(item.source_unit_id == engine_id for item in projection.mechanisms)
+
+
+@pytest.mark.parametrize("engine_id", M1_ENGINE_IDS)
+def test_every_engine_resolves_on_mobile_without_identity_substitution(engine_id):
+    projection = _projection(engine_id, context=SemanticContext(viewport=Viewport.MOBILE))
+    assert projection.is_valid
+    own = [item for item in projection.mechanisms if item.source_unit_id == engine_id]
+    assert own
+    assert all(item.viewport is Viewport.MOBILE for item in own)
+
+
+@pytest.mark.parametrize("material_id", MATERIAL_ENGINE_IDS)
+@pytest.mark.parametrize("environment_id", ENVIRONMENT_ENGINE_IDS)
+def test_all_210_material_environment_pairs_are_composable(material_id, environment_id):
+    projection = _projection(material_id, environment_id)
+    assert projection.is_valid
+    owners = {item.source_unit_id for item in projection.mechanisms}
+    assert material_id in owners
+    assert environment_id in owners
 
 
 def test_material_and_environment_pair_resolves_without_type_or_registry_failure():
