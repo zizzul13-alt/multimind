@@ -28,7 +28,9 @@ evidence:
   closure_repair:
     classification: STALE_GOVERNANCE_ASSERTION
     weakened_invariant: false
-    repair: ASSERT_CURRENT_Q3_AUTHORITATIVE_MAIN_WHILE_PRESERVING_M10_INTEGRATION_EVIDENCE
+    repair:
+      - ASSERT_CURRENT_Q3_AUTHORITATIVE_MAIN_WHILE_PRESERVING_M10_INTEGRATION_EVIDENCE
+      - ADVANCE_QUARANTINE_NEXT_GATE_TO_Q4_WHILE_M11_REMAINS_IMMEDIATE_NEXT_ACTION
   governor_diff_audit: PASS
   public_safe_fallback: PASS
   no_reverse_circular_import: PASS
