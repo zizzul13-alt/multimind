@@ -1,0 +1,120 @@
+schema_version: 1
+project: MULTIMIND
+track: DESIGN_DNA_MIGRATION
+batch: M7
+governor_status: ACC_CLOSED_INTEGRATED
+accepted: true
+closed: true
+integrated: true
+accepted_at: 2026-09-05
+integration_commit: 1ef1e49ec2c1443428c6eb1097006e83e993bf7b
+pull_request: 72
+base_commit: a429169c66f5b52bb892f38e7cd62506ba0494db
+
+scope:
+  name: TRACK_T_I_TEMPORAL_REFERENCES_16
+  count: 16
+  runtime_ids: TI01_TI16
+  additive_temporal_primitives: TP01_TP18
+  historical_non_additive_primitives:
+    - TP19
+    - TP20
+  implementation_report: docs/design-dna/migration/M7_IMPLEMENTATION_REPORT.md
+
+epistemic_boundary:
+  exact_corpus_membership_locked: true
+  exact_topology_discriminator_map_recovered: true
+  exact_nearest_negative_map_recovered: true
+  primitive_ontology_additive_boundary_recovered: true
+  unavailable_source_prose_claimed_verbatim: false
+  reference_identity_scope: IZZUL_TRACK_T_I_OWNER_SCOPED
+
+evidence:
+  prior_m6_baseline_tests: 18590
+  m7_permanent_test_delta: 2937
+  deep_matrix:
+    reference_viewport_projections: 48
+    reference_asset_state_projections: 64
+    reference_primitive_compositions: 1088
+    reference_engine_compositions: 464
+    track_t_i_personal_cross_owner_firewall_checks: 944
+    reference_pair_differentiation_checks: 120
+    a_to_b_to_a_switch_checks: 120
+    declared_temporal_fingerprint_activation_all_16: PASS
+    all_68_primitives_with_each_reference: PASS
+    all_29_engines_with_each_reference: PASS
+    reading_sanctuary_accessibility_all_16: PASS
+    reduced_motion_all_16: PASS
+    mobile_projection_all_16: PASS
+    nearest_negative_collision_map: PASS
+    low_transform_ti11_ti13_ti16_cluster: PASS
+    combined_registry_collision_census:
+      references: 96
+      engines: 29
+      primitives: 68
+      unique_units: 193
+      result: PASS
+  clean_head_full_regression:
+    source_head: c1e8280f66eab26fbefc1bb356f255853d8bcf1f
+    merge_ref: 4b25c1aaf5409283db7fb892bc701c7363cda37e
+    passed: 21527
+    total: 21527
+    result: PASS
+  exact_post_merge_main_regression:
+    commit: 1ef1e49ec2c1443428c6eb1097006e83e993bf7b
+    passed: 21527
+    total: 21527
+    result: PASS
+  dependency_check: PASS
+  merged_to_main: true
+  governor_acceptance_comment: 5551703646
+  governor_acceptance: PASS
+
+governor_audit:
+  changed_files: 5
+  m7_only_scope: true
+  exact_16_member_denominator_verified: true
+  topology_and_nearest_negative_maps_verified: true
+  fail_closed_tie_law_verified: true
+  designed_pacing_no_added_wait_verified: true
+  direct_ip_identity_dependency_found: false
+  primitive_fingerprint_policy: EXPLICIT_EXPLAINABILITY_AND_COMPOSITION_METADATA
+  hidden_automatic_primitive_injection_added: false
+  m0_resolver_semantics_mutated: false
+  per_reference_runtime_if_forest_added: false
+  tests_weakened: false
+
+contract_locks:
+  shared_temporal_primitive_not_shared_reference_identity: true
+  izzul_reference_not_global_reference_ownership: true
+  designed_pacing_not_added_wait_time: true
+  unresolved_exact_tie_fails_closed: true
+  reading_sanctuary_over_temporal_theatricality: true
+  direct_ip_not_identity_requirement: true
+  asset_applicable_not_asset_required: true
+  actual_direct_ip_assets_required: 0
+  asset_audio_off_structural_identity: true
+  deterministic_projection: true
+  tp19_tp20_non_additive: true
+
+boundaries:
+  actual_asset_files_added: false
+  host_rj3_change: false
+  database_schema_change: false
+  provider_semantic_change: false
+  core_application_semantic_change: false
+  requirements_change: false
+  resolver_family_magic_added: false
+  m8_started: false
+
+exclusions:
+  - M8_NOT_INCLUDED
+  - M9_NOT_INCLUDED
+  - RJ3_NOT_INCLUDED
+  - EQ4_NOT_GRANTED
+  - ASSET_ENRICHMENT_NOT_INCLUDED
+  - PRODUCTION_CUTOVER_NOT_AUTHORIZED
+
+eq4_credit: 0
+next_gate: M8
+next_gate_authorized_by_this_manifest: false
