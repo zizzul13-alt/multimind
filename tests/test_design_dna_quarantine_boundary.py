@@ -221,7 +221,7 @@ def test_migration_master_ledger_cannot_regress_q2_or_m10_after_durable_closure(
     assert f"authoritative_main_at_update: {Q3_INTEGRATION_COMMIT}" in text
     assert "current_closed_batch: M10" in text
     assert "next_eligible_batch: M11" in text
-    assert "quarantine_next_gate: Q3_THEME_BRIDGE_DECOUPLING" in text
+    assert "quarantine_next_gate: Q4_PRIVATE_REPOSITORY_CUT" in text
     assert "Q2:\n    status: DURABLE_CLOSED" in text
     assert f"integration_commit: {Q2_INTEGRATION_COMMIT}" in text
     assert f"acc_manifest: {Q2_ACC_PATH}" in text
