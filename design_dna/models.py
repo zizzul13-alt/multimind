@@ -90,6 +90,26 @@ class FailureCode(str, Enum):
     MECHANISM_EVIDENCE_GAP = "MECHANISM_EVIDENCE_GAP"
 
 
+class AbsenceState(str, Enum):
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    UNKNOWN_NOT_RESEARCHED = "UNKNOWN_NOT_RESEARCHED"
+    UNKNOWN_NO_EVIDENCE = "UNKNOWN_NO_EVIDENCE"
+
+
+@dataclass(frozen=True)
+class AxisAbsence:
+    """Explicit canonical absence for one of the 15 axes."""
+
+    axis: Axis
+    state: AbsenceState
+
+    def validate(self) -> None:
+        if not isinstance(self.axis, Axis):
+            raise TypeError("AxisAbsence.axis must be Axis")
+        if not isinstance(self.state, AbsenceState):
+            raise TypeError("AxisAbsence.state must be AbsenceState")
+
+
 @dataclass(frozen=True)
 class MechanismContract:
     """One resolver-readable mechanism scoped by axis × zone × viewport/state."""
@@ -110,21 +130,23 @@ class MechanismContract:
     host_capability: Optional[str] = None
 
     def validate(self) -> None:
-        if not self.id.strip():
+        if not isinstance(self.id, str) or not self.id.strip():
             raise ValueError("MechanismContract.id must be non-empty")
         if not isinstance(self.axis, Axis):
             raise TypeError("MechanismContract.axis must be Axis")
         if not self.zones or any(not isinstance(z, SemanticZone) for z in self.zones):
             raise ValueError("MechanismContract.zones must contain canonical semantic zones")
-        if not self.directive.strip():
+        if not isinstance(self.directive, str) or not self.directive.strip():
             raise ValueError("MechanismContract.directive must be non-empty")
         if not 0 <= self.ownership_rank <= 100:
             raise ValueError("MechanismContract.ownership_rank must be in [0, 100]")
-        if not self.viewports or any(not str(v).strip() for v in self.viewports):
+        if not self.viewports or any(not isinstance(v, str) or not v.strip() for v in self.viewports):
             raise ValueError("MechanismContract.viewports must be non-empty")
-        if not self.states or any(not str(v).strip() for v in self.states):
+        if not self.states or any(not isinstance(v, str) or not v.strip() for v in self.states):
             raise ValueError("MechanismContract.states must be non-empty")
-        if self.requires_asset_slot is not None and not self.requires_asset_slot.strip():
+        if self.requires_asset_slot is not None and (
+            not isinstance(self.requires_asset_slot, str) or not self.requires_asset_slot.strip()
+        ):
             raise ValueError("requires_asset_slot must be non-empty when provided")
 
 
@@ -141,11 +163,13 @@ class AssetIntent:
     provenance_pointer: str = ""
 
     def validate(self) -> None:
-        if not self.slot.strip() or not self.asset_id.strip():
-            raise ValueError("AssetIntent slot and asset_id must be non-empty")
-        if not self.license_status.strip():
+        if not isinstance(self.slot, str) or not self.slot.strip():
+            raise ValueError("AssetIntent.slot must be non-empty")
+        if not isinstance(self.asset_id, str) or not self.asset_id.strip():
+            raise ValueError("AssetIntent.asset_id must be non-empty")
+        if not isinstance(self.license_status, str) or not self.license_status.strip():
             raise ValueError("AssetIntent.license_status must be explicit")
-        if not self.fallback_directive.strip():
+        if not isinstance(self.fallback_directive, str) or not self.fallback_directive.strip():
             raise ValueError("AssetIntent requires structural fallback")
         if not 0 <= self.ownership_rank <= 100:
             raise ValueError("AssetIntent.ownership_rank must be in [0, 100]")
@@ -159,33 +183,62 @@ class DNAUnit:
     lineage: str
     provenance_pointer: str
     mechanisms: Tuple[MechanismContract, ...] = ()
+    axis_absences: Tuple[AxisAbsence, ...] = ()
     assets: Tuple[AssetIntent, ...] = ()
     compatible_unit_ids: Tuple[str, ...] = ()
     conflicting_unit_ids: Tuple[str, ...] = ()
     identity_survival: str = "structural"
 
     def validate(self) -> None:
-        if not self.id.strip():
+        if not isinstance(self.id, str) or not self.id.strip():
             raise ValueError("DNAUnit.id must be non-empty")
         if not isinstance(self.kind, UnitKind):
             raise TypeError("DNAUnit.kind must be UnitKind")
-        if not self.family.strip() or not self.lineage.strip():
-            raise ValueError("DNAUnit family and lineage must be explicit")
-        if not self.provenance_pointer.strip():
+        if not isinstance(self.family, str) or not self.family.strip():
+            raise ValueError("DNAUnit.family must be explicit")
+        if not isinstance(self.lineage, str) or not self.lineage.strip():
+            raise ValueError("DNAUnit.lineage must be explicit")
+        if not isinstance(self.provenance_pointer, str) or not self.provenance_pointer.strip():
             raise ValueError("DNAUnit.provenance_pointer must be explicit")
+
         mechanism_ids = set()
+        mechanism_axes = set()
         for mechanism in self.mechanisms:
+            if not isinstance(mechanism, MechanismContract):
+                raise TypeError("DNAUnit.mechanisms must contain MechanismContract values")
             mechanism.validate()
             if mechanism.id in mechanism_ids:
                 raise ValueError(f"Duplicate mechanism id '{mechanism.id}' in unit '{self.id}'")
             mechanism_ids.add(mechanism.id)
+            mechanism_axes.add(mechanism.axis)
+
+        absence_axes = set()
+        for absence in self.axis_absences:
+            if not isinstance(absence, AxisAbsence):
+                raise TypeError("DNAUnit.axis_absences must contain AxisAbsence values")
+            absence.validate()
+            if absence.axis in absence_axes:
+                raise ValueError(f"Duplicate explicit absence for axis '{absence.axis.value}' in unit '{self.id}'")
+            absence_axes.add(absence.axis)
+
+        overlap = mechanism_axes & absence_axes
+        if overlap:
+            names = ", ".join(sorted(axis.value for axis in overlap))
+            raise ValueError(f"Axes cannot have both mechanism and explicit absence: {names}")
+        missing = set(Axis) - mechanism_axes - absence_axes
+        if missing:
+            names = ", ".join(sorted(axis.value for axis in missing))
+            raise ValueError(f"DNAUnit '{self.id}' must explicitly cover all 15 axes; missing: {names}")
+
         asset_slots = set()
         for asset in self.assets:
+            if not isinstance(asset, AssetIntent):
+                raise TypeError("DNAUnit.assets must contain AssetIntent values")
             asset.validate()
             if asset.slot in asset_slots:
                 raise ValueError(f"Duplicate asset slot '{asset.slot}' in unit '{self.id}'")
             asset_slots.add(asset.slot)
-        if not self.identity_survival.strip():
+        if not isinstance(self.identity_survival, str) or not self.identity_survival.strip():
             raise ValueError("DNAUnit.identity_survival must be explicit")
 
 
@@ -202,12 +255,16 @@ class CompositionRequest:
         object.__setattr__(self, "modifiers", _freeze_map(self.modifiers))
 
     def validate(self) -> None:
-        if not self.selected_reference_id.strip():
+        if not isinstance(self.selected_reference_id, str) or not self.selected_reference_id.strip():
             raise ValueError("CompositionRequest.selected_reference_id must be non-empty")
-        if not self.archetype_id.strip():
+        if not isinstance(self.archetype_id, str) or not self.archetype_id.strip():
             raise ValueError("CompositionRequest.archetype_id must be non-empty")
         if not isinstance(self.asset_state, AssetState):
             raise TypeError("CompositionRequest.asset_state must be AssetState")
+        if any(not isinstance(item, str) or not item.strip() for item in self.engine_ids):
+            raise ValueError("CompositionRequest.engine_ids must contain non-empty strings")
+        if any(not isinstance(item, str) or not item.strip() for item in self.primitive_ids):
+            raise ValueError("CompositionRequest.primitive_ids must contain non-empty strings")
         if len(set(self.engine_ids)) != len(self.engine_ids):
             raise ValueError("CompositionRequest.engine_ids must not contain duplicates")
         if len(set(self.primitive_ids)) != len(self.primitive_ids):
@@ -231,8 +288,12 @@ class SemanticContext:
             raise ValueError("SemanticContext.active_zones must contain canonical zones")
         if not isinstance(self.viewport, Viewport):
             raise TypeError("SemanticContext.viewport must be Viewport")
-        if not self.interaction_state.strip():
+        if not isinstance(self.interaction_state, str) or not self.interaction_state.strip():
             raise ValueError("SemanticContext.interaction_state must be non-empty")
+        if any(not isinstance(z, SemanticZone) for z in self.reading_heavy_zones):
+            raise TypeError("SemanticContext.reading_heavy_zones must contain SemanticZone values")
+        if any(not isinstance(item, str) or not item.strip() for item in self.host_capabilities):
+            raise ValueError("SemanticContext.host_capabilities must contain non-empty strings")
 
 
 @dataclass(frozen=True)
@@ -251,7 +312,9 @@ class RuntimeConstraints:
             raise ValueError("dominance_cap must be >= 1")
         if any(not isinstance(axis, Axis) for axis in self.blocked_axes):
             raise TypeError("blocked_axes must contain Axis values")
-        if not self.safe_baseline_directive.strip():
+        if any(not isinstance(item, str) or not item.strip() for item in self.blocked_mechanism_ids):
+            raise ValueError("blocked_mechanism_ids must contain non-empty strings")
+        if not isinstance(self.safe_baseline_directive, str) or not self.safe_baseline_directive.strip():
             raise ValueError("safe_baseline_directive must be non-empty")
 
 
@@ -259,6 +322,8 @@ class RuntimeConstraints:
 class ResolvedMechanism:
     axis: Axis
     zone: SemanticZone
+    viewport: Viewport
+    interaction_state: str
     directive: str
     source_unit_id: str
     mechanism_id: str
@@ -301,7 +366,10 @@ class ResolutionIssue:
 class ThemeProjection:
     composition_id: str
     fingerprint: str
+    archetype_id: str
     viewport: Viewport
+    interaction_state: str
+    safe_baseline_directive: str
     mechanisms: Tuple[ResolvedMechanism, ...]
     asset_decisions: Tuple[AssetDecision, ...]
     provenance: Tuple[ProvenanceRecord, ...]
