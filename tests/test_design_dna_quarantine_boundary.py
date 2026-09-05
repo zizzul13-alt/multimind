@@ -13,11 +13,12 @@ QUARANTINE_PREFIXES = (
     "ui/theme_studio/",
     "tests/",
 )
-LEGACY_PUBLIC_BRIDGE_FILES = {
+PUBLIC_BRIDGE_FILES = {"ui/dna_bridge.py"}
+Q3_DECOUPLED_PUBLIC_SURFACES = (
     "app.py",
     "ui/presentation/brand.py",
     "ui/themes/registry.py",
-}
+)
 DNA_MODULE_PREFIXES = (
     "design_dna",
     "ui.dna",
@@ -81,18 +82,47 @@ def test_no_new_dna_or_theme_studio_dependency_spread_outside_declared_boundary(
         imports = _dna_imports(path)
         if not imports:
             continue
-        if _is_quarantine_path(rel) or rel in LEGACY_PUBLIC_BRIDGE_FILES:
+        if _is_quarantine_path(rel) or rel in PUBLIC_BRIDGE_FILES:
             continue
         violations[rel] = imports
     assert violations == {}, (
-        "DNA quarantine violation: new deep DNA/Theme Studio import outside declared "
-        f"quarantine or bridge seam: {violations}"
+        "DNA quarantine violation: deep DNA/Theme Studio import outside declared "
+        f"quarantine or single public bridge: {violations}"
     )
 
 
-def test_public_bridge_allowlist_is_small_and_explicit():
-    assert LEGACY_PUBLIC_BRIDGE_FILES == {"app.py", "ui/presentation/brand.py", "ui/themes/registry.py"}
-    assert len(LEGACY_PUBLIC_BRIDGE_FILES) == 3
+def test_q3_public_bridge_allowlist_is_one_small_explicit_module():
+    assert PUBLIC_BRIDGE_FILES == {"ui/dna_bridge.py"}
+    assert len(PUBLIC_BRIDGE_FILES) == 1
+
+
+def test_q3_former_public_bridge_owners_have_zero_deep_dna_imports():
+    violations = {
+        rel: _dna_imports(ROOT / rel)
+        for rel in Q3_DECOUPLED_PUBLIC_SURFACES
+        if _dna_imports(ROOT / rel)
+    }
+    assert violations == {}
+
+
+def test_q3_bridge_private_imports_are_lazy_and_host_neutral():
+    path = ROOT / "ui/dna_bridge.py"
+    text = path.read_text(encoding="utf-8")
+    tree = ast.parse(text, filename=str(path))
+    assert "streamlit" not in text
+    assert "reflex" not in text
+    assert "dna_quarantine" in text
+
+    top_level_private_imports = []
+    for node in tree.body:
+        if isinstance(node, ast.ImportFrom) and node.module:
+            if node.module.startswith("dna_quarantine"):
+                top_level_private_imports.append(node.module)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.startswith("dna_quarantine"):
+                    top_level_private_imports.append(alias.name)
+    assert top_level_private_imports == []
 
 
 def test_q1_theme_studio_real_implementation_is_quarantined():
