@@ -1,4 +1,4 @@
-"""Canonical host-neutral Design-DNA runtime API (M0)."""
+"""Canonical host-neutral Design-DNA runtime API."""
 from design_dna.models import (
     ALL_ZONES,
     AbsenceState,
@@ -30,9 +30,22 @@ from design_dna.registry import (
     UnknownUnitError,
 )
 from design_dna.resolver import resolve
+from design_dna.engines import (
+    ASSET_ON_APPLICABLE,
+    ASSET_ON_NOT_APPLICABLE,
+    ENGINE_BY_ID,
+    ENVIRONMENT_ENGINE_IDS,
+    M1_ENGINE_IDS,
+    M1_ENGINES,
+    MATERIAL_ENGINE_IDS,
+    engine_asset_on_applicable,
+    register_m1_engines,
+)
 
 __all__ = [
     "ALL_ZONES",
+    "ASSET_ON_APPLICABLE",
+    "ASSET_ON_NOT_APPLICABLE",
     "AbsenceState",
     "AssetDecision",
     "AssetIntent",
@@ -44,7 +57,12 @@ __all__ = [
     "DNAUnit",
     "DegradationState",
     "DuplicateUnitError",
+    "ENGINE_BY_ID",
+    "ENVIRONMENT_ENGINE_IDS",
     "FailureCode",
+    "M1_ENGINE_IDS",
+    "M1_ENGINES",
+    "MATERIAL_ENGINE_IDS",
     "MechanismContract",
     "ProvenanceRecord",
     "RegistryError",
@@ -58,5 +76,7 @@ __all__ = [
     "UnitKindMismatchError",
     "UnknownUnitError",
     "Viewport",
+    "engine_asset_on_applicable",
+    "register_m1_engines",
     "resolve",
 ]
