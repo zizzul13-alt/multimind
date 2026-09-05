@@ -12,6 +12,28 @@ from multimind_reflex.bridge import BufferedUpload, build_host_application
 from utils.config import Config, InvalidUserIdError
 
 
+def _session_snapshots(rows):
+    return [
+        {
+            "id": str(row.get("id", "")),
+            "name": str(row.get("name", "Session")),
+            "mode": str(row.get("mode", "coding")),
+        }
+        for row in rows
+    ]
+
+
+def _history_snapshots(rows):
+    return [
+        {
+            "id": str(row.get("id", "")),
+            "prompt": str(row.get("prompt", "")),
+            "final_answer": str(row.get("final_answer", "")),
+        }
+        for row in rows
+    ]
+
+
 class HostState(rx.State):
     """Minimal production-host spine; RJ-3 owns full presentation parity."""
 
@@ -20,12 +42,12 @@ class HostState(rx.State):
     user_id: str = ""
     logged_in: bool = False
 
-    sessions: list[dict] = []
+    sessions: list[dict[str, str]] = []
     new_session_name: str = ""
     current_session_id: str = ""
     current_session_name: str = ""
     current_session_mode: str = "coding"
-    history: list[dict] = []
+    history: list[dict[str, str]] = []
 
     prompt: str = ""
     busy: bool = False
@@ -44,13 +66,13 @@ class HostState(rx.State):
         return build_host_application(self.user_id, self._runtime_memories)
 
     def _refresh_sessions(self):
-        self.sessions = list(self._application().list_sessions())
+        self.sessions = _session_snapshots(self._application().list_sessions())
 
     def _refresh_history(self):
         if not self.current_session_id:
             self.history = []
             return
-        self.history = list(
+        self.history = _history_snapshots(
             self._application().get_session_chats(self.current_session_id, limit=50)
         )
 
@@ -254,7 +276,7 @@ class HostState(rx.State):
                 return
 
             self.final_answer = result.final_answer
-            self.history = list(history or [])
+            self.history = _history_snapshots(history or [])
             self.prompt = ""
             self._pending_uploads = []
             self.upload_names = []
