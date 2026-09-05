@@ -3,7 +3,7 @@ project: MULTIMIND
 track: DESIGN_DNA_MIGRATION
 authority: GOVERNOR
 updated_at: 2026-09-05
-authoritative_main_at_update: 83eba265aab870e63201f711ebedc1fbb681060c
+authoritative_main_at_update: 29a738168aad73da55fed03aac9fa25127481fa6
 
 global_state:
   global_eq3:
@@ -15,8 +15,8 @@ global_state:
     total: 271
     status: NOT_CLAIMED
   production_cutover: false
-  current_closed_batch: M4
-  next_eligible_batch: M5
+  current_closed_batch: M5
+  next_eligible_batch: M6
 
 status_vocabulary:
   accepted: ACC_CLOSED_INTEGRATED
@@ -111,10 +111,14 @@ batches:
     scope_summary: PRIMITIVES_68
     eq4_credit: 0
   M5:
-    governor_status: NOT_STARTED
-    accepted: false
-    closed: false
-    integrated: false
+    governor_status: ACC_CLOSED_INTEGRATED
+    accepted: true
+    closed: true
+    integrated: true
+    integration_commit: 29a738168aad73da55fed03aac9fa25127481fa6
+    pull_request: 68
+    manifest: docs/design-dna/migration/status/M5_ACC.yaml
+    implementation_report: docs/design-dna/migration/M5_IMPLEMENTATION_REPORT.md
     scope_summary: IZZUL_36
     eq4_credit: 0
   M6:
@@ -168,6 +172,6 @@ batches:
     eq4_credit: 0
 
 next_action:
-  batch: M5
+  batch: M6
   authorized_by_this_file: false
-  instruction: USER_ALREADY_AUTHORIZED_M4_PLUS_M5_BUNDLE_EXTERNALLY; FILE_ITSELF_DOES_NOT_SELF_AUTHORIZE
+  instruction: REQUIRE_SEPARATE_USER_OR_GOVERNOR_EXECUTION_AUTHORIZATION
