@@ -25,6 +25,10 @@ evidence:
     passed: 37551
     total: 37551
     pip_check: CLEAN
+  closure_repair:
+    classification: STALE_GOVERNANCE_ASSERTION
+    weakened_invariant: false
+    repair: ASSERT_CURRENT_Q3_AUTHORITATIVE_MAIN_WHILE_PRESERVING_M10_INTEGRATION_EVIDENCE
   governor_diff_audit: PASS
   public_safe_fallback: PASS
   no_reverse_circular_import: PASS
