@@ -5,7 +5,6 @@ import sqlite3
 import os
 import json
 import tempfile
-from datetime import datetime
 from pathlib import Path
 
 
@@ -30,8 +29,6 @@ REQUIRED_RESTORE_SCHEMA = {
     },
 }
 
-# Bound untrusted restore material at this trust boundary without introducing a
-# general upload/resource-limiting subsystem.
 MAX_RESTORE_CANDIDATE_BYTES = 100 * 1024 * 1024
 
 
@@ -79,7 +76,7 @@ class DatabaseManager:
         """Initialize database tables"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY,
@@ -90,7 +87,7 @@ class DatabaseManager:
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS chats (
                 id TEXT PRIMARY KEY,
@@ -106,9 +103,14 @@ class DatabaseManager:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
+
         conn.commit()
         conn.close()
+
+    def export_bytes(self):
+        """Return the current user database as bytes without exposing its path."""
+        with open(self.db_path, "rb") as database_file:
+            return database_file.read()
 
     def restore_from_bytes(self, backup_bytes):
         """Stage and validate an uploaded backup before single-step activation."""
@@ -146,8 +148,6 @@ class DatabaseManager:
             except OSError as exc:
                 raise RestoreOperationError("Database replacement failed.") from exc
 
-            # os.replace consumed the candidate; never attempt a direct-write
-            # fallback if activation or verification has a problem.
             candidate_path = None
             try:
                 validate_restore_candidate(self.db_path)
@@ -168,9 +168,9 @@ class DatabaseManager:
         """Save chat"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         cursor.execute("""
-            INSERT INTO chats 
+            INSERT INTO chats
             (id, session_id, prompt, prompt_compressed, mode, context_mode,
              final_answer, debate_data, tokens_used, cost)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -184,7 +184,7 @@ class DatabaseManager:
             chat_data.get("tokens_used", 0),
             chat_data.get("cost", 0.0)
         ))
-        
+
         conn.commit()
         conn.close()
         return True
@@ -194,14 +194,14 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        
+
         cursor.execute("""
-            SELECT * FROM chats 
-            WHERE session_id = ? 
-            ORDER BY created_at ASC 
+            SELECT * FROM chats
+            WHERE session_id = ?
+            ORDER BY created_at ASC
             LIMIT ?
         """, (session_id, limit))
-        
+
         chats = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return chats
@@ -212,8 +212,6 @@ class DatabaseManager:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
 
-        # This table is not declared WITHOUT ROWID, so rowid is available as a
-        # stable insertion-order tiebreaker when SQLite timestamps share a second.
         cursor.execute("""
             SELECT * FROM chats
             WHERE session_id = ?
@@ -228,12 +226,12 @@ class DatabaseManager:
         """Create session"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        
+
         cursor.execute("""
             INSERT INTO sessions (id, name, mode, config)
             VALUES (?, ?, ?, ?)
         """, (session_id, name, mode, json.dumps(config or {})))
-        
+
         conn.commit()
         conn.close()
         return True
@@ -243,7 +241,7 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        
+
         cursor.execute("SELECT * FROM sessions ORDER BY updated_at DESC")
         sessions = [dict(row) for row in cursor.fetchall()]
         conn.close()
