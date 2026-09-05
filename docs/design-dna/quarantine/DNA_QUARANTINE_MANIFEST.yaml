@@ -71,7 +71,11 @@ quarantine_migration_plan:
       post_merge_exact_main: 28299_PASS
       pip_check: CLEAN
   Q2_legacy_ui_dna_move:
-    status: IMPLEMENTED_PENDING_ACCEPTANCE
+    status: ACC_CLOSED_INTEGRATED
+    accepted: true
+    integration_commit: 1377bc78d46fc129be074172380de3f17ba2b0a2
+    pull_request: 79
+    acc_manifest: docs/design-dna/quarantine/Q2_ACC.yaml
     target_private_path: dna_quarantine/legacy_ui_dna/**
     compatibility_path: ui/dna/**
     strategy: SOURCE_SNAPSHOT_MOVE_WITH_BOUNDED_IMPORT_CYCLE_REPAIR_AND_THIN_REEXPORT_SHIMS
@@ -92,6 +96,10 @@ quarantine_migration_plan:
         - UI_PRESENTATION_RESOLVER_IMPORT_LAZY_LOADED_INSIDE_RESOLVE_COMPOSITION
       behavioral_contract_changed: false
       source_snapshot_preserved_for_forensic_comparison: true
+    evidence:
+      clean_head: 30752_PASS
+      post_merge_exact_main: 30752_PASS
+      pip_check: CLEAN
     extraction_debt:
       - NON_RESOLVER_INTERNAL_LEGACY_SELF_IMPORTS_STILL_ROUTE_THROUGH_UI_DNA_SHIMS_UNTIL_Q4
     invariants:
