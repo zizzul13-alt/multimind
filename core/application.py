@@ -55,7 +55,7 @@ class RestoreResult:
 
 
 class MultiMindApplication:
-    """Plain-Python seam for chat execution and minimal session lifecycle."""
+    """Plain-Python seam for chat execution and session lifecycle."""
 
     def __init__(
         self, agents=None, runtime_memories=None, runtime=None, db=None, db_factory=None,
@@ -87,6 +87,18 @@ class MultiMindApplication:
         session_id = str(uuid.uuid4())
         self._database().create_session(session_id, name, mode)
         return session_id
+
+    def list_sessions(self):
+        """Return persisted sessions without mutating runtime memory."""
+        return self._database().get_sessions()
+
+    def get_session_chats(self, session_id, limit=50):
+        """Return persisted chats without hydrating or mutating session memory."""
+        return self._database().get_session_chats(session_id, limit=limit)
+
+    def export_database(self):
+        """Return an exportable snapshot through the persistence boundary."""
+        return self._database().export_bytes()
 
     def select_session(self, session):
         """Hydrate the supplied persisted session into this runtime's memory."""
@@ -121,7 +133,6 @@ class MultiMindApplication:
             try:
                 final_prompt = self.compressor.compress(request.original_prompt, gemini)["compressed"]
             except Exception:
-                # Compression is optional; execute the original task on failure.
                 final_prompt = request.original_prompt
 
         file_context = ""
