@@ -3,7 +3,7 @@ project: MULTIMIND
 track: DESIGN_DNA_MIGRATION
 authority: GOVERNOR
 updated_at: 2026-09-05
-authoritative_main_at_update: 1ef1e49ec2c1443428c6eb1097006e83e993bf7b
+authoritative_main_at_update: 3eb67bf6c0359fc8518cb37d3e9d72c7ca8beac5
 
 global_state:
   global_eq3:
@@ -15,8 +15,8 @@ global_state:
     total: 271
     status: NOT_CLAIMED
   production_cutover: false
-  current_closed_batch: M7
-  next_eligible_batch: M8
+  current_closed_batch: M8
+  next_eligible_batch: M9
 
 status_vocabulary:
   accepted: ACC_CLOSED_INTEGRATED
@@ -144,11 +144,15 @@ batches:
     scope_summary: TRACK_T_I_16
     eq4_credit: 0
   M8:
-    governor_status: NOT_STARTED
-    accepted: false
-    closed: false
-    integrated: false
-    scope_summary: CULTURAL_TIER_A_29
+    governor_status: ACC_CLOSED_INTEGRATED
+    accepted: true
+    closed: true
+    integrated: true
+    integration_commit: 3eb67bf6c0359fc8518cb37d3e9d72c7ca8beac5
+    pull_request: 74
+    manifest: docs/design-dna/migration/status/M8_ACC.yaml
+    implementation_report: docs/design-dna/migration/M8_IMPLEMENTATION_REPORT.md
+    scope_summary: CULTURAL_TIER_A_29_PLUS_QUARANTINE_Q0
     eq4_credit: 0
   M9:
     governor_status: NOT_STARTED
@@ -180,6 +184,6 @@ batches:
     eq4_credit: 0
 
 next_action:
-  batch: M8
+  batch: M9
   authorized_by_this_file: false
   instruction: REQUIRE_SEPARATE_USER_OR_GOVERNOR_EXECUTION_AUTHORIZATION
