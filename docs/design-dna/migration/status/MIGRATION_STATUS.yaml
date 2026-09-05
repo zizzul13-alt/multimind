@@ -3,7 +3,7 @@ project: MULTIMIND
 track: DESIGN_DNA_MIGRATION
 authority: GOVERNOR
 updated_at: 2026-09-05
-authoritative_main_at_update: 29a738168aad73da55fed03aac9fa25127481fa6
+authoritative_main_at_update: 8b0e694d21d130cec5df9f04f5453a564ffd849d
 
 global_state:
   global_eq3:
@@ -15,8 +15,8 @@ global_state:
     total: 271
     status: NOT_CLAIMED
   production_cutover: false
-  current_closed_batch: M5
-  next_eligible_batch: M6
+  current_closed_batch: M6
+  next_eligible_batch: M7
 
 status_vocabulary:
   accepted: ACC_CLOSED_INTEGRATED
@@ -122,10 +122,14 @@ batches:
     scope_summary: IZZUL_36
     eq4_credit: 0
   M6:
-    governor_status: NOT_STARTED
-    accepted: false
-    closed: false
-    integrated: false
+    governor_status: ACC_CLOSED_INTEGRATED
+    accepted: true
+    closed: true
+    integrated: true
+    integration_commit: 8b0e694d21d130cec5df9f04f5453a564ffd849d
+    pull_request: 70
+    manifest: docs/design-dna/migration/status/M6_ACC.yaml
+    implementation_report: docs/design-dna/migration/M6_IMPLEMENTATION_REPORT.md
     scope_summary: MIKO_23
     eq4_credit: 0
   M7:
@@ -172,6 +176,6 @@ batches:
     eq4_credit: 0
 
 next_action:
-  batch: M6
+  batch: M7
   authorized_by_this_file: false
   instruction: REQUIRE_SEPARATE_USER_OR_GOVERNOR_EXECUTION_AUTHORIZATION
