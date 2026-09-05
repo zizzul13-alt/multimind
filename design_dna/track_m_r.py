@@ -43,13 +43,10 @@ TRACK_M_R_NAME_BY_ID: Mapping[str, str] = {
     "MR-025": "Murano mezza filigrana",
 }
 
-# v5 supplied accepted implementer-independent mechanism examples for these rows.
 TRACK_M_R_RECOVERED_EXAMPLE_IDS = frozenset({
     "MR-002", "MR-003", "MR-009", "MR-013",
     "MR-017", "MR-019", "MR-023", "MR-025",
 })
-
-# These seven failed HQ v5 torture and were specifically hardened in v6.
 TRACK_M_R_V6_HARDENED_IDS = frozenset({
     "MR-004", "MR-005", "MR-006", "MR-012", "MR-014", "MR-018", "MR-021",
 })
@@ -66,7 +63,7 @@ TRACK_M_R_EVIDENCE_MODE_BY_ID: Mapping[str, str] = {
 }
 
 # Static selector policy is governance metadata for the accepted project scope.
-# M10 does not mutate the M0 resolver and does not claim modifiers activate branches.
+# M10 does not mutate M0 or claim that request modifiers activate selector branches.
 TRACK_M_R_SELECTOR_POLICY_BY_ID: Mapping[str, str] = {
     "MR-001": "STATIC_ACCEPTED_EQ3_CONTRACT",
     "MR-002": "STATIC_ACCEPTED_EQ3_CONTRACT",
@@ -81,14 +78,14 @@ TRACK_M_R_SELECTOR_POLICY_BY_ID: Mapping[str, str] = {
     "MR-011": "STATIC_ACCEPTED_EQ3_CONTRACT",
     "MR-012": "SHARED_NARROW_STRIP_ASSEMBLY_ONLY__BRANCH_SPECIFIC_CLAIMS_REQUIRE_EVIDENCE",
     "MR-013": "SCOPED_RESIST_DYE_CONTRACT__EXACT_VARIANT_NOT_INFERRED",
-    "MR-014": "ONE_SUPPORTED_KUBA_BRANCH_AT_A_TIME__NO_CROSS_VARIANT_SYNTHESIS",
+    "MR-014": "FIXED_MULTI_PANEL_STITCHED_APPLIQUE_WRAPPER__NO_CROSS_VARIANT_SYNTHESIS",
     "MR-015": "STATIC_ACCEPTED_EQ3_CONTRACT",
     "MR-016": "STATIC_ACCEPTED_EQ3_CONTRACT",
     "MR-017": "STATIC_ACCEPTED_EQ3_CONTRACT",
     "MR-018": "OBJECT_TECHNICAL_SELECTOR_REQUIRED__SUBGROUP_OR_GUL_DOES_NOT_FIX_KNOT_TYPE",
     "MR-019": "STATIC_ACCEPTED_EQ3_CONTRACT",
     "MR-020": "STATIC_ACCEPTED_EQ3_CONTRACT",
-    "MR-021": "ONE_SUPPORTED_CONSERVATION_OPERATION_AT_A_TIME__NO_UNIVERSAL_JAPANESE_JOINT",
+    "MR-021": "FIXED_STRUCTURAL_WOODWORK_CONSERVATION_OPERATION__NO_UNIVERSAL_JAPANESE_JOINT",
     "MR-022": "STATIC_ACCEPTED_EQ3_CONTRACT",
     "MR-023": "STATIC_ACCEPTED_EQ3_CONTRACT",
     "MR-024": "STATIC_ACCEPTED_EQ3_CONTRACT",
@@ -109,14 +106,14 @@ TRACK_M_R_CONSTRUCTION_BY_ID: Mapping[str, str] = {
     "MR-011": "discrete-cut-glazed-ceramic-units-assemble-into-a-tessellated-field-with-visible-joint-topology-and-bounded-module-edges-rather-than-one-printed-mosaic-image",
     "MR-012": "safe-shared-kente-invariant-is-narrow-woven-strips-assembled-by-sewing-into-a-larger-macro-cloth-branch-specific-heddle-supplementary-weft-count-width-or-motif-claims-are-not-inferred",
     "MR-013": "a-resist-stage-precedes-dye-uptake-and-controls-where-dye-reaches-the-cloth-while-the-exact-adire-variant-is-not-inferred-from-color-or-motif-alone",
-    "MR-014": "project-contract-keeps-one-evidence-supported-kuba-construction-branch-at-a-time-and-forbids-blending-multi-panel-stitched-or-appliqued-wrapper-logic-with-cut-pile-or-embroidery-branches-into-one-fictional-mechanism",
+    "MR-014": "fixed-project-scope-selects-the-evidence-supported-multi-panel-stitched-or-appliqued-wrapper-branch-and-forbids-importing-single-panel-cut-pile-or-embroidery-branch-behavior-into-that-selected-construction",
     "MR-015": "project-bounded-cloth-treatment-uses-process-derived-application-and-reaction-or-removal-stages-as-causal-field-formation-not-a-generic-earth-tone-or-mud-texture-wallpaper",
     "MR-016": "layered-cloth-construction-uses-superposed-fields-selective-cuts-or-reveals-and-stitch-boundaries-so-depth-and-edge-causality-survive-without-copying-specific-mola-designs",
     "MR-017": "ordered-warp-setup-loom-weaving-and-design-forming-weft-or-warp-operations-create-the-structural-field-without-treating-yakan-motif-semantics-as-construction-evidence",
     "MR-018": "pile-and-foundation-construction-must-be-tied-to-object-level-technical-evidence-and-neither-turkmen-subgroup-nor-gul-or-motif-identity-may-be-used-to-infer-symmetric-or-asymmetric-knot-type",
     "MR-019": "mutuba-inner-bark-is-progressively-beaten-stretched-and-expanded-into-a-sheet-so-process-expansion-and-sheet-continuity-remain-primary-over-generic-bark-patterning",
     "MR-020": "prepared-bast-fibres-are-dispersed-and-formed-into-a-bonded-paper-sheet-so-fibre-cloud-sheet-formation-is-distinct-from-woven-thread-interlacement",
-    "MR-021": "project-contract-selects-one-evidence-supported-conservation-operation-and-preserves-its-substrate-tool-operation-and-sequence-without-synthesizing-the-unesco-skill-set-into-a-universal-japanese-joint",
+    "MR-021": "fixed-project-scope-selects-the-supported-structural-woodwork-conservation-operation-and-preserves-substrate-tool-operation-and-sequence-without-synthesizing-building-repair-roofing-thatching-plastering-lacquer-painting-tatami-or-other-inventory-skills-into-a-universal-japanese-joint",
     "MR-022": "stone-units-are-selected-fitted-and-stacked-through-contact-bearing-interlock-and-gravity-without-mortar-so-load-path-and-joint-topology-not-stone-photography-carry-the-reference",
     "MR-023": "successive-urushi-lacquer-layers-are-applied-cured-and-finished-or-polished-as-a-layered-process-and-reflective-treatment-must-demote-before-glare-or-text-legibility-failure",
     "MR-024": "formed-ceramic-body-and-bounded-raku-firing-cooling-handling-sequence-drive-surface-discontinuity-while-random-crackle-or-dark-palette-alone-never-establishes-raku-identity",
