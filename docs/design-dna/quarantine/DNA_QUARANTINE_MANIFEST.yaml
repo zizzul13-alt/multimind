@@ -1,0 +1,74 @@
+schema_version: 1
+project: MULTIMIND
+track: DESIGN_DNA_PRIVATE_EXTRACTION
+status: ACTIVE_QUARANTINE
+established_at: 2026-09-05
+objective: PREPARE_ALL_DNA_THEME_DNA_AND_THEME_STUDIO_SURFACES_FOR_PRIVATE_REPOSITORY_EXTRACTION_WITHOUT_DOUBLE_INTEGRATION_WORK
+
+laws:
+  - NO_NEW_DNA_DEPENDENCY_OUTSIDE_DECLARED_QUARANTINE_OR_PUBLIC_BRIDGE_WITHOUT_EXPLICIT_GOVERNOR_JUSTIFICATION
+  - DNA_RUNTIME_AND_RESEARCH_STAY_HOST_NEUTRAL
+  - THEME_STUDIO_IMPLEMENTATION_MOVES_BEHIND_QUARANTINE_COMPATIBILITY_SHIMS_BEFORE_RJ3
+  - PUBLIC_APP_MUST_EVENTUALLY_SURVIVE_PRIVATE_DNA_PACKAGE_ABSENCE_WITH_SAFE_DEFAULT_THEME
+  - EXTRACTION_MUST_NOT_REQUIRE_DATABASE_PROVIDER_OR_AI_CORE_CHANGES
+  - PRIVATE_EXTRACTION_DOES_NOT_GRANT_EQ4
+
+private_extraction_roots:
+  canonical_runtime:
+    - design_dna/**
+  legacy_design_dna_runtime:
+    - ui/dna/**
+  theme_studio:
+    - ui/theme_studio/**
+  research_governance:
+    - docs/design-dna/**
+  dna_specific_tests:
+    - tests/test_design_dna*.py
+    - tests/test_*dna*.py
+    - tests/test_*theme_studio*.py
+
+related_surfaces_to_decouple:
+  public_host_bridge_candidates:
+    - app.py
+    - ui/presentation/brand.py
+    - ui/themes/registry.py
+  presentation_assets_or_styles_to_split:
+    - ui/style.css
+  generic_theme_runtime_review_required:
+    - ui/themes/**
+  generic_presentation_review_required:
+    - ui/presentation/**
+    - ui/components/theme_preview_spike/**
+  identity_state_review_required:
+    - utils/identity_state.py
+
+quarantine_migration_plan:
+  Q0_inventory_and_freeze:
+    status: IN_PROGRESS
+    deliverables:
+      - this_manifest
+      - dependency_spread_guard
+  Q1_theme_studio_move:
+    status: NOT_STARTED
+    target_private_path: dna_quarantine/theme_studio/**
+    compatibility_path: ui/theme_studio/**
+    strategy: MOVE_IMPLEMENTATION_AND_LEAVE_THIN_REEXPORT_SHIMS
+  Q2_legacy_ui_dna_move:
+    status: NOT_STARTED
+    target_private_path: dna_quarantine/legacy_ui_dna/**
+    compatibility_path: ui/dna/**
+    strategy: MOVE_IMPLEMENTATION_AND_LEAVE_THIN_REEXPORT_SHIMS
+  Q3_theme_bridge_decoupling:
+    status: NOT_STARTED
+    strategy: REDUCE_APP_AND_UI_THEMES_TO_SMALL_INTERFACE_AND_SAFE_DEFAULT_FALLBACK
+  Q4_private_repository_cut:
+    status: NOT_STARTED
+    strategy: MOVE_QUARANTINED_IMPLEMENTATION_DOCS_TESTS_FIXTURES_ASSETS_TO_PRIVATE_PACKAGE_AND_RETAIN_PUBLIC_BRIDGE_ONLY
+
+batch_policy:
+  M8_M12:
+    quarantine_required: true
+    rule: EACH_BATCH_MUST_NOT_INCREASE_UNDECLARED_DNA_SPREAD
+  RJ3:
+    must_consume_private_ready_bridge: true
+    direct_deep_imports_from_private_internals_forbidden: true
