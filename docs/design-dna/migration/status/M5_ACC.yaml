@@ -1,0 +1,108 @@
+schema_version: 1
+project: MULTIMIND
+track: DESIGN_DNA_MIGRATION
+batch: M5
+governor_status: ACC_CLOSED_INTEGRATED
+accepted: true
+closed: true
+integrated: true
+accepted_at: 2026-09-05
+integration_commit: 29a738168aad73da55fed03aac9fa25127481fa6
+pull_request: 68
+base_commit: 08c3dfddeaea5f61575213011567032b893f9d76
+
+scope:
+  name: IZZUL_PERSONAL_MEDIA_36
+  count: 36
+  partition:
+    anime: 15
+    manga: 11
+    manhwa_webtoon: 10
+  runtime_id_policy: IMPLEMENTATION_IDENTIFIERS_NOT_CLAIMED_HISTORICAL_IDS
+  historical_alias_policy: ALIAS_METADATA_NOT_DUPLICATE_REFERENCE
+  implementation_report: docs/design-dna/migration/M5_IMPLEMENTATION_REPORT.md
+
+epistemic_boundary:
+  exact_corpus_membership_locked: true
+  final_row_by_row_batch4_verbatim_available: false
+  evidence_modes:
+    locked_recovered: 17
+    conservative_translation: 19
+  title_eq3_maturity_not_equated_to_exact_mechanism_recovery: true
+  unavailable_historical_wording_invented: false
+
+evidence:
+  prior_m4_baseline_tests: 9483
+  m5_permanent_test_delta: 5215
+  deep_matrix:
+    reference_primitive_compositions: 2448
+    reference_engine_compositions: 1044
+    reference_asset_state_projections: 144
+    reference_viewport_projections: 108
+    reference_pair_differentiation_checks: 630
+    a_to_b_to_a_switch_checks: 630
+    declared_fingerprint_activation_all_36: PASS
+    all_68_primitives_with_each_reference: PASS
+    all_29_engines_with_each_reference: PASS
+    reading_sanctuary_all_36: PASS
+    mobile_determinism_all_36: PASS
+    combined_registry_collision_census: PASS
+  clean_head_full_regression:
+    source_head: 8ab3a10eb9e83108b7387d517d54c80cb8bcdb02
+    merge_ref: 66240e11b9874fdf0ac1afa9d258eb8dc5ec9e30
+    passed: 14698
+    total: 14698
+    result: PASS
+  exact_post_merge_main_regression:
+    commit: 29a738168aad73da55fed03aac9fa25127481fa6
+    passed: 14698
+    total: 14698
+    result: PASS
+  dependency_check: PASS
+  merged_to_main: true
+  governor_acceptance_comment: 5551380977
+  governor_acceptance: PASS
+
+governor_audit:
+  source_specific_runtime_id_branch_debt_found: true
+  source_specific_exceptions_moved_to_declarative_maps: true
+  dead_metadata_question_reviewed: true
+  primitive_fingerprint_policy: EXPLICIT_EXPLAINABILITY_AND_COMPOSITION_METADATA
+  hidden_automatic_primitive_injection_added: false
+  m0_model_or_registry_semantics_mutated: false
+  title_maturity_vs_exact_recovery_overclaim_found: true
+  witch_hat_orv_solo_evidence_modes_tightened: true
+  tests_weakened: false
+
+contract_locks:
+  reference_not_primitive_engine_fixture_or_asset: true
+  shared_primitive_not_duplicate_reference: true
+  one_title_franchise_one_primary_slot: true
+  direct_ip_not_identity_requirement: true
+  asset_applicable_not_asset_required: true
+  actual_direct_ip_assets_required: 0
+  no_invented_domain_application_or_provider_truth: true
+  asset_off_structural_identity: true
+  deterministic_projection: true
+  primitive_fingerprints_use_only_p01_p25: true
+
+boundaries:
+  actual_asset_files_added: false
+  host_rj3_change: false
+  database_schema_change: false
+  provider_semantic_change: false
+  core_application_semantic_change: false
+  requirements_change: false
+  m6_started: false
+
+exclusions:
+  - M6_NOT_INCLUDED
+  - M7_NOT_INCLUDED
+  - RJ3_NOT_INCLUDED
+  - EQ4_NOT_GRANTED
+  - ASSET_ENRICHMENT_NOT_INCLUDED
+  - PRODUCTION_CUTOVER_NOT_AUTHORIZED
+
+eq4_credit: 0
+next_gate: M6
+next_gate_authorized_by_this_manifest: false
