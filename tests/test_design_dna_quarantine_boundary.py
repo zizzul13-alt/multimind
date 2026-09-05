@@ -42,6 +42,9 @@ Q1_INTEGRATION_COMMIT = "2354dfc2e7d5f38e7ffb373f22eee4d19e0fb51e"
 Q1_ACC_PATH = "docs/design-dna/quarantine/Q1_ACC.yaml"
 Q2_INTEGRATION_COMMIT = "1377bc78d46fc129be074172380de3f17ba2b0a2"
 Q2_ACC_PATH = "docs/design-dna/quarantine/Q2_ACC.yaml"
+Q2_CLOSURE_COMMIT = "3b95ae1155bae7b5a37d646a46ba21c1964b6953"
+M10_INTEGRATION_COMMIT = "40d4fd8a58a4d8cb4a2f29d89944cfbe1d0ed4cc"
+M10_ACC_PATH = "docs/design-dna/migration/status/M10_ACC.yaml"
 MIGRATION_STATUS_PATH = "docs/design-dna/migration/status/MIGRATION_STATUS.yaml"
 
 
@@ -191,14 +194,51 @@ def test_q2_acc_manifest_matches_integrated_runtime_and_exact_main_proof():
     assert "next_gate_authorized_by_this_manifest: false" in text
 
 
-def test_migration_master_ledger_cannot_regress_q2_after_durable_closure():
+def test_m10_acc_manifest_matches_integrated_runtime_and_exact_main_proof():
+    text = (ROOT / M10_ACC_PATH).read_text(encoding="utf-8")
+    assert "batch: M10" in text
+    assert "governor_status: ACC_CLOSED_INTEGRATED" in text
+    assert "accepted: true" in text
+    assert "closed: true" in text
+    assert "integrated: true" in text
+    assert f"integration_commit: {M10_INTEGRATION_COMMIT}" in text
+    assert "pull_request: 81" in text
+    assert "ci_run: 105" in text
+    assert "ci_run: 106" in text
+    assert text.count("passed: 37547") >= 2
+    assert text.count("total: 37547") >= 2
+    assert text.count("pip_check: CLEAN") >= 2
+    assert "mr014: FIXED_MULTI_PANEL_STITCHED_APPLIQUE_WRAPPER" in text
+    assert "mr021: FIXED_STRUCTURAL_WOODWORK_CONSERVATION_OPERATION" in text
+    assert "eq4_credit: 0" in text
+    assert "next_gate: Q3_THEME_BRIDGE_DECOUPLING" in text
+    assert "next_gate_authorized_by_this_manifest: false" in text
+
+
+def test_migration_master_ledger_cannot_regress_q2_or_m10_after_durable_closure():
     text = (ROOT / MIGRATION_STATUS_PATH).read_text(encoding="utf-8")
-    assert f"authoritative_main_at_update: {Q2_INTEGRATION_COMMIT}" in text
+    assert f"authoritative_main_at_update: {M10_INTEGRATION_COMMIT}" in text
+    assert "current_closed_batch: M10" in text
+    assert "next_eligible_batch: M11" in text
     assert "quarantine_next_gate: Q3_THEME_BRIDGE_DECOUPLING" in text
     assert "Q2:\n    status: DURABLE_CLOSED" in text
     assert f"integration_commit: {Q2_INTEGRATION_COMMIT}" in text
     assert f"acc_manifest: {Q2_ACC_PATH}" in text
     assert "exact_main_tests: 30752" in text
     assert "exact_main_ci_run: 95" in text
-    assert "gate: M10_TRACK_M_R_25" in text
-    assert "then_gate: Q3_THEME_BRIDGE_DECOUPLING" in text
+    assert f"closure_commit: {Q2_CLOSURE_COMMIT}" in text
+    assert "closure_pull_request: 80" in text
+    assert "closure_exact_main_tests: 30754" in text
+    assert "closure_exact_main_ci_run: 100" in text
+    assert "M10:\n    governor_status: ACC_CLOSED_INTEGRATED" in text
+    assert f"integration_commit: {M10_INTEGRATION_COMMIT}" in text
+    assert "pull_request: 81" in text
+    assert f"manifest: {M10_ACC_PATH}" in text
+    assert "clean_head_tests: 37547" in text
+    assert "clean_head_ci_run: 105" in text
+    assert "exact_main_tests: 37547" in text
+    assert "exact_main_ci_run: 106" in text
+    assert "gate: Q3_THEME_BRIDGE_DECOUPLING" in text
+    assert "then_gate: M11_FIXTURES_14" in text
+    assert "credited: 0" in text
+    assert "production_cutover: false" in text
