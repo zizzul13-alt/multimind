@@ -22,12 +22,11 @@ from utils.config import Config, InvalidUserIdError
 from utils.identity_state import initialize_identity_state, reset_identity_bound_state
 from ui.foundation import load_css, render_status_badge, card_container
 from ui.presentation import build_presentation_snapshot, render_archetype, list_archetypes, render_brand_identity
-from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
+from ui.dna_bridge import ensure_dna_registered, render_theme_studio_surface
 from ui.themes import list_themes
-from ui.theme_studio.surface import render_theme_studio_surface
 
-# Ensure S6.2 proof Design DNA and themes are registered prior to runtime selector
-ensure_proof_dna_and_themes_registered()
+# Optional DNA bootstrap: absence of the private package is a valid host state.
+ensure_dna_registered()
 
 st.set_page_config(
     page_title=Config.APP_NAME,
