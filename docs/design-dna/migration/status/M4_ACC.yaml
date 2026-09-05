@@ -1,0 +1,98 @@
+schema_version: 1
+project: MULTIMIND
+track: DESIGN_DNA_MIGRATION
+batch: M4
+governor_status: ACC_CLOSED_INTEGRATED
+accepted: true
+closed: true
+integrated: true
+accepted_at: 2026-09-05
+integration_commit: 83eba265aab870e63201f711ebedc1fbb681060c
+pull_request: 66
+base_commit: 244878b855991e08e7d1beec3b66bc9a0770a3ef
+
+scope:
+  name: PRIMITIVES_68
+  count: 68
+  families:
+    izzul: 25
+    miko: 25
+    temporal: 18
+  ids:
+    izzul: [P01, P02, P03, P04, P05, P06, P07, P08, P09, P10, P11, P12, P13, P14, P15, P16, P17, P18, P19, P20, P21, P22, P23, P24, P25]
+    miko: [MK01, MK02, MK03, MK04, MK05, MK06, MK07, MK08, MK09, MK10, MK11, MK12, MK13, MK14, MK15, MK16, MK17, MK18, MK19, MK20, MK21, MK22, MK23, MK24, MK25]
+    temporal: [TP01, TP02, TP03, TP04, TP05, TP06, TP07, TP08, TP09, TP10, TP11, TP12, TP13, TP14, TP15, TP16, TP17, TP18]
+  historical_non_additive: [TP19, TP20]
+  implementation_report: docs/design-dna/migration/M4_IMPLEMENTATION_REPORT.md
+
+evidence:
+  focused_bundle:
+    passed: 2939
+    total: 2939
+    result: PASS
+  m4_specific_initial:
+    passed: 1623
+    total: 1623
+    result: PASS
+  governor_scale_matrix:
+    primitive_engine_compositions: 1972
+    implemented_reference_primitive_compositions: 1428
+    primitive_pair_compositions: 2278
+    primitive_asset_state_projections: 272
+    all_68_simultaneous_determinism: PASS
+    all_68_mobile_determinism: PASS
+    result: PASS
+  clean_head_full_regression:
+    source_head: 3debc0b6ced2fe616552d5e756acfb3c89589b11
+    merge_ref: ef9334aa4265da59277b6b2e433124c58c40eb06
+    passed: 9483
+    total: 9483
+    result: PASS
+  exact_post_merge_main_regression:
+    commit: 83eba265aab870e63201f711ebedc1fbb681060c
+    passed: 9483
+    total: 9483
+    result: PASS
+  dependency_check: PASS
+  merged_to_main: true
+  governor_acceptance_comment: 5551296711
+  governor_acceptance: PASS
+
+governor_audit:
+  construction_time_id_branching_found: true
+  p16_p22_p25_repaired_to_declarative_metadata: true
+  temporal_safety_gap_found_for_p08_p21: true
+  p08_p21_no_added_wait_repaired: true
+  tests_weakened: false
+
+contract_locks:
+  primitive_not_reference_engine_fixture_or_asset: true
+  shared_primitive_not_duplicate_reference: true
+  p08_p21_distinct_from_tp_family: true
+  no_invented_domain_or_application_truth: true
+  no_added_wait_for_temporal_mechanisms: true
+  reduced_motion_static_immediate_fallback: true
+  primitive_assets_not_applicable: true
+  deterministic_projection: true
+
+boundaries:
+  actual_asset_files_added: false
+  host_rj3_change: false
+  database_schema_change: false
+  provider_semantic_change: false
+  core_application_semantic_change: false
+  requirements_change: false
+  m5_started_by_m4: false
+
+exclusions:
+  - M5_NOT_INCLUDED
+  - M6_NOT_INCLUDED
+  - M7_NOT_INCLUDED
+  - RJ3_NOT_INCLUDED
+  - EQ4_NOT_GRANTED
+  - ASSET_ENRICHMENT_NOT_INCLUDED
+  - PRODUCTION_CUTOVER_NOT_AUTHORIZED
+
+eq4_credit: 0
+next_gate: M5
+next_gate_authorized_by_this_manifest: false
