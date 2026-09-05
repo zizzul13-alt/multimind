@@ -40,6 +40,9 @@ LEGACY_UI_DNA_IMPL = tuple(
 )
 Q1_INTEGRATION_COMMIT = "2354dfc2e7d5f38e7ffb373f22eee4d19e0fb51e"
 Q1_ACC_PATH = "docs/design-dna/quarantine/Q1_ACC.yaml"
+Q2_INTEGRATION_COMMIT = "1377bc78d46fc129be074172380de3f17ba2b0a2"
+Q2_ACC_PATH = "docs/design-dna/quarantine/Q2_ACC.yaml"
+MIGRATION_STATUS_PATH = "docs/design-dna/migration/status/MIGRATION_STATUS.yaml"
 
 
 def _python_files():
@@ -152,7 +155,9 @@ def test_quarantine_manifest_exists_and_locks_private_extraction_goal():
     assert "Q1_theme_studio_move:\n    status: COMPLETE" in text
     assert f"integration_commit: {Q1_INTEGRATION_COMMIT}" in text
     assert f"acc_manifest: {Q1_ACC_PATH}" in text
-    assert "Q2_legacy_ui_dna_move:\n    status: IMPLEMENTED_PENDING_ACCEPTANCE" in text
+    assert "Q2_legacy_ui_dna_move:\n    status: ACC_CLOSED_INTEGRATED" in text
+    assert f"integration_commit: {Q2_INTEGRATION_COMMIT}" in text
+    assert f"acc_manifest: {Q2_ACC_PATH}" in text
     assert "SOURCE_SNAPSHOT_MOVE_WITH_BOUNDED_IMPORT_CYCLE_REPAIR" in text
     assert "NON_RESOLVER_INTERNAL_LEGACY_SELF_IMPORTS_STILL_ROUTE_THROUGH_UI_DNA_SHIMS_UNTIL_Q4" in text
     assert "Q4_private_repository_cut:" in text
@@ -167,3 +172,33 @@ def test_q1_acc_manifest_matches_integrated_runtime_and_closed_state():
     assert f"integration_commit: {Q1_INTEGRATION_COMMIT}" in text
     assert "post_merge_exact_main:" in text
     assert "passed: 28299" in text
+
+
+def test_q2_acc_manifest_matches_integrated_runtime_and_exact_main_proof():
+    text = (ROOT / Q2_ACC_PATH).read_text(encoding="utf-8")
+    assert "governor_status: ACC_CLOSED_INTEGRATED" in text
+    assert "accepted: true" in text
+    assert "closed: true" in text
+    assert "integrated: true" in text
+    assert f"integration_commit: {Q2_INTEGRATION_COMMIT}" in text
+    assert "pull_request: 79" in text
+    assert "post_merge_exact_main:" in text
+    assert "ci_run: 95" in text
+    assert text.count("passed: 30752") >= 2
+    assert text.count("total: 30752") >= 2
+    assert "pip_check: CLEAN" in text
+    assert "next_gate: M10" in text
+    assert "next_gate_authorized_by_this_manifest: false" in text
+
+
+def test_migration_master_ledger_cannot_regress_q2_after_durable_closure():
+    text = (ROOT / MIGRATION_STATUS_PATH).read_text(encoding="utf-8")
+    assert f"authoritative_main_at_update: {Q2_INTEGRATION_COMMIT}" in text
+    assert "quarantine_next_gate: Q3_THEME_BRIDGE_DECOUPLING" in text
+    assert "Q2:\n    status: DURABLE_CLOSED" in text
+    assert f"integration_commit: {Q2_INTEGRATION_COMMIT}" in text
+    assert f"acc_manifest: {Q2_ACC_PATH}" in text
+    assert "exact_main_tests: 30752" in text
+    assert "exact_main_ci_run: 95" in text
+    assert "gate: M10_TRACK_M_R_25" in text
+    assert "then_gate: Q3_THEME_BRIDGE_DECOUPLING" in text
