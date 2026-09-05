@@ -1,7 +1,7 @@
 # MultiMind Design DNA — Canonical Documentation Index
 
-Status: CANONICAL SEMANTIC CONSOLIDATION PASS / KNOWN-SOURCE ARCHIVAL DISPOSITION PASS
-Date reconciled: 2026-09-04
+Status: RESEARCH CLOSED / DOCUMENTATION MERGED / MIGRATION PLANNING LOCKED
+Date reconciled: 2026-09-05
 
 This directory is the primary Design-DNA navigation surface for Governor, research and future implementation work.
 
@@ -41,25 +41,32 @@ KNOWN_SOURCE_DISPOSITION_AUDIT = PASS
 GLOBAL_CALIBRATION_ARTIFACT_FAMILIES = 9 / 9 DISPOSITIONED
 CURRENTLY_DISCOVERED_CORPUS_ZERO_LOSS_AUDIT = PASS_WITH_EXPLICIT_RAW_EXACT_TEXT_EXCEPTIONS
 DOCUMENTATION_CONTENT_ARCHIVE_BLOCKER = CLEARED
-BRANCH_MERGED_TO_MAIN = NO
+DOCUMENTATION_MERGE = COMPLETE
+BRANCH_MERGED_TO_MAIN = YES
+MIGRATION_PLANNING_GATE = PASS
+DESIGN_DNA_IMPLEMENTATION = NOT_STARTED
 MIGRATION_AUTHORIZED = NO
 ```
 
 A surrogate-only source remains explicitly `RAW_EXACT_TEXT_UNAVAILABLE`; archival closure does not pretend otherwise.
 
-## Codex / implementer read order — current truth first
+## Governor / implementer read order — current truth first
 
-Codex MUST begin here and follow this order. Do not replay historical Markdown to infer current truth.
+Do not replay historical Markdown to infer current truth.
 
 1. `governance/CANONICAL_CONSTITUTION.md` — current global laws, resolver, accessibility, Reading Sanctuary, provenance and safety.
 2. `corpora/CORPUS_INDEX.md` — current corpus membership/grouping and additive/non-additive boundaries.
 3. `calibration/GLOBAL_CALIBRATION_LEDGER.md` — current 271/271 arithmetic and batch state.
 4. `calibration/GLOBAL_EQ3_CLOSURE.md` — exact meaning of current EQ3 closure.
-5. `migration/MIGRATION_BATCH_MAP.md` — dependency-oriented migration packaging; not authorization.
-6. `TIMELINE_INDEX.md` — chronological lineage and final/current authority map.
-7. `archive/RAW_SOURCE_MANIFEST_v2.md` — raw/surrogate/source-ID/duplicate disposition.
-8. `archive/SOURCE_CENSUS_LEDGER_v1.md` — family-by-family source census.
-9. `ZERO_LOSS_AUDIT.md` — archival closure and exact-text exception state.
+5. `migration/DESIGN_DNA_MIGRATION_GATE_MASTER.md` — accepted migration-gate architecture and release condition.
+6. `migration/DESIGN_DNA_PRE_IMPLEMENTATION_PACK.md` — M0/M1/M2 contracts, EQ4 protocol, failure law, synchronization and pre-Codex gate.
+7. `migration/MIGRATION_BATCH_MAP.md` — dependency-oriented M0–M12 packaging; not authorization.
+8. `TIMELINE_INDEX.md` — chronological lineage and final/current authority map.
+9. `archive/RAW_SOURCE_MANIFEST_v2.md` — raw/surrogate/source-ID/duplicate disposition.
+10. `archive/SOURCE_CENSUS_LEDGER_v1.md` — family-by-family source census.
+11. `ZERO_LOSS_AUDIT.md` — archival closure and exact-text exception state.
+
+Before Codex/M0 authorization, also read the current Reflex production migration master and verify the actual accepted/integrated RJ state in the repository. Design-DNA documents do not self-certify RJ completion.
 
 Historical raw/surrogate files are supporting evidence only. Use them for provenance, failed-route knowledge, supersession history, contradiction review or a detail deliberately not duplicated in current canonical contracts.
 
@@ -68,7 +75,6 @@ Historical raw/surrogate files are supporting evidence only. Use them for proven
 Every Design-DNA Markdown belongs to a chronology. `TIMELINE_INDEX.md` maps research history to current authority.
 
 Status vocabulary includes:
-
 - `FINAL_CURRENT`
 - `MASTER_LOCK`
 - `AUTHORITATIVE_SUPPORTING`
@@ -96,19 +102,15 @@ Memory surrogates never outrank exact current locks/canonical docs.
 ## Corpus arithmetic
 
 REFERENCE:
-
 `Cultural55 + Country-Web5 + Track M_R25 + Izzul36 + Miko23 + Track T-I16 = 160`
 
 ENGINE:
-
 `Material M1–M15 + Environment E1–E14 = 29`
 
 PRIMITIVE:
-
 `P01–P25 + MK01–MK25 + TP01–TP18 = 68`
 
 FIXTURE:
-
 `F01–F10 + F12–F15 = 14`
 
 `160 + 29 + 68 + 14 = 271`.
@@ -136,7 +138,7 @@ The giant Batch1–9 artifact tables are currently represented by clearly marked
 ## Permanent firewalls
 
 - `HISTORICAL TRACK M != TRACK_M_R != M1–M15`.
-- `PRIMITIVE != REFERENCE != ASSET`.
+- `REFERENCE != ENGINE != PRIMITIVE != FIXTURE != ASSET`.
 - `SHARED PRIMITIVE != DUPLICATE REFERENCE`.
 - `COUNTRY-WEB LINEAGE != CULTURAL LINEAGE`.
 - `ASSET-OFF SURVIVAL = resilience floor, not fidelity ceiling`.
@@ -161,27 +163,39 @@ Exact recoverable historical source evidence.
 Non-verbatim source-level recovery when exact text cannot currently be retrieved.
 
 For a truncated source:
-
 `SURROGATE ACCOUNTED != RAW VERBATIM RECOVERED`.
 
 If exact source access appears later, mirror it raw and mark the surrogate as superseded-by-raw-recovery for source-evidence purposes; do not delete the recovery history.
 
 ## Migration boundary
 
-The accepted operational map is M0–M12, but documentation closure does NOT authorize implementation.
+Documentation consolidation is merged. Migration planning and the non-code pre-implementation package are locked separately from implementation authorization.
 
 Current sequence:
 
-`KNOWN-SOURCE ARCHIVAL CLOSURE → USER/GOVERNOR ACCEPTANCE + MERGE → MIGRATION GATE REVIEW → SEPARATE AUTHORIZATION → IMPLEMENTATION → EQ4`
+```text
+RESEARCH / EQ3 CLOSURE
+→ DOCUMENTATION CONSOLIDATION + MERGE
+→ MIGRATION GATE / PRE-IMPLEMENTATION LOCK
+→ RJ-1 CLOSED + INTEGRATED
+→ RJ-2 CLOSED + ACCEPTED
+→ EXPLICIT [4] CODEX AUTHORIZATION
+→ DESIGN-DNA M0
+→ M1–M12 UNDER SERIAL GOVERNANCE
+→ EQ4 EVIDENCE
+```
 
 Current safety state:
 
 ```text
-CONSOLIDATION_BRANCH = docs/design-dna-consolidation
-BRANCH_MERGED_TO_MAIN = NO
+DOCUMENTATION_MERGE = COMPLETE
+BRANCH_MERGED_TO_MAIN = YES
+MIGRATION_PLANNING_GATE = PASS
+PRE_IMPLEMENTATION_PACKAGE = PREPARED
+DESIGN_DNA_IMPLEMENTATION = NOT_STARTED
+CODEX_DESIGN_DNA_AUTHORIZED = NO
 MIGRATION_AUTHORIZED = NO
-PRODUCTION_MODIFIED = NO
-REFLEX_MIGRATION_PERFORMED = NO
+PRODUCTION_MODIFIED_BY_DESIGN_DNA = NO
 EQ4 = NOT_STARTED
 ```
 
