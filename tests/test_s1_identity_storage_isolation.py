@@ -5,6 +5,7 @@ import pytest
 import streamlit as st
 
 import app
+from database.manager import DatabaseManager
 from utils.config import Config, InvalidUserIdError
 from utils.identity_state import reset_identity_bound_state
 
@@ -92,7 +93,7 @@ def test_identity_transition_removes_sensitive_state_and_keeps_presentation_stat
 def test_login_transition_from_alice_to_bob_does_not_reuse_alice_runtime_state_or_storage(tmp_path, monkeypatch):
     """Exercise the login boundary, rather than only the reset helper."""
     monkeypatch.setattr(Config, "DB_DIR", str(tmp_path / "data"))
-    alice_database = app.get_db_manager("alice")
+    alice_database = DatabaseManager(Config.get_db_path("alice"))
     alice_database.create_session("alice-session", "Alice private session")
 
     st.session_state.clear()
@@ -126,7 +127,7 @@ def test_login_transition_from_alice_to_bob_does_not_reuse_alice_runtime_state_o
         assert st.session_state.last_generated == ""
         assert "new_chat_files" not in st.session_state
         assert st.session_state.active_theme == "midnight"
-        assert app.get_db_manager(st.session_state.user_id).get_sessions() == []
+        assert DatabaseManager(Config.get_db_path(st.session_state.user_id)).get_sessions() == []
         assert [session["name"] for session in alice_database.get_sessions()] == ["Alice private session"]
         rerun.assert_called_once()
     finally:
