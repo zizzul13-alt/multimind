@@ -57,10 +57,17 @@ quarantine_migration_plan:
       - this_manifest
       - dependency_spread_guard
   Q1_theme_studio_move:
-    status: IMPLEMENTED_PENDING_DURABLE_INTEGRATION
+    status: COMPLETE
+    accepted: true
+    integration_commit: 2354dfc2e7d5f38e7ffb373f22eee4d19e0fb51e
+    acc_manifest: docs/design-dna/quarantine/Q1_ACC.yaml
     target_private_path: dna_quarantine/theme_studio/**
     compatibility_path: ui/theme_studio/**
     strategy: MOVE_IMPLEMENTATION_AND_LEAVE_THIN_REEXPORT_SHIMS
+    evidence:
+      repaired_clean_head: 28299_PASS
+      post_merge_exact_main: 28299_PASS
+      pip_check: CLEAN
     invariants:
       - PUBLIC_IMPORT_PATHS_REMAIN_COMPATIBLE
       - LEGACY_STATE_AND_SURFACE_MODULES_ARE_SHIMS_ONLY
