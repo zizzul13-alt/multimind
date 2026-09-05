@@ -56,6 +56,11 @@ from design_dna.references import (
     m2_reference_asset_on_applicable,
     register_m2_proving_references,
 )
+from design_dna.country_web import (
+    COUNTRY_WEB_BY_ID,
+    COUNTRY_WEB_REFERENCES,
+    register_country_web_references,
+)
 from design_dna.cultural import (
     CULTURAL_TIER_S_ASSET_ON_APPLICABLE,
     CULTURAL_TIER_S_BY_ID,
@@ -79,7 +84,9 @@ __all__ = [
     "AxisAbsence",
     "COUNTRY_WEB_ASSET_ON_APPLICABLE",
     "COUNTRY_WEB_ASSET_ON_NOT_APPLICABLE",
+    "COUNTRY_WEB_BY_ID",
     "COUNTRY_WEB_REFERENCE_IDS",
+    "COUNTRY_WEB_REFERENCES",
     "CULTURAL_TIER_S_ASSET_ON_APPLICABLE",
     "CULTURAL_TIER_S_BY_ID",
     "CULTURAL_TIER_S_HISTORICAL_NON_ADDITIVE",
@@ -121,6 +128,7 @@ __all__ = [
     "cultural_tier_s_asset_on_applicable",
     "engine_asset_on_applicable",
     "m2_reference_asset_on_applicable",
+    "register_country_web_references",
     "register_cultural_tier_s",
     "register_m1_engines",
     "register_m2_proving_references",
