@@ -6,8 +6,7 @@ and bound material assets using Streamlit image primitives with bounded sizing.
 from typing import Optional, Union
 import streamlit as st
 
-from ui.dna.resolver import resolve_material, resolve_source_dna, MaterialResolutionResult
-from ui.dna.models import DesignDNA
+from ui.dna_bridge import resolve_material, resolve_source_dna
 from ui.themes import Theme
 
 
@@ -24,10 +23,10 @@ def _get_ornament_width(ornament_emphasis: Optional[str]) -> int:
 
 
 def render_brand_identity(
-    theme_or_dna_input: Union[str, Theme, DesignDNA, None],
+    theme_or_dna_input: Union[str, Theme, object, None],
     user_label: str = "",
     container_kind: str = "sidebar"
-) -> MaterialResolutionResult:
+) -> object:
     """
     Authoritative brand & material presentation seam.
     Resolves material bound to active Theme/DNA and renders using safe Streamlit image primitives.

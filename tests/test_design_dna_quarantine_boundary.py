@@ -13,11 +13,8 @@ QUARANTINE_PREFIXES = (
     "ui/theme_studio/",
     "tests/",
 )
-LEGACY_PUBLIC_BRIDGE_FILES = {
-    "app.py",
-    "ui/presentation/brand.py",
-    "ui/themes/registry.py",
-}
+PUBLIC_DNA_BRIDGE = "ui/dna_bridge.py"
+LEGACY_PUBLIC_BRIDGE_FILES = set()
 DNA_MODULE_PREFIXES = (
     "design_dna",
     "ui.dna",
@@ -81,7 +78,7 @@ def test_no_new_dna_or_theme_studio_dependency_spread_outside_declared_boundary(
         imports = _dna_imports(path)
         if not imports:
             continue
-        if _is_quarantine_path(rel) or rel in LEGACY_PUBLIC_BRIDGE_FILES:
+        if _is_quarantine_path(rel) or rel == PUBLIC_DNA_BRIDGE:
             continue
         violations[rel] = imports
     assert violations == {}, (
@@ -91,8 +88,10 @@ def test_no_new_dna_or_theme_studio_dependency_spread_outside_declared_boundary(
 
 
 def test_public_bridge_allowlist_is_small_and_explicit():
-    assert LEGACY_PUBLIC_BRIDGE_FILES == {"app.py", "ui/presentation/brand.py", "ui/themes/registry.py"}
-    assert len(LEGACY_PUBLIC_BRIDGE_FILES) == 3
+    assert PUBLIC_DNA_BRIDGE == "ui/dna_bridge.py"
+    assert LEGACY_PUBLIC_BRIDGE_FILES == set()
+    for rel in ("app.py", "ui/presentation/brand.py", "ui/themes/registry.py"):
+        assert _dna_imports(ROOT / rel) == (), rel
 
 
 def test_q1_theme_studio_real_implementation_is_quarantined():

@@ -208,7 +208,7 @@ def generate_theme_css(theme_id: Optional[str] = DEFAULT_THEME_ID) -> str:
     spacing = resolved["spacing"]
     radius = resolved["radius"]
 
-    from ui.dna.resolver import resolve_source_dna, resolve_identity_projection
+    from ui.dna_bridge import resolve_source_dna, resolve_identity_projection
     source_dna = resolve_source_dna(theme)
     id_proj = resolve_identity_projection(source_dna)
 
