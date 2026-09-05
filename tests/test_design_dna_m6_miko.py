@@ -181,7 +181,7 @@ def test_f05_consent_and_boundary_firewall_is_hard_coded_as_data():
 
 def test_f14_finite_care_window_preserves_exit_and_autonomy():
     directive = _identity("MKREF14").directive
-    fallback = _identity("MKREF14").fallback
+    fallback = _identity("MKREF14").fallback_directive
     assert "bounded-hazard-and-exit-state" in directive
     assert "never-hide-post-crisis-autonomy" in directive
     assert "exit-controls-remain-immediate" in fallback
