@@ -42,6 +42,7 @@ Q1_INTEGRATION_COMMIT = "2354dfc2e7d5f38e7ffb373f22eee4d19e0fb51e"
 Q1_ACC_PATH = "docs/design-dna/quarantine/Q1_ACC.yaml"
 Q2_INTEGRATION_COMMIT = "1377bc78d46fc129be074172380de3f17ba2b0a2"
 Q2_ACC_PATH = "docs/design-dna/quarantine/Q2_ACC.yaml"
+MIGRATION_STATUS_PATH = "docs/design-dna/migration/status/MIGRATION_STATUS.yaml"
 
 
 def _python_files():
@@ -188,3 +189,16 @@ def test_q2_acc_manifest_matches_integrated_runtime_and_exact_main_proof():
     assert "pip_check: CLEAN" in text
     assert "next_gate: M10" in text
     assert "next_gate_authorized_by_this_manifest: false" in text
+
+
+def test_migration_master_ledger_cannot_regress_q2_after_durable_closure():
+    text = (ROOT / MIGRATION_STATUS_PATH).read_text(encoding="utf-8")
+    assert f"authoritative_main_at_update: {Q2_INTEGRATION_COMMIT}" in text
+    assert "quarantine_next_gate: Q3_THEME_BRIDGE_DECOUPLING" in text
+    assert "Q2:\n    status: DURABLE_CLOSED" in text
+    assert f"integration_commit: {Q2_INTEGRATION_COMMIT}" in text
+    assert f"acc_manifest: {Q2_ACC_PATH}" in text
+    assert "exact_main_tests: 30752" in text
+    assert "exact_main_ci_run: 95" in text
+    assert "gate: M10_TRACK_M_R_25" in text
+    assert "then_gate: Q3_THEME_BRIDGE_DECOUPLING" in text
