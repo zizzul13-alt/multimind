@@ -218,7 +218,7 @@ def test_m10_acc_manifest_matches_integrated_runtime_and_exact_main_proof():
 
 def test_migration_master_ledger_cannot_regress_q2_or_m10_after_durable_closure():
     text = (ROOT / MIGRATION_STATUS_PATH).read_text(encoding="utf-8")
-    assert f"authoritative_main_at_update: {M10_INTEGRATION_COMMIT}" in text
+    assert f"authoritative_main_at_update: {Q3_INTEGRATION_COMMIT}" in text
     assert "current_closed_batch: M10" in text
     assert "next_eligible_batch: M11" in text
     assert "quarantine_next_gate: Q3_THEME_BRIDGE_DECOUPLING" in text
