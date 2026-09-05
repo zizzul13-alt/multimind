@@ -123,6 +123,20 @@ from design_dna.miko import (
     miko_reference_asset_on_applicable,
     register_m6_miko_references,
 )
+from design_dna.track_t import (
+    TRACK_T_I_ASSET_ON_APPLICABLE,
+    TRACK_T_I_ASSET_ON_NOT_APPLICABLE,
+    TRACK_T_I_HISTORICAL_NON_ADDITIVE_PRIMITIVES,
+    TRACK_T_I_NEAREST_NEGATIVE_BY_ID,
+    TRACK_T_I_PRIMITIVE_FINGERPRINT_BY_ID,
+    TRACK_T_I_REFERENCE_BY_ID,
+    TRACK_T_I_REFERENCE_IDS,
+    TRACK_T_I_REFERENCES,
+    TRACK_T_I_TITLE_BY_ID,
+    TRACK_T_I_TOPOLOGY_BY_ID,
+    register_m7_track_t_i_references,
+    track_t_i_reference_asset_on_applicable,
+)
 
 __all__ = [
     "ALL_ZONES",
@@ -212,6 +226,16 @@ __all__ = [
     "TEMPORAL_PRIMITIVE_IDS",
     "TEMPORAL_PRIMITIVE_NAMES",
     "TEMPORAL_PRIMITIVES",
+    "TRACK_T_I_ASSET_ON_APPLICABLE",
+    "TRACK_T_I_ASSET_ON_NOT_APPLICABLE",
+    "TRACK_T_I_HISTORICAL_NON_ADDITIVE_PRIMITIVES",
+    "TRACK_T_I_NEAREST_NEGATIVE_BY_ID",
+    "TRACK_T_I_PRIMITIVE_FINGERPRINT_BY_ID",
+    "TRACK_T_I_REFERENCE_BY_ID",
+    "TRACK_T_I_REFERENCE_IDS",
+    "TRACK_T_I_REFERENCES",
+    "TRACK_T_I_TITLE_BY_ID",
+    "TRACK_T_I_TOPOLOGY_BY_ID",
     "ThemeProjection",
     "UnitKind",
     "UnitKindMismatchError",
@@ -230,5 +254,7 @@ __all__ = [
     "register_m4_primitives",
     "register_m5_izzul_references",
     "register_m6_miko_references",
+    "register_m7_track_t_i_references",
     "resolve",
+    "track_t_i_reference_asset_on_applicable",
 ]
