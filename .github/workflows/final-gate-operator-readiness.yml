@@ -1,0 +1,39 @@
+name: Final Gate Operator Readiness
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MULTIMIND_FRONTEND_PORT: "3000"
+      MULTIMIND_BACKEND_PORT: "8000"
+      MULTIMIND_DEPLOY_URL: https://multimind-ci.zizzul.dev
+      MULTIMIND_API_URL: https://api.multimind-ci.zizzul.dev
+      MULTIMIND_CORS_ALLOWED_ORIGINS: https://multimind-ci.zizzul.dev
+      MULTIMIND_DATA_VOLUME: multimind-final-gate-ci
+      MULTIMIND_GEMINI_KEY: ci-sentinel-not-a-real-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Public neutral production preflight
+        run: python scripts/final_gate_preflight.py --production --public --check-docker
+      - name: Optional private DNA overlay preflight
+        run: |
+          mkdir -p .secrets
+          printf '%s' 'ci-sentinel-not-a-real-token' > .secrets/github_token
+          python scripts/final_gate_preflight.py --production --public --private-dna --check-docker
+          test -z "$(git status --porcelain -- .secrets .env .env.production)"
+          rm -rf .secrets
+      - name: Confirm tracked environment template remains non-secret
+        run: |
+          test -f .env.example
+          ! grep -Eq '(gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,})' .env.example
