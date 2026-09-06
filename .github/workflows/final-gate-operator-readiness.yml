@@ -14,9 +14,9 @@ jobs:
     env:
       MULTIMIND_FRONTEND_PORT: "3000"
       MULTIMIND_BACKEND_PORT: "8000"
-      MULTIMIND_DEPLOY_URL: https://multimind.example.com
-      MULTIMIND_API_URL: https://api.multimind.example.com
-      MULTIMIND_CORS_ALLOWED_ORIGINS: https://multimind.example.com
+      MULTIMIND_DEPLOY_URL: https://multimind-ci.zizzul.dev
+      MULTIMIND_API_URL: https://api.multimind-ci.zizzul.dev
+      MULTIMIND_CORS_ALLOWED_ORIGINS: https://multimind-ci.zizzul.dev
       MULTIMIND_DATA_VOLUME: multimind-final-gate-ci
       MULTIMIND_GEMINI_KEY: ci-sentinel-not-a-real-key
     steps:
