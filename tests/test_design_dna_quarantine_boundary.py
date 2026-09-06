@@ -44,6 +44,8 @@ M10_INTEGRATION_COMMIT = "40d4fd8a58a4d8cb4a2f29d89944cfbe1d0ed4cc"
 M10_ACC_PATH = "docs/design-dna/migration/status/M10_ACC.yaml"
 Q3_INTEGRATION_COMMIT = "69e01db253d9a143a65da03399b6354ad79e3313"
 Q3_ACC_PATH = "docs/design-dna/quarantine/Q3_ACC.yaml"
+M11_INTEGRATION_COMMIT = "40fd49967d9eebe289087d494174f1b13651df3f"
+M11_ACC_PATH = "docs/design-dna/migration/status/M11_ACC.yaml"
 MIGRATION_STATUS_PATH = "docs/design-dna/migration/status/MIGRATION_STATUS.yaml"
 
 
@@ -218,9 +220,9 @@ def test_m10_acc_manifest_matches_integrated_runtime_and_exact_main_proof():
 
 def test_migration_master_ledger_cannot_regress_q2_or_m10_after_durable_closure():
     text = (ROOT / MIGRATION_STATUS_PATH).read_text(encoding="utf-8")
-    assert f"authoritative_main_at_update: {Q3_INTEGRATION_COMMIT}" in text
-    assert "current_closed_batch: M10" in text
-    assert "next_eligible_batch: M11" in text
+    assert f"authoritative_main_at_update: {M11_INTEGRATION_COMMIT}" in text
+    assert "current_closed_batch: M11" in text
+    assert "next_eligible_batch: M12_AFTER_Q4" in text
     assert "quarantine_next_gate: Q4_PRIVATE_REPOSITORY_CUT" in text
     assert "Q2:\n    status: DURABLE_CLOSED" in text
     assert f"integration_commit: {Q2_INTEGRATION_COMMIT}" in text
@@ -244,7 +246,12 @@ def test_migration_master_ledger_cannot_regress_q2_or_m10_after_durable_closure(
     assert f"acc_manifest: {Q3_ACC_PATH}" in text
     assert "exact_main_tests: 37551" in text
     assert "exact_main_ci_run: 111" in text
-    assert "gate: M11_FIXTURES_14" in text
-    assert "then_gate: Q4_PRIVATE_REPOSITORY_CUT" in text
+    assert "M11:\n    governor_status: ACC_CLOSED_INTEGRATED" in text
+    assert f"integration_commit: {M11_INTEGRATION_COMMIT}" in text
+    assert f"manifest: {M11_ACC_PATH}" in text
+    assert "exact_main_tests: 37767" in text
+    assert "exact_main_ci_run: 121" in text
+    assert "gate: Q4_PRIVATE_REPOSITORY_CUT" in text
+    assert "then_gate: M12_FINAL_ASSET_POLICY_RECONCILIATION" in text
     assert "credited: 0" in text
     assert "production_cutover: false" in text
