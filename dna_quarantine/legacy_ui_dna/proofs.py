@@ -2,7 +2,7 @@
 MultiMind AI - Real Design DNA Proofs (S6.2 / S8.1 / S8.2 Deepened Profiles)
 Defines asset-enabled Design DNA definitions representing Identity and Web/Information roles.
 """
-from ui.dna.models import DesignDNA, MaterialReference, PresentationPolicy
+from .models import DesignDNA, MaterialReference, PresentationPolicy
 
 # DNA A — Rinpa Decorative Spatial (Identity DNA Proof)
 RINPA_DECORATIVE_SPATIAL_DNA = DesignDNA(

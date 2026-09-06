@@ -1,0 +1,119 @@
+schema_version: 1
+inventory: MULTIMIND_DESIGN_DNA_PRIVATE_EXTRACTION
+owner: DESIGN_DNA_GOVERNOR
+updated_at: 2026-09-06
+q4_state: PRIVATE_READY_CANDIDATE_AWAITING_GOVERNOR_ACC
+actual_private_repository_extraction_completed: false
+public_history_sanitized: false
+
+architecture:
+  target_direction: PUBLIC_APP_TO_PUBLIC_DNA_BRIDGE_TO_PRIVATE_DNA_PACKAGE
+  public_bridge: ui/dna_bridge.py
+  private_candidate_roots:
+    - design_dna/**
+    - dna_quarantine/**
+  safe_absence_law: PUBLIC_MULTIMIND_MUST_REMAIN_IMPORTABLE_AND_FUNCTIONAL_WITH_BORING_DEFAULT_PRESENTATION
+  reverse_shim_imports_allowed: false
+
+ownership:
+  runtime_private_owned:
+    - design_dna/**
+    - dna_quarantine/legacy_ui_dna/**
+    - dna_quarantine/theme_studio/**
+  legacy_public_compatibility_shims:
+    - ui/dna/__init__.py
+    - ui/dna/bootstrap.py
+    - ui/dna/mapper.py
+    - ui/dna/models.py
+    - ui/dna/proofs.py
+    - ui/dna/registry.py
+    - ui/dna/resolver.py
+    - ui/theme_studio/state.py
+    - ui/theme_studio/surface.py
+  public_bridge:
+    - ui/dna_bridge.py
+  host_owned_consumers:
+    - app.py
+    - ui/presentation/brand.py
+    - ui/themes/**
+    - ui/foundation/**
+    - ui/components/theme_preview_spike/**
+    - ui/style.css
+    - utils/identity_state.py
+  private_owned_tests:
+    - tests/test_design_dna_*.py
+    - tests/test_design_dna_m11_fixtures.py
+    - tests/test_design_dna_q4_private_ready.py
+  public_bridge_contract_tests:
+    - tests/test_dna_public_bridge.py
+  private_owned_docs:
+    - docs/design-dna/**
+  canonical_fixtures:
+    - design_dna/fixtures.py
+  asset_policy_and_manifests:
+    - docs/design-dna/quarantine/PRIVATE_EXTRACTION_INVENTORY.yaml
+    - docs/design-dna/quarantine/DNA_QUARANTINE_MANIFEST.yaml
+    - ui/assets/materials/**
+
+host_adapter_dependencies:
+  classification: PRESENTATION_HOST_OWNED_NOT_COPIED_AS_PRIVATE_RUNTIME_CORE
+  allowed_from_quarantined_legacy_adapter:
+    - ui.themes
+    - ui.presentation
+  allowed_from_theme_studio_surface_adapter:
+    - ui.themes
+    - ui.foundation
+    - ui.presentation
+    - ui.components.theme_preview_spike
+  law: HOST_ADAPTER_DEPENDENCIES_MUST_NOT_ROUTE_BACK_THROUGH_UI_DNA_OR_UI_THEME_STUDIO_SHIMS
+
+assets_current_public_tree:
+  approval_law: INVENTORY_PRESENCE_IS_NOT_PRODUCTION_APPROVAL
+  final_approved_count: 0
+  proof_material_directories:
+    - path: ui/assets/materials/chainsaw-hazard-mark/**
+      extraction_owner: ASSET_OWNED
+      production_approved: false
+    - path: ui/assets/materials/japan-ink-mark/**
+      extraction_owner: ASSET_OWNED
+      production_approved: false
+    - path: ui/assets/materials/mushishi-moss-mark/**
+      extraction_owner: ASSET_OWNED
+      production_approved: false
+    - path: ui/assets/materials/rinpa-gold-mark/**
+      extraction_owner: ASSET_OWNED
+      production_approved: false
+
+private_candidate_dependency_rules:
+  forbidden_reverse_import_prefixes:
+    - ui.dna
+    - ui.theme_studio
+  forbidden_application_dependency_prefixes:
+    - core
+    - providers
+    - database
+  provider_dependency_pulled_into_dna: false
+  core_dependency_pulled_into_dna: false
+  database_dependency_pulled_into_dna: false
+
+extraction_actions_after_m12:
+  - VERIFY_PRIVATE_REPOSITORY_NAME_VISIBILITY_AND_TARGET_BRANCH
+  - COPY_OR_SPLIT_PRIVATE_OWNED_RUNTIME_TESTS_DOCS_FIXTURES_AND_POLICY
+  - KEEP_PUBLIC_DNA_BRIDGE_AND_SAFE_DEFAULT_IN_MULTIMIND
+  - RETARGET_BRIDGE_TO_INSTALLED_PRIVATE_PACKAGE
+  - PROVE_PUBLIC_APP_WITH_PRIVATE_PACKAGE_PRESENT
+  - PROVE_PUBLIC_APP_WITH_PRIVATE_PACKAGE_ABSENT
+  - DECIDE_PUBLIC_HISTORY_SANITIZATION_STRATEGY_WITH_EXPLICIT_USER_AUTHORIZATION
+
+history_warning:
+  moving_files_does_not_erase_public_git_history: true
+  destructive_history_rewrite_authorized: false
+  third_party_existing_clones_or_forks_remotely_erasable: false
+
+non_claims:
+  - Q4_ACC_NOT_YET_GRANTED_AT_CANDIDATE_AUTHORING
+  - ACTUAL_PRIVATE_REPOSITORY_EXTRACTION_NOT_COMPLETED
+  - PUBLIC_HISTORY_NOT_REWRITTEN
+  - EQ4_NOT_GRANTED
+  - RJ3_NOT_STARTED
+  - PRODUCTION_CUTOVER_NOT_AUTHORIZED

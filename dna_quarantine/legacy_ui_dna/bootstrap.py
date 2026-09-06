@@ -4,9 +4,9 @@ Idempotent bootstrap module to register Design DNA proofs and map Identity DNAs 
 """
 import copy
 import logging
-from ui.dna import get_registry as get_dna_registry
-from ui.dna.mapper import dna_to_theme
-from ui.dna.proofs import PROOFS
+from .registry import get_registry as get_dna_registry
+from .mapper import dna_to_theme
+from .proofs import PROOFS
 from ui.themes import get_registry as get_theme_registry
 
 logger = logging.getLogger(__name__)

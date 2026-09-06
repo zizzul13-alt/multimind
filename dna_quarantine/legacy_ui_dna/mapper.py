@@ -3,7 +3,7 @@ MultiMind AI - Design DNA to Theme Adapter Mapper
 Pure adapter translating DesignDNA visual intent into S5 Theme contract instances.
 """
 import copy
-from ui.dna.models import DesignDNA
+from .models import DesignDNA
 from ui.themes.models import Theme, ThemeMetadata
 
 

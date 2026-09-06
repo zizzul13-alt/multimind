@@ -165,7 +165,8 @@ def test_quarantine_manifest_exists_and_locks_private_extraction_goal():
     assert f"integration_commit: {Q2_INTEGRATION_COMMIT}" in text
     assert f"acc_manifest: {Q2_ACC_PATH}" in text
     assert "SOURCE_SNAPSHOT_MOVE_WITH_BOUNDED_IMPORT_CYCLE_REPAIR" in text
-    assert "NON_RESOLVER_INTERNAL_LEGACY_SELF_IMPORTS_STILL_ROUTE_THROUGH_UI_DNA_SHIMS_UNTIL_Q4" in text
+    assert "RESOLVED_AT_Q4_PRIVATE_READY_CUT__NO_INTERNAL_REVERSE_IMPORT_THROUGH_UI_DNA_OR_UI_THEME_STUDIO_SHIMS" in text
+    assert "NON_RESOLVER_INTERNAL_LEGACY_SELF_IMPORTS_STILL_ROUTE_THROUGH_UI_DNA_SHIMS_UNTIL_Q4" not in text
     assert "Q4_private_repository_cut:" in text
 
 
