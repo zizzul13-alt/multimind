@@ -1,7 +1,7 @@
 """Remote Turso persistence adapter preserving MultiMind's database contract.
 
 The adapter deliberately keeps SQLite as the local/fallback implementation while
-using one shared remote Turso database with explicit ``user_id`` scoping.  It
+using one shared remote Turso database with explicit ``user_id`` scoping. It
 also preserves the existing user-facing SQLite backup format by materializing a
 portable per-user SQLite snapshot on export and restoring that snapshot into the
 remote user scope transactionally.
@@ -130,11 +130,6 @@ class TursoDatabaseManager:
                 chat_data.get("tokens_used", 0),
                 chat_data.get("cost", 0.0),
             ))
-            conn.execute(
-                f"UPDATE {SESSIONS_TABLE} SET updated_at = CURRENT_TIMESTAMP "
-                "WHERE user_id = ? AND id = ?",
-                (self.user_id, session_id),
-            )
             conn.commit()
         finally:
             conn.close()
@@ -196,10 +191,11 @@ class TursoDatabaseManager:
         )
         os.close(file_descriptor)
         try:
-            local = DatabaseManager(snapshot_path)
+            DatabaseManager(snapshot_path)
             local_conn = sqlite3.connect(snapshot_path)
             remote = self._connect()
             try:
+                remote.execute("BEGIN")
                 sessions = _rows_as_dicts(remote.execute(
                     f"SELECT {', '.join(SESSION_COLUMNS)} FROM {SESSIONS_TABLE} "
                     "WHERE user_id = ? ORDER BY created_at ASC, rowid ASC",
@@ -210,6 +206,7 @@ class TursoDatabaseManager:
                     "WHERE user_id = ? ORDER BY created_at ASC, rowid ASC",
                     (self.user_id,),
                 ))
+                remote.rollback()
 
                 local_conn.executemany(
                     "INSERT INTO sessions "
@@ -245,13 +242,21 @@ class TursoDatabaseManager:
         if len(backup_bytes) > MAX_RESTORE_CANDIDATE_BYTES:
             raise RestoreValidationError("Backup is too large to restore.")
 
-        file_descriptor, candidate_path = tempfile.mkstemp(
-            prefix=".multimind-turso-restore-", suffix=".db"
-        )
         try:
-            with os.fdopen(file_descriptor, "wb") as candidate_file:
-                if candidate_file.write(backup_bytes) != len(backup_bytes):
-                    raise RestoreOperationError("Backup staging write was incomplete.")
+            file_descriptor, candidate_path = tempfile.mkstemp(
+                prefix=".multimind-turso-restore-", suffix=".db"
+            )
+        except OSError as exc:
+            raise RestoreOperationError("Backup staging failed.") from exc
+
+        try:
+            try:
+                with os.fdopen(file_descriptor, "wb") as candidate_file:
+                    if candidate_file.write(backup_bytes) != len(backup_bytes):
+                        raise RestoreOperationError("Backup staging write was incomplete.")
+            except OSError as exc:
+                raise RestoreOperationError("Backup staging failed.") from exc
+
             validate_restore_candidate(candidate_path)
 
             source = sqlite3.connect(candidate_path)
@@ -265,6 +270,9 @@ class TursoDatabaseManager:
                 ).fetchall()]
             finally:
                 source.close()
+
+            expected_session_ids = {row["id"] for row in sessions}
+            expected_chat_ids = {row["id"] for row in chats}
 
             remote = self._connect()
             committed = False
@@ -302,15 +310,22 @@ class TursoDatabaseManager:
                 remote.commit()
                 committed = True
 
-                session_count = remote.execute(
-                    f"SELECT COUNT(*) FROM {SESSIONS_TABLE} WHERE user_id = ?",
-                    (self.user_id,),
-                ).fetchone()[0]
-                chat_count = remote.execute(
-                    f"SELECT COUNT(*) FROM {CHATS_TABLE} WHERE user_id = ?",
-                    (self.user_id,),
-                ).fetchone()[0]
-                if session_count != len(sessions) or chat_count != len(chats):
+                actual_session_ids = {
+                    row[0] for row in remote.execute(
+                        f"SELECT id FROM {SESSIONS_TABLE} WHERE user_id = ?",
+                        (self.user_id,),
+                    ).fetchall()
+                }
+                actual_chat_ids = {
+                    row[0] for row in remote.execute(
+                        f"SELECT id FROM {CHATS_TABLE} WHERE user_id = ?",
+                        (self.user_id,),
+                    ).fetchall()
+                }
+                if (
+                    actual_session_ids != expected_session_ids
+                    or actual_chat_ids != expected_chat_ids
+                ):
                     raise RestoreOperationError(
                         "Database replacement could not be verified.",
                         database_replaced=True,
