@@ -123,8 +123,23 @@ quarantine_migration_plan:
       pip_check: CLEAN
       public_safe_fallback: PASS
   Q4_private_repository_cut:
-    status: NOT_STARTED
+    status: DURABLE_CLOSED
+    accepted: true
+    integrated: true
+    integration_commit: 0cdbc62eb5819f7a65213e031657610f6dd4ca5a
+    pull_request: 88
+    acc_manifest: docs/design-dna/quarantine/Q4_ACC.yaml
+    extraction_inventory: docs/design-dna/quarantine/PRIVATE_EXTRACTION_INVENTORY.yaml
+    public_repo_private_ready: true
+    actual_private_repository_extraction_completed: false
     strategy: MAKE_QUARANTINE_SELF_CONTAINED_AND_PROVE_PUBLIC_SAFE_FALLBACK_WITH_PRIVATE_PACKAGE_ABSENT
+    evidence:
+      clean_head: 37776_PASS_RUN_127
+      post_merge_exact_main: 37776_PASS_RUN_128
+      pip_check: CLEAN
+      public_safe_fallback: PASS
+      reverse_public_shim_imports: NONE
+      provider_core_database_pull: NONE
 
 batch_policy:
   M8_M12:
