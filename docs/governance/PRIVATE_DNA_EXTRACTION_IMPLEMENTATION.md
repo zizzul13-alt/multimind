@@ -1,70 +1,74 @@
-# MULTIMIND — PRIVATE DESIGN-DNA EXTRACTION IMPLEMENTATION
+# MULTIMIND — PRIVATE DESIGN-DNA EXTRACTION CLOSURE
 
-Status: IMPLEMENTATION PASS CANDIDATE / NOT GOVERNOR ACCEPTED / NOT MERGED
+Status: GOVERNOR ACCEPTED / CLOSED / INTEGRATED
+Accepted: 2026-09-06
+PRIVATE_EXTRACTION_COMPLETED: TRUE
+Production cutover authorized: NO
 
-## Base
+## Authoritative integration evidence
 
-- Public repository: `zizzul13-alt/multimind`.
-- Public extraction baseline: `4caf0aa86e1b3cc3a53e7b959dcc2a05773ef2c2`.
 - Exact Design-DNA source baseline: M12 durable closure `57bced06a417e026cd97fdf6170cb04abcf67d82`.
 - Private repository: `zizzul13-alt/multimind-design-dna`.
-- Private initial baseline: `ca9ceea0683284abfe9bc045c08a72ff11dbcbf2`.
+- Private PR #1 merged first with expected-head guard.
+- Private authoritative `main`: `621a3a51bb04d14c91fc09701ce40988af951bcf`.
+- Public repository: `zizzul13-alt/multimind`.
+- Public PR #92 merged second with expected-head guard.
+- Public authoritative `main`: `61504132353f8484ffcaeedb130c0ad1fa32d035`.
+- Public exact-main push regression: run `34024817977` / Python Regression #148: SUCCESS.
 
-## Boundary implemented
+## Final package boundary
 
 Canonical dependency direction:
 
 `PUBLIC MULTIMIND -> ui/dna_bridge.py -> optional multimind-design-dna package`
 
-Private-owned current-tree surfaces were extracted from public MultiMind into the private repository:
+Private-owned current-tree surfaces now live in the private repository:
 
 - `design_dna/**`;
 - `dna_quarantine/**`;
 - `docs/design-dna/**` and `docs/design_dna.md`;
-- Design-DNA-owned tests, including two residual semantic presentation-contract tests found during absent-package regression;
+- Design-DNA-owned tests, including the semantic presentation-contract tests identified by absent-package regression;
 - `ui/assets/materials/**` historical/proof material.
 
-Public MultiMind retains the stable bridge, application/core/provider/persistence code, presentation hosts, public UI foundation/theme/presentation surfaces, and public bridge/fallback tests.
+Public MultiMind retains:
 
-The private distribution is named `multimind-design-dna` while preserving the historical Python namespaces `design_dna` and `dna_quarantine`; extraction therefore changes repository/package ownership without mass-renaming M12-proven runtime semantics.
+- `MultiMindApplication`, core/provider/persistence ownership;
+- Streamlit and Reflex presentation hosts;
+- public presentation/theme/foundation surfaces;
+- `ui/dna_bridge.py` as the sole supported optional Design-DNA seam;
+- public bridge/fallback tests.
 
-No FastAPI, REST, RPC, microservice, second persistence owner, or frontend-owned application truth was introduced.
+The private distribution is named `multimind-design-dna` while preserving the proven Python namespaces `design_dna` and `dna_quarantine`. No FastAPI, REST, RPC, microservice, second persistence owner, or frontend-owned application truth was introduced.
 
-## Fallback hardening
+## Neutral fallback contract
 
-Deep audit found that the M12 bridge handled package absence but could allow exceptions from an installed-but-broken/incompatible private package to escape bootstrap/resolution/render paths.
+`ui/dna_bridge.py` is hardened so missing, broken, or incompatible private DNA cannot own MultiMind availability. Optional private import, bootstrap, resolver/material/projection, and Theme Studio render failures degrade to boring neutral safe presentation behavior.
 
-`ui/dna_bridge.py` was hardened so optional private import, bootstrap, resolver, material, identity-projection, and Theme Studio render failures degrade to boring neutral safe presentation behavior instead of owning MultiMind availability.
-
-Adversarial public bridge tests cover:
+Adversarial coverage includes:
 
 - private package absent;
-- private import raising an incompatibility/runtime exception;
-- private bootstrap/resolver operations raising;
-- Theme Studio render raising;
+- incompatible/runtime import failure;
+- bootstrap/resolver runtime failure;
+- Theme Studio render failure;
 - stable neutral fallback projections/material state.
 
 ## Verification
 
-### Public MultiMind — private package absent
+### Public MultiMind without private DNA
 
-Final public extraction branch regression:
-
-- `223 / 223` tests PASS;
+- `223 / 223` tests PASS.
 - `pip check`: `No broken requirements found.`
+- exact-main push regression after merge: SUCCESS.
 
-This proves the public current tree remains independently runnable/testable without private Design-DNA source/package.
+### Private canonical runtime
 
-### Private Design-DNA canonical runtime
+Private CI run `34019565017`:
 
-Private CI final cleaned-tree run #18 / run `34019565017`, private-runtime job:
-
-- exact M12 policy proof PASS;
+- M12 policy proof PASS;
 - `37,439 / 37,439` canonical M-stage tests PASS;
-- final cleaned tree contains no tracked Python bytecode/cache artifacts;
-- permanent private CI remains; temporary one-shot extraction/cleanup workflows were removed.
+- final cleaned tree has no tracked Python bytecode/cache artifacts.
 
-Canonical asset-policy proof retained:
+Canonical M12 asset-policy facts remain:
 
 - total = 271;
 - asset applicable = 207;
@@ -75,23 +79,21 @@ Canonical asset-policy proof retained:
 - `selected_asset=null` for all;
 - `final_approved=false` for all.
 
-### Cross-repository absent/present proof
+### Cross-repository present/absent proof
 
 Private CI run `34019565017`, public-bridge-integration job PASS:
 
-- ABSENT private DNA fallback smoke: PASS;
-- adversarial bridge suite: `6 / 6` PASS;
-- private distribution installs successfully as `multimind-design-dna 0.1.0`;
-- PRESENT private DNA bridge: PASS;
-- private bootstrap: PASS;
-- private Theme Studio module availability: PASS;
-- full public host regression with private DNA installed: `223 / 223` PASS;
-- `pip check`: `No broken requirements found.`;
-- public extraction candidate current tree proved `design_dna/` and `dna_quarantine/` absent while `ui/dna_bridge.py` remains present.
+- ABSENT private DNA fallback PASS;
+- adversarial bridge suite `6 / 6` PASS;
+- private distribution installs as `multimind-design-dna 0.1.0`;
+- PRESENT private DNA bridge PASS;
+- private bootstrap PASS;
+- Theme Studio module availability PASS;
+- full public host regression with private DNA installed `223 / 223` PASS;
+- `pip check` clean;
+- public candidate current tree proves `design_dna/` and `dna_quarantine/` absent while `ui/dna_bridge.py` remains present.
 
 ## Diff audit
-
-Expected changes dominate the public diff: removal of private-owned Design-DNA source/docs/tests/proof material plus bridge hardening and public-test ownership repair.
 
 Explicit non-changes:
 
@@ -100,22 +102,20 @@ Explicit non-changes:
 - provider routing/behavior: NO CHANGE;
 - debate/core-memory semantics: NO CHANGE;
 - Reflex version: NO CHANGE;
-- public requirements/dependency lock to private Git credentials: NO CHANGE;
+- public requirements do not embed private Git credentials: PRESERVED;
 - new network/service boundary: NONE;
-- Streamlit rollback semantics: NOT REMOVED.
+- Streamlit rollback semantics: PRESERVED.
 
 ## Residuals / non-claims
 
-- Public Git history is NOT sanitized. Historical public commits remain historical public commits.
+- Public Git history is NOT sanitized; historical public commits remain historical public commits.
 - EQ4 remains `0 / 271`.
 - Final-approved asset count remains `0`.
-- Authorized deployment installation/credential wiring for the private package belongs to deployment/RJ-4 and is not embedded in the public repository.
-- Private PR #1 and public PR #92 remain draft/unmerged pending Governor acceptance.
-- RJ-3 is not started or authorized by this implementation report alone.
-- Production cutover is not authorized.
+- Production installation/credential wiring for the private package belongs to deployment/RJ-4 and is not embedded in the public repository.
+- Production cutover remains unauthorized until the Final Governor Migration Gate.
 
 ## Verdict
 
-`PASS` — implementation/evidence candidate.
+`PASS / CLOSED / INTEGRATED`.
 
-STOP for Governor acceptance and controlled integration. Private integration should precede public removal integration so the private authoritative current-tree copy exists before the public current-tree source is removed.
+The private Design-DNA extraction prerequisite is satisfied. `PRIVATE_EXTRACTION_COMPLETED = TRUE`. RJ-3 entry is unblocked, subject to normal exact-repository reconciliation and the existing serial RJ bundle laws.
