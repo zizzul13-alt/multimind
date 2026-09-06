@@ -46,6 +46,8 @@ Q3_INTEGRATION_COMMIT = "69e01db253d9a143a65da03399b6354ad79e3313"
 Q3_ACC_PATH = "docs/design-dna/quarantine/Q3_ACC.yaml"
 M11_INTEGRATION_COMMIT = "40fd49967d9eebe289087d494174f1b13651df3f"
 M11_ACC_PATH = "docs/design-dna/migration/status/M11_ACC.yaml"
+Q4_INTEGRATION_COMMIT = "0cdbc62eb5819f7a65213e031657610f6dd4ca5a"
+Q4_ACC_PATH = "docs/design-dna/quarantine/Q4_ACC.yaml"
 MIGRATION_STATUS_PATH = "docs/design-dna/migration/status/MIGRATION_STATUS.yaml"
 
 
@@ -221,10 +223,10 @@ def test_m10_acc_manifest_matches_integrated_runtime_and_exact_main_proof():
 
 def test_migration_master_ledger_cannot_regress_q2_or_m10_after_durable_closure():
     text = (ROOT / MIGRATION_STATUS_PATH).read_text(encoding="utf-8")
-    assert f"authoritative_main_at_update: {M11_INTEGRATION_COMMIT}" in text
+    assert f"authoritative_main_at_update: {Q4_INTEGRATION_COMMIT}" in text
     assert "current_closed_batch: M11" in text
-    assert "next_eligible_batch: M12_AFTER_Q4" in text
-    assert "quarantine_next_gate: Q4_PRIVATE_REPOSITORY_CUT" in text
+    assert "next_eligible_batch: M12" in text
+    assert "quarantine_next_gate: Q4_DURABLE_CLOSED_PRIVATE_READY" in text
     assert "Q2:\n    status: DURABLE_CLOSED" in text
     assert f"integration_commit: {Q2_INTEGRATION_COMMIT}" in text
     assert f"acc_manifest: {Q2_ACC_PATH}" in text
@@ -252,7 +254,14 @@ def test_migration_master_ledger_cannot_regress_q2_or_m10_after_durable_closure(
     assert f"manifest: {M11_ACC_PATH}" in text
     assert "exact_main_tests: 37767" in text
     assert "exact_main_ci_run: 121" in text
-    assert "gate: Q4_PRIVATE_REPOSITORY_CUT" in text
-    assert "then_gate: M12_FINAL_ASSET_POLICY_RECONCILIATION" in text
+    assert "Q4:\n    status: DURABLE_CLOSED" in text
+    assert f"integration_commit: {Q4_INTEGRATION_COMMIT}" in text
+    assert f"acc_manifest: {Q4_ACC_PATH}" in text
+    assert "exact_main_tests: 37776" in text
+    assert "exact_main_ci_run: 128" in text
+    assert "private_ready: true" in text
+    assert "actual_private_extraction: false" in text
+    assert "gate: M12_FINAL_ASSET_POLICY_RECONCILIATION" in text
+    assert "then_gate: STOP_BEFORE_PRIVATE_EXTRACTION_OR_RJ3" in text
     assert "credited: 0" in text
     assert "production_cutover: false" in text
