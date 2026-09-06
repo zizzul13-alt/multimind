@@ -97,7 +97,8 @@ def test_private_extraction_inventory_is_complete_and_not_an_extraction_overclai
         "canonical_fixtures:", "asset_policy_and_manifests:",
     ):
         assert category in text
-    assert "q4_state: PRIVATE_READY_CANDIDATE_AWAITING_GOVERNOR_ACC" in text
+    assert "q4_state: PRIVATE_READY" in text
+    assert "q4_state: PRIVATE_READY_CANDIDATE_AWAITING_GOVERNOR_ACC" not in text
     assert "actual_private_repository_extraction_completed: false" in text
     assert "public_history_sanitized: false" in text
     assert "final_approved_count: 0" in text
