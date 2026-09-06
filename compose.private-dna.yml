@@ -1,0 +1,11 @@
+services:
+  multimind:
+    build:
+      args:
+        INSTALL_PRIVATE_DNA: "1"
+      secrets:
+        - github_token
+
+secrets:
+  github_token:
+    file: ${MULTIMIND_GITHUB_TOKEN_FILE:-./.secrets/github_token}

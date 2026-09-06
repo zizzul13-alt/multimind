@@ -1,0 +1,44 @@
+name: RJ4 Container Durability
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "compose*.yml"
+      - "rxconfig.py"
+      - "database/**"
+      - "scripts/rj4_persistence_probe.py"
+      - "tests/test_rj4_durable_deployment.py"
+      - ".github/workflows/rj4-container-proof.yml"
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - "compose*.yml"
+      - "rxconfig.py"
+      - "database/**"
+      - "scripts/rj4_persistence_probe.py"
+      - "tests/test_rj4_durable_deployment.py"
+      - ".github/workflows/rj4-container-proof.yml"
+
+jobs:
+  recreate-proof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build neutral production image
+        run: docker build -t multimind-rj4:proof .
+      - name: Prove host imports without private DNA
+        run: docker run --rm multimind-rj4:proof python -c "import multimind_reflex.multimind_reflex; import ui.dna_bridge; assert ui.dna_bridge.dna_available() is False"
+      - name: Seed durable named volume
+        run: |
+          docker volume create multimind-rj4-proof
+          docker run --rm -v multimind-rj4-proof:/app/data multimind-rj4:proof \
+            python scripts/rj4_persistence_probe.py seed /app/data/users/probe.db
+      - name: Recreate container against same volume
+        run: |
+          docker run --rm -v multimind-rj4-proof:/app/data multimind-rj4:proof \
+            python scripts/rj4_persistence_probe.py verify /app/data/users/probe.db
+      - name: Cleanup proof volume
+        if: always()
+        run: docker volume rm -f multimind-rj4-proof
