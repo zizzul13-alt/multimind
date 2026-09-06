@@ -1,0 +1,75 @@
+name: Q4 Private Ready Apply
+on:
+  push:
+    branches: [dna-q4-private-ready]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dna-q4-private-ready
+      - name: Remove reverse imports through public compatibility shims
+        shell: python
+        run: |
+          from pathlib import Path
+
+          replacements = {
+            'dna_quarantine/legacy_ui_dna/__init__.py': {
+              'from ui.dna.models import': 'from .models import',
+              'from ui.dna.mapper import': 'from .mapper import',
+              'from ui.dna.registry import': 'from .registry import',
+            },
+            'dna_quarantine/legacy_ui_dna/bootstrap.py': {
+              'from ui.dna import get_registry as get_dna_registry': 'from .registry import get_registry as get_dna_registry',
+              'from ui.dna.mapper import dna_to_theme': 'from .mapper import dna_to_theme',
+              'from ui.dna.proofs import PROOFS': 'from .proofs import PROOFS',
+            },
+            'dna_quarantine/legacy_ui_dna/mapper.py': {
+              'from ui.dna.models import DesignDNA': 'from .models import DesignDNA',
+            },
+            'dna_quarantine/legacy_ui_dna/registry.py': {
+              'from ui.dna.models import DesignDNA, MaterialReference': 'from .models import DesignDNA, MaterialReference',
+            },
+            'dna_quarantine/legacy_ui_dna/proofs.py': {
+              'from ui.dna.models import DesignDNA, MaterialReference, PresentationPolicy': 'from .models import DesignDNA, MaterialReference, PresentationPolicy',
+            },
+            'dna_quarantine/theme_studio/state.py': {
+              'from ui.dna import get_dna': 'from dna_quarantine.legacy_ui_dna import get_dna',
+              'from ui.dna.models import DesignComposition, ComposedProjection': 'from dna_quarantine.legacy_ui_dna.models import DesignComposition, ComposedProjection',
+              'from ui.dna.mapper import dna_to_theme': 'from dna_quarantine.legacy_ui_dna.mapper import dna_to_theme',
+              'from ui.dna.resolver import resolve_composition': 'from dna_quarantine.legacy_ui_dna.resolver import resolve_composition',
+            },
+            'dna_quarantine/theme_studio/surface.py': {
+              'from ui.dna import list_dna': 'from dna_quarantine.legacy_ui_dna import list_dna',
+              'from ui.dna.models import DesignComposition': 'from dna_quarantine.legacy_ui_dna.models import DesignComposition',
+              'from ui.dna.resolver import resolve_composition': 'from dna_quarantine.legacy_ui_dna.resolver import resolve_composition',
+              'from ui.theme_studio.state import (': 'from dna_quarantine.theme_studio.state import (',
+            },
+          }
+          for rel, changes in replacements.items():
+              path = Path(rel)
+              text = path.read_text(encoding='utf-8')
+              for old, new in changes.items():
+                  if old not in text:
+                      raise SystemExit(f'{rel}: missing expected import {old!r}')
+                  text = text.replace(old, new, 1)
+              path.write_text(text, encoding='utf-8')
+
+          manifest = Path('docs/design-dna/quarantine/DNA_QUARANTINE_MANIFEST.yaml')
+          text = manifest.read_text(encoding='utf-8')
+          old = 'NON_RESOLVER_INTERNAL_LEGACY_SELF_IMPORTS_STILL_ROUTE_THROUGH_UI_DNA_SHIMS_UNTIL_Q4'
+          if old not in text:
+              raise SystemExit('missing Q2 extraction debt marker')
+          text = text.replace(old, 'RESOLVED_AT_Q4_PRIVATE_READY_CUT__NO_INTERNAL_REVERSE_IMPORT_THROUGH_UI_DNA_OR_UI_THEME_STUDIO_SHIMS', 1)
+          manifest.write_text(text, encoding='utf-8')
+      - name: Commit private-ready cut
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add dna_quarantine docs/design-dna/quarantine/DNA_QUARANTINE_MANIFEST.yaml
+          git commit -m 'refactor(dna): remove reverse shim imports for Q4'
+          git push origin HEAD:dna-q4-private-ready
