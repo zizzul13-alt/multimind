@@ -2,7 +2,7 @@ schema_version: 1
 inventory: MULTIMIND_DESIGN_DNA_PRIVATE_EXTRACTION
 owner: DESIGN_DNA_GOVERNOR
 updated_at: 2026-09-06
-q4_state: PRIVATE_READY_CANDIDATE_AWAITING_GOVERNOR_ACC
+q4_state: PRIVATE_READY
 actual_private_repository_extraction_completed: false
 public_history_sanitized: false
 
@@ -111,7 +111,6 @@ history_warning:
   third_party_existing_clones_or_forks_remotely_erasable: false
 
 non_claims:
-  - Q4_ACC_NOT_YET_GRANTED_AT_CANDIDATE_AUTHORING
   - ACTUAL_PRIVATE_REPOSITORY_EXTRACTION_NOT_COMPLETED
   - PUBLIC_HISTORY_NOT_REWRITTEN
   - EQ4_NOT_GRANTED
