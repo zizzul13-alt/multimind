@@ -1,6 +1,7 @@
-# RJ-4 — DURABLE PERSISTENCE + DEPLOYMENT — IMPLEMENTATION REPORT
+# RJ-4 — DURABLE PERSISTENCE + DEPLOYMENT — CLOSURE REPORT
 
-Status: IMPLEMENTED ON REVIEW BRANCH / PENDING CI / NOT MERGED
+Status: GOVERNOR ACCEPTED / PASS / CLOSED / INTEGRATED
+Accepted: 2026-09-06
 Production cutover authorized: NO
 
 ## BASE
@@ -9,7 +10,7 @@ Starting accepted baseline: RJ-3 closure `e9cc60b29852fc33b885cad5771decb0765eca
 
 ## IMPLEMENTATION
 
-RJ-4 adds the smallest self-host/container deployment boundary that preserves existing application and SQLite ownership:
+RJ-4 added the smallest self-host/container deployment boundary that preserves existing application and SQLite ownership:
 
 - single Reflex application container;
 - `reflex run --env prod` with pinned repository `reflex==0.8.22`;
@@ -18,48 +19,75 @@ RJ-4 adds the smallest self-host/container deployment boundary that preserves ex
 - server-side provider environment inputs;
 - explicit browser/backend deploy URLs and restricted CORS origin configuration;
 - neutral base image with no private-repository credential requirement;
-- optional private Design-DNA build override using a BuildKit secret rather than a token build arg/env;
+- optional private Design-DNA build override using a BuildKit secret rather than token build args/env;
 - `.dockerignore` excludes local data, databases, env files and secret paths;
 - two-phase persistence probe for process/container recreation;
-- dedicated container CI building the neutral image and proving a fresh second container sees data seeded by the first through the same named volume.
+- dedicated container CI proving a fresh second container sees data seeded by the first through the same named volume.
 
-RJ-4 also hardens `DatabaseManager.export_bytes()` to use SQLite's transactional backup API into an isolated validated snapshot. Schema and restore format are unchanged.
+RJ-4 also hardened `DatabaseManager.export_bytes()` to use SQLite's backup API into an isolated validated snapshot. Existing database API, schema, restore format and memory-hydration ordering remain unchanged.
 
-## PRESERVATION
+## REPAIR HISTORY
 
-- SQLite remains authoritative;
-- user DB namespace/path model remains unchanged;
-- DB schema remains unchanged;
-- provider/debate/memory semantics remain unchanged;
-- `MultiMindApplication` remains backup/restore presentation boundary;
-- no database/service migration;
-- no FastAPI/REST/RPC/microservice;
-- Streamlit remains rollback/reference presentation;
-- private DNA remains optional and server-side.
+The first verification attempt exposed an implementation-editing error: a partial-file rewrite of `database/manager.py` accidentally dropped existing methods/signatures. The failure was not accepted or merged. The file was reconciled against authoritative main, all existing methods/signatures restored, and only the bounded SQLite backup export change retained. A separate direct-script import-path issue in the persistence probe was also repaired. No test or guarantee was weakened.
 
-## REQUIRED VERIFICATION
+## VERIFICATION
 
-Before closure:
+PR #94 final exact head: `e49e21e450aa22b97af490dc614ec80ee1e57b50`.
 
-- full Python regression PASS;
-- `pip check` clean;
-- RJ-4 targeted tests PASS;
-- neutral Docker image builds;
-- neutral container imports Reflex host with private DNA absent;
-- named-volume seed in container A PASS;
-- fresh container B against the same volume verifies persisted state PASS;
-- CORS default is not wildcard;
-- diff audit finds no unowned architecture changes;
-- expected-head guarded merge;
-- exact-main Python + container closure CI PASS.
+Final PR-head gates:
+- Python Regression #158 / run `34025746660`: SUCCESS;
+- full pytest regression: PASS;
+- dependency sanity / `pip check`: PASS;
+- RJ4 Container Durability #4 / run `34025746672`: SUCCESS;
+- neutral production image build: PASS;
+- neutral host import with private DNA absent: PASS;
+- durable-volume seed in container A: PASS;
+- fresh container B against the same named volume: PASS;
+- cleanup: PASS.
+
+PR #94 merged with expected-head guard:
+- merge commit `33a710bf57e3ff94ccac199acbff1cf0bd420e2c`.
+
+Exact merged-main closure gates:
+- Python Regression #159 / run `34025824838`: SUCCESS;
+- RJ4 Container Durability #5 / run `34025824832`: SUCCESS;
+- fresh-container recreation against the same durable named volume: PASS.
+
+## DIFF AUDIT
+
+Final RJ-4 diff is bounded to 11 owned paths:
+- `.dockerignore`;
+- `.github/workflows/rj4-container-proof.yml`;
+- `Dockerfile`;
+- `compose.private-dna.yml`;
+- `compose.yml`;
+- `database/manager.py`;
+- `docs/governance/RJ4_DEPLOYMENT_OPERATIONS.md`;
+- this report;
+- `rxconfig.py`;
+- `scripts/rj4_persistence_probe.py`;
+- `tests/test_rj4_durable_deployment.py`.
+
+Preserved:
+- SQLite authority and DB schema;
+- per-user namespace/path semantics;
+- provider routing/behavior;
+- debate/core-memory semantics;
+- `MultiMindApplication` backup/restore boundary;
+- Reflex 0.8.22 pin;
+- Streamlit rollback/reference host;
+- optional private DNA boundary;
+- no FastAPI/REST/RPC/microservice or second persistence owner.
 
 ## RESIDUALS
 
-- actual internet-facing hostname/origin values are deployment-environment facts and are not invented in source;
-- real browser/device and dual-host torture belongs to RJ-5;
+- actual internet-facing hostname/origin values remain deployment-environment facts and are not invented in source;
+- runtime dual-host/device torture belongs to RJ-5;
 - RJ-6 owns cutover/rollback rehearsal;
-- Final Governor Migration Gate still owns production cutover authorization.
+- Final Governor Migration Gate alone owns production cutover authorization.
 
 ## VERDICT
 
-PENDING CI / REVIEW.
+`PASS / CLOSED / INTEGRATED`.
+
+RJ-5 Torture / Dual-Host Parity is the next authorized serial bundle.
