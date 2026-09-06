@@ -2,10 +2,6 @@ services:
   multimind:
     build:
       context: .
-      args:
-        INSTALL_PRIVATE_DNA: ${INSTALL_PRIVATE_DNA:-0}
-      secrets:
-        - github_token
     restart: unless-stopped
     ports:
       - "${MULTIMIND_FRONTEND_PORT:-3000}:3000"
@@ -28,7 +24,3 @@ services:
 volumes:
   multimind-data:
     name: ${MULTIMIND_DATA_VOLUME:-multimind-data}
-
-secrets:
-  github_token:
-    file: ${MULTIMIND_GITHUB_TOKEN_FILE:-./.secrets/github_token}
