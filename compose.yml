@@ -1,0 +1,34 @@
+services:
+  multimind:
+    build:
+      context: .
+      args:
+        INSTALL_PRIVATE_DNA: ${INSTALL_PRIVATE_DNA:-0}
+      secrets:
+        - github_token
+    restart: unless-stopped
+    ports:
+      - "${MULTIMIND_FRONTEND_PORT:-3000}:3000"
+      - "${MULTIMIND_BACKEND_PORT:-8000}:8000"
+    environment:
+      MULTIMIND_API_URL: ${MULTIMIND_API_URL:-http://localhost:8000}
+      MULTIMIND_DEPLOY_URL: ${MULTIMIND_DEPLOY_URL:-http://localhost:3000}
+      MULTIMIND_CORS_ALLOWED_ORIGINS: ${MULTIMIND_CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      MULTIMIND_GEMINI_KEY: ${MULTIMIND_GEMINI_KEY:-}
+      MULTIMIND_DEEPSEEK_KEY: ${MULTIMIND_DEEPSEEK_KEY:-}
+      MULTIMIND_GROQ_KEY: ${MULTIMIND_GROQ_KEY:-}
+      MULTIMIND_CLOUDFLARE_KEY: ${MULTIMIND_CLOUDFLARE_KEY:-}
+      MULTIMIND_CLOUDFLARE_ACCOUNT_ID: ${MULTIMIND_CLOUDFLARE_ACCOUNT_ID:-}
+      MULTIMIND_OPENROUTER_KEY: ${MULTIMIND_OPENROUTER_KEY:-}
+      MULTIMIND_HUGGINGFACE_KEY: ${MULTIMIND_HUGGINGFACE_KEY:-}
+      MULTIMIND_REMOTE_URL: ${MULTIMIND_REMOTE_URL:-}
+    volumes:
+      - multimind-data:/app/data
+
+volumes:
+  multimind-data:
+    name: ${MULTIMIND_DATA_VOLUME:-multimind-data}
+
+secrets:
+  github_token:
+    file: ${MULTIMIND_GITHUB_TOKEN_FILE:-./.secrets/github_token}
