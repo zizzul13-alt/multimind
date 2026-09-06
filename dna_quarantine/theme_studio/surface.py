@@ -10,11 +10,11 @@ import streamlit as st
 from ui.foundation import card_container, render_status_badge
 from ui.presentation import render_brand_identity
 from ui.presentation.resolver import list_archetypes
-from ui.dna import list_dna
-from ui.dna.models import DesignComposition
-from ui.dna.resolver import resolve_composition
+from dna_quarantine.legacy_ui_dna import list_dna
+from dna_quarantine.legacy_ui_dna.models import DesignComposition
+from dna_quarantine.legacy_ui_dna.resolver import resolve_composition
 from ui.components.theme_preview_spike.preview_spike import render_theme_preview_spike
-from ui.theme_studio.state import (
+from dna_quarantine.theme_studio.state import (
     get_or_create_draft,
     reset_draft_to_base,
     apply_draft_to_active_theme,
@@ -137,7 +137,7 @@ def render_theme_studio_surface():
             or selected_web_str != draft.web_information_dna_id
             or selected_arch_key != draft.archetype_id
         ):
-            from ui.theme_studio.state import init_draft_from_composition
+            from dna_quarantine.theme_studio.state import init_draft_from_composition
             new_draft = init_draft_from_composition(
                 identity_dna_id=selected_id_str,
                 web_information_dna_id=selected_web_str,

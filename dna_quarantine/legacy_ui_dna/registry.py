@@ -5,7 +5,7 @@ Central registry for Design DNA registration, material ownership enforcement, an
 import copy
 import logging
 from typing import Dict, List, Optional, Tuple
-from ui.dna.models import DesignDNA, MaterialReference
+from .models import DesignDNA, MaterialReference
 
 logger = logging.getLogger(__name__)
 
