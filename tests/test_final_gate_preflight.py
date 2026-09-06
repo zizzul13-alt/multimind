@@ -11,9 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def _base_env():
     return {
-        "MULTIMIND_DEPLOY_URL": "https://multimind.example.com",
-        "MULTIMIND_API_URL": "https://api.multimind.example.com",
-        "MULTIMIND_CORS_ALLOWED_ORIGINS": "https://multimind.example.com",
+        "MULTIMIND_DEPLOY_URL": "https://multimind-ci.zizzul.dev",
+        "MULTIMIND_API_URL": "https://api.multimind-ci.zizzul.dev",
+        "MULTIMIND_CORS_ALLOWED_ORIGINS": "https://multimind-ci.zizzul.dev",
         "MULTIMIND_DATA_VOLUME": "multimind-data",
         "MULTIMIND_GEMINI_KEY": "sentinel-not-a-real-key",
     }
@@ -52,9 +52,25 @@ def test_production_preflight_rejects_localhost_and_placeholder_origins():
     assert "PRODUCTION_PLACEHOLDER" in codes
 
 
+def test_production_preflight_rejects_rfc_documentation_domains():
+    env = _base_env()
+    env["MULTIMIND_DEPLOY_URL"] = "https://app.example.com"
+    env["MULTIMIND_CORS_ALLOWED_ORIGINS"] = "https://app.example.com"
+    codes = _codes(
+        validate_environment(
+            env,
+            production=True,
+            public=True,
+            private_dna=False,
+            repo_root=ROOT,
+        )
+    )
+    assert "PRODUCTION_PLACEHOLDER" in codes
+
+
 def test_preflight_rejects_wildcard_and_deploy_origin_mismatch():
     env = _base_env()
-    env["MULTIMIND_CORS_ALLOWED_ORIGINS"] = "*,https://other.example.com"
+    env["MULTIMIND_CORS_ALLOWED_ORIGINS"] = "*,https://other.zizzul.dev"
     codes = _codes(
         validate_environment(
             env,
@@ -86,7 +102,7 @@ def test_preflight_requires_at_least_one_usable_provider_path():
 def test_remote_provider_base_url_may_include_a_path_prefix():
     env = _base_env()
     env.pop("MULTIMIND_GEMINI_KEY")
-    env["MULTIMIND_REMOTE_URL"] = "https://remote.example.com/api/v1"
+    env["MULTIMIND_REMOTE_URL"] = "https://remote.zizzul.dev/api/v1"
     findings = validate_environment(
         env,
         production=True,
@@ -100,7 +116,7 @@ def test_remote_provider_base_url_may_include_a_path_prefix():
 def test_remote_provider_base_url_rejects_query_or_fragment():
     env = _base_env()
     env.pop("MULTIMIND_GEMINI_KEY")
-    env["MULTIMIND_REMOTE_URL"] = "https://remote.example.com/api?token=not-a-secret"
+    env["MULTIMIND_REMOTE_URL"] = "https://remote.zizzul.dev/api?token=not-a-secret"
     codes = _codes(
         validate_environment(
             env,
@@ -111,6 +127,23 @@ def test_remote_provider_base_url_rejects_query_or_fragment():
         )
     )
     assert "REMOTE_URL_INVALID" in codes
+    assert "NO_PROVIDER_PATH" in codes
+
+
+def test_remote_provider_base_url_rejects_reserved_placeholder_hostname():
+    env = _base_env()
+    env.pop("MULTIMIND_GEMINI_KEY")
+    env["MULTIMIND_REMOTE_URL"] = "https://remote.example.org/api"
+    codes = _codes(
+        validate_environment(
+            env,
+            production=True,
+            public=True,
+            private_dna=False,
+            repo_root=ROOT,
+        )
+    )
+    assert "REMOTE_URL_PLACEHOLDER" in codes
     assert "NO_PROVIDER_PATH" in codes
 
 
@@ -132,7 +165,7 @@ def test_cloudflare_key_requires_account_id():
 
 def test_public_cutover_requires_https():
     env = _base_env()
-    env["MULTIMIND_API_URL"] = "http://api.multimind.example.com"
+    env["MULTIMIND_API_URL"] = "http://api.multimind-ci.zizzul.dev"
     codes = _codes(
         validate_environment(
             env,
