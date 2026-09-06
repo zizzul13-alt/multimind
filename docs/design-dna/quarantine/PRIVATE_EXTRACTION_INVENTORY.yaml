@@ -3,6 +3,8 @@ inventory: MULTIMIND_DESIGN_DNA_PRIVATE_EXTRACTION
 owner: DESIGN_DNA_GOVERNOR
 updated_at: 2026-09-06
 q4_state: PRIVATE_READY
+m12_state: DURABLE_CLOSED
+dna_private_extraction_ready: true
 actual_private_repository_extraction_completed: false
 public_history_sanitized: false
 
@@ -53,12 +55,18 @@ ownership:
   asset_policy_and_manifests:
     - design_dna/asset_policy.py
     - docs/design-dna/migration/status/ASSET_POLICY_271.json
+    - docs/design-dna/migration/status/M12_ACC.yaml
     - docs/design-dna/quarantine/PRIVATE_EXTRACTION_INVENTORY.yaml
     - docs/design-dna/quarantine/DNA_QUARANTINE_MANIFEST.yaml
     - ui/assets/materials/**
 
-m12_asset_policy_candidate:
-  status: IMPLEMENTED_CANDIDATE_AWAITING_CLEAN_HEAD_AND_ACC
+m12_asset_policy:
+  status: DURABLE_CLOSED
+  acc_manifest: docs/design-dna/migration/status/M12_ACC.yaml
+  integration_commit: 145a948a5c3cbec76b9a9e008be18a57f285609a
+  pull_request: 90
+  clean_head_ci_run: 135
+  post_merge_exact_main_ci_run: 136
   canonical_runtime: design_dna/asset_policy.py
   canonical_per_unit_ledger: docs/design-dna/migration/status/ASSET_POLICY_271.json
   additive_units: 271
@@ -69,6 +77,9 @@ m12_asset_policy_candidate:
     izzul: 36
     miko: 23
     track_t_i: 16
+  asset_required_true: 0
+  fallback_required_true: 271
+  selected_asset_non_null: 0
   final_approved: 0
   actual_asset_acquisition_performed: false
   m4_historical_semantics_rewritten: false
