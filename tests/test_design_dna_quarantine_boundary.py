@@ -48,6 +48,8 @@ M11_INTEGRATION_COMMIT = "40fd49967d9eebe289087d494174f1b13651df3f"
 M11_ACC_PATH = "docs/design-dna/migration/status/M11_ACC.yaml"
 Q4_INTEGRATION_COMMIT = "0cdbc62eb5819f7a65213e031657610f6dd4ca5a"
 Q4_ACC_PATH = "docs/design-dna/quarantine/Q4_ACC.yaml"
+M12_INTEGRATION_COMMIT = "145a948a5c3cbec76b9a9e008be18a57f285609a"
+M12_ACC_PATH = "docs/design-dna/migration/status/M12_ACC.yaml"
 MIGRATION_STATUS_PATH = "docs/design-dna/migration/status/MIGRATION_STATUS.yaml"
 
 
@@ -223,10 +225,10 @@ def test_m10_acc_manifest_matches_integrated_runtime_and_exact_main_proof():
 
 def test_migration_master_ledger_cannot_regress_q2_or_m10_after_durable_closure():
     text = (ROOT / MIGRATION_STATUS_PATH).read_text(encoding="utf-8")
-    assert f"authoritative_main_at_update: {Q4_INTEGRATION_COMMIT}" in text
-    assert "current_closed_batch: M11" in text
-    assert "next_eligible_batch: M12" in text
-    assert "quarantine_next_gate: Q4_DURABLE_CLOSED_PRIVATE_READY" in text
+    assert f"authoritative_main_at_update: {M12_INTEGRATION_COMMIT}" in text
+    assert "current_closed_batch: M12" in text
+    assert "next_eligible_batch: PRIVATE_REPOSITORY_EXTRACTION" in text
+    assert "quarantine_next_gate: PRIVATE_REPOSITORY_EXTRACTION_READY" in text
     assert "Q2:\n    status: DURABLE_CLOSED" in text
     assert f"integration_commit: {Q2_INTEGRATION_COMMIT}" in text
     assert f"acc_manifest: {Q2_ACC_PATH}" in text
@@ -261,7 +263,74 @@ def test_migration_master_ledger_cannot_regress_q2_or_m10_after_durable_closure(
     assert "exact_main_ci_run: 128" in text
     assert "private_ready: true" in text
     assert "actual_private_extraction: false" in text
-    assert "gate: M12_FINAL_ASSET_POLICY_RECONCILIATION" in text
-    assert "then_gate: STOP_BEFORE_PRIVATE_EXTRACTION_OR_RJ3" in text
+    assert "M12:\n    governor_status: ACC_CLOSED_INTEGRATED" in text
+    assert f"integration_commit: {M12_INTEGRATION_COMMIT}" in text
+    assert f"manifest: {M12_ACC_PATH}" in text
+    assert "clean_head_tests: 37795" in text
+    assert "clean_head_ci_run: 135" in text
+    assert "exact_main_tests: 37795" in text
+    assert "exact_main_ci_run: 136" in text
+    assert "runtime_census_total: 271" in text
+    assert "asset_applicable: 207" in text
+    assert "asset_not_applicable: 64" in text
+    assert "direct_ip_gated: 75" in text
+    assert "final_approved: 0" in text
+    assert "m4_historical_semantics_rewritten: false" in text
+    assert "dna_private_extraction_ready: true" in text
+    assert "actual_private_repository_extraction_completed: false" in text
+    assert "public_history_sanitized: false" in text
+    assert "rj3_started: false" in text
+    assert "gate: PRIVATE_REPOSITORY_EXTRACTION" in text
+    assert "then_gate: PUBLIC_HISTORY_SANITIZATION_DECISION_AFTER_EXTRACTION" in text
+    assert "authorized_by_user_sequence: false" in text
+    assert "STOP_AFTER_M12_DURABLE_CLOSURE__DO_NOT_START_PRIVATE_EXTRACTION_OR_RJ3_AUTOMATICALLY" in text
     assert "credited: 0" in text
     assert "production_cutover: false" in text
+
+def test_m12_acc_and_inventory_lock_final_policy_without_extraction_overclaim():
+    acc = (ROOT / M12_ACC_PATH).read_text(encoding="utf-8")
+    assert "batch: M12" in acc
+    assert "governor_status: ACC_CLOSED_INTEGRATED" in acc
+    assert "accepted: true" in acc
+    assert "closed: true" in acc
+    assert "integrated: true" in acc
+    assert f"integration_commit: {M12_INTEGRATION_COMMIT}" in acc
+    assert "pull_request: 90" in acc
+    assert "total: 271" in acc
+    assert "applicable: 207" in acc
+    assert "not_applicable: 64" in acc
+    assert "gated_total: 75" in acc
+    assert "izzul: 36" in acc
+    assert "miko: 23" in acc
+    assert "track_t_i: 16" in acc
+    assert "asset_required_true: 0" in acc
+    assert "fallback_required_true: 271" in acc
+    assert "selected_asset_non_null: 0" in acc
+    assert "final_approved: 0" in acc
+    assert "m4_historical_semantics_rewritten: false" in acc
+    assert "ci_run: 135" in acc
+    assert "ci_run: 136" in acc
+    assert acc.count("passed: 37795") == 2
+    assert acc.count("pip_check: CLEAN") == 2
+    assert "eq4_credit: 0" in acc
+    assert "actual_private_repository_extraction_performed: false" in acc
+    assert "public_history_sanitized: false" in acc
+    assert "rj3_started: false" in acc
+    assert "production_cutover_performed: false" in acc
+    assert "next_gate: PRIVATE_REPOSITORY_EXTRACTION" in acc
+    assert "next_gate_authorized_by_this_manifest: false" in acc
+
+    inventory = (ROOT / "docs/design-dna/quarantine/PRIVATE_EXTRACTION_INVENTORY.yaml").read_text(encoding="utf-8")
+    assert "q4_state: PRIVATE_READY" in inventory
+    assert "m12_state: DURABLE_CLOSED" in inventory
+    assert "dna_private_extraction_ready: true" in inventory
+    assert "status: DURABLE_CLOSED" in inventory
+    assert "asset_applicable: 207" in inventory
+    assert "asset_not_applicable: 64" in inventory
+    assert "direct_ip_gated: 75" in inventory
+    assert "final_approved: 0" in inventory
+    assert "actual_private_repository_extraction_completed: false" in inventory
+    assert "public_history_sanitized: false" in inventory
+    assert "EQ4_NOT_GRANTED" in inventory
+    assert "RJ3_NOT_STARTED" in inventory
+    assert "PRODUCTION_CUTOVER_NOT_AUTHORIZED" in inventory
