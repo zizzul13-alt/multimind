@@ -1,0 +1,165 @@
+name: RJ6 Cutover Rollback Proof
+
+on:
+  pull_request:
+    paths:
+      - "app.py"
+      - "multimind_reflex/**"
+      - "core/application.py"
+      - "core/composition.py"
+      - "database/**"
+      - "Dockerfile"
+      - "compose*.yml"
+      - "rxconfig.py"
+      - "scripts/rj6_cutover_rollback_probe.py"
+      - "tests/test_rj6_cutover_rollback_proof.py"
+      - ".github/workflows/rj6-cutover-rollback-proof.yml"
+  push:
+    branches: [main]
+    paths:
+      - "app.py"
+      - "multimind_reflex/**"
+      - "core/application.py"
+      - "core/composition.py"
+      - "database/**"
+      - "Dockerfile"
+      - "compose*.yml"
+      - "rxconfig.py"
+      - "scripts/rj6_cutover_rollback_probe.py"
+      - "tests/test_rj6_cutover_rollback_proof.py"
+      - ".github/workflows/rj6-cutover-rollback-proof.yml"
+
+jobs:
+  cutover-rollback-drill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install runtime and test dependencies
+        run: |
+          python -m pip install -U pip pytest
+          python -m pip install -r requirements.txt
+
+      - name: Verify deployment secret and restricted CORS contracts
+        run: |
+          python scripts/rj6_cutover_rollback_probe.py secret-contract
+          MULTIMIND_CORS_ALLOWED_ORIGINS=https://multimind.invalid python - <<'PY'
+          import rxconfig
+          origins = list(rxconfig.config.cors_allowed_origins)
+          assert origins == ["https://multimind.invalid"]
+          assert "*" not in origins
+          print("RJ6_RESTRICTED_CORS_CONTRACT_PASS")
+          PY
+
+      - name: Focused RJ4-RJ6 contracts
+        run: |
+          python -m pytest -q \
+            tests/test_rj4_durable_deployment.py \
+            tests/test_rj5_dual_host_torture.py \
+            tests/test_rj6_cutover_rollback_proof.py
+
+      - name: Streamlit to Reflex to Streamlit rollback drill
+        env:
+          MULTIMIND_API_URL: http://127.0.0.1:8000
+          MULTIMIND_DEPLOY_URL: http://127.0.0.1:3000
+          MULTIMIND_CORS_ALLOWED_ORIGINS: http://127.0.0.1:3000
+        run: |
+          set -euo pipefail
+          rm -rf data
+          mkdir -p data
+
+          wait_http() {
+            url="$1"
+            attempts="$2"
+            for i in $(seq 1 "$attempts"); do
+              if curl -fsS "$url" >/dev/null 2>&1; then
+                return 0
+              fi
+              sleep 1
+            done
+            return 1
+          }
+
+          cleanup() {
+            if [ -n "${STREAMLIT_PID:-}" ]; then
+              kill "$STREAMLIT_PID" 2>/dev/null || true
+            fi
+            docker rm -f multimind-rj6-a multimind-rj6-b >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          echo "=== STREAMLIT BASELINE ==="
+          streamlit run app.py --server.headless true --server.port 8501 >"$RUNNER_TEMP/rj6-streamlit-a.log" 2>&1 &
+          STREAMLIT_PID=$!
+          if ! wait_http http://127.0.0.1:8501/ 60; then
+            cat "$RUNNER_TEMP/rj6-streamlit-a.log"
+            exit 1
+          fi
+          python scripts/rj6_cutover_rollback_probe.py streamlit-write
+          kill "$STREAMLIT_PID"
+          wait "$STREAMLIT_PID" 2>/dev/null || true
+          unset STREAMLIT_PID
+
+          echo "=== FRESH REFLEX CANDIDATE ==="
+          docker build -t multimind-rj6:proof .
+          docker run -d --name multimind-rj6-a \
+            -p 3000:3000 -p 8000:8000 \
+            -v "$PWD/data:/app/data" \
+            -e MULTIMIND_GEMINI_KEY=rj6-runtime-sentinel \
+            -e MULTIMIND_API_URL=http://127.0.0.1:8000 \
+            -e MULTIMIND_DEPLOY_URL=http://127.0.0.1:3000 \
+            -e MULTIMIND_CORS_ALLOWED_ORIGINS=http://127.0.0.1:3000 \
+            multimind-rj6:proof
+          if ! wait_http http://127.0.0.1:3000/ 120 || ! wait_http http://127.0.0.1:8000/_health 120; then
+            docker logs multimind-rj6-a
+            exit 1
+          fi
+          docker exec multimind-rj6-a python -c "from multimind_reflex.bridge import environment_secrets_source; s=environment_secrets_source()['default']; assert s['gemini_key']=='rj6-runtime-sentinel'; print('RJ6_RUNTIME_SECRET_PASS')"
+          python scripts/rj6_cutover_rollback_probe.py reflex-write
+          docker exec multimind-rj6-a python scripts/rj6_cutover_rollback_probe.py verify
+
+          echo "=== REFLEX RESTART ==="
+          docker restart multimind-rj6-a >/dev/null
+          if ! wait_http http://127.0.0.1:3000/ 120 || ! wait_http http://127.0.0.1:8000/_health 120; then
+            docker logs multimind-rj6-a
+            exit 1
+          fi
+          docker exec multimind-rj6-a python scripts/rj6_cutover_rollback_probe.py verify
+
+          echo "=== REFLEX CONTAINER RECREATION ==="
+          docker rm -f multimind-rj6-a >/dev/null
+          docker run -d --name multimind-rj6-b \
+            -p 3000:3000 -p 8000:8000 \
+            -v "$PWD/data:/app/data" \
+            -e MULTIMIND_GEMINI_KEY=rj6-runtime-sentinel \
+            -e MULTIMIND_API_URL=http://127.0.0.1:8000 \
+            -e MULTIMIND_DEPLOY_URL=http://127.0.0.1:3000 \
+            -e MULTIMIND_CORS_ALLOWED_ORIGINS=http://127.0.0.1:3000 \
+            multimind-rj6:proof
+          if ! wait_http http://127.0.0.1:3000/ 120 || ! wait_http http://127.0.0.1:8000/_health 120; then
+            docker logs multimind-rj6-b
+            exit 1
+          fi
+          docker exec multimind-rj6-b python scripts/rj6_cutover_rollback_probe.py verify
+          python scripts/rj6_cutover_rollback_probe.py backup-restore
+
+          echo "=== SIMULATED REFLEX FAILURE ==="
+          docker kill multimind-rj6-b >/dev/null
+          docker rm multimind-rj6-b >/dev/null
+
+          echo "=== STREAMLIT ROLLBACK ==="
+          streamlit run app.py --server.headless true --server.port 8501 >"$RUNNER_TEMP/rj6-streamlit-rollback.log" 2>&1 &
+          STREAMLIT_PID=$!
+          if ! wait_http http://127.0.0.1:8501/ 60; then
+            cat "$RUNNER_TEMP/rj6-streamlit-rollback.log"
+            exit 1
+          fi
+          python scripts/rj6_cutover_rollback_probe.py rollback-verify
+          echo "RJ6_CUTOVER_ROLLBACK_DRILL_PASS"
+
+      - name: Dependency sanity
+        run: python -m pip check
