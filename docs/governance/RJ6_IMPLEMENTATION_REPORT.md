@@ -1,6 +1,6 @@
 # RJ-6 — CUTOVER + ROLLBACK PROOF — IMPLEMENTATION REPORT
 
-Status: IMPLEMENTED ON REVIEW BRANCH / PENDING CI / NOT MERGED
+Status: IMPLEMENTED ON REVIEW BRANCH / REPAIRED / PENDING CLEAN CI / NOT MERGED
 PRODUCTION CUTOVER AUTHORIZED: NO
 
 ## BASE
@@ -78,14 +78,41 @@ Actual provider secrets, public DNS, TLS certificates and a real internet-facing
 
 ## IMPLEMENTATION
 
-RJ-6 is evidence-only/hardening scoped. It adds:
+RJ-6 adds the dedicated proof package:
 
 - `scripts/rj6_cutover_rollback_probe.py`;
 - `tests/test_rj6_cutover_rollback_proof.py`;
 - `.github/workflows/rj6-cutover-rollback-proof.yml`;
 - this report.
 
-No runtime application/core/provider/database implementation file is changed by the RJ-6 package.
+The first lifecycle attempt on repaired script head `2c1191ac96458450252a9b900e36fc15a7b46a73` produced concrete evidence invalidating one RJ-4 deployment assumption: the production image built successfully but could not start a fresh Reflex 0.8.22 runtime because the slim image lacked the system `unzip` executable required by Reflex's Bun bootstrap.
+
+The bounded repair is owned by the deployment boundary and changes only the Docker image prerequisite set:
+
+- `Dockerfile`: install `unzip` alongside the already accepted `git`, `curl`, and `ca-certificates` system packages.
+
+This is not a framework upgrade, core rewrite, persistence redesign, provider migration, or transport change. Because it touches the RJ-4 deployment artifact, RJ-4 container durability must be revalidated together with RJ-6 before closure.
+
+No application/core/provider/database implementation file is changed by the RJ-6 package.
+
+## FAILURE / REPAIR EVIDENCE
+
+Initial RJ-6 direct-script attempt failed before lifecycle execution because the script did not place the repository root on `sys.path`. That harness-only defect was repaired in `2c1191ac96458450252a9b900e36fc15a7b46a73`.
+
+On that repaired head:
+
+- Python Regression #165 / run `34028947758`: SUCCESS;
+- full regression: PASS;
+- dependency sanity: PASS;
+- RJ6 Cutover Rollback Proof #2 / run `34028947789`:
+  - secret-injection contract: PASS;
+  - restricted-CORS contract: PASS;
+  - focused RJ4-RJ6 contracts: 18 / 18 PASS;
+  - Streamlit baseline boot/write: PASS;
+  - neutral production image build: PASS;
+  - fresh Reflex candidate startup: FAIL because `unzip` was absent.
+
+The failure occurred before any merge and before RJ-6 closure. The Dockerfile prerequisite repair is therefore required, not waived.
 
 ## REQUIRED VERIFICATION
 
@@ -94,6 +121,7 @@ Before closure:
 - RJ-6 focused contracts PASS;
 - full Python regression PASS;
 - dependency sanity / `pip check` PASS;
+- RJ-4 container durability revalidation PASS after Dockerfile repair;
 - restricted CORS sentinel contract PASS;
 - server-side secret-injection contract PASS;
 - Streamlit baseline host boot PASS;
@@ -109,7 +137,7 @@ Before closure:
 - same users/sessions/history after rollback PASS;
 - bounded diff audit PASS;
 - expected-head guarded merge;
-- exact-main Python + RJ-6 proof push runs PASS.
+- exact-main Python + RJ-4 durability + RJ-6 proof push runs PASS.
 
 ## RESIDUALS
 
@@ -125,6 +153,6 @@ These are not evidence that the repository migration architecture is incomplete.
 
 ## VERDICT
 
-PENDING CI / REVIEW.
+PENDING CLEAN CI / REVIEW.
 
 Even if this report becomes PASS, actual production cutover remains unauthorized until the Final Governor Migration Gate and explicit Governor/user authorization.
