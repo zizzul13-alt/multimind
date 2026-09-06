@@ -1,5 +1,7 @@
 """Presentation-independent composition for MultiMindApplication."""
 
+import os
+
 from agents.cloudflare import CloudflareAgent
 from agents.deepseek import DeepSeekAgent
 from agents.gemini import GeminiAgent
@@ -14,6 +16,7 @@ from core.debate import DebateOrchestrator
 from core.file_handler import FileHandler
 from core.memory import persist_chat_and_update_memory
 from database.manager import DatabaseManager
+from database.turso_manager import TursoDatabaseManager
 from utils.config import Config
 
 
@@ -38,9 +41,31 @@ def build_agents(api_keys):
     }
 
 
-def build_database_for_user(user_id, database_factory=DatabaseManager):
-    """Construct the validated user-scoped database without host dependencies."""
+def build_database_for_user(
+    user_id,
+    database_factory=DatabaseManager,
+    *,
+    environ=None,
+    turso_factory=TursoDatabaseManager,
+):
+    """Construct validated user-scoped persistence.
+
+    SQLite remains the zero-config fallback. Supplying both Turso runtime
+    credentials selects remote durable persistence; supplying only one fails
+    closed so a deployment cannot silently fall back to ephemeral SQLite.
+    """
     user_id = Config.validate_user_id(user_id)
+    environ = os.environ if environ is None else environ
+    turso_url = environ.get("TURSO_DATABASE_URL", "").strip()
+    turso_token = environ.get("TURSO_AUTH_TOKEN", "").strip()
+
+    if bool(turso_url) != bool(turso_token):
+        raise RuntimeError(
+            "TURSO_DATABASE_URL and TURSO_AUTH_TOKEN must be configured together."
+        )
+    if turso_url and turso_token:
+        return turso_factory(turso_url, turso_token, user_id)
+
     return database_factory(Config.get_db_path(user_id))
 
 
