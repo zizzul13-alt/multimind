@@ -32,31 +32,39 @@ def test_two_process_recreation_keeps_same_sqlite_state(tmp_path):
     subprocess.run([sys.executable, str(probe), "verify", str(db_path)], cwd=ROOT, check=True)
 
 
-def test_deployment_files_preserve_single_service_and_durable_volume():
+def test_deployment_files_preserve_single_service_and_host_managed_durability():
     compose = (ROOT / "compose.yml").read_text(encoding="utf-8")
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
     assert "multimind-data:/app/data" in compose
     assert "restart: unless-stopped" in compose
     assert compose.count("  multimind:") == 1
-    assert 'VOLUME ["/app/data"]' in dockerfile
+    assert 'VOLUME ["/app/data"]' not in dockerfile
+    assert "mkdir -p /app/data/users /app/data/shared" in dockerfile
     assert 'CMD ["reflex", "run", "--env", "prod"]' in dockerfile
 
 
 def test_neutral_base_compose_has_no_private_secret_requirement():
     compose = (ROOT / "compose.yml").read_text(encoding="utf-8")
+    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
     assert "github_token" not in compose
     assert "INSTALL_PRIVATE_DNA" not in compose
+    assert "github_token" not in dockerfile
+    assert "GITHUB_TOKEN" not in dockerfile
+
     override = (ROOT / "compose.private-dna.yml").read_text(encoding="utf-8")
-    assert 'INSTALL_PRIVATE_DNA: "1"' in override
+    assert "dockerfile: Dockerfile.private-dna" in override
     assert "github_token" in override
+    assert "INSTALL_PRIVATE_DNA" not in override
 
 
 def test_private_dna_build_secret_is_not_persisted_as_build_arg():
-    dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    dockerfile = (ROOT / "Dockerfile.private-dna").read_text(encoding="utf-8")
     assert "--mount=type=secret,id=github_token" in dockerfile
+    assert "required=true" in dockerfile
     assert "ARG GITHUB_TOKEN" not in dockerfile
     assert "ENV GITHUB_TOKEN" not in dockerfile
     assert "rm -rf /tmp/private-dna" in dockerfile
+    assert 'VOLUME ["/app/data"]' not in dockerfile
 
 
 def test_cors_defaults_are_restricted_not_wildcard():
@@ -68,6 +76,7 @@ def test_cors_defaults_are_restricted_not_wildcard():
 
 def test_no_database_schema_migration_is_added():
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    private_dockerfile = (ROOT / "Dockerfile.private-dna").read_text(encoding="utf-8")
     compose = (ROOT / "compose.yml").read_text(encoding="utf-8")
-    assert "alembic upgrade" not in dockerfile + compose
-    assert "postgres" not in (dockerfile + compose).lower()
+    assert "alembic upgrade" not in dockerfile + private_dockerfile + compose
+    assert "postgres" not in (dockerfile + private_dockerfile + compose).lower()
