@@ -108,9 +108,30 @@ class DatabaseManager:
         conn.close()
 
     def export_bytes(self):
-        """Return the current user database as bytes without exposing its path."""
-        with open(self.db_path, "rb") as database_file:
-            return database_file.read()
+        """Return a transactionally consistent SQLite snapshot as bytes."""
+        db_directory = os.path.dirname(os.path.abspath(self.db_path))
+        file_descriptor, snapshot_path = tempfile.mkstemp(
+            prefix=".multimind-export-",
+            suffix=".db",
+            dir=db_directory,
+        )
+        os.close(file_descriptor)
+        try:
+            source = sqlite3.connect(self.db_path)
+            destination = sqlite3.connect(snapshot_path)
+            try:
+                source.backup(destination)
+            finally:
+                destination.close()
+                source.close()
+            validate_restore_candidate(snapshot_path)
+            with open(snapshot_path, "rb") as database_file:
+                return database_file.read()
+        finally:
+            try:
+                os.remove(snapshot_path)
+            except FileNotFoundError:
+                pass
 
     def restore_from_bytes(self, backup_bytes):
         """Stage and validate an uploaded backup before single-step activation."""
