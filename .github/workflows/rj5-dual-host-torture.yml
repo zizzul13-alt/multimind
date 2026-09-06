@@ -1,0 +1,84 @@
+name: RJ5 Dual-Host Torture
+
+on:
+  pull_request:
+    paths:
+      - "app.py"
+      - "multimind_reflex/**"
+      - "ui/dna_bridge.py"
+      - "core/application.py"
+      - "core/composition.py"
+      - "database/**"
+      - "scripts/rj5_dual_host_torture.py"
+      - "tests/test_rj5_dual_host_torture.py"
+      - ".github/workflows/rj5-dual-host-torture.yml"
+  push:
+    branches: [main]
+    paths:
+      - "app.py"
+      - "multimind_reflex/**"
+      - "ui/dna_bridge.py"
+      - "core/application.py"
+      - "core/composition.py"
+      - "database/**"
+      - "scripts/rj5_dual_host_torture.py"
+      - "tests/test_rj5_dual_host_torture.py"
+      - ".github/workflows/rj5-dual-host-torture.yml"
+
+jobs:
+  dual-host-torture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install runtime and test dependencies
+        run: |
+          python -m pip install -U pip pytest
+          python -m pip install -r requirements.txt
+      - name: Application A-B-A persistence torture
+        run: |
+          python scripts/rj5_dual_host_torture.py "$RUNNER_TEMP/rj5/users/shared.db"
+          python -m pytest -q tests/test_rj5_dual_host_torture.py tests/test_dna_public_bridge.py tests/test_rj1_portability_boundary.py tests/test_rj2_reflex_production_host.py tests/test_rj3_functional_presentation_parity.py tests/test_rj4_durable_deployment.py
+      - name: Boot Streamlit reference host
+        run: |
+          set -eu
+          streamlit run app.py --server.headless true --server.port 8501 >"$RUNNER_TEMP/streamlit.log" 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8501/ >/dev/null; then
+              echo STREAMLIT_BOOT_PASS
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/streamlit.log"
+          exit 1
+      - name: Boot Reflex production host
+        env:
+          MULTIMIND_API_URL: http://127.0.0.1:8000
+          MULTIMIND_DEPLOY_URL: http://127.0.0.1:3000
+          MULTIMIND_CORS_ALLOWED_ORIGINS: http://127.0.0.1:3000
+        run: |
+          set -eu
+          reflex run --env prod >"$RUNNER_TEMP/reflex.log" 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          FRONTEND=0
+          BACKEND=0
+          for i in $(seq 1 120); do
+            curl -fsS http://127.0.0.1:3000/ >/dev/null 2>&1 && FRONTEND=1 || true
+            curl -fsS http://127.0.0.1:8000/_health >/dev/null 2>&1 && BACKEND=1 || true
+            if [ "$FRONTEND" = "1" ] && [ "$BACKEND" = "1" ]; then
+              echo REFLEX_BOOT_PASS
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/reflex.log"
+          exit 1
+      - name: Dependency sanity
+        run: python -m pip check
