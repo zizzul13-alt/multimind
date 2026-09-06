@@ -1,0 +1,101 @@
+name: Apply public Design-DNA extraction cut
+
+on:
+  push:
+    branches:
+      - private-dna/extraction-cut
+    paths:
+      - .github/workflows/private-dna-cut.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cut:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout extraction branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact entering baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=4caf0aa86e1b3cc3a53e7b959dcc2a05773ef2c2
+          git merge-base --is-ancestor "$BASE" HEAD
+          test -d design_dna
+          test -d dna_quarantine
+          test -f ui/dna_bridge.py
+
+      - name: Remove private-owned source surfaces from public head
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -r design_dna dna_quarantine docs/design-dna ui/assets/materials
+          git rm docs/design_dna.md
+
+          for file in tests/test_design_dna*.py tests/test_*theme_studio*.py tests/test_material_pipeline.py tests/test_production_dna_deepening.py tests/test_s8_5_final_closure.py; do
+            if [ -f "$file" ]; then
+              git rm "$file"
+            fi
+          done
+
+      - name: Prove public bridge remains and private roots are absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f ui/dna_bridge.py
+          test ! -e design_dna
+          test ! -e dna_quarantine
+          test ! -e docs/design-dna
+          test ! -e ui/assets/materials
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+          path = Path('ui/dna_bridge.py')
+          tree = ast.parse(path.read_text(encoding='utf-8'))
+          eager = []
+          for node in ast.walk(tree):
+              if isinstance(node, ast.ImportFrom) and node.module:
+                  eager.append(node.module)
+              elif isinstance(node, ast.Import):
+                  eager.extend(alias.name for alias in node.names)
+          forbidden = ('design_dna', 'dna_quarantine', 'ui.dna', 'ui.theme_studio')
+          assert all(not name.startswith(forbidden) for name in eager), eager
+          PY
+
+      - name: Record pending extraction state
+        shell: bash
+        run: |
+          cat > docs/governance/PRIVATE_DNA_EXTRACTION_IMPLEMENTATION.md <<'EOF'
+          # MULTIMIND — PRIVATE DESIGN-DNA EXTRACTION IMPLEMENTATION
+
+          Status: IMPLEMENTED ON REVIEW BRANCH / NOT GOVERNOR ACCEPTED
+
+          Public extraction branch removes the M12 private-owned runtime and research roots from the current public tree while retaining `ui/dna_bridge.py` as the supported host-facing seam.
+
+          Private target: `zizzul13-alt/multimind-design-dna`
+
+          Exact private extraction source: `57bced06a417e026cd97fdf6170cb04abcf67d82` (M12 durable closure).
+
+          Public history is NOT sanitized by this change. Historical public commits remain historical public commits.
+
+          Required before acceptance:
+          - public app/regression PASS with private package absent;
+          - private package structural/runtime PASS;
+          - cross-repository proof with private package present;
+          - broken/incompatible private package safe fallback proof;
+          - diff audit confirming no DB/provider/core semantic changes.
+          EOF
+          git add docs/governance/PRIVATE_DNA_EXTRACTION_IMPLEMENTATION.md
+
+      - name: Commit public cut
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "refactor(dna): extract private Design-DNA surfaces"
+          git push origin HEAD:private-dna/extraction-cut
