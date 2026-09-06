@@ -1,87 +1,71 @@
-# RJ-3 — FUNCTIONAL PRESENTATION PARITY — IMPLEMENTATION REPORT
+# RJ-3 — FUNCTIONAL PRESENTATION PARITY — CLOSURE REPORT
 
-Status: PASS CANDIDATE / GOVERNOR PRE-AUTHORIZED THROUGH RJ-6 / NOT YET MERGED
+Status: GOVERNOR ACCEPTED / PASS / CLOSED / INTEGRATED
+Accepted: 2026-09-06
+Production cutover authorized: NO
 
 ## BASE
 
 - Starting accepted baseline: `08c530d0b8991b0a3e5746115779c62d7738da06`.
 - RJ-0: CLOSED / PASS / LOCKED.
-- RJ-1: implemented and merged, PR #58, merge `effe8bff16c5d285571d8f3b93080d3a954600db`.
-- RJ-2: implemented and merged, PR #59, merge `f926ee990de1edad447b17dfafcf27c9fff464b7`.
-- Private Design-DNA extraction prerequisite: CLOSED / SATISFIED.
-- Private Design-DNA authoritative main at entry: `621a3a51bb04d14c91fc09701ce40988af951bcf`.
+- RJ-1: merged, PR #58, merge `effe8bff16c5d285571d8f3b93080d3a954600db`.
+- RJ-2: merged, PR #59, merge `f926ee990de1edad447b17dfafcf27c9fff464b7`.
+- Private Design-DNA extraction: CLOSED / SATISFIED.
 
 ## IMPLEMENTATION
 
-RJ-3 expands the minimal RJ-2 Reflex host into the frozen capability/behavior/presentation-contract parity surface while preserving application ownership.
+RJ-3 expanded the minimal RJ-2 Reflex host into the frozen capability, behavioral, and presentation-contract parity surface while preserving application ownership.
 
-Implemented in Reflex presentation state/surface:
-
-- login/logout and session navigation;
-- locked pre-workspace Theme Studio stage;
-- isolated Theme Studio draft state;
-- live composition preview contract;
-- explicit Apply / Discard / Reset;
-- Theme Studio → workspace handoff and workspace → Theme Studio re-entry;
-- seven locked archetypes;
-- optional private Design-DNA availability through `ui/dna_bridge.py` only;
-- neutral operation when private DNA is absent;
+Closed surfaces include:
+- login/logout/navigation;
+- locked pre-workspace Theme Studio stage and explicit Apply handoff;
+- isolated Theme Studio draft/live-preview/Apply/Discard/Reset/re-entry semantics;
+- seven canonical archetypes;
+- optional private DNA only through `ui/dna_bridge.py` and neutral fallback;
 - create/list/select/history session lifecycle;
-- prompt template selection, description, variable extraction/input, generated preview, editable prompt handoff;
-- continue/standalone context mode;
-- session mode on creation;
-- compressor, agents, rounds, skill controls;
-- multi-file staging;
-- pre-send prompt/file/total token estimate, estimated cost, moderate/high warnings through existing `TokenCounter`;
-- persistent busy/duplicate-run guard;
-- warnings/error/success feedback;
-- persisted result/history refresh through `MultiMindApplication`;
+- templates, descriptions, variable extraction/input, generated preview and editable prompt handoff;
+- continue/standalone, session mode, compressor, agents, rounds, skill and multi-file upload controls;
+- pre-send prompt/file/total token estimate, estimated cost and warnings;
+- persistent busy/duplicate guard and truthful warning/error/success state;
+- persisted result/history lifecycle through `MultiMindApplication`;
 - backup export and safe restore through application seams;
-- responsive phone/tablet/desktop layout breakpoints.
+- responsive phone/tablet/desktop breakpoints.
 
 ## VERIFICATION
 
-PR #93 exact reviewed head before this evidence-only report update: `bc0a38b30a6971f6f5546b3d158677bfb9aa6eaf`.
+PR #93 exact implementation head `bc0a38b30a6971f6f5546b3d158677bfb9aa6eaf`:
+- Python Regression #151 / run `34025132885`: `233 / 233` PASS;
+- `pip check`: clean.
 
-GitHub Actions Python Regression #151 / run `34025132885`:
+Final evidence-only head `7e7d1d22a836650382d0c8bf9233eba2bc0e8be3`:
+- Python Regression #152 / run `34025217392`: SUCCESS.
 
-- full regression: `233 / 233` PASS;
-- `pip check`: `No broken requirements found.`;
-- pinned `reflex==0.8.22` installed successfully;
-- targeted RJ-3 contract tests executed inside full regression;
-- existing RJ-1, RJ-2, public-DNA bridge and core regressions remained green.
+PR #93 merged with expected-head guard:
+- merge commit `fc82bca461e942bcbf1ef5127b2a3748e9b07c8d`.
+
+Exact merged main:
+- Python Regression #153 / run `34025260774`: SUCCESS.
 
 ## DIFF AUDIT
 
-PR #93 implementation diff contains exactly four paths:
-
+RJ-3 changed only:
 - `multimind_reflex/state.py`;
 - `multimind_reflex/multimind_reflex.py`;
 - `tests/test_rj3_functional_presentation_parity.py`;
-- this report.
+- this governance report.
 
-Therefore:
-
-- database schema: NO CHANGE;
-- persistence owner/namespace: NO CHANGE;
-- provider routing/behavior: NO CHANGE;
-- debate/core-memory semantics: NO CHANGE;
-- application boundary implementation: NO CHANGE;
-- Reflex version/dependency pin: NO CHANGE;
-- FastAPI/REST/RPC/network glue: NONE;
-- Streamlit rollback/reference host: PRESERVED;
-- private DNA direct import into Reflex host: NONE; public `ui/dna_bridge.py` is used.
+No DB schema, persistence ownership, provider routing, debate/core-memory semantics, application-boundary implementation, Reflex version, network/service boundary, or Streamlit rollback removal occurred.
 
 ## RESIDUALS
 
-- production private-package credential/install wiring belongs to RJ-4;
-- durable writable-volume/restart/recreate proof belongs to RJ-4;
-- real browser/device and dual-host torture belongs to RJ-5;
-- granular streaming remains IP-17 deferred/non-blocking;
-- production cutover remains unauthorized until the Final Governor Migration Gate.
+- private-package production install/credential wiring: RJ-4;
+- durable volume + restart/recreate proof: RJ-4;
+- runtime browser/device and dual-host torture: RJ-5;
+- IP-17 granular streaming: deferred/non-blocking;
+- production cutover: not authorized before Final Governor Migration Gate.
 
 ## VERDICT
 
-`PASS CANDIDATE`.
+`PASS / CLOSED / INTEGRATED`.
 
-User has explicitly pre-authorized serial acceptance/progression through RJ-6. Merge still requires exact-head CI green after this evidence-only report commit, followed by expected-head guarded integration and exact-main closure verification.
+RJ-4 Durable Persistence + Deployment is the next authorized serial bundle.
