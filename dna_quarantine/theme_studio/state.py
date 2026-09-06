@@ -11,10 +11,10 @@ from typing import Dict, Any, Optional
 import streamlit as st
 from ui.themes.models import Theme, ThemeMetadata
 from ui.themes import get_theme, resolve_theme, register_theme
-from ui.dna import get_dna
-from ui.dna.models import DesignComposition, ComposedProjection
-from ui.dna.mapper import dna_to_theme
-from ui.dna.resolver import resolve_composition
+from dna_quarantine.legacy_ui_dna import get_dna
+from dna_quarantine.legacy_ui_dna.models import DesignComposition, ComposedProjection
+from dna_quarantine.legacy_ui_dna.mapper import dna_to_theme
+from dna_quarantine.legacy_ui_dna.resolver import resolve_composition
 
 logger = logging.getLogger(__name__)
 

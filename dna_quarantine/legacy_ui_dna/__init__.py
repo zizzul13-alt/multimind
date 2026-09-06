@@ -2,9 +2,9 @@
 MultiMind AI - Design DNA Contract & Registry Package
 Exposes DesignDNA models, MaterialReference, DNA → Theme mapper, and central DNARegistry.
 """
-from ui.dna.models import MaterialReference, DesignDNA
-from ui.dna.mapper import dna_to_theme
-from ui.dna.registry import (
+from .models import MaterialReference, DesignDNA
+from .mapper import dna_to_theme
+from .registry import (
     DNARegistry,
     get_registry,
     register_dna,
