@@ -3,7 +3,7 @@ project: MULTIMIND
 track: DESIGN_DNA_MIGRATION
 authority: GOVERNOR
 updated_at: 2026-09-06
-authoritative_main_at_update: 69e01db253d9a143a65da03399b6354ad79e3313
+authoritative_main_at_update: 40fd49967d9eebe289087d494174f1b13651df3f
 
 global_state:
   global_eq3:
@@ -15,8 +15,8 @@ global_state:
     total: 271
     status: NOT_CLAIMED
   production_cutover: false
-  current_closed_batch: M10
-  next_eligible_batch: M11
+  current_closed_batch: M11
+  next_eligible_batch: M12_AFTER_Q4
   quarantine_next_gate: Q4_PRIVATE_REPOSITORY_CUT
 
 status_vocabulary:
@@ -182,11 +182,20 @@ batches:
     exact_main_ci_run: 106
     eq4_credit: 0
   M11:
-    governor_status: NOT_STARTED
-    accepted: false
-    closed: false
-    integrated: false
+    governor_status: ACC_CLOSED_INTEGRATED
+    accepted: true
+    closed: true
+    integrated: true
+    integration_commit: 40fd49967d9eebe289087d494174f1b13651df3f
+    pull_request: 86
+    manifest: docs/design-dna/migration/status/M11_ACC.yaml
+    implementation_report: docs/design-dna/migration/M11_IMPLEMENTATION_REPORT.md
     scope_summary: FIXTURES_14
+    clean_head_tests: 37767
+    clean_head_ci_run: 120
+    exact_main_tests: 37767
+    exact_main_ci_run: 121
+    runtime_census_total: 271
     eq4_credit: 0
   M12:
     governor_status: NOT_STARTED
@@ -226,7 +235,7 @@ quarantine_sequence:
     required_before_batch: M12
 
 next_action:
-  gate: M11_FIXTURES_14
-  then_gate: Q4_PRIVATE_REPOSITORY_CUT
+  gate: Q4_PRIVATE_REPOSITORY_CUT
+  then_gate: M12_FINAL_ASSET_POLICY_RECONCILIATION
   authorized_by_user_sequence: true
-  instruction: EXECUTE_M11_DURABLY_THEN_Q4_WITHOUT_SKIPPING_PROOF
+  instruction: EXECUTE_Q4_DURABLY_THEN_M12_WITHOUT_SKIPPING_PROOF
