@@ -51,9 +51,27 @@ ownership:
   canonical_fixtures:
     - design_dna/fixtures.py
   asset_policy_and_manifests:
+    - design_dna/asset_policy.py
+    - docs/design-dna/migration/status/ASSET_POLICY_271.json
     - docs/design-dna/quarantine/PRIVATE_EXTRACTION_INVENTORY.yaml
     - docs/design-dna/quarantine/DNA_QUARANTINE_MANIFEST.yaml
     - ui/assets/materials/**
+
+m12_asset_policy_candidate:
+  status: IMPLEMENTED_CANDIDATE_AWAITING_CLEAN_HEAD_AND_ACC
+  canonical_runtime: design_dna/asset_policy.py
+  canonical_per_unit_ledger: docs/design-dna/migration/status/ASSET_POLICY_271.json
+  additive_units: 271
+  asset_applicable: 207
+  asset_not_applicable: 64
+  direct_ip_gated: 75
+  direct_ip_breakdown:
+    izzul: 36
+    miko: 23
+    track_t_i: 16
+  final_approved: 0
+  actual_asset_acquisition_performed: false
+  m4_historical_semantics_rewritten: false
 
 host_adapter_dependencies:
   classification: PRESENTATION_HOST_OWNED_NOT_COPIED_AS_PRIVATE_RUNTIME_CORE
