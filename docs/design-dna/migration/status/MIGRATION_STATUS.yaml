@@ -3,7 +3,7 @@ project: MULTIMIND
 track: DESIGN_DNA_MIGRATION
 authority: GOVERNOR
 updated_at: 2026-09-06
-authoritative_main_at_update: 40fd49967d9eebe289087d494174f1b13651df3f
+authoritative_main_at_update: 0cdbc62eb5819f7a65213e031657610f6dd4ca5a
 
 global_state:
   global_eq3:
@@ -16,8 +16,8 @@ global_state:
     status: NOT_CLAIMED
   production_cutover: false
   current_closed_batch: M11
-  next_eligible_batch: M12_AFTER_Q4
-  quarantine_next_gate: Q4_PRIVATE_REPOSITORY_CUT
+  next_eligible_batch: M12
+  quarantine_next_gate: Q4_DURABLE_CLOSED_PRIVATE_READY
 
 status_vocabulary:
   accepted: ACC_CLOSED_INTEGRATED
@@ -231,11 +231,21 @@ quarantine_sequence:
     exact_main_ci_run: 111
     required_before_batch: M11
   Q4:
-    status: NOT_STARTED
+    status: DURABLE_CLOSED
+    integration_commit: 0cdbc62eb5819f7a65213e031657610f6dd4ca5a
+    pull_request: 88
+    acc_manifest: docs/design-dna/quarantine/Q4_ACC.yaml
+    extraction_inventory: docs/design-dna/quarantine/PRIVATE_EXTRACTION_INVENTORY.yaml
+    clean_head_tests: 37776
+    clean_head_ci_run: 127
+    exact_main_tests: 37776
+    exact_main_ci_run: 128
+    private_ready: true
+    actual_private_extraction: false
     required_before_batch: M12
 
 next_action:
-  gate: Q4_PRIVATE_REPOSITORY_CUT
-  then_gate: M12_FINAL_ASSET_POLICY_RECONCILIATION
+  gate: M12_FINAL_ASSET_POLICY_RECONCILIATION
+  then_gate: STOP_BEFORE_PRIVATE_EXTRACTION_OR_RJ3
   authorized_by_user_sequence: true
-  instruction: EXECUTE_Q4_DURABLY_THEN_M12_WITHOUT_SKIPPING_PROOF
+  instruction: EXECUTE_M12_DURABLY_THEN_STOP_WITHOUT_STARTING_PRIVATE_EXTRACTION_OR_RJ3
