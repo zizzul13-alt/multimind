@@ -1,8 +1,7 @@
 services:
   multimind:
     build:
-      args:
-        INSTALL_PRIVATE_DNA: "1"
+      dockerfile: Dockerfile.private-dna
       secrets:
         - github_token
 
