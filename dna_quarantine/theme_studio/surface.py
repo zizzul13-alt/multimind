@@ -137,7 +137,7 @@ def render_theme_studio_surface():
             or selected_web_str != draft.web_information_dna_id
             or selected_arch_key != draft.archetype_id
         ):
-            from ui.theme_studio.state import init_draft_from_composition
+            from dna_quarantine.theme_studio.state import init_draft_from_composition
             new_draft = init_draft_from_composition(
                 identity_dna_id=selected_id_str,
                 web_information_dna_id=selected_web_str,
