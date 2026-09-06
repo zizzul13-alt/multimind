@@ -50,11 +50,17 @@ def build_database_for_user(
 ):
     """Construct validated user-scoped persistence.
 
-    SQLite remains the zero-config fallback. Supplying both Turso runtime
-    credentials selects remote durable persistence; supplying only one fails
-    closed so a deployment cannot silently fall back to ephemeral SQLite.
+    An explicit non-default ``database_factory`` remains authoritative for tests
+    and bounded host seams. Otherwise SQLite is the zero-config fallback, while
+    supplying both Turso runtime credentials selects remote durable persistence.
+    Supplying only one Turso credential fails closed so an incomplete production
+    configuration cannot silently fall back to ephemeral SQLite.
     """
     user_id = Config.validate_user_id(user_id)
+
+    if database_factory is not DatabaseManager:
+        return database_factory(Config.get_db_path(user_id))
+
     environ = os.environ if environ is None else environ
     turso_url = environ.get("TURSO_DATABASE_URL", "").strip()
     turso_token = environ.get("TURSO_AUTH_TOKEN", "").strip()
