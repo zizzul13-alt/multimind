@@ -14,24 +14,18 @@ RUN apt-get update \
 COPY requirements.txt ./requirements.txt
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
-ARG INSTALL_PRIVATE_DNA=0
-RUN --mount=type=secret,id=github_token,required=false \
-    set -eu; \
-    if [ "$INSTALL_PRIVATE_DNA" = "1" ]; then \
-      test -s /run/secrets/github_token; \
-      TOKEN="$(cat /run/secrets/github_token)"; \
-      git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/zizzul13-alt/multimind-design-dna.git" /tmp/private-dna; \
-      rm -rf /tmp/private-dna/.git; \
-      python -m pip install --no-cache-dir /tmp/private-dna; \
-      rm -rf /tmp/private-dna; \
-      unset TOKEN; \
-    fi
+# The default/public image must be buildable without private-repository
+# credentials. Private Design-DNA remains optional and is installed only by a
+# separate trusted build path that can supply a build-time secret without
+# leaking it into image metadata or runtime environment variables.
 
 COPY . .
 RUN mkdir -p /app/data/users /app/data/shared \
     && python -m compileall -q core multimind_reflex ui utils database
 
-VOLUME ["/app/data"]
+# Persistence topology belongs to the deployment host rather than the generic
+# image. /app/data remains available for the current SQLite/fallback runtime;
+# a host may mount durable storage there when that deployment requires it.
 EXPOSE 3000 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
