@@ -1,0 +1,31 @@
+name: Move residual semantic DNA tests private
+
+on:
+  push:
+    branches:
+      - private-dna/extraction-cut
+    paths:
+      - .github/workflows/private-dna-residual-cleanup.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove residual private-owned semantic tests
+        run: |
+          set -euo pipefail
+          git rm tests/test_semantic_consumption_gate.py
+          git rm tests/test_semantic_presentation_expansion.py
+      - name: Commit cleanup
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test(dna): move residual semantic contracts private"
+          git push origin HEAD:private-dna/extraction-cut
