@@ -242,11 +242,10 @@ class TestUIFoundation(unittest.TestCase):
 
     @patch("streamlit.markdown")
     def test_icon_font_preservation_regression(self, mock_markdown):
-        """Test that Streamlit icon selectors are excluded from broad span typography and retain Material Symbols icon fonts across themes."""
-        from ui.dna.bootstrap import ensure_proof_dna_and_themes_registered
-        ensure_proof_dna_and_themes_registered()
-
-        test_themes = ["default", "neutral-contrast-demo", "japan-print-ink", "chainsaw-man-inspired", "mushishi-inspired"]
+        """Public foundation proof: icon fonts remain preserved without requiring private DNA."""
+        # This is a host CSS invariant, not a Design-DNA semantic test.  Keep it
+        # intentionally independent of optional/private registration.
+        test_themes = ["default", "neutral-contrast-demo"]
 
         for theme_id in test_themes:
             mock_markdown.reset_mock()
