@@ -57,15 +57,37 @@ def _first_value(environ: Mapping[str, str], names: tuple[str, ...]) -> str:
     return ""
 
 
-def _origin(value: str, *, variable: str) -> tuple[str, str, int | None]:
+def _absolute_http_url(
+    value: str, *, variable: str, allow_path: bool
+) -> tuple[str, str, int | None]:
     parsed = urlparse(value)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-        raise ValueError(f"{variable} must be an absolute http(s) origin")
+        noun = "URL" if allow_path else "origin"
+        raise ValueError(f"{variable} must be an absolute http(s) {noun}")
     if parsed.username or parsed.password or parsed.query or parsed.fragment:
         raise ValueError(f"{variable} must not contain credentials, query, or fragment")
-    if parsed.path not in {"", "/"}:
+    if not allow_path and parsed.path not in {"", "/"}:
         raise ValueError(f"{variable} must be an origin, not a path URL")
     return parsed.scheme.lower(), parsed.hostname.lower(), parsed.port
+
+
+def _origin(value: str, *, variable: str) -> tuple[str, str, int | None]:
+    return _absolute_http_url(value, variable=variable, allow_path=False)
+
+
+def _remote_base_url(value: str) -> tuple[str, str, int | None]:
+    """Validate the existing RemoteProvider base URL contract.
+
+    RemoteProvider appends ``/chat`` to this value, so a path prefix such as
+    ``https://host.example/api`` is valid and must not be rejected as a
+    presentation origin. Credentials/query/fragment remain invalid because
+    appending ``/chat`` to those forms is ambiguous and unsafe.
+    """
+    return _absolute_http_url(
+        value,
+        variable="MULTIMIND_REMOTE_URL",
+        allow_path=True,
+    )
 
 
 def _normalized_origin(value: str) -> str:
@@ -174,7 +196,7 @@ def validate_environment(
     remote_url = _first_value(environ, REMOTE_URL_NAMES)
     if remote_url:
         try:
-            _origin(remote_url, variable="MULTIMIND_REMOTE_URL")
+            _remote_base_url(remote_url)
             usable_provider_names.append("remote")
         except ValueError as exc:
             failures.append(Finding("REMOTE_URL_INVALID", str(exc)))
