@@ -104,6 +104,25 @@ def test_composition_selects_turso_only_when_both_credentials_are_present():
     assert calls == [("libsql://db", "secret", "alice")]
 
 
+def test_explicit_database_factory_wins_even_when_turso_env_exists(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "core.composition.Config.get_db_path", lambda _user_id: str(tmp_path / "explicit.db")
+    )
+    calls = []
+
+    class ExplicitDB:
+        def __init__(self, path):
+            calls.append(path)
+
+    db = build_database_for_user(
+        "alice",
+        database_factory=ExplicitDB,
+        environ={"TURSO_DATABASE_URL": "libsql://db", "TURSO_AUTH_TOKEN": "secret"},
+    )
+    assert isinstance(db, ExplicitDB)
+    assert calls == [str(tmp_path / "explicit.db")]
+
+
 @pytest.mark.parametrize(
     "environ",
     [
