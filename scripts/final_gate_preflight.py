@@ -40,6 +40,7 @@ CLOUDFLARE_ACCOUNT_NAMES = (
 REMOTE_URL_NAMES = ("MULTIMIND_REMOTE_URL",)
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 RESERVED_SUFFIXES = (".invalid", ".example", ".test")
+RESERVED_DOCUMENTATION_HOSTS = ("example.com", "example.org", "example.net")
 SAFE_VOLUME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 
 
@@ -55,6 +56,16 @@ def _first_value(environ: Mapping[str, str], names: tuple[str, ...]) -> str:
         if value:
             return value
     return ""
+
+
+def _is_placeholder_host(host: str) -> bool:
+    host = host.lower().rstrip(".")
+    if host.endswith(RESERVED_SUFFIXES):
+        return True
+    return any(
+        host == reserved or host.endswith(f".{reserved}")
+        for reserved in RESERVED_DOCUMENTATION_HOSTS
+    )
 
 
 def _absolute_http_url(
@@ -165,7 +176,7 @@ def validate_environment(
                 failures.append(
                     Finding("PRODUCTION_LOCALHOST", f"{variable} still points to localhost")
                 )
-            if host.endswith(RESERVED_SUFFIXES):
+            if _is_placeholder_host(host):
                 failures.append(
                     Finding(
                         "PRODUCTION_PLACEHOLDER",
@@ -193,11 +204,20 @@ def validate_environment(
     for provider, names in PROVIDER_KEY_GROUPS.items():
         if _first_value(environ, names):
             usable_provider_names.append(provider)
+
     remote_url = _first_value(environ, REMOTE_URL_NAMES)
     if remote_url:
         try:
-            _remote_base_url(remote_url)
-            usable_provider_names.append("remote")
+            _, remote_host, _ = _remote_base_url(remote_url)
+            if production and _is_placeholder_host(remote_host):
+                failures.append(
+                    Finding(
+                        "REMOTE_URL_PLACEHOLDER",
+                        "MULTIMIND_REMOTE_URL still uses a reserved placeholder hostname",
+                    )
+                )
+            else:
+                usable_provider_names.append("remote")
         except ValueError as exc:
             failures.append(Finding("REMOTE_URL_INVALID", str(exc)))
 
