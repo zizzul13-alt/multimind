@@ -108,9 +108,30 @@ class DatabaseManager:
         conn.close()
 
     def export_bytes(self):
-        """Return the current user database as bytes without exposing its path."""
-        with open(self.db_path, "rb") as database_file:
-            return database_file.read()
+        """Return a transactionally consistent SQLite snapshot as bytes."""
+        db_directory = os.path.dirname(os.path.abspath(self.db_path))
+        file_descriptor, snapshot_path = tempfile.mkstemp(
+            prefix=".multimind-export-",
+            suffix=".db",
+            dir=db_directory,
+        )
+        os.close(file_descriptor)
+        try:
+            source = sqlite3.connect(self.db_path)
+            destination = sqlite3.connect(snapshot_path)
+            try:
+                source.backup(destination)
+            finally:
+                destination.close()
+                source.close()
+            validate_restore_candidate(snapshot_path)
+            with open(snapshot_path, "rb") as database_file:
+                return database_file.read()
+        finally:
+            try:
+                os.remove(snapshot_path)
+            except FileNotFoundError:
+                pass
 
     def restore_from_bytes(self, backup_bytes):
         """Stage and validate an uploaded backup before single-step activation."""
@@ -162,87 +183,66 @@ class DatabaseManager:
                     os.remove(candidate_path)
                 except OSError:
                     pass
-        return True
-
-    def save_chat(self, session_id, chat_data):
-        """Save chat"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            INSERT INTO chats
-            (id, session_id, prompt, prompt_compressed, mode, context_mode,
-             final_answer, debate_data, tokens_used, cost)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            chat_data["id"], session_id, chat_data["prompt"],
-            chat_data.get("prompt_compressed", ""),
-            chat_data.get("mode", "continue"),
-            chat_data.get("context_mode", "continue"),
-            chat_data.get("final_answer", ""),
-            chat_data.get("debate_data", "{}"),
-            chat_data.get("tokens_used", 0),
-            chat_data.get("cost", 0.0)
-        ))
-
-        conn.commit()
-        conn.close()
-        return True
-
-    def get_session_chats(self, session_id, limit=50):
-        """Get chats"""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT * FROM chats
-            WHERE session_id = ?
-            ORDER BY created_at ASC
-            LIMIT ?
-        """, (session_id, limit))
-
-        chats = [dict(row) for row in cursor.fetchall()]
-        conn.close()
-        return chats
-
-    def get_session_chats_for_memory(self, session_id):
-        """Get complete chat history in deterministic insertion order for memory hydration."""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            SELECT * FROM chats
-            WHERE session_id = ?
-            ORDER BY created_at ASC, rowid ASC
-        """, (session_id,))
-
-        chats = [dict(row) for row in cursor.fetchall()]
-        conn.close()
-        return chats
 
     def create_session(self, session_id, name, mode="coding", config=None):
-        """Create session"""
+        """Create new session"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-
         cursor.execute("""
             INSERT INTO sessions (id, name, mode, config)
             VALUES (?, ?, ?, ?)
         """, (session_id, name, mode, json.dumps(config or {})))
-
         conn.commit()
         conn.close()
-        return True
 
     def get_sessions(self):
         """Get all sessions"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-
         cursor.execute("SELECT * FROM sessions ORDER BY updated_at DESC")
         sessions = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return sessions
+
+    def save_chat(self, chat_data):
+        """Save chat to database"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO chats (
+                id, session_id, prompt, prompt_compressed, mode,
+                context_mode, final_answer, debate_data, tokens_used, cost
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            chat_data["id"], chat_data["session_id"], chat_data["prompt"],
+            chat_data.get("prompt_compressed", ""), chat_data.get("mode", "continue"),
+            chat_data.get("context_mode", "continue"), chat_data["final_answer"],
+            chat_data.get("debate_data", "{}"), chat_data.get("tokens_used", 0),
+            chat_data.get("cost", 0.0)
+        ))
+        conn.commit()
+        conn.close()
+
+    def get_session_chats(self, session_id, limit=50):
+        """Get chats for session"""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT * FROM chats
+            WHERE session_id = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+        """, (session_id, limit))
+        chats = [dict(row) for row in cursor.fetchall()]
+        conn.close()
+        return chats
+
+    def update_session_timestamp(self, session_id):
+        """Update session timestamp"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (session_id,))
+        conn.commit()
+        conn.close()
