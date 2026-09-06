@@ -90,7 +90,7 @@ Every item below must have a concrete answer before cutover authorization.
 | At least one usable provider path | concrete provider or remote path | NOT SPECIFIED |
 | Private Design-DNA in production | explicit ENABLED or DISABLED | NOT SPECIFIED; optional by contract |
 | Private-DNA BuildKit credential | least-privilege token file if enabled | NOT SPECIFIED |
-| Pre-cutover backup artifact | actual recoverable snapshot/export + verification | NOT YET CREATED |
+| Pre-cutover backup artifact | complete recoverable production checkpoint + verification | NOT YET CREATED |
 | Cutover window | operator-selected date/time | NOT SPECIFIED |
 | Rollback traffic target | actual Streamlit endpoint/start procedure | semantics proven; environment-specific target NOT SPECIFIED |
 | Explicit cutover authorization | Governor/user decision | NOT GRANTED |
@@ -136,11 +136,14 @@ Rules:
 
 - do not put secrets in source, image labels, build arguments, or browser storage;
 - do not paste real secret values into issue/PR/governance Markdown;
-- configure at least one usable provider path before declaring the candidate usable;
+- configure at least one provider credential or remote-provider path before declaring the candidate configured for AI execution;
+- actual provider usability is proven later with the low-cost provider smoke, not inferred from a non-empty variable;
 - if Cloudflare is configured, its account ID must also be configured;
 - production CORS must not contain `*`;
 - browser-visible deploy origin must be included in allowed CORS origins;
 - internet-facing production should use HTTPS for both browser and browser-reachable API origins.
+
+`docker compose` can consume an untracked `.env` for Compose interpolation, but `scripts/final_gate_preflight.py` reads the process environment. Before running the preflight, ensure the same deployment values have actually been exported/injected into the preflight process by the chosen server-side secret/environment mechanism. Do not assume a file sitting on disk has been loaded merely because Compose can read it.
 
 ## 7. OPTIONAL PRIVATE DESIGN-DNA DECISION
 
@@ -181,7 +184,7 @@ A private-DNA installation failure must fail the private build rather than silen
 
 ## 8. FAIL-CLOSED PREFLIGHT
 
-From the exact deployment checkout, with the real server environment loaded, run:
+From the exact deployment checkout, with the real server environment loaded into the preflight process, run:
 
 ```bash
 python scripts/final_gate_preflight.py --production --check-docker
@@ -193,15 +196,11 @@ For a public internet-facing deployment:
 python scripts/final_gate_preflight.py --production --public --check-docker
 ```
 
-If private DNA is enabled:
-
-```bash
-python scripts/final_gate_preflight.py --production --public --private-dna --check-docker
-```
+If private DNA is enabled, add `--private-dna` to the appropriate command.
 
 Use `--public` only when the deployment is public; it requires HTTPS.
 
-A PASS means configuration contracts are internally coherent. It does not authorize cutover.
+A PASS means configuration contracts are internally coherent. It does not prove provider credentials are accepted by external services and it does not authorize cutover.
 
 A FAIL is a hard stop. Fix the environment/configuration issue and rerun. Do not bypass or weaken the preflight to obtain a green result.
 
@@ -209,29 +208,50 @@ The preflight intentionally does not print secret values.
 
 ## 9. DATA / BACKUP PRECONDITION
 
-No production cutover may begin without a recoverable pre-cutover data checkpoint.
+No production cutover may begin without a recoverable checkpoint covering **all authoritative production user data**, not merely the currently logged-in user.
 
-Because the current real Streamlit hosting/data location is not yet recorded, the backup command cannot be truthfully hard-coded here. Select the procedure that matches the real current environment:
+Because the current real Streamlit hosting/data location and actual production-user set are not yet recorded, the backup command cannot be truthfully hard-coded here. Select the procedure that matches the real current environment.
 
-### Preferred: application-owned backup/export
+### Option A — application-owned per-user backup/export
 
-Use the existing MultiMind backup/export semantics so SQLite snapshots are produced through the application/persistence owner.
+`MultiMindApplication.export_database()` is user-scoped through the existing composition/persistence boundary. If this method is used for the cutover checkpoint:
 
-### Alternative: stopped-writer storage snapshot
+1. enumerate the complete known production-user set through the real deployment/operator records;
+2. export one validated SQLite snapshot for **every** production user;
+3. name/store those snapshots so the user mapping is unambiguous without placing secrets in filenames;
+4. verify every snapshot is readable/restore-valid using the accepted restore semantics in an isolated verification context;
+5. record the expected number of users and the number of successful backup artifacts;
+6. do not declare the production backup complete if even one authoritative user database is missing.
+
+Required accounting:
+
+```text
+PRODUCTION_USER_COUNT = <actual count>
+USER_BACKUP_COUNT = <must equal production user count>
+ALL_USER_BACKUPS_RESTORE_VERIFIED = TRUE
+```
+
+### Option B — stopped-writer full storage snapshot
+
+For a tiny deployment, a stopped-writer snapshot of the complete authoritative storage may be simpler and less error-prone than coordinating separate per-user exports.
 
 If taking a filesystem/volume-level copy:
 
 1. stop the presentation/application writer first;
-2. snapshot/copy the entire authoritative `data/` root or durable volume;
-3. preserve file ownership/permissions needed for restore;
-4. do not copy live SQLite files while they are being mutated;
-5. record where the snapshot is stored;
-6. verify the snapshot can be read/restored before proceeding.
+2. snapshot/copy the **entire authoritative `data/` root or durable volume**;
+3. include every per-user database and any other authoritative persisted files under that root;
+4. preserve file ownership/permissions needed for restore;
+5. do not copy live SQLite files while they are being mutated;
+6. record where the snapshot is stored;
+7. verify the snapshot can be restored/read before proceeding.
+
+Choose the smallest boring method that truthfully covers the whole production data set. Do not mix methods unless the operator can prove what each one covers.
 
 Required evidence before authorization:
 
 ```text
 BACKUP_CREATED = TRUE
+BACKUP_SCOPE = ALL_PRODUCTION_USER_DATA
 BACKUP_LOCATION = <operator record, not secret>
 BACKUP_RESTORE_VERIFIED = TRUE
 BACKUP_TIMESTAMP = <actual timestamp>
@@ -253,7 +273,7 @@ from the named Docker volume selected by:
 MULTIMIND_DATA_VOLUME
 ```
 
-Before deployment:
+Before deployment, inspect the actual selected volume/storage with the deployment environment loaded. If using a shell variable directly, confirm it is set before invoking a command such as:
 
 ```bash
 docker volume inspect "$MULTIMIND_DATA_VOLUME"
@@ -323,13 +343,7 @@ Do not paste full environment dumps into logs or tickets.
 
 ## 13. CANDIDATE HEALTH / USABILITY CHECK
 
-Once the candidate is reachable from its intended origin, run:
-
-```bash
-python scripts/final_gate_preflight.py --production --health
-```
-
-For public deployment:
+Once the candidate is reachable from its intended origin, run the same preflight with `--health` added. For example, a public deployment uses:
 
 ```bash
 python scripts/final_gate_preflight.py --production --public --health
@@ -350,7 +364,7 @@ Then perform a browser smoke test against the real candidate:
 9. switch A → B → A between two sessions and confirm continuity;
 10. perform one representative file-upload flow if production users rely on uploads;
 11. confirm history persists after a normal container restart;
-12. perform/verify one application backup/export action;
+12. perform/verify one application backup/export action for the smoke-test user without confusing it with the complete pre-cutover production backup required in section 9;
 13. verify a neutral presentation remains available if private DNA is intentionally disabled or unavailable.
 
 Do not turn the final smoke test into feature discovery. Any unrelated cosmetic issue is recorded separately unless it blocks required production use.
@@ -369,6 +383,7 @@ PROVIDER_SMOKE = PASS
 SESSION_CONTINUITY_SMOKE = PASS
 PERSISTENCE_RESTART_SMOKE = PASS
 BACKUP_CREATED = TRUE
+BACKUP_SCOPE = ALL_PRODUCTION_USER_DATA
 BACKUP_RESTORE_VERIFIED = TRUE
 ROLLBACK_TARGET_READY = TRUE
 ```
@@ -491,9 +506,11 @@ REAL_DEPLOY_ORIGIN_DEFINED = TRUE
 REAL_API_ORIGIN_DEFINED = TRUE
 RESTRICTED_CORS_DEFINED = TRUE
 TLS_DECISION_DEFINED = TRUE
-AT_LEAST_ONE_PROVIDER_PATH_USABLE = TRUE
+AT_LEAST_ONE_PROVIDER_PATH_CONFIGURED = TRUE
+PROVIDER_SMOKE = PASS
 PRIVATE_DNA_PRODUCTION_DECISION_DEFINED = TRUE
 PRE_CUTOVER_BACKUP_CREATED = TRUE
+PRE_CUTOVER_BACKUP_SCOPE = ALL_PRODUCTION_USER_DATA
 PRE_CUTOVER_RESTORE_VERIFIED = TRUE
 CANDIDATE_PREFLIGHT = PASS
 CANDIDATE_HEALTH = PASS
