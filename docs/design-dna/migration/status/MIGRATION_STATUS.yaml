@@ -3,7 +3,7 @@ project: MULTIMIND
 track: DESIGN_DNA_MIGRATION
 authority: GOVERNOR
 updated_at: 2026-09-06
-authoritative_main_at_update: 0cdbc62eb5819f7a65213e031657610f6dd4ca5a
+authoritative_main_at_update: 145a948a5c3cbec76b9a9e008be18a57f285609a
 
 global_state:
   global_eq3:
@@ -15,9 +15,13 @@ global_state:
     total: 271
     status: NOT_CLAIMED
   production_cutover: false
-  current_closed_batch: M11
-  next_eligible_batch: M12
-  quarantine_next_gate: Q4_DURABLE_CLOSED_PRIVATE_READY
+  dna_private_extraction_ready: true
+  actual_private_repository_extraction_completed: false
+  public_history_sanitized: false
+  rj3_started: false
+  current_closed_batch: M12
+  next_eligible_batch: PRIVATE_REPOSITORY_EXTRACTION
+  quarantine_next_gate: PRIVATE_REPOSITORY_EXTRACTION_READY
 
 status_vocabulary:
   accepted: ACC_CLOSED_INTEGRATED
@@ -198,11 +202,27 @@ batches:
     runtime_census_total: 271
     eq4_credit: 0
   M12:
-    governor_status: NOT_STARTED
-    accepted: false
-    closed: false
-    integrated: false
-    scope_summary: ASSET_ENRICHMENT_AND_FINAL_271_ASSET_POLICY_RECONCILIATION
+    governor_status: ACC_CLOSED_INTEGRATED
+    accepted: true
+    closed: true
+    integrated: true
+    integration_commit: 145a948a5c3cbec76b9a9e008be18a57f285609a
+    pull_request: 90
+    manifest: docs/design-dna/migration/status/M12_ACC.yaml
+    implementation_report: docs/design-dna/migration/M12_IMPLEMENTATION_REPORT.md
+    canonical_runtime: design_dna/asset_policy.py
+    canonical_per_unit_ledger: docs/design-dna/migration/status/ASSET_POLICY_271.json
+    scope_summary: FINAL_271_ASSET_POLICY_RECONCILIATION
+    clean_head_tests: 37795
+    clean_head_ci_run: 135
+    exact_main_tests: 37795
+    exact_main_ci_run: 136
+    runtime_census_total: 271
+    asset_applicable: 207
+    asset_not_applicable: 64
+    direct_ip_gated: 75
+    final_approved: 0
+    m4_historical_semantics_rewritten: false
     eq4_credit: 0
 
 quarantine_sequence:
@@ -240,12 +260,16 @@ quarantine_sequence:
     clean_head_ci_run: 127
     exact_main_tests: 37776
     exact_main_ci_run: 128
+    closure_commit: ac9c494e4fcac0c6fde8759a311f791efcae806e
+    closure_pull_request: 89
+    closure_exact_main_tests: 37776
+    closure_exact_main_ci_run: 134
     private_ready: true
     actual_private_extraction: false
     required_before_batch: M12
 
 next_action:
-  gate: M12_FINAL_ASSET_POLICY_RECONCILIATION
-  then_gate: STOP_BEFORE_PRIVATE_EXTRACTION_OR_RJ3
-  authorized_by_user_sequence: true
-  instruction: EXECUTE_M12_DURABLY_THEN_STOP_WITHOUT_STARTING_PRIVATE_EXTRACTION_OR_RJ3
+  gate: PRIVATE_REPOSITORY_EXTRACTION
+  then_gate: PUBLIC_HISTORY_SANITIZATION_DECISION_AFTER_EXTRACTION
+  authorized_by_user_sequence: false
+  instruction: STOP_AFTER_M12_DURABLE_CLOSURE__DO_NOT_START_PRIVATE_EXTRACTION_OR_RJ3_AUTOMATICALLY
