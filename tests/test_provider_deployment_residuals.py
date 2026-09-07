@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from agents.router import ModelRouter
 from agents.unified_agent import UnifiedAgent
 from providers.base import BaseProvider
@@ -13,6 +15,12 @@ def test_current_provider_model_contracts_do_not_use_known_retired_ids():
     assert CloudflareProvider.MODEL == "@cf/meta/llama-3.1-8b-instruct-fp8"
     assert HuggingFaceProvider.ENDPOINT == "https://router.huggingface.co/v1/chat/completions"
     assert "api-inference.huggingface.co" not in HuggingFaceProvider.ENDPOINT
+
+
+def test_openrouter_adapter_is_presentation_host_neutral():
+    source = Path("providers/openrouter.py").read_text(encoding="utf-8")
+    assert "multimind.streamlit.app" not in source
+    assert "HTTP-Referer" not in source
 
 
 def test_cloudflare_requires_account_id_as_well_as_key():
