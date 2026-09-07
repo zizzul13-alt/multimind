@@ -21,8 +21,8 @@ class GroqProvider(BaseProvider):
                 timeout=Config.API_TIMEOUT,
                 max_retries=0,
             )
-            self.model = "llama-3.1-8b-instant"
-            self.model_name = "Groq (Llama 3.1 8B Instant)"
+            self.model = "openai/gpt-oss-20b"
+            self.model_name = "Groq (GPT-OSS 20B)"
             self.set_availability(True)
         except Exception as e:
             self.client = None
