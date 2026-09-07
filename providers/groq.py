@@ -21,8 +21,8 @@ class GroqProvider(BaseProvider):
                 timeout=Config.API_TIMEOUT,
                 max_retries=0,
             )
-            self.model = "meta-llama/llama-4-scout-17b-16e-instruct"
-            self.model_name = "Groq (Llama 4 Scout)"
+            self.model = "llama-3.1-8b-instant"
+            self.model_name = "Groq (Llama 3.1 8B Instant)"
             self.set_availability(True)
         except Exception as e:
             self.client = None
