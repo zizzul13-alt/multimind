@@ -34,6 +34,35 @@ def test_production_preflight_accepts_complete_non_placeholder_environment():
     assert findings == []
 
 
+def test_production_preflight_accepts_complete_turso_pair():
+    env = _base_env()
+    env["TURSO_DATABASE_URL"] = "libsql://multimind-ci.turso.io"
+    env["TURSO_AUTH_TOKEN"] = "sentinel-not-a-real-token"
+    findings = validate_environment(
+        env,
+        production=True,
+        public=True,
+        private_dna=False,
+        repo_root=ROOT,
+    )
+    assert findings == []
+
+
+def test_production_preflight_rejects_partial_turso_credentials():
+    env = _base_env()
+    env["TURSO_DATABASE_URL"] = "libsql://multimind-ci.turso.io"
+    codes = _codes(
+        validate_environment(
+            env,
+            production=True,
+            public=True,
+            private_dna=False,
+            repo_root=ROOT,
+        )
+    )
+    assert "TURSO_CREDENTIAL_PAIR_INCOMPLETE" in codes
+
+
 def test_production_preflight_rejects_localhost_and_placeholder_origins():
     env = _base_env()
     env["MULTIMIND_DEPLOY_URL"] = "http://localhost:3000"
