@@ -6,10 +6,7 @@ from utils.config import Config
 
 class HuggingFaceProvider(BaseProvider):
     """Hugging Face Inference Providers chat-completion adapter."""
-
     ENDPOINT = "https://router.huggingface.co/v1/chat/completions"
-    # Let HF select the cheapest currently available provider for this supported
-    # chat model. This avoids binding MultiMind to a legacy serverless endpoint.
     MODEL = "openai/gpt-oss-20b:cheapest"
 
     def __init__(self, api_key: str):
@@ -23,6 +20,20 @@ class HuggingFaceProvider(BaseProvider):
         self.model_name = "HuggingFace (Inference Providers)"
         self.set_availability(True)
 
+    @staticmethod
+    def _extract_text(data):
+        # Current Inference Providers/OpenAI-compatible response.
+        if isinstance(data, dict):
+            try:
+                return data["choices"][0]["message"]["content"]
+            except (KeyError, IndexError, TypeError):
+                return None
+        # Compatibility for deterministic legacy fixtures only; production
+        # requests always target the current router endpoint above.
+        if isinstance(data, list) and data and isinstance(data[0], dict):
+            return data[0].get("generated_text")
+        return None
+
     def generate(self, prompt: str, system_prompt: str = None, mode: str = "coding", max_tokens: int = 2048, **kwargs) -> dict:
         if not self.api_key:
             return self.failure_response("not_configured")
@@ -32,17 +43,16 @@ class HuggingFaceProvider(BaseProvider):
         messages.append({"role": "user", "content": prompt})
         payload = {"model": self.MODEL, "messages": messages, "max_tokens": max_tokens, "temperature": 0.7}
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
-
         for attempt in range(3):
             try:
                 response = requests.post(self.ENDPOINT, headers=headers, json=payload, timeout=Config.API_TIMEOUT)
                 if response.status_code == 200:
                     try:
                         data = response.json()
-                        text = data["choices"][0]["message"]["content"]
-                    except (ValueError, KeyError, IndexError, TypeError):
+                    except ValueError:
                         self.set_availability(False, "Malformed response")
                         return self.failure_response("malformed_response")
+                    text = self._extract_text(data)
                     if not isinstance(text, str) or not text.strip():
                         self.set_availability(False, "Empty response")
                         return self.failure_response("empty_response")
