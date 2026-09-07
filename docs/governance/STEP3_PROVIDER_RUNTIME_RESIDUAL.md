@@ -26,20 +26,28 @@ The merged package:
 
 `REPOSITORY_PROVIDER_RESIDUALS = CLOSED/PASS`
 
-## Real-runtime evidence still required
+## Real-runtime evidence
 
 A prior real Railway runtime smoke reached the Groq API but failed with `NotFoundError`; the UI correctly surfaced `No usable provider response was returned.` That attempt proved outbound provider-path exercise but did not satisfy successful provider generation.
 
-The repository repair now selects `openai/gpt-oss-20b` for Groq. Successful authenticated generation must still be proven against the real deployed candidate with a real server-side credential. Repository CI cannot substitute for that evidence.
+The repository repair subsequently selected `openai/gpt-oss-20b` for Groq.
 
-Acceptance remains:
+On 2026-09-07, the operator attested that the real deployed Railway candidate, using a real server-side provider credential, successfully returned an AI provider response after the repair. This satisfies the Provider/API Backbone requirement for at least one successful authenticated real-provider generation path.
+
+This is operator-attested runtime evidence. It does not by itself prove Turso response persistence, redeploy/restart survival, backup/restore, rollback readiness, or production cutover readiness; those remain owned by the deployment / production-verification governance paths.
+
+Acceptance is therefore:
 
 ```text
 REPOSITORY_PROVIDER_RESIDUALS = CLOSED/PASS
-REAL_PROVIDER_RESPONSE = PENDING USER-HELD REAL SECRET/RUNTIME
-RESPONSE_PERSISTED_TO_TURSO = PENDING
-REDEPLOY_SURVIVAL = PENDING
+REAL_PROVIDER_RESPONSE = PASS (OPERATOR-ATTESTED REAL RUNTIME)
+PROVIDER_API_BACKBONE = CLOSED/PASS
+
+RESPONSE_PERSISTED_TO_TURSO = PENDING / OUTSIDE PROVIDER WORKSTREAM
+REDEPLOY_SURVIVAL = PENDING / OUTSIDE PROVIDER WORKSTREAM
 PRODUCTION_CUTOVER_AUTHORIZED = FALSE
 ```
+
+Provider/API Backbone is closed unless new concrete evidence invalidates the accepted provider assumptions.
 
 This document does not authorize production cutover.
