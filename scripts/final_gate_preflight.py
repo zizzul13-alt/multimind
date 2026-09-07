@@ -38,6 +38,8 @@ CLOUDFLARE_ACCOUNT_NAMES = (
     "CLOUDFLARE_ACCOUNT_ID",
 )
 REMOTE_URL_NAMES = ("MULTIMIND_REMOTE_URL",)
+TURSO_DATABASE_URL_NAME = "TURSO_DATABASE_URL"
+TURSO_AUTH_TOKEN_NAME = "TURSO_AUTH_TOKEN"
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 RESERVED_SUFFIXES = (".invalid", ".example", ".test")
 RESERVED_DOCUMENTATION_HOSTS = ("example.com", "example.org", "example.net")
@@ -122,6 +124,8 @@ def validate_environment(
     api_url = environ.get("MULTIMIND_API_URL", "").strip()
     cors_raw = environ.get("MULTIMIND_CORS_ALLOWED_ORIGINS", "").strip()
     volume_name = environ.get("MULTIMIND_DATA_VOLUME", "multimind-data").strip()
+    turso_database_url = environ.get(TURSO_DATABASE_URL_NAME, "").strip()
+    turso_auth_token = environ.get(TURSO_AUTH_TOKEN_NAME, "").strip()
 
     parsed_origins: dict[str, tuple[str, str, int | None]] = {}
     for variable, value in (
@@ -197,6 +201,14 @@ def validate_environment(
             Finding(
                 "VOLUME_INVALID",
                 "MULTIMIND_DATA_VOLUME must be a non-empty Docker-safe volume name",
+            )
+        )
+
+    if bool(turso_database_url) != bool(turso_auth_token):
+        failures.append(
+            Finding(
+                "TURSO_CREDENTIAL_PAIR_INCOMPLETE",
+                "TURSO_DATABASE_URL and TURSO_AUTH_TOKEN must be configured together",
             )
         )
 
