@@ -10,23 +10,28 @@ MultiMind's accepted production presentation direction is **Reflex**, running in
 Browser
 → Reflex presentation host
 → MultiMindApplication / shared composition boundary
-→ existing orchestration / providers / files / memory / SQLite
+→ existing orchestration / providers / files / memory / persistence
 ```
 
-SQLite remains authoritative. The production container persists `/app/data` through a durable Docker volume.
+The persistence boundary supports two deliberately bounded modes:
 
-**Streamlit remains the reference/rollback host until an explicitly authorized production cutover is completed.** Do not remove it or migrate data merely because the presentation host changes.
+- **Turso remote persistence** when both `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` are configured. This is the current real Railway deployment-candidate direction.
+- **SQLite per-user persistence** when both Turso variables are absent. SQLite remains the local/rollback path and the portable backup format.
+
+Partial Turso configuration fails closed. Presentation code does not own persistence selection and no database network/API layer has been added.
+
+**Streamlit remains the reference/rollback host until an explicitly authorized production cutover is completed.** Do not remove it merely because the presentation host changes.
 
 ## Features
 
 - Multi-agent debate and provider fallback
 - Prompt compression and token/cost estimates
-- Multi-file uploads
+- Multi-file uploads processed transiently in-memory for the active request
 - Session memory with Continue / Standalone behavior
-- Per-user SQLite persistence
+- User-scoped Turso remote persistence with SQLite fallback/rollback
 - Seven presentation archetypes and Theme Studio composition
 - Optional private Design-DNA package with neutral safe fallback
-- Backup / restore through the application boundary
+- Portable SQLite backup / restore through the application boundary
 
 ## Local / neutral container run
 
@@ -39,7 +44,7 @@ docker compose up -d
 
 Local defaults expose Reflex frontend on port `3000` and backend on port `8000`.
 
-For real production deployment, do **not** rely on localhost defaults. Production must supply the real frontend/backend origins, restricted CORS origins, durable volume selection, and server-side provider credentials.
+For real production deployment, do **not** rely on localhost defaults. Production must supply the real frontend/backend origins, restricted CORS origins, server-side persistence credentials or an accepted durable local-storage arrangement, and server-side provider credentials.
 
 ## Private Design-DNA build
 
@@ -51,16 +56,17 @@ Never commit the private-repository token or provider credentials. `.secrets/`, 
 
 ## Production / cutover status
 
-The migration implementation and evidence chain through RJ-6 is complete and Governor-accepted. The Final Governor Migration Gate is ready, but **production cutover is not authorized by repository state alone**.
+The migration implementation and evidence chain through RJ-6 is complete and Governor-accepted. A real Railway + Turso deployment candidate now exists, but **production cutover is not authorized by repository state alone**.
 
-Before any real cutover, use:
+Current deployment-candidate evidence and remaining external proofs are tracked in:
 
+- `docs/governance/REAL_DEPLOYMENT_CANDIDATE_STATUS.md`
 - `docs/governance/REFLEX_MIGRATION_FINAL_GATE_REPORT.md`
 - `docs/governance/RJ4_DEPLOYMENT_OPERATIONS.md`
 - `docs/governance/FINAL_CUTOVER_RUNBOOK.md`
 - `python scripts/final_gate_preflight.py`
 
-A real cutover still requires actual deployment-environment facts and explicit Governor/user authorization.
+A real cutover still requires the remaining runtime evidence plus explicit Governor/user authorization.
 
 ## Provider credentials
 
@@ -81,6 +87,7 @@ Do not put credentials in source control or browser-side storage.
 - Python
 - Reflex production presentation host
 - Streamlit rollback/reference presentation
-- SQLite per-user persistence
+- Turso/libSQL remote persistence for the real deployment candidate
+- SQLite local/rollback persistence and portable backup format
 - Existing provider abstraction / routing / fallback
-- Docker Compose self-host deployment direction
+- Container deployment with external-host compatibility
