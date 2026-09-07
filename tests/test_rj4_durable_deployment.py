@@ -43,6 +43,12 @@ def test_deployment_files_preserve_single_service_and_host_managed_durability():
     assert 'CMD ["reflex", "run", "--env", "prod"]' in dockerfile
 
 
+def test_compose_forwards_optional_turso_runtime_credentials():
+    compose = (ROOT / "compose.yml").read_text(encoding="utf-8")
+    assert "TURSO_DATABASE_URL: ${TURSO_DATABASE_URL:-}" in compose
+    assert "TURSO_AUTH_TOKEN: ${TURSO_AUTH_TOKEN:-}" in compose
+
+
 def test_neutral_base_compose_has_no_private_secret_requirement():
     compose = (ROOT / "compose.yml").read_text(encoding="utf-8")
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
