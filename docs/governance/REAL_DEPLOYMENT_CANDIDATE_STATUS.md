@@ -225,7 +225,34 @@ Only actions requiring real account secrets or observation remain human-held:
 
 Everything else should remain automated or repository-governed.
 
-## 12. CUTOVER LAW
+## 12. GOVERNOR DELEGATION — NON-USER-HELD AUTO-PASS
+
+Accepted on 2026-09-07 by the user/Governor for this deployment workstream:
+
+```text
+ALL NON-USER-HELD EVIDENCE IN STEPS 3 / 5 / 6 / 7
+→ inspect autonomously
+→ repair bounded repository residuals autonomously
+→ rerun/review until green when tooling permits
+→ record PASS without asking the user to repeat mechanical repository work
+```
+
+This delegation does not waive evidence requirements. It only removes unnecessary operator handoffs.
+
+The following remain user-held because they require real account secrets, external dashboard state, destructive confirmation, or direct real-runtime observation:
+
+```text
+STEP 3: stage one real provider secret and perform/observe the real provider smoke
+STEP 5: observe actual sleep/auto-wake behavior and real Railway usage/cost
+STEP 6: authorize/perform one isolated real-Turso dummy restore round trip
+STEP 8: explicit production cutover decision
+```
+
+For Steps 3, 5, 6 and 7, any repository-only, CI-only, documentation, contract, regression, static-analysis, composition, routing, persistence, backup-format, or deployment-artifact evidence is now owned by this workstream and should be closed without further user intervention unless a true blocker or scope-expanding decision appears.
+
+This delegation does not authorize production cutover and does not permit weakening tests, bypassing fail-closed checks, adding new infrastructure, or changing accepted architecture merely to obtain a green result.
+
+## 13. CUTOVER LAW
 
 No result above independently authorizes production cutover.
 
