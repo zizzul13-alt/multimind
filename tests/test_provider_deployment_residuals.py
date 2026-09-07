@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 from agents.router import ModelRouter
 from agents.unified_agent import UnifiedAgent
 from providers.base import BaseProvider
@@ -19,7 +17,7 @@ def test_current_provider_model_contracts_do_not_use_known_retired_ids():
 
 def test_cloudflare_requires_account_id_as_well_as_key():
     provider = CloudflareProvider("key", "")
-    assert provider.available is False
+    assert provider.is_available is False
     assert provider.generate("prompt")["failure_category"] == "not_configured"
 
 
@@ -40,14 +38,13 @@ def test_router_uses_sanitized_status_code_for_rate_limit_and_falls_back():
     result = ModelRouter([limited, Healthy()]).generate("prompt")
     assert result["status"] == "success"
     assert result["agent"] == "Healthy"
-    assert limited.available is False
+    assert limited.is_available is False
 
 
 def test_unified_priority_starts_with_gemini_when_configured(monkeypatch):
     class Stub:
         def __init__(self, *_args, **_kwargs):
             pass
-
     monkeypatch.setattr("agents.unified_agent.GeminiAgent", Stub)
     monkeypatch.setattr("agents.unified_agent.GroqAgent", Stub)
     unified = UnifiedAgent({"gemini_key": "g", "groq_key": "q"})
