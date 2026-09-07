@@ -32,17 +32,11 @@ class OpenRouterProvider(BaseProvider):
         except Exception as e:
             self.client = None
             self.model_name = "OpenRouter (error)"
-            self.set_availability(False, str(e))
+            self.set_availability(False, type(e).__name__)
 
     def generate(self, prompt: str, system_prompt: str = None, mode: str = "coding", max_tokens: int = 4096, **kwargs) -> dict:
         if not self.client:
-            return {
-                "status": "error",
-                "text": "OpenRouter not configured.",
-                "agent": self.model_name,
-                "tokens": 0,
-                "cost": 0.0
-            }
+            return self.failure_response("not_configured")
 
         model = self.models.get(mode, self.models["quick"])
 
@@ -57,10 +51,6 @@ class OpenRouterProvider(BaseProvider):
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=0.7,
-                extra_headers={
-                    "HTTP-Referer": "https://multimind.streamlit.app",
-                    "X-Title": "MultiMind AI"
-                }
             )
 
             try:
