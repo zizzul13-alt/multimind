@@ -14,5 +14,5 @@ def test_groq_provider_uses_current_production_smoke_model(monkeypatch):
 
     assert captured["base_url"] == "https://api.groq.com/openai/v1"
     assert captured["max_retries"] == 0
-    assert provider.model == "llama-3.1-8b-instant"
-    assert provider.model_name == "Groq (Llama 3.1 8B Instant)"
+    assert provider.model == "openai/gpt-oss-20b"
+    assert provider.model_name == "Groq (GPT-OSS 20B)"
