@@ -17,9 +17,13 @@ def _log_provider_failure(name, response=None, exception_type=None):
 
 
 def _is_rate_limited(response):
+    """Recognize sanitized metadata and legacy provider text without exposing raw errors."""
     if not isinstance(response, dict):
         return False
-    return response.get("status_code") == 429 or response.get("failure_category") == "rate_limited"
+    if response.get("status_code") == 429 or response.get("failure_category") == "rate_limited":
+        return True
+    text = response.get("text", "")
+    return isinstance(text, str) and ("429" in text or "rate limit" in text.lower())
 
 
 class ModelRouter:
@@ -71,7 +75,7 @@ class ModelRouter:
                 provider.set_availability(False, type(e).__name__)
                 _log_provider_failure(name, exception_type=type(e).__name__)
 
-        # Rate-limit state is request-local; a future request gets a fresh chance.
+        # If every route failed, allow a later independent request to retry all providers.
         for name in self.stats:
             self.stats[name]["rate_limited"] = False
         return {"status": "error", "text": TERMINAL_PROVIDER_FAILURE_TEXT, "agent": "Router", "tokens": 0, "cost": 0.0}
