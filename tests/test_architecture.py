@@ -20,6 +20,7 @@ class MockProvider(BaseProvider):
         self.fail_after_calls = fail_after_calls
         self.call_count = 0
         self.last_prompts = []
+        self.model_name = name
 
     def generate(self, prompt, system_prompt=None, mode="coding", max_tokens=4096, **kwargs):
         self.call_count += 1
@@ -154,7 +155,11 @@ def test_debate_orchestrator_agent_centric():
     )
 
     assert log["status"] == "success"
-    assert len(log["responses"]) == 4
+    assert log["selected_participants"] == 2
+    assert len(log["participants"]) == 2
+    assert [item["requested_provider"] for item in log["participants"]] == ["cloudflare", "groq"]
+    # 2 participant calls + one judge/synthesis utility response in legacy response log.
+    assert len(log["responses"]) == 3
 
 def test_role_agent_failover_and_fallback():
     p_failing = MockProvider("FailingPrimary", fail=True)
@@ -177,11 +182,26 @@ def test_role_agent_failover_and_fallback():
     assert p_failing.call_count == 1
     assert p_healthy.call_count == 1
 
-def test_debate_parallel_collaboration_pipeline_with_judge():
-    p_a = MockProvider("Cloudflare", return_text="Pristine code block containing ```python\ndef hello_a(): pass\n``` that serves as Candidate A.")
-    p_b = MockProvider("Groq", return_text="Excellent code block containing ```python\ndef hello_b(): pass\n``` that serves as Candidate B.")
-    p_c = MockProvider("OpenRouter", return_text="Clean code block containing ```python\ndef hello_c(): pass\n``` that serves as Candidate C.")
-    p_d = MockProvider("DeepSeek", return_text="I am the judge. I select Candidate B with ```python\ndef hello_b(): pass\n``` because it is the most optimized.")
+def test_debate_independent_participants_then_separate_judge_utility():
+    p_a = MockProvider(
+        "Cloudflare",
+        return_text="Pristine code block containing ```python\ndef hello_a(): pass\n``` that serves as Candidate A.",
+        fail_after_calls=2,
+    )
+    p_b = MockProvider(
+        "Groq",
+        return_text="Excellent code block containing ```python\ndef hello_b(): pass\n``` that serves as Candidate B.",
+        fail_after_calls=2,
+    )
+    p_c = MockProvider(
+        "OpenRouter",
+        return_text="Clean code block containing ```python\ndef hello_c(): pass\n``` that serves as Candidate C.",
+        fail_after_calls=2,
+    )
+    p_d = MockProvider(
+        "DeepSeek",
+        return_text="DeepSeek contribution and synthesis with ```python\ndef hello_d(): pass\n``` that is long enough.",
+    )
 
     orchestrator = DebateOrchestrator(
         gemini_agent=None,
@@ -197,42 +217,51 @@ def test_debate_parallel_collaboration_pipeline_with_judge():
         mode="coding"
     )
 
-    # 1. Verify parallel candidates generated from ORIGINAL task prompt
-    assert p_a.call_count == 1
-    assert "Analyze my design pattern" in p_a.last_prompts[0]
+    # Every selected participant independently receives the original task once.
+    assert len(log["participants"]) == 4
+    assert [item["requested_provider"] for item in log["participants"]] == [
+        "cloudflare", "groq", "openrouter", "deepseek"
+    ]
+    for provider in (p_a, p_b, p_c, p_d):
+        assert "Analyze my design pattern" in provider.last_prompts[0]
+        assert "INDEPENDENT PARTICIPANT CONTRIBUTIONS" not in provider.last_prompts[0]
 
-    assert p_b.call_count == 1
-    assert "Analyze my design pattern" in p_b.last_prompts[0]
-    assert "Candidate A" not in p_b.last_prompts[0]  # Indenpendent candidate B
+    # Judge routing is separate utility work. A/B/C fail their second call so D
+    # services synthesis; actual provider provenance is explicit.
+    assert p_d.call_count == 2
+    assert "participant-1-cloudflare" in p_d.last_prompts[1]
+    assert "participant-2-groq" in p_d.last_prompts[1]
+    assert "participant-3-openrouter" in p_d.last_prompts[1]
+    assert "participant-4-deepseek" in p_d.last_prompts[1]
+    assert log["judge"]["status"] == "success"
+    assert log["judge"]["actual_provider"] == "DeepSeek"
 
-    assert p_c.call_count == 1
-    assert "Analyze my design pattern" in p_c.last_prompts[0]
-    assert "Candidate A" not in p_c.last_prompts[0]
-    assert "Candidate B" not in p_c.last_prompts[0]  # Independent candidate C
-
-    # 2. Verify Judge evaluates all successfully generated candidates collectively
-    assert p_d.call_count == 1
-    assert "Analyze my design pattern" in p_d.last_prompts[0]
-    assert "Candidate A" in p_d.last_prompts[0]
-    assert "Candidate B" in p_d.last_prompts[0]
-    assert "Candidate C" in p_d.last_prompts[0]
-
-    # 3. Verify Judge output becomes the final candidate
     assert log["status"] == "success"
-    assert "I am the judge" in log["final_answer"]
-    assert "Candidate A" not in log["final_answer"]
-    assert "Candidate C" not in log["final_answer"]
-
-    # 4. Verify Release Gate executes on the Judge's final candidate
+    assert "DeepSeek contribution and synthesis" in log["final_answer"]
     assert "gate_score" in log
     assert log["gate_score"] is not None
-    assert log["gate_passed"] is True
 
-def test_judge_failure_fallback_with_parallel():
-    p_a = MockProvider("Cloudflare", return_text="Pristine code block containing ```python\ndef hello_a(): pass\n``` that serves as Candidate A.", fail_after_calls=2)
-    p_b = MockProvider("Groq", return_text="Excellent code block containing ```python\ndef hello_b(): pass\n``` that serves as Candidate B.", fail_after_calls=2)
-    p_c = MockProvider("OpenRouter", return_text="Clean code block containing ```python\ndef hello_c(): pass\n``` that serves as Candidate C.", fail_after_calls=2)
-    p_d_failed = MockProvider("DeepSeek", fail=True)
+def test_judge_failure_fallback_with_independent_participants():
+    p_a = MockProvider(
+        "Cloudflare",
+        return_text="Pristine code block containing ```python\ndef hello_a(): pass\n``` that serves as Candidate A.",
+        fail_after_calls=2,
+    )
+    p_b = MockProvider(
+        "Groq",
+        return_text="Excellent code block containing ```python\ndef hello_b(): pass\n``` that serves as Candidate B.",
+        fail_after_calls=2,
+    )
+    p_c = MockProvider(
+        "OpenRouter",
+        return_text="Clean code block containing ```python\ndef hello_c(): pass\n``` that serves as Candidate C.",
+        fail_after_calls=2,
+    )
+    p_d_failed = MockProvider(
+        "DeepSeek",
+        return_text="Independent DeepSeek candidate that is long enough to be usable.",
+        fail_after_calls=2,
+    )
 
     orchestrator = DebateOrchestrator(
         gemini_agent=None,
@@ -248,16 +277,28 @@ def test_judge_failure_fallback_with_parallel():
         mode="coding"
     )
 
-    # Output should fall back gracefully to the first successful candidate (Candidate A)
     assert log["status"] == "success"
+    assert len(log["participants"]) == 4
+    assert log["judge"]["status"] == "error"
+    assert log["judge"]["fallback_participant_id"] == "participant-1-cloudflare"
     assert "Candidate A" in log["final_answer"]
 
 def test_partial_candidate_failures():
-    # Verify that Judge continues to work even if some candidates fail
     p_a = MockProvider("Cloudflare", fail=True)
-    p_b = MockProvider("Groq", return_text="Excellent code block containing ```python\ndef hello_b(): pass\n``` that serves as Candidate B.")
-    p_c = MockProvider("OpenRouter", return_text="Clean code block containing ```python\ndef hello_c(): pass\n``` that serves as Candidate C.")
-    p_d = MockProvider("DeepSeek", return_text="I am the judge evaluating the successful candidates.")
+    p_b = MockProvider(
+        "Groq",
+        return_text="Excellent code block containing ```python\ndef hello_b(): pass\n``` that serves as Candidate B.",
+        fail_after_calls=2,
+    )
+    p_c = MockProvider(
+        "OpenRouter",
+        return_text="Clean code block containing ```python\ndef hello_c(): pass\n``` that serves as Candidate C.",
+        fail_after_calls=2,
+    )
+    p_d = MockProvider(
+        "DeepSeek",
+        return_text="I am the DeepSeek contribution/synthesis evaluating the successful participants with enough detail.",
+    )
 
     orchestrator = DebateOrchestrator(
         gemini_agent=None,
@@ -274,8 +315,12 @@ def test_partial_candidate_failures():
     )
 
     assert log["status"] == "success"
-    assert "I am the judge evaluating the successful candidates" in log["final_answer"]
-    # Candidate A failed, so Judge prompt must contain B and C, but not A
-    assert "Candidate B" in p_d.last_prompts[0]
-    assert "Candidate C" in p_d.last_prompts[0]
-    assert "Candidate A" not in p_d.last_prompts[0]
+    assert log["participants"][0]["status"] == "error"
+    assert log["participants"][0]["requested_provider"] == "cloudflare"
+    assert log["successful_participants"] == 3
+    assert log["judge"]["actual_provider"] == "DeepSeek"
+    judge_prompt = p_d.last_prompts[1]
+    assert "participant-2-groq" in judge_prompt
+    assert "participant-3-openrouter" in judge_prompt
+    assert "participant-4-deepseek" in judge_prompt
+    assert "participant-1-cloudflare" not in judge_prompt
