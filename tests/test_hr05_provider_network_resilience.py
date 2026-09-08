@@ -279,10 +279,11 @@ def test_zero_usable_debate_candidates_is_terminal_failure():
 
 def test_valid_candidate_survives_exhausted_judge_routes():
     candidate = "A short but usable candidate."
+
     class CandidateThenFailProvider(FakeProvider):
         def generate(self, *args, **kwargs):
             self.calls.append(kwargs if kwargs else {"args": args})
-            if len(self.calls) <= 3:
+            if len(self.calls) == 1:
                 return {
                     "status": "success", "text": candidate, "agent": self.name,
                     "tokens": 1, "cost": 0.0,
@@ -293,12 +294,18 @@ def test_valid_candidate_survives_exhausted_judge_routes():
     judge_failure = FakeProvider("Judge", result=_error_result("Judge"))
     result = DebateOrchestrator(
         gemini_agent=None, cloudflare_agent=provider, groq_agent=judge_failure
-    ).debate("prompt", agents=["cloudflare", "cloudflare", "cloudflare", "groq"])
+    ).debate("prompt", agents=["cloudflare", "groq"])
 
     assert result["status"] == "success"
     assert candidate in result["final_answer"]
-    assert len(provider.calls) == 4
-    assert len(judge_failure.calls) == 1
+    assert result["participants"][0]["status"] == "success"
+    assert result["participants"][1]["status"] == "error"
+    assert result["judge"]["status"] == "error"
+    assert result["judge"]["fallback_participant_id"] == "participant-1-cloudflare"
+    # Candidate call + one judge utility attempt; no fake repeated participant slots.
+    assert len(provider.calls) == 2
+    # Groq is attempted once as its own participant and again as judge fallback.
+    assert len(judge_failure.calls) == 2
     assert result["responses"][-1]["status"] == "error"
 
 
