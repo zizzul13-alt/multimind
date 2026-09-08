@@ -48,7 +48,7 @@ class DebateOrchestrator:
         self.skills_manager = SkillsManager()
 
     def debate(self, prompt, context="", mode="coding", rounds=1, agents=None, skill=None):
-        requested_agents = list(agents or ["cloudflare"])
+        requested_agents = ["cloudflare"] if agents is None else list(agents)
         active_agents = self._normalize_agents(requested_agents)
         effective_rounds = self._normalize_rounds(rounds)
 
