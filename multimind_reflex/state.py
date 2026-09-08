@@ -16,6 +16,12 @@ from core.application import ChatRequest
 from core.file_handler import FileHandler
 from core.templates import TemplateManager
 from multimind_reflex.bridge import BufferedUpload, build_host_application
+from multimind_reflex.deliberation_projection import (
+    critique_snapshots,
+    history_snapshots,
+    participant_snapshots,
+    run_summary,
+)
 from ui.dna_bridge import dna_available, ensure_dna_registered, theme_studio_available
 from utils.config import Config, InvalidUserIdError
 from utils.token_counter import TokenCounter
@@ -48,19 +54,8 @@ def _session_snapshots(rows):
     ]
 
 
-def _history_snapshots(rows):
-    return [
-        {
-            "id": str(row.get("id", "")),
-            "prompt": str(row.get("prompt", "")),
-            "final_answer": str(row.get("final_answer", "")),
-        }
-        for row in rows
-    ]
-
-
 class HostState(rx.State):
-    """Reflex presentation state implementing the frozen RJ-3 denominator."""
+    """Reflex presentation state projecting application-owned MultiMind truth."""
 
     # Identity / navigation.
     username: str = ""
@@ -111,6 +106,7 @@ class HostState(rx.State):
     estimated_prompt_tokens: int = 0
     estimated_file_tokens: int = 0
     estimated_total_tokens: int = 0
+    estimated_provider_calls: int = 0
     estimated_cost: float = 0.0
     token_warning_level: str = "low"
 
@@ -123,6 +119,13 @@ class HostState(rx.State):
     warnings: list[str] = []
     upload_names: list[str] = []
     restore_name: str = ""
+
+    # Read-only projection of application-owned deliberation truth.
+    current_participants: list[dict[str, str]] = []
+    current_critiques: list[dict[str, str]] = []
+    current_system_verdict: str = ""
+    current_judge_provider: str = ""
+    current_judge_status: str = ""
 
     _runtime_memories: dict = {}
     _pending_uploads: list[dict] = []
@@ -140,7 +143,7 @@ class HostState(rx.State):
         if not self.current_session_id:
             self.history = []
             return
-        self.history = _history_snapshots(
+        self.history = history_snapshots(
             self._application().get_session_chats(self.current_session_id, limit=50)
         )
 
@@ -151,12 +154,29 @@ class HostState(rx.State):
             mode=self.current_session_mode or self.new_session_mode,
             rounds=self.debate_rounds,
             compressor_on=self.compressor_enabled,
+            participants=max(1, len(self.active_agents)),
         )
         self.estimated_prompt_tokens = int(estimate["prompt_tokens"])
         self.estimated_file_tokens = int(estimate["file_tokens"])
         self.estimated_total_tokens = int(estimate["total_estimate"])
+        self.estimated_provider_calls = int(estimate["provider_calls_estimate"])
         self.estimated_cost = float(TokenCounter.estimate_cost(self.estimated_total_tokens))
         self.token_warning_level = TokenCounter.get_warning_level(self.estimated_total_tokens)["level"]
+
+    def _clear_deliberation_projection(self):
+        self.current_participants = []
+        self.current_critiques = []
+        self.current_system_verdict = ""
+        self.current_judge_provider = ""
+        self.current_judge_status = ""
+
+    def _set_deliberation_projection(self, debate_data):
+        self.current_participants = participant_snapshots(debate_data)
+        self.current_critiques = critique_snapshots(debate_data)
+        summary = run_summary(debate_data)
+        self.current_system_verdict = summary["system_verdict"]
+        self.current_judge_provider = summary["judge_provider"]
+        self.current_judge_status = summary["judge_status"]
 
     @rx.event
     def set_username(self, value: str):
@@ -207,6 +227,7 @@ class HostState(rx.State):
         elif not enabled and agent in selected:
             selected.remove(agent)
         self.active_agents = selected or ["gemini"]
+        self._refresh_estimate()
 
     @rx.event
     def login(self):
@@ -235,6 +256,7 @@ class HostState(rx.State):
         self.current_session_mode = "coding"
         self.history = []
         self.final_answer = ""
+        self._clear_deliberation_projection()
         self.warnings = []
         self._runtime_memories = {}
         self._pending_uploads = []
@@ -262,6 +284,7 @@ class HostState(rx.State):
         self.error_message = ""
         self.success_message = ""
         self.final_answer = ""
+        self._clear_deliberation_projection()
         self.warnings = []
         self.upload_names = []
         self._runtime_memories = {}
@@ -391,6 +414,7 @@ class HostState(rx.State):
         self.new_session_name = ""
         self.error_message = ""
         self.success_message = "Session created."
+        self._clear_deliberation_projection()
         self._refresh_history()
         self._refresh_estimate()
 
@@ -411,6 +435,7 @@ class HostState(rx.State):
         self.error_message = ""
         self.success_message = ""
         self.final_answer = ""
+        self._clear_deliberation_projection()
         self.warnings = []
         self._refresh_history()
         self._refresh_estimate()
@@ -470,6 +495,7 @@ class HostState(rx.State):
             self.current_session_name = ""
             self.history = []
             self.final_answer = ""
+            self._clear_deliberation_projection()
             self._runtime_memories = {}
             self._refresh_sessions()
             self.success_message = "Database restored safely."
@@ -514,6 +540,7 @@ class HostState(rx.State):
             self.error_message = ""
             self.success_message = ""
             self.final_answer = ""
+            self._clear_deliberation_projection()
             self.warnings = []
 
             user_id = self.user_id
@@ -549,12 +576,13 @@ class HostState(rx.State):
                 return
 
             self.warnings = list(result.warnings)
+            self._set_deliberation_projection(result.debate_data)
             if result.status != "success":
                 self.error_message = "No usable provider response was returned."
                 return
 
             self.final_answer = result.final_answer
-            self.history = _history_snapshots(history or [])
+            self.history = history_snapshots(history or [])
             self.prompt = ""
             self._pending_uploads = []
             self.upload_names = []

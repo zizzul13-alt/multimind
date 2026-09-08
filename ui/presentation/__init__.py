@@ -8,6 +8,7 @@ from ui.presentation.models import (
     ChatMessageSnapshot,
     DebateDetailSnapshot,
     DebateResponseSnapshot,
+    DebateParticipantSnapshot,
 )
 from ui.presentation.builder import build_presentation_snapshot
 from ui.presentation.resolver import (
@@ -27,6 +28,7 @@ __all__ = [
     "ChatMessageSnapshot",
     "DebateDetailSnapshot",
     "DebateResponseSnapshot",
+    "DebateParticipantSnapshot",
     "build_presentation_snapshot",
     "list_archetypes",
     "resolve_archetype",

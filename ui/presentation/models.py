@@ -4,7 +4,7 @@ MultiMind AI - Read-only Semantic Presentation Models
 Provides pure presentation snapshots representing the state consumed by UI renderers.
 Independent of theme styling, database persistence, and orchestration logic.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Tuple, Optional
 
 
@@ -27,18 +27,39 @@ class MemorySummarySnapshot:
 
 @dataclass(frozen=True)
 class DebateResponseSnapshot:
-    """Read-only presentation snapshot of an individual agent response in debate."""
+    """Read-only presentation snapshot of one recorded deliberation response."""
     round_index: int
     agent: str
     text: str
     status: str
+    phase: str = "candidate"
+    participant_id: str = ""
+    actual_provider: str = ""
+
+
+@dataclass(frozen=True)
+class DebateParticipantSnapshot:
+    """Read-only participant attempt preserving selected and actual provenance."""
+    participant_id: str
+    requested_provider: str
+    actual_provider: str
+    model: str
+    role: str
+    status: str
+    text: str
+    failure_category: str = ""
 
 
 @dataclass(frozen=True)
 class DebateDetailSnapshot:
-    """Read-only presentation snapshot of debate metrics and agent responses."""
+    """Read-only presentation snapshot of deliberation truth."""
     gate_score: Optional[int]
     responses: Tuple[DebateResponseSnapshot, ...] = ()
+    participants: Tuple[DebateParticipantSnapshot, ...] = ()
+    system_verdict: str = ""
+    judge_provider: str = ""
+    selected_participants: int = 0
+    successful_participants: int = 0
     has_error: bool = False
 
 
@@ -61,6 +82,7 @@ class PresentationSnapshot:
     session: SessionMetadataSnapshot
     chats: Tuple[ChatMessageSnapshot, ...] = ()
     memory: Optional[MemorySummarySnapshot] = None
+
 
 @dataclass(frozen=True)
 class InteractionContext:

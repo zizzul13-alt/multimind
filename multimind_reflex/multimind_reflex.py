@@ -334,10 +334,12 @@ def _estimate_panel() -> rx.Component:
         rx.vstack(
             rx.heading("Pre-send estimate", size="3"),
             rx.hstack(
+                rx.text("Participants: ", HostState.active_agents.length()),
+                rx.text("Provider calls: ~", HostState.estimated_provider_calls),
                 rx.text("Prompt: ", HostState.estimated_prompt_tokens, " tok"),
                 rx.text("Files: ", HostState.estimated_file_tokens, " tok"),
                 rx.text("Total: ", HostState.estimated_total_tokens, " tok"),
-                rx.text("Cost: $", HostState.estimated_cost),
+                rx.text("Cost hint: $", HostState.estimated_cost),
                 wrap="wrap",
             ),
             rx.cond(
@@ -355,6 +357,102 @@ def _estimate_panel() -> rx.Component:
     )
 
 
+def _participant_card(participant) -> rx.Component:
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text(participant["participant_id"], weight="bold"),
+                rx.badge(participant["status"]),
+                wrap="wrap",
+            ),
+            rx.text("Selected: ", participant["requested_provider"], size="2"),
+            rx.text(
+                "Actual: ",
+                rx.cond(participant["actual_provider"] != "", participant["actual_provider"], "not executed"),
+                size="2",
+            ),
+            rx.cond(participant["model"] != "", rx.text("Model: ", participant["model"], size="2")),
+            rx.cond(participant["role"] != "", rx.text("Role: ", participant["role"], size="2")),
+            rx.cond(
+                participant["text"] != "",
+                rx.text(participant["text"], white_space="pre-wrap"),
+                rx.text("No contribution returned.", size="2"),
+            ),
+            rx.cond(
+                participant["failure_category"] != "",
+                rx.callout(participant["failure_category"], icon="triangle_alert", width="100%"),
+            ),
+            align="start",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
+def _critique_card(critique) -> rx.Component:
+    return rx.card(
+        rx.vstack(
+            rx.hstack(
+                rx.text("Round ", critique["round"], weight="bold"),
+                rx.text(critique["participant_id"]),
+                rx.badge(critique["status"]),
+                wrap="wrap",
+            ),
+            rx.text("Actual provider: ", critique["actual_provider"], size="2"),
+            rx.cond(
+                critique["text"] != "",
+                rx.text(critique["text"], white_space="pre-wrap"),
+                rx.text("No critique returned.", size="2"),
+            ),
+            align="start",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
+def _deliberation_panel() -> rx.Component:
+    return rx.cond(
+        HostState.current_participants.length() > 0,
+        rx.card(
+            rx.vstack(
+                rx.heading("Multi-mind deliberation", size="4"),
+                rx.text("Every selected participant remains independently attributable.", size="2"),
+                rx.foreach(HostState.current_participants, _participant_card),
+                rx.cond(
+                    HostState.current_critiques.length() > 0,
+                    rx.vstack(
+                        rx.heading("Deliberation critiques", size="3"),
+                        rx.foreach(HostState.current_critiques, _critique_card),
+                        width="100%",
+                    ),
+                ),
+                rx.separator(),
+                rx.hstack(
+                    rx.text(
+                        "Judge: ",
+                        rx.cond(HostState.current_judge_provider != "", HostState.current_judge_provider, "unavailable"),
+                    ),
+                    rx.cond(
+                        HostState.current_judge_status != "",
+                        rx.badge(HostState.current_judge_status),
+                    ),
+                    wrap="wrap",
+                ),
+                rx.cond(
+                    HostState.current_system_verdict != "",
+                    rx.text("System winner: ", HostState.current_system_verdict, weight="bold"),
+                    rx.text("System winner: no valid winner marker recorded.", size="2"),
+                ),
+                align="start",
+                width="100%",
+                spacing="3",
+            ),
+            width="100%",
+        ),
+    )
+
+
 def _history_panel() -> rx.Component:
     return rx.vstack(
         rx.heading("Session history", size="4"),
@@ -364,6 +462,18 @@ def _history_panel() -> rx.Component:
                 rx.vstack(
                     rx.text(row["prompt"], weight="bold", white_space="pre-wrap"),
                     rx.text(row["final_answer"], white_space="pre-wrap"),
+                    rx.cond(
+                        row["participant_summary"] != "",
+                        rx.text("Participants: ", row["participant_summary"], size="2"),
+                    ),
+                    rx.cond(
+                        row["judge_provider"] != "",
+                        rx.text("Judge provider: ", row["judge_provider"], size="2"),
+                    ),
+                    rx.cond(
+                        row["system_verdict"] != "",
+                        rx.text("System winner: ", row["system_verdict"], size="2", weight="bold"),
+                    ),
                     align="start",
                     width="100%",
                 ),
@@ -491,6 +601,7 @@ def _workspace() -> rx.Component:
                                     width="100%",
                                 ),
                             ),
+                            _deliberation_panel(),
                             width="100%",
                             spacing="3",
                         )
