@@ -8,6 +8,7 @@ from core.compressor import PromptCompressor
 from core.debate import DebateOrchestrator
 from core.file_handler import FileHandler
 from core.memory import get_or_hydrate_session_memory, persist_chat_and_update_memory
+from core.product_semantics import CapabilityRegistry, PromptNormalizer
 from database.manager import RestoreOperationError, RestoreValidationError
 from providers.base import BaseProvider
 from utils.error_handler import error_logger
@@ -39,7 +40,6 @@ class ChatResult:
 
 @dataclass
 class ApplicationRuntime:
-    """Plain runtime state derived from the active user database."""
     current_session: object = None
     memories: dict = field(default_factory=dict)
 
@@ -60,21 +60,20 @@ class MultiMindApplication:
     def __init__(
         self, agents=None, runtime_memories=None, runtime=None, db=None, db_factory=None,
         compressor=PromptCompressor, file_handler=FileHandler,
-        debate_factory=DebateOrchestrator,
-        persist_chat=persist_chat_and_update_memory,
+        debate_factory=DebateOrchestrator, persist_chat=persist_chat_and_update_memory,
+        capability_registry=None, prompt_normalizer=None,
     ):
         self.agents = agents or {}
         self.runtime = runtime
-        self.runtime_memories = (
-            runtime.memories if runtime is not None
-            else (runtime_memories if runtime_memories is not None else {})
-        )
+        self.runtime_memories = runtime.memories if runtime is not None else (runtime_memories if runtime_memories is not None else {})
         self.db = db
         self.db_factory = db_factory
         self.compressor = compressor
         self.file_handler = file_handler
         self.debate_factory = debate_factory
         self.persist_chat = persist_chat
+        self.capability_registry = capability_registry or CapabilityRegistry()
+        self.prompt_normalizer = prompt_normalizer or PromptNormalizer()
 
     def _database(self):
         if self.db is not None:
@@ -89,28 +88,22 @@ class MultiMindApplication:
         return session_id
 
     def list_sessions(self):
-        """Return persisted sessions without mutating runtime memory."""
         return self._database().get_sessions()
 
     def get_session_chats(self, session_id, limit=50):
-        """Return persisted chats without hydrating or mutating session memory."""
         return self._database().get_session_chats(session_id, limit=limit)
 
     def export_database(self):
-        """Return an exportable snapshot through the persistence boundary."""
         return self._database().export_bytes()
 
     def select_session(self, session):
-        """Hydrate the supplied persisted session into this runtime's memory."""
         get_or_hydrate_session_memory(self.runtime_memories, self._database(), session["id"])
         return session
 
     def restore_database(self, backup_bytes, runtime=None):
-        """Restore a database and invalidate any runtime state derived from it."""
         active_runtime = runtime or self.runtime
         if active_runtime is None:
             active_runtime = ApplicationRuntime(memories=self.runtime_memories)
-
         try:
             self._database().restore_from_bytes(backup_bytes)
         except RestoreValidationError:
@@ -120,30 +113,61 @@ class MultiMindApplication:
                 active_runtime.invalidate_database_derived_state()
                 return RestoreResult(status="operation_failed", runtime_invalidated=True)
             return RestoreResult(status="operation_failed")
-
         active_runtime.invalidate_database_derived_state()
         return RestoreResult(status="success", runtime_invalidated=True)
 
-    def execute_chat(self, request: ChatRequest) -> ChatResult:
-        gemini = self.agents.get("gemini")
-        final_prompt = request.original_prompt
-        warnings = []
+    def capability_state(self, mode):
+        states = self.capability_registry.evaluate(mode, self.agents)
+        return {
+            "mode": self.capability_registry.normalize_mode(mode),
+            "participants": [state.as_dict() for state in states],
+            "recommended": self.capability_registry.recommended(mode, self.agents),
+        }
 
-        if request.compressor_enabled and gemini and request.original_prompt:
+    def _compression_utility(self, explicit_agents):
+        """Choose only from explicit selected resources; never consume a hidden provider."""
+        for agent_id in list(dict.fromkeys(explicit_agents or [])):
+            agent = self.agents.get(agent_id)
+            if agent is not None and hasattr(agent, "compress_prompt"):
+                return agent_id, agent
+        return None, None
+
+    def execute_chat(self, request: ChatRequest) -> ChatResult:
+        warnings = []
+        semantics = self.prompt_normalizer.normalize(
+            request.original_prompt, request.session_mode, request.selected_skill
+        )
+        normalized_prompt = semantics["normalized_prompt"]
+        effective_prompt = normalized_prompt
+        capability = self.capability_state(semantics["mode"])
+        explicit_agents = list(dict.fromkeys(request.active_agents or []))
+
+        compression = {
+            "enabled": bool(request.compressor_enabled), "applied": False,
+            "utility_provider": None, "fallback_reason": "disabled" if not request.compressor_enabled else None,
+        }
+        if request.compressor_enabled and normalized_prompt:
+            utility_id, utility = self._compression_utility(explicit_agents)
+            compression["utility_provider"] = utility_id
             try:
-                final_prompt = self.compressor.compress(request.original_prompt, gemini)["compressed"]
+                compressed = self.compressor.compress(normalized_prompt, utility)
+                effective_prompt = compressed.get("compressed", normalized_prompt)
+                compression.update({key: value for key, value in compressed.items() if key != "original"})
             except Exception:
-                final_prompt = request.original_prompt
+                effective_prompt = normalized_prompt
+                compression.update({"applied": False, "fallback_reason": "utility_failure"})
 
         file_context = ""
         if request.uploads:
+            # File extraction remains a separate existing utility. Preserve its historical
+            # Gemini path until that workstream is explicitly governed; do not conflate it
+            # with semantic prompt compression.
+            gemini = self.agents.get("gemini")
             try:
                 file_results = self.file_handler.handle(request.uploads, gemini)
                 for file_result in file_results.get("files", []):
                     if "content" in file_result:
-                        file_context += "\n--- FILE: {} ---\n{}\n".format(
-                            file_result["filename"], file_result["content"]
-                        )
+                        file_context += "\n--- FILE: {} ---\n{}\n".format(file_result["filename"], file_result["content"])
                     elif "error" in file_result:
                         warnings.append(f"{file_result['filename']}: {file_result['error']}")
             except Exception as exc:
@@ -158,22 +182,47 @@ class MultiMindApplication:
         if file_context:
             context = file_context + "\n" + context
 
-        result_data = self._route(request, final_prompt, context)
+        # Explicit user roster is execution truth. Capability recommendation is advisory;
+        # it never silently checks/unchecks providers.
+        routed_request = ChatRequest(
+            original_prompt=request.original_prompt, uploads=request.uploads,
+            context_mode=request.context_mode, session_id=request.session_id,
+            session_mode=semantics["mode"], compressor_enabled=request.compressor_enabled,
+            active_agents=explicit_agents, debate_rounds=request.debate_rounds,
+            selected_skill="default",
+        )
+        result_data = self._route(routed_request, effective_prompt, context)
+        product_semantics = {
+            "raw_prompt": request.original_prompt,
+            "normalized_prompt": normalized_prompt,
+            "effective_prompt": effective_prompt,
+            "mode": semantics["mode"],
+            "prompt_style": semantics["prompt_style"],
+            "style_applied": semantics["style_applied"],
+            "capability": capability,
+            "explicit_participants": explicit_agents,
+            "compressor": compression,
+        }
+        result_data["product_semantics"] = product_semantics
+
         if result_data.get("status") != "success":
             return ChatResult(status="error", debate_data=result_data, warnings=warnings)
 
         persisted = False
         if request.session_id:
             chat_data = {
-                "id": str(uuid.uuid4()),
-                "prompt": request.original_prompt,
-                "prompt_compressed": json.dumps({"compressed": final_prompt}) if final_prompt != request.original_prompt else "",
-                "mode": request.context_mode,
-                "context_mode": request.context_mode,
+                "id": str(uuid.uuid4()), "prompt": request.original_prompt,
+                "prompt_compressed": json.dumps({
+                    "normalized": normalized_prompt,
+                    "effective": effective_prompt,
+                    "compressor": compression,
+                    "mode": semantics["mode"],
+                    "prompt_style": semantics["prompt_style"],
+                }),
+                "mode": request.context_mode, "context_mode": request.context_mode,
                 "final_answer": result_data.get("final_answer", ""),
                 "debate_data": json.dumps(result_data),
-                "tokens_used": result_data.get("total_tokens", 0),
-                "cost": result_data.get("total_cost", 0),
+                "tokens_used": result_data.get("total_tokens", 0), "cost": result_data.get("total_cost", 0),
             }
             try:
                 persisted = self.persist_chat(self._database(), request.session_id, self.runtime_memories, chat_data)
@@ -184,9 +233,9 @@ class MultiMindApplication:
                 return ChatResult(status="error", debate_data=result_data, warnings=warnings + ["Chat could not be saved. Please try again."])
 
         return ChatResult(
-            status="success", final_answer=result_data.get("final_answer", ""),
-            debate_data=result_data, tokens=result_data.get("total_tokens", 0),
-            cost=result_data.get("total_cost", 0), warnings=warnings, persisted=persisted,
+            status="success", final_answer=result_data.get("final_answer", ""), debate_data=result_data,
+            tokens=result_data.get("total_tokens", 0), cost=result_data.get("total_cost", 0),
+            warnings=warnings, persisted=persisted,
         )
 
     def _route(self, request, final_prompt, context):
@@ -194,13 +243,10 @@ class MultiMindApplication:
         direct_runtime_prompt = final_prompt
         if context:
             direct_runtime_prompt = f"CONTEXT:\n{context[:3000]}\n\nTASK:\n{final_prompt}"
-
         if "unified" in active or "remote" in active:
             agent = self.agents.get("unified") if "unified" in active else self.agents.get("remote")
             try:
-                response = agent.generate(
-                    prompt=direct_runtime_prompt, system_prompt=None, mode=request.session_mode,
-                )
+                response = agent.generate(prompt=direct_runtime_prompt, system_prompt=None, mode=request.session_mode)
             except Exception as exc:
                 error_logger.log("DIRECT_AGENT_FAILURE", f"Direct execution failed: {type(exc).__name__}")
                 response = {"status": "error", "tokens": 0, "cost": 0}
@@ -220,7 +266,7 @@ class MultiMindApplication:
         try:
             return orchestrator.debate(
                 prompt=final_prompt, context=context[:3000], mode=request.session_mode,
-                rounds=request.debate_rounds, agents=active, skill=request.selected_skill,
+                rounds=request.debate_rounds, agents=active, skill=None,
             )
         except Exception as exc:
             error_logger.log("DEBATE_EXECUTION_FAILURE", f"Debate execution failed: {type(exc).__name__}")
