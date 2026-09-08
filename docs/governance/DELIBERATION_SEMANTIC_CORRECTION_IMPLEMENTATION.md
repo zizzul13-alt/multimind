@@ -1,6 +1,6 @@
 # MULTIMIND — DELIBERATION SEMANTIC CORRECTION
 
-Status: **USER-AUTHORIZED / BOUNDED IMPLEMENTATION — PRE-MERGE CLEAN**
+Status: **USER-AUTHORIZED / BOUNDED IMPLEMENTATION — MERGE-READY**
 Date: 2026-09-08
 Baseline: `main@72d1b71db4553ddd7b6fe32a18dbb9a7b2aa4deb`
 Companion product contract: `docs/governance/MULTIMIND_AI_PRODUCT_DNA_MASTER.md`
@@ -52,23 +52,24 @@ Deterministic proof includes:
 - Reflex and presentation projection of inspectable contribution/debate metadata without duplicating business logic;
 - regression compatibility for existing provider resilience and persistence guarantees.
 
-## Latest clean pre-merge evidence
+## Clean merge-ready evidence
 
-Branch head before this governance checkpoint: `de1217549ab3d1e0dac5ba6fe75818158e468341`.
+Exact branch head before this status-only checkpoint: `54a92836148d37d68ebc7ba68177314947daa7dc`.
 
-All required workflows were green on that head after repeated residual repair:
+All required workflows passed on that exact head after repeated residual repair and adversarial review:
 
-- Python Regression #229 — PASS;
-- RJ5 Dual-Host Torture #19 — PASS;
-- RJ6 Cutover Rollback Proof #30 — PASS;
-- Final Gate Operator Readiness #59 — PASS.
+- Python Regression #230 — PASS;
+- RJ5 Dual-Host Torture #20 — PASS;
+- RJ6 Cutover Rollback Proof #31 — PASS;
+- Final Gate Operator Readiness #60 — PASS.
 
-Adversarial review after an earlier green state found and repaired two concrete residuals:
+The repair loop caught and fixed concrete residuals rather than stopping at the first green state, including:
 
-1. judge fallback could otherwise consume a configured but unselected resource;
-2. an explicit empty roster could otherwise acquire the legacy Cloudflare default.
+1. stale resilience expectations after judge eligibility became stricter;
+2. judge fallback otherwise being able to consume a configured but unselected resource;
+3. an explicit empty roster otherwise acquiring the legacy Cloudflare default.
 
-Both have deterministic regression coverage. This governance checkpoint changes the branch head, so the required workflows must pass again on the exact new head before merge.
+The current change is governance/status-only; merge still requires an expected-head guard and exact-main verification afterward.
 
 ## Implementation discipline
 
