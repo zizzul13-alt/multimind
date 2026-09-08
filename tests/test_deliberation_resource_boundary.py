@@ -73,3 +73,28 @@ def test_selected_gemini_can_be_preferred_for_judge_without_hidden_provider_use(
     assert log["judge"]["eligible_providers"] == ["gemini", "groq"]
     assert "gemini" in log["judge"]["actual_provider"].lower()
     assert hidden.calls == []
+
+
+def test_explicit_empty_roster_never_injects_hidden_default_participant():
+    configured = RecordingProvider(
+        "cloudflare",
+        "This configured provider must remain untouched when the roster is explicitly empty.",
+    )
+
+    log = DebateOrchestrator(
+        gemini_agent=None,
+        cloudflare_agent=configured,
+    ).debate(
+        "Do not run any participant",
+        agents=[],
+        mode="thinking",
+        rounds=1,
+    )
+
+    assert log["status"] == "error"
+    assert log["requested_agents"] == []
+    assert log["agents"] == []
+    assert log["selected_participants"] == 0
+    assert log["participants"] == []
+    assert log["judge"] == {}
+    assert configured.calls == []
