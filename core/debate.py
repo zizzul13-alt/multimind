@@ -132,6 +132,8 @@ class DebateOrchestrator:
             if not successful_participants:
                 debate_log["status"] = "error"
                 debate_log["final_answer"] = TERMINAL_PROVIDER_FAILURE_TEXT
+                debate_log["successful_participants"] = 0
+                debate_log["selected_participants"] = len(active_agents)
                 debate_log["end_time"] = datetime.now().isoformat()
                 return debate_log
 
@@ -145,7 +147,7 @@ class DebateOrchestrator:
                 comparison = self._format_participants(successful_participants)
                 earlier = self._format_critiques(debate_log["deliberation"])
 
-                for participant in successful_participants:
+                for participant_index, participant in enumerate(successful_participants):
                     agent_id = participant["requested_provider"]
                     provider = configured.get(agent_id)
                     if provider is None:
@@ -158,7 +160,7 @@ class DebateOrchestrator:
                         own_participant_id=participant["participant_id"],
                         round_number=deliberation_round,
                     )
-                    role = f"{self._participant_role(mode, successful_participants.index(participant))} — Critic R{deliberation_round}"
+                    role = f"{self._participant_role(mode, participant_index)} — Critic R{deliberation_round}"
                     response = self._execute_single_provider(
                         provider=provider,
                         role=role,
@@ -172,8 +174,12 @@ class DebateOrchestrator:
                         "round": deliberation_round,
                         "participant_id": participant["participant_id"],
                         "requested_provider": agent_id,
-                        "actual_provider": response.get("agent", self._provider_label(provider)),
-                        "model": getattr(provider, "model_name", response.get("agent", "")),
+                        "actual_provider": (
+                            response.get("agent", self._provider_label(provider))
+                            if BaseProvider.has_usable_response(response)
+                            else self._provider_label(provider)
+                        ),
+                        "model": getattr(provider, "model_name", self._provider_label(provider)),
                         "status": "success" if BaseProvider.has_usable_response(response) else "error",
                         "text": response.get("text", "") if BaseProvider.has_usable_response(response) else "",
                         "failure_category": response.get("failure_category") if isinstance(response, dict) else None,
@@ -328,11 +334,16 @@ class DebateOrchestrator:
 
     def _participant_record(self, participant_id, requested_provider, role, provider, response):
         usable = BaseProvider.has_usable_response(response)
+        actual_provider = (
+            response.get("agent", self._provider_label(provider))
+            if usable
+            else self._provider_label(provider)
+        )
         return {
             "participant_id": participant_id,
             "requested_provider": requested_provider,
-            "actual_provider": response.get("agent", self._provider_label(provider)),
-            "model": getattr(provider, "model_name", response.get("agent", "")),
+            "actual_provider": actual_provider,
+            "model": getattr(provider, "model_name", actual_provider),
             "role": role,
             "status": "success" if usable else "error",
             "text": response.get("text", "") if usable else "",
