@@ -302,10 +302,11 @@ def test_valid_candidate_survives_exhausted_judge_routes():
     assert result["participants"][1]["status"] == "error"
     assert result["judge"]["status"] == "error"
     assert result["judge"]["fallback_participant_id"] == "participant-1-cloudflare"
-    # Candidate call + one judge utility attempt; no fake repeated participant slots.
+    # Cloudflare succeeds as participant, then is the only judge-eligible route and fails.
     assert len(provider.calls) == 2
-    # Groq is attempted once as its own participant and again as judge fallback.
-    assert len(judge_failure.calls) == 2
+    # Groq failed its participant attempt, so it must not be reused invisibly for judge fallback.
+    assert len(judge_failure.calls) == 1
+    assert result["judge"]["eligible_providers"] == ["cloudflare"]
     assert result["responses"][-1]["status"] == "error"
 
 
