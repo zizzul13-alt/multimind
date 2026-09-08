@@ -1,95 +1,54 @@
 # MULTIMIND — REAL DEPLOYMENT CANDIDATE STATUS
 
-Status date: 2026-09-07
+Status date: 2026-09-08
 Owning workstream: REAL DEPLOYMENT ARCHITECTURE / PRODUCTION READINESS
 Production cutover authorized by this document: NO
 
 ## 1. PURPOSE
 
-This document records the real deployment candidate that now exists outside CI and separates proven runtime facts from remaining operator-held proofs.
+This document records the real deployment candidate that exists outside CI and separates proven runtime facts from the one remaining observation gate. Repository/runtime reality governs over stale handoffs.
 
-It supplements the historical RJ migration reports. It does not rewrite their closed evidence. Where older operator text assumes local SQLite is the only production persistence path, current repository implementation and this deployment-candidate record govern the real Railway candidate.
+## 2. ACCEPTED CANDIDATE BASELINE
 
-## 2. EXACT REPOSITORY BASELINE
-
-Accepted deployment-candidate implementation baseline before this status update:
-
-```text
-12c8b54f8081b20561d544dccdd623102c350254
-```
-
-That commit includes the bounded Turso persistence adapter merged in PR #99.
+Current accepted candidate implementation includes Turso durable persistence, repaired Groq runtime target, and the mobile-friendly Step-6 restore picker through merged PR #106 / main `7a40f2ade5ffde331f44a6276c7267e508bd4260` before this governance-only reconciliation.
 
 ## 3. FROZEN CANDIDATE TOPOLOGY
-
-The smallest accepted candidate topology is:
 
 ```text
 Browser
 → Railway public HTTPS
 → Reflex frontend/backend
 → MultiMindApplication / composition boundary
-→ existing orchestration / provider routing / file handling / memory
+→ existing orchestration / provider routing / transient file handling / memory
 → Turso remote user-scoped persistence
+→ external AI providers
 ```
 
-with:
+Fallbacks remain:
 
 ```text
-Turso credentials absent together
-→ SQLite fallback/rollback persistence
+Turso credentials absent together → legacy SQLite fallback/rollback
+private Design-DNA absent/failing/incompatible → neutral safe presentation
 ```
 
-and:
+No transport service, second application truth, second provider router, object store, or presentation-owned persistence is required for this candidate.
 
-```text
-private Design-DNA absent / failing / incompatible
-→ neutral safe presentation
-→ application remains operational
-```
-
-No FastAPI/REST/RPC glue, second application truth, second provider router, or presentation-owned persistence has been introduced.
-
-## 4. REAL RUNTIME EVIDENCE ALREADY PROVEN
-
-The real Railway service has already demonstrated:
+## 4. REAL DEPLOYMENT / DURABILITY EVIDENCE
 
 ```text
 Railway build/deploy                         PASS
-Public HTTPS frontend                       PASS
-Public HTTPS backend /_health               PASS
-Reflex rendering                            PASS
-Login/event path                            PASS
-Restricted CORS/WebSocket event path        PASS
-Private-DNA-absent neutral fallback         PASS
-Workspace navigation                        PASS
+Public HTTPS frontend/backend                PASS
+Reflex rendering/login/event path            PASS
+Restricted CORS/WebSocket path               PASS
+Private-DNA-absent neutral fallback          PASS
+Workspace navigation                         PASS
+RAILWAY_LOCAL_SQLITE_DURABILITY              FAIL (accepted negative proof)
+REAL_TURSO_REDEPLOY_DURABILITY               PASS
 ```
 
-The original Railway-local SQLite experiment deliberately created a dummy session and then redeployed the same service. The dummy session disappeared.
+The local-SQLite failure is the evidence that Railway-local filesystem is not authoritative persistence. Turso is authoritative for the accepted candidate when both Turso credentials are present.
 
-```text
-RAILWAY_LOCAL_SQLITE_DURABILITY = FAIL
-```
-
-That failure is accepted evidence that the current Railway filesystem cannot be treated as authoritative durable user persistence.
-
-The accepted bounded repair moved the real deployment candidate to external Turso persistence. A new dummy session was then created under the Turso-backed deployment and the Railway service was redeployed. The same session remained visible after redeploy.
-
-```text
-REAL_TURSO_REDEPLOY_DURABILITY = PASS
-```
-
-This proves the application is no longer relying on Railway-local ephemeral SQLite for authoritative session durability when both Turso runtime credentials are present.
-
-## 5. FILE / UPLOAD DURABILITY DECISION
-
-Repository inspection closes the file-storage question for the current feature contract.
-
-`MultiMindApplication.execute_chat()` passes uploaded objects directly to `FileHandler.handle()`. `FileHandler` validates and extracts bounded content in memory. The extracted file context is prepended only to the active request context sent to the provider/debate layer.
-
-The persisted chat record contains the original typed prompt, compressed-prompt metadata when applicable, final answer, debate data, tokens and cost. It does not persist the uploaded binary, an upload pathname, or the extracted file body as a separate durable artifact.
-
-Therefore the current upload contract is:
+## 5. FILE / UPLOAD DURABILITY DECISION — CLOSED
 
 ```text
 UPLOAD_BYTES = TRANSIENT REQUEST INPUT
@@ -98,168 +57,138 @@ DURABLE_FILE_LIBRARY = NOT AN EXISTING FEATURE CONTRACT
 OBJECT_STORAGE = NOT REQUIRED FOR CURRENT PRODUCTION CUTOVER
 ```
 
-A future retrievable file-library feature would be a separate product/storage decision and must not be smuggled into this deployment gate.
+A future retrievable file library is a separate product/storage decision.
 
-`/app/data` may still be used by the SQLite fallback/rollback path and other local operational artifacts, but it is not required to preserve the current normal chat-upload input after a request finishes.
+## 6. STEP 3 — REAL PROVIDER SMOKE — PASS
 
-## 6. BACKUP / RESTORE CONTRACT STATUS
-
-The Turso adapter preserves the existing portable SQLite backup format rather than inventing a second backup API.
-
-Current implementation evidence proves:
-
-- user-scoped Turso rows can export to validated SQLite bytes;
-- those bytes can restore into the legacy SQLite manager;
-- restoring a portable SQLite snapshot into Turso replaces only the active user's remote rows;
-- another user's rows remain isolated;
-- restore verification compares exact session/chat ID sets;
-- partial Turso credentials fail closed in composition;
-- explicit database-factory seams remain authoritative for tests/rollback.
-
-Automated contract status:
+A real Railway candidate with server-side Groq credentials completed the full path:
 
 ```text
-PORTABLE_BACKUP_FORMAT = PASS
-USER_SCOPED_RESTORE_SEMANTICS = PASS
-CROSS_USER_ISOLATION = PASS
-SQLITE_ROLLBACK_PORTABILITY = PASS
+Browser
+→ Reflex
+→ MultiMindApplication
+→ existing provider router
+→ Groq openai/gpt-oss-20b
+→ expected MULTIMIND_GROQ_SMOKE_OK response visible
+→ response persisted to Turso
+→ Railway container replacement/redeploy
+→ same chat rehydrated after login
 ```
-
-A real destructive remote restore against the live candidate has not been claimed by repository tests. Before cutover authorization, perform one bounded dummy-user export/restore round trip or equivalent isolated real-Turso recovery proof. Do not use real valuable user data for the destructive portion of that test.
-
-## 7. RAILWAY SERVERLESS / ZERO-CARD ECONOMIC CONTRACT
-
-Current Railway documentation records:
-
-- Free plan price: $0/month with $1 monthly resource credit;
-- Trial: one-time $5 grant, then reverts to Free after trial/credit exhaustion;
-- Serverless detects inactivity from outbound traffic;
-- a service becomes sleep-eligible after an outbound-quiet interval and incoming Internet traffic wakes it automatically;
-- the first wake request can incur cold-start latency and may return an initial 502;
-- open/background database or telemetry traffic can prevent sleep;
-- Free-tier deployments in Southeast Asia are restricted during 08:00–20:00 SGT peak hours;
-- existing running services are not described as being shut down merely because a deploy is peak-hour restricted.
-
-The Turso adapter is sleep-friendly at the persistence layer because each operation opens a connection, performs bounded work, and closes the connection in `finally`; it does not maintain a repository-defined permanent DB pool.
-
-This establishes the architecture contract but not the real runtime/economic proof.
-
-Still required before environment acceptance:
 
 ```text
-REAL_SERVERLESS_SLEEP_OBSERVED = PENDING
-NORMAL_BROWSER_REQUEST_AUTO_WAKES = PENDING
-NO_MANUAL_RESUME_REQUIRED = PENDING
-REAL_USAGE_FITS_ZERO_CARD_BUDGET = PENDING
+REAL_GROQ_OUTBOUND_CALL       PASS
+EXPECTED_PROVIDER_RESPONSE    PASS
+REFLEX_RESPONSE_VISIBLE       PASS
+RESPONSE_PERSISTED_TO_TURSO   PASS
+RESPONSE_SURVIVES_REDEPLOY    PASS
+STEP_3_REAL_PROVIDER_SMOKE    PASS
 ```
 
-Do not infer these from documentation alone. Observe the actual Railway service and usage meter.
+No secret values are recorded here.
 
-## 8. PROVIDER SMOKE STATUS
+## 7. STEP 4 — FILE/UPLOAD SEMANTICS — PASS
 
-Provider routing remains behind the existing application/provider boundaries. The `UnifiedAgent` priority order is currently:
+The transient-upload contract above remains accepted and closed. No object-storage scope expansion is justified.
+
+## 8. STEP 5 — SERVERLESS / ZERO-CARD ECONOMICS — OPEN OBSERVATION GATE
+
+Serverless was enabled and a fresh container was deployed before the valid test. After a real idle interval the service did not reach Railway SLEEPING state.
 
 ```text
-Cloudflare → Groq → OpenRouter → Hugging Face → DeepSeek → Gemini
+SERVERLESS_CONFIGURED             PASS
+FRESH_CONTAINER_TEST              PASS
+REAL_SERVERLESS_SLEEP_OBSERVED    FAIL / RESIDUAL CONFIRMED
+AUTO_WAKE_PROOF                   NOT TESTABLE WITHOUT REAL SLEEP
+NO_CARD_REQUIREMENT               PASS
+REAL_STEADY_STATE_ECONOMICS       PENDING REPRESENTATIVE OBSERVATION
+STEP_5_OVERALL                    OPEN
 ```
 
-The deployment preflight requires at least one provider credential or remote-provider URL, but a non-empty secret is not provider usability proof.
+This residual is not currently a correctness, persistence, provider, recovery, or security failure. Do not redesign Reflex or add infrastructure merely to force sleep. Observe representative Railway usage after the deployment/test storm. If steady-state usage fits the accepted zero-card/free-credit constraint, accept sleep as a non-functional optimization residual. If economics violates the hard constraint, the residual becomes an economic blocker requiring the smallest coherent repair.
 
-Still required:
+## 9. STEP 6 — BACKUP / RESTORE / RECOVERY — PASS
+
+Automated contracts remain PASS for portable SQLite format, user-scoped restore semantics, cross-user isolation, and SQLite rollback portability.
+
+A real destructive dummy-user recovery drill was completed against the live Railway + Turso candidate on 2026-09-08:
 
 ```text
-ONE_REAL_PROVIDER_SECRET_STAGED_SERVER_SIDE = PENDING
-REAL_OUTBOUND_PROVIDER_CALL = PENDING
-SUCCESS_RESPONSE_VISIBLE_IN_REFLEX = PENDING
-RESPONSE_PERSISTED_TO_TURSO = PENDING
-RESPONSE_SURVIVES_REDEPLOY = PENDING
+Portable SQLite backup exported                 PASS
+Pre-backup session/chat marker present           PASS
+Post-backup mutation created                     PASS
+Backup selected from Android                     PASS
+Backup uploaded/staged through Reflex            PASS
+Destructive restore executed against Turso       PASS
+Pre-backup session recovered                     PASS
+Pre-backup chat marker recovered                 PASS
+Post-backup mutation removed                     PASS
+Unrelated railway-smoke-01 data remained intact  PASS
+REAL_TURSO_DUMMY_RESTORE                         PASS
 ```
 
-This is an operator-held secret/runtime action. Real credential values must never be pasted into repository governance, issues, PRs, or chat transcripts.
+During the drill, the original restore picker exposed a real mobile UX residual: the backup could be exported but selection/staging was not sufficiently explicit. The bounded repair was implemented, regression-tested, merged in PR #106, deployed as exact main `7a40f2ade5ffde331f44a6276c7267e508bd4260`, and then proven in the same live drill. Railway HTTP evidence showed the backup upload endpoint returning HTTP 200.
 
-## 9. PREFLIGHT RESIDUAL FOUND AND REPAIRED
+STEP 6 is therefore CLOSED PASS. No valuable production data was used for the destructive mutation.
 
-Repository inspection found a fail-closed gap: application composition rejected partial Turso credentials, but `final_gate_preflight.py` did not detect that configuration before runtime.
+## 10. STEP 7 — FINAL DEPLOYMENT EVIDENCE + ENVIRONMENT FREEZE
 
-The current bounded repair adds the same pair invariant to the operator preflight:
+All non-Step-5 architecture, repository, CI, and required real-runtime evidence for the current candidate is reconciled.
+
+Frozen environment contract:
 
 ```text
-TURSO_DATABASE_URL present XOR TURSO_AUTH_TOKEN present
-→ TURSO_CREDENTIAL_PAIR_INCOMPLETE
-→ PREFLIGHT FAIL
+HOST                         Railway
+PRESENTATION                 Reflex
+APPLICATION BOUNDARY         MultiMindApplication
+AUTHORITATIVE PERSISTENCE    Turso when credential pair present
+ROLLBACK/PORTABLE FORMAT     SQLite
+PROVIDER SMOKE               Groq via existing provider router
+UPLOAD STORAGE               transient request context only
+PRIVATE DESIGN-DNA           optional; neutral fallback mandatory
+SECRETS                      Railway runtime secret store / process env
+STREAMLIT                    retained rollback/reference presentation
 ```
-
-Both absent remains the accepted SQLite fallback/rollback mode. Both present remains the accepted Turso mode.
-
-## 10. STEP 3–8 STATUS
 
 ```text
-STEP 3  REAL PROVIDER SMOKE
-        PENDING — operator secret/runtime proof only
-
-STEP 4  FILE/UPLOAD DURABILITY SEMANTICS
-        PASS — transient request input; no object storage required
-
-STEP 5  RAILWAY SLEEP/AUTO-WAKE + ECONOMICS
-        CONTRACT PASS / REAL RUNTIME PROOF PENDING
-
-STEP 6  BACKUP/RESTORE/RECOVERY
-        AUTOMATED CONTRACT PASS / REAL TURSO ROUND-TRIP PENDING
-
-STEP 7  FINAL DEPLOYMENT EVIDENCE + ENVIRONMENT FREEZE
-        TOPOLOGY FROZEN / FINAL ACCEPTANCE PENDING STEPS 3, 5, 6 RUNTIME PROOFS
-
-STEP 8  EXPLICIT PRODUCTION CUTOVER DECISION
-        NOT GRANTED / GOVERNOR-USER RESERVED
+STEP_7_TOPOLOGY_FREEZE              PASS
+STEP_7_REPOSITORY_CONTRACT          PASS
+STEP_7_RUNTIME_EVIDENCE_RECONCILED  PASS
+STEP_7_FINAL_ENVIRONMENT_ACCEPTANCE BLOCKED ONLY BY STEP_5 ECONOMIC OBSERVATION
 ```
 
-## 11. REMAINING HUMAN ACTIONS — MINIMUM SET
+No further architecture change is authorized by Step 7. New findings must be concrete blockers or accepted scope expansion; curiosity/cleanup does not reopen closed gates.
 
-Only actions requiring real account secrets or observation remain human-held:
-
-1. stage exactly one provider credential in Railway and run one low-cost real prompt;
-2. verify the resulting chat is persisted in Turso and remains after redeploy;
-3. enable/use the accepted Railway Serverless configuration when appropriate, allow the service to become idle, then prove a normal browser request wakes it without dashboard intervention;
-4. inspect real Railway usage after representative use and confirm the hard Rp0/no-card constraint remains viable;
-5. perform one isolated real-Turso dummy-user export/restore recovery round trip.
-
-Everything else should remain automated or repository-governed.
-
-## 12. GOVERNOR DELEGATION — NON-USER-HELD AUTO-PASS
-
-Accepted on 2026-09-07 by the user/Governor for this deployment workstream:
+## 11. STEP 3–8 SUMMARY
 
 ```text
-ALL NON-USER-HELD EVIDENCE IN STEPS 3 / 5 / 6 / 7
-→ inspect autonomously
-→ repair bounded repository residuals autonomously
-→ rerun/review until green when tooling permits
-→ record PASS without asking the user to repeat mechanical repository work
+STEP 3  REAL PROVIDER SMOKE                    PASS
+STEP 4  FILE/UPLOAD DURABILITY SEMANTICS       PASS
+STEP 5  SERVERLESS / ZERO-CARD ECONOMICS       OPEN — observation gate
+STEP 6  BACKUP / RESTORE / RECOVERY            PASS
+STEP 7  ENVIRONMENT / TOPOLOGY FREEZE          PASS; final acceptance waits only Step 5
+STEP 8  EXPLICIT PRODUCTION CUTOVER             NOT GRANTED / GOVERNOR-USER RESERVED
 ```
 
-This delegation does not waive evidence requirements. It only removes unnecessary operator handoffs.
+## 12. REMAINING HUMAN ACTIONS — MINIMUM SET
 
-The following remain user-held because they require real account secrets, external dashboard state, destructive confirmation, or direct real-runtime observation:
+Only Step 5 observation and Step 8 decision remain user/Governor-held:
 
-```text
-STEP 3: stage one real provider secret and perform/observe the real provider smoke
-STEP 5: observe actual sleep/auto-wake behavior and real Railway usage/cost
-STEP 6: authorize/perform one isolated real-Turso dummy restore round trip
-STEP 8: explicit production cutover decision
-```
+1. allow representative normal Railway operation long enough to avoid extrapolating the build/deploy/redeploy test storm;
+2. inspect real Railway usage/burn rate against the hard zero-card/free-credit constraint;
+3. if Step 5 is accepted, make a separate explicit Step-8 production cutover decision.
 
-For Steps 3, 5, 6 and 7, any repository-only, CI-only, documentation, contract, regression, static-analysis, composition, routing, persistence, backup-format, or deployment-artifact evidence is now owned by this workstream and should be closed without further user intervention unless a true blocker or scope-expanding decision appears.
+No additional provider, backup/restore, file-storage, or topology experiment is required unless new evidence invalidates a closed proof.
 
-This delegation does not authorize production cutover and does not permit weakening tests, bypassing fail-closed checks, adding new infrastructure, or changing accepted architecture merely to obtain a green result.
+## 13. GOVERNOR DELEGATION — NON-USER-HELD AUTO-PASS
 
-## 13. CUTOVER LAW
+Accepted 2026-09-07: all non-user-held evidence in Steps 3/5/6/7 is owned by this workstream for autonomous inspection, bounded repair, rerun, review, reconciliation, and closure. Missing real-world proof may never be converted to PASS merely by delegation.
 
-No result above independently authorizes production cutover.
+## 14. CUTOVER LAW
 
-Until the remaining runtime proofs are green and an explicit Governor/user authorization is issued:
+Step 7 freeze is not production cutover authorization. Until Step 5 is accepted and the Governor/user explicitly authorizes Step 8:
 
 ```text
 PRODUCTION_CUTOVER_AUTHORIZED = FALSE
 ```
 
-Streamlit remains the rollback/reference presentation. No destructive cleanup, provider redesign, database rewrite, or old-host retirement is authorized here.
+Streamlit remains rollback/reference presentation. No destructive cleanup, provider redesign, database rewrite, or old-host retirement is authorized.
