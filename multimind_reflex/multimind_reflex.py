@@ -7,6 +7,11 @@ from multimind_reflex.state import AGENT_OPTIONS, ARCHETYPES, SKILL_OPTIONS, TEM
 
 UPLOAD_ID = "rj3_upload"
 RESTORE_ID = "rj3_restore"
+RESTORE_ACCEPT = {
+    "application/octet-stream": [".db", ".sqlite", ".sqlite3"],
+    "application/x-sqlite3": [".db", ".sqlite", ".sqlite3"],
+    "application/vnd.sqlite3": [".db", ".sqlite", ".sqlite3"],
+}
 SESSION_MODES = ["coding", "research", "thinking", "custom"]
 
 
@@ -374,21 +379,34 @@ def _data_ops() -> rx.Component:
     return rx.vstack(
         rx.heading("Backup / Restore", size="4"),
         rx.button("Export SQLite backup", on_click=HostState.export_database, variant="soft"),
+        rx.text(
+            "Restore accepts MultiMind SQLite backups (.db/.sqlite/.sqlite3). "
+            "Tap the area below, choose one backup, confirm its filename appears, then stage it.",
+            size="2",
+        ),
         rx.upload(
-            rx.text("Select one SQLite backup"),
+            rx.vstack(
+                rx.text("Tap to select one SQLite backup"),
+                rx.foreach(rx.selected_files(RESTORE_ID), rx.text),
+                align="center",
+                width="100%",
+            ),
             id=RESTORE_ID,
+            accept=RESTORE_ACCEPT,
             multiple=False,
+            max_files=1,
             width="100%",
             border="1px dashed var(--gray-a8)",
             padding="0.75rem",
         ),
         rx.hstack(
             rx.button(
-                "Stage restore",
+                "Stage selected backup",
                 on_click=HostState.stage_restore(rx.upload_files(upload_id=RESTORE_ID)),
                 variant="soft",
             ),
             rx.button("Restore safely", on_click=HostState.restore_database, variant="outline"),
+            wrap="wrap",
         ),
         rx.cond(HostState.restore_name != "", rx.text("Staged: ", HostState.restore_name)),
         width="100%",
