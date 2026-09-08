@@ -1,0 +1,45 @@
+schema_version: 1
+status_date: 2026-09-08
+workstream: real_deployment_architecture_production_readiness
+step: 7
+production_cutover_authorized: false
+candidate:
+  host: railway
+  presentation: reflex
+  application_boundary: MultiMindApplication
+  authoritative_persistence: turso
+  portable_backup_rollback_format: sqlite
+  secrets: railway_runtime_environment
+  provider_routing: existing_provider_abstraction
+  private_design_dna: optional_safe_neutral_fallback
+  streamlit: retained_rollback_reference
+runtime_evidence:
+  railway_https_reflex: PASS
+  turso_redeploy_durability: PASS
+  real_groq_provider_smoke: PASS
+  provider_result_survives_redeploy: PASS
+  portable_sqlite_export: PASS
+  real_turso_dummy_restore: PASS
+  restore_prebackup_marker: PASS
+  restore_postbackup_mutation_removed: PASS
+  restore_cross_user_isolation: PASS
+  private_dna_safe_fallback: PASS
+  transient_upload_contract: PASS
+step5:
+  serverless_configured: PASS
+  fresh_container_test: PASS
+  real_sleep_observed: FAIL_RESIDUAL
+  auto_wake: NOT_TESTABLE_WITHOUT_SLEEP
+  no_card: PASS
+  steady_state_economics: PENDING
+step7:
+  topology_freeze: PASS
+  repository_contract: PASS
+  runtime_evidence_reconciled: PASS
+  final_environment_acceptance: WAITING_ONLY_STEP5_ECONOMICS
+locks:
+  architecture_research_reopened: false
+  persistence_redesign_authorized: false
+  provider_redesign_authorized: false
+  object_storage_required: false
+  production_cutover_authorized: false
