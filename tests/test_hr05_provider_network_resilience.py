@@ -49,9 +49,7 @@ def _error_result(name="failed"):
 def test_router_falls_back_for_timeout_and_preserves_context():
     first = FakeProvider("First", result=_error_result("First"))
     second = FakeProvider("Second")
-
     result = ModelRouter([first, second]).generate("prompt", "system", mode="research", max_tokens=77)
-
     assert result["agent"] == "Second"
     assert len(first.calls) == len(second.calls) == 1
     assert second.calls[0] == {
@@ -63,9 +61,7 @@ def test_router_blank_success_falls_back_and_success_stops_chain():
     blank = FakeProvider("Blank", result={"status": "success", "text": "  ", "agent": "Blank", "tokens": 0, "cost": 0.0})
     healthy = FakeProvider("Healthy")
     unused = FakeProvider("Unused")
-
     result = ModelRouter([blank, healthy, unused]).generate("prompt")
-
     assert result["agent"] == "Healthy"
     assert len(blank.calls) == len(healthy.calls) == 1
     assert unused.calls == []
@@ -75,9 +71,7 @@ def test_router_exception_diagnostics_do_not_include_raw_sentinel(monkeypatch):
     messages = []
     monkeypatch.setattr("agents.router.error_logger.log", lambda _kind, message, **_kwargs: messages.append(message))
     provider = FakeProvider("Explosive", exception=RuntimeError("SUPER_SECRET_PROVIDER_INTERNAL_ERROR"))
-
     result = ModelRouter([provider]).generate("prompt")
-
     assert result["text"] == TERMINAL_PROVIDER_FAILURE_TEXT
     assert all("SUPER_SECRET_PROVIDER_INTERNAL_ERROR" not in message for message in messages)
     assert any("exception_type=RuntimeError" in message for message in messages)
@@ -92,9 +86,7 @@ def test_unified_all_fail_is_terminal_and_sanitized():
         "First": {"success": 0, "error": 0, "rate_limited": False, "last_error": ""},
         "Second": {"success": 0, "error": 0, "rate_limited": False, "last_error": ""},
     }
-
     result = unified.generate("prompt")
-
     assert result["status"] == "error"
     assert result["text"] == TERMINAL_PROVIDER_FAILURE_TEXT
     assert len(first.calls) == len(second.calls) == 1
@@ -106,65 +98,31 @@ def test_unified_fallback_preserves_request_and_stops_after_usable_success():
         def __init__(self, response):
             self.response = response
             self.calls = []
-
         def generate(self, prompt, system_prompt=None, mode="coding", max_tokens=4096):
-            self.calls.append({
-                "prompt": prompt,
-                "system_prompt": system_prompt,
-                "mode": mode,
-                "max_tokens": max_tokens,
-            })
+            self.calls.append({"prompt": prompt, "system_prompt": system_prompt, "mode": mode, "max_tokens": max_tokens})
             return dict(self.response)
-
     first = RecordingProvider(_error_result("Cloudflare"))
-    second = RecordingProvider({
-        "status": "success", "text": "usable response", "agent": "Groq",
-        "tokens": 1, "cost": 0.0,
-    })
-    unused = RecordingProvider({
-        "status": "success", "text": "must not be used", "agent": "Unused",
-        "tokens": 1, "cost": 0.0,
-    })
+    second = RecordingProvider({"status": "success", "text": "usable response", "agent": "Groq", "tokens": 1, "cost": 0.0})
+    unused = RecordingProvider({"status": "success", "text": "must not be used", "agent": "Unused", "tokens": 1, "cost": 0.0})
     unified = UnifiedAgent({})
-    unified.providers = [
-        {"name": "☁️ Cloudflare", "agent": first},
-        {"name": "⚡ Groq", "agent": second},
-        {"name": "🔍 Gemini", "agent": unused},
-    ]
-    unified.stats = {
-        provider["name"]: {"success": 0, "error": 0, "rate_limited": False, "last_error": ""}
-        for provider in unified.providers
-    }
-
+    unified.providers = [{"name": "☁️ Cloudflare", "agent": first}, {"name": "⚡ Groq", "agent": second}, {"name": "🔍 Gemini", "agent": unused}]
+    unified.stats = {provider["name"]: {"success": 0, "error": 0, "rate_limited": False, "last_error": ""} for provider in unified.providers}
     result = unified.generate("prompt", "system", mode="research", max_tokens=77)
-
-    expected_request = {
-        "prompt": "prompt", "system_prompt": "system", "mode": "research", "max_tokens": 77,
-    }
+    expected_request = {"prompt": "prompt", "system_prompt": "system", "mode": "research", "max_tokens": 77}
     assert result["text"] == "usable response"
     assert first.calls == [expected_request]
     assert second.calls == [expected_request]
     assert unused.calls == []
 
 
-@pytest.mark.parametrize(
-    ("provider_class", "module_name"),
-    [
-        (GroqProvider, "providers.groq"),
-        (OpenRouterProvider, "providers.openrouter"),
-        (DeepSeekProvider, "providers.deepseek"),
-    ],
-)
+@pytest.mark.parametrize(("provider_class", "module_name"), [(GroqProvider, "providers.groq"), (OpenRouterProvider, "providers.openrouter"), (DeepSeekProvider, "providers.deepseek")])
 def test_openai_compatible_clients_receive_timeout_and_no_retries(monkeypatch, provider_class, module_name):
     captured = {}
-
     class Client:
         def __init__(self, **kwargs):
             captured.update(kwargs)
-
     monkeypatch.setattr(f"{module_name}.OpenAI", Client)
     provider_class("key")
-
     assert captured["timeout"] == Config.API_TIMEOUT
     assert captured["max_retries"] == 0
 
@@ -173,64 +131,35 @@ def test_gemini_request_receives_timeout(monkeypatch):
     provider = GeminiProvider("")
     captured = {}
     provider.model_name = "Gemini"
-    provider.client = SimpleNamespace(models=SimpleNamespace(
-        generate_content=lambda **kwargs: captured.update(kwargs) or SimpleNamespace(text="usable response")
-    ))
-
+    provider.client = SimpleNamespace(models=SimpleNamespace(generate_content=lambda **kwargs: captured.update(kwargs) or SimpleNamespace(text="usable response")))
     result = provider.generate("prompt")
-
     assert result["status"] == "success"
     assert captured["model"] == "Gemini"
     assert captured["contents"] == "prompt"
     assert captured["config"].http_options.timeout == Config.API_TIMEOUT * 1000
 
 
-@pytest.mark.parametrize(
-    ("provider_factory", "post_target", "response"),
-    [
-        (
-            lambda: CloudflareProvider("key", "account"),
-            "providers.cloudflare.requests.post",
-            SimpleNamespace(ok=True, status_code=200, json=lambda: {"success": True, "result": {"response": "usable"}}),
-        ),
-        (
-            lambda: HuggingFaceProvider("key"),
-            "providers.huggingface.requests.post",
-            SimpleNamespace(status_code=200, json=lambda: [{"generated_text": "usable"}]),
-        ),
-        (
-            lambda: RemoteProvider("https://remote.example"),
-            "providers.remote.requests.post",
-            SimpleNamespace(status_code=200, json=lambda: {"response": "usable"}),
-        ),
-    ],
-    ids=["cloudflare", "huggingface", "remote"],
-)
+@pytest.mark.parametrize(("provider_factory", "post_target", "response"), [
+    (lambda: CloudflareProvider("key", "account"), "providers.cloudflare.requests.post", SimpleNamespace(ok=True, status_code=200, json=lambda: {"success": True, "result": {"response": "usable"}})),
+    (lambda: HuggingFaceProvider("key"), "providers.huggingface.requests.post", SimpleNamespace(status_code=200, json=lambda: [{"generated_text": "usable"}])),
+    (lambda: RemoteProvider("https://remote.example"), "providers.remote.requests.post", SimpleNamespace(status_code=200, json=lambda: {"response": "usable"})),
+], ids=["cloudflare", "huggingface", "remote"])
 def test_requests_providers_pass_configured_timeout(monkeypatch, provider_factory, post_target, response):
     captured = {}
-
     def post(*args, **kwargs):
         captured["args"] = args
         captured["kwargs"] = kwargs
         return response
-
     monkeypatch.setattr(post_target, post)
-
     result = provider_factory().generate("prompt")
-
     assert result["status"] == "success"
     assert captured["kwargs"]["timeout"] == Config.API_TIMEOUT
 
 
 def test_remote_malformed_response_is_not_success(monkeypatch):
     provider = RemoteProvider("https://remote.example")
-    monkeypatch.setattr(
-        "providers.remote.requests.post",
-        lambda *args, **kwargs: SimpleNamespace(status_code=200, json=lambda: {"response": "  "}),
-    )
-
+    monkeypatch.setattr("providers.remote.requests.post", lambda *args, **kwargs: SimpleNamespace(status_code=200, json=lambda: {"response": "  "}))
     result = provider.generate("prompt")
-
     assert result["status"] == "error"
     assert "remote.example" not in result["text"]
 
@@ -240,13 +169,8 @@ def test_huggingface_nonretryable_4xx_is_attempted_once(monkeypatch, status):
     provider = HuggingFaceProvider("key")
     calls = []
     monkeypatch.setattr("providers.huggingface.time.sleep", lambda _seconds: None)
-    monkeypatch.setattr(
-        "providers.huggingface.requests.post",
-        lambda *args, **kwargs: calls.append(1) or SimpleNamespace(status_code=status, json=lambda: {}),
-    )
-
+    monkeypatch.setattr("providers.huggingface.requests.post", lambda *args, **kwargs: calls.append(1) or SimpleNamespace(status_code=status, json=lambda: {}))
     result = provider.generate("prompt")
-
     assert result["status"] == "error"
     assert len(calls) == 1
 
@@ -256,55 +180,37 @@ def test_huggingface_retryable_statuses_remain_bounded(monkeypatch, status):
     provider = HuggingFaceProvider("key")
     calls = []
     monkeypatch.setattr("providers.huggingface.time.sleep", lambda _seconds: None)
-    monkeypatch.setattr(
-        "providers.huggingface.requests.post",
-        lambda *args, **kwargs: calls.append(1) or SimpleNamespace(status_code=status, json=lambda: {}),
-    )
-
+    monkeypatch.setattr("providers.huggingface.requests.post", lambda *args, **kwargs: calls.append(1) or SimpleNamespace(status_code=status, json=lambda: {}))
     result = provider.generate("prompt")
-
     assert result["status"] == "error"
     assert len(calls) == 3
 
 
 def test_zero_usable_debate_candidates_is_terminal_failure():
     failed = FakeProvider("Failed", result=_error_result("Failed"))
-    result = DebateOrchestrator(gemini_agent=None, cloudflare_agent=failed).debate(
-        "prompt", agents=["cloudflare"]
-    )
-
+    result = DebateOrchestrator(gemini_agent=None, cloudflare_agent=failed).debate("prompt", agents=["cloudflare"])
     assert result["status"] == "error"
     assert result["final_answer"] == TERMINAL_PROVIDER_FAILURE_TEXT
 
 
 def test_valid_candidate_survives_exhausted_judge_routes():
     candidate = "A short but usable candidate."
-
     class CandidateThenFailProvider(FakeProvider):
         def generate(self, *args, **kwargs):
             self.calls.append(kwargs if kwargs else {"args": args})
             if len(self.calls) == 1:
-                return {
-                    "status": "success", "text": candidate, "agent": self.name,
-                    "tokens": 1, "cost": 0.0,
-                }
+                return {"status": "success", "text": candidate, "agent": self.name, "tokens": 1, "cost": 0.0}
             return _error_result(self.name)
-
     provider = CandidateThenFailProvider("Provider")
     judge_failure = FakeProvider("Judge", result=_error_result("Judge"))
-    result = DebateOrchestrator(
-        gemini_agent=None, cloudflare_agent=provider, groq_agent=judge_failure
-    ).debate("prompt", agents=["cloudflare", "groq"])
-
+    result = DebateOrchestrator(gemini_agent=None, cloudflare_agent=provider, groq_agent=judge_failure).debate("prompt", agents=["cloudflare", "groq"])
     assert result["status"] == "success"
     assert candidate in result["final_answer"]
     assert result["participants"][0]["status"] == "success"
     assert result["participants"][1]["status"] == "error"
     assert result["judge"]["status"] == "error"
     assert result["judge"]["fallback_participant_id"] == "participant-1-cloudflare"
-    # Cloudflare succeeds as participant, then is the only judge-eligible route and fails.
     assert len(provider.calls) == 2
-    # Groq failed its participant attempt, so it must not be reused invisibly for judge fallback.
     assert len(judge_failure.calls) == 1
     assert result["judge"]["eligible_providers"] == ["cloudflare"]
     assert result["responses"][-1]["status"] == "error"
@@ -314,16 +220,7 @@ def _terminal_app_state(active_agents, memory):
     class SessionState(SimpleNamespace):
         def get(self, key, default=None):
             return getattr(self, key, default)
-
-    return SessionState(
-        user_id="test-user",
-        compressor_enabled=False,
-        current_session={"id": "session-1", "mode": "coding"},
-        active_agents=active_agents,
-        debate_rounds=1,
-        selected_skill="default",
-        memories={"session-1": memory},
-    )
+    return SessionState(user_id="test-user", compressor_enabled=False, current_session={"id": "session-1", "mode": "coding"}, active_agents=active_agents, debate_rounds=1, selected_skill="default", memories={"session-1": memory})
 
 
 def _assert_process_chat_terminal_failure(monkeypatch, agents, active_agents):
@@ -332,30 +229,19 @@ def _assert_process_chat_terminal_failure(monkeypatch, agents, active_agents):
     original_short_term = list(sentinel.short_term)
     original_long_term = sentinel.long_term
     original_decisions = list(sentinel.decisions)
-    ui = SimpleNamespace(
-        session_state=_terminal_app_state(active_agents, sentinel),
-        error=Mock(),
-        success=Mock(),
-        warning=Mock(),
-        rerun=Mock(),
-    )
+    ui = SimpleNamespace(session_state=_terminal_app_state(active_agents, sentinel), error=Mock(), success=Mock(), warning=Mock(), rerun=Mock())
     persist = Mock()
     get_db = Mock()
     monkeypatch.setattr(app, "st", ui)
     monkeypatch.setattr(app, "get_agents", lambda _user_id: agents)
     monkeypatch.setattr(app, "persist_chat_and_update_memory", persist)
     monkeypatch.setattr(app, "get_db_manager", get_db)
-
     app.process_chat("prompt", [], "standalone")
-
     ui.error.assert_called_once_with(TERMINAL_PROVIDER_FAILURE_TEXT)
     ui.success.assert_not_called()
     persist.assert_not_called()
     get_db.assert_not_called()
-    assert all(
-        "SUPER_SECRET_PROVIDER_INTERNAL_ERROR" not in str(call)
-        for call in (*ui.error.call_args_list, *persist.call_args_list)
-    )
+    assert all("SUPER_SECRET_PROVIDER_INTERNAL_ERROR" not in str(call) for call in (*ui.error.call_args_list, *persist.call_args_list))
     assert ui.session_state.memories["session-1"] is sentinel
     assert sentinel.short_term == original_short_term
     assert sentinel.long_term == original_long_term
@@ -363,34 +249,21 @@ def _assert_process_chat_terminal_failure(monkeypatch, agents, active_agents):
 
 
 def test_process_chat_unified_terminal_failure_skips_persistence(monkeypatch):
-    unified = SimpleNamespace(generate=lambda **_kwargs: {
-        "status": "error", "text": "SUPER_SECRET_PROVIDER_INTERNAL_ERROR",
-        "agent": "Unified", "tokens": 0, "cost": 0.0,
-    })
+    unified = SimpleNamespace(generate=lambda **_kwargs: {"status": "error", "text": "SUPER_SECRET_PROVIDER_INTERNAL_ERROR", "agent": "Unified", "tokens": 0, "cost": 0.0})
     agents = {name: None for name in ("remote", "gemini", "deepseek", "groq", "cloudflare", "openrouter", "huggingface")}
     agents["unified"] = unified
-
     _assert_process_chat_terminal_failure(monkeypatch, agents, ["unified"])
 
 
 def test_process_chat_remote_terminal_failure_skips_persistence(monkeypatch):
-    remote = SimpleNamespace(generate=lambda **_kwargs: {
-        "status": "error", "text": "SUPER_SECRET_PROVIDER_INTERNAL_ERROR",
-        "agent": "Remote", "tokens": 0, "cost": 0.0,
-    })
+    remote = SimpleNamespace(generate=lambda **_kwargs: {"status": "error", "text": "SUPER_SECRET_PROVIDER_INTERNAL_ERROR", "agent": "Remote", "tokens": 0, "cost": 0.0})
     agents = {name: None for name in ("unified", "gemini", "deepseek", "groq", "cloudflare", "openrouter", "huggingface")}
     agents["remote"] = remote
-
     _assert_process_chat_terminal_failure(monkeypatch, agents, ["remote"])
 
 
 def test_process_chat_zero_candidate_debate_skips_persistence(monkeypatch):
-    failed = FakeProvider("Cloudflare", result={
-        "status": "error", "text": "SUPER_SECRET_PROVIDER_INTERNAL_ERROR",
-        "agent": "Cloudflare", "tokens": 0, "cost": 0.0,
-        "failure_category": "timeout",
-    })
+    failed = FakeProvider("Cloudflare", result={"status": "error", "text": "SUPER_SECRET_PROVIDER_INTERNAL_ERROR", "agent": "Cloudflare", "tokens": 0, "cost": 0.0, "failure_category": "timeout"})
     agents = {name: None for name in ("unified", "remote", "gemini", "deepseek", "groq", "openrouter", "huggingface")}
     agents["cloudflare"] = failed
-
     _assert_process_chat_terminal_failure(monkeypatch, agents, ["cloudflare"])
