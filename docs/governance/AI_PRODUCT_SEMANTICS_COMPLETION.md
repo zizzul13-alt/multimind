@@ -1,94 +1,113 @@
 # MULTIMIND — AI PRODUCT SEMANTICS COMPLETION
 
-Status: **USER-AUTHORIZED / IMPLEMENTATION OPEN**
+Status: **CLOSED / FULL FEATURE IMPLEMENTATION OF THIS BOUNDED CONTRACT**
 Date: 2026-09-09
-Baseline: `main@75711f5ac8a6255dc65d40c94c16705ab2b32d25`
+Entering baseline: `main@75711f5ac8a6255dc65d40c94c16705ab2b32d25`
+Implementation merge: PR #108 → `main@df2669a1aaf8225b44459d66a1a8da0475aa284a`
 Authority: `docs/governance/MULTIMIND_AI_PRODUCT_DNA_MASTER.md`
 
-## Mission
+## Mission and boundary
 
-Complete the remaining accepted AI Product DNA semantics that were intentionally outside the bounded Deliberation Semantic Correction.
+This workstream completed the remaining accepted Coding/Research/Thinking mode, capability/readiness, common Prompt Style/skill normalization, compressor utility, persistence, and presentation-projection semantics that were outside the earlier bounded Deliberation Semantic Correction.
 
-The previous workstream remains CLOSED and is not reopened. Its participant identity, rounds, judge/synthesis, Release Gate, persistence, and resource-boundary guarantees are entering invariants.
+The earlier deliberation correction remains CLOSED. Its participant identity, rounds, judge/synthesis, Release Gate, persistence, zero-roster, and resource-boundary guarantees were preserved.
 
-Railway final integration remains HOLD.
+Railway final integration remained HOLD throughout this workstream and is still HOLD at closure. Production cutover is not authorized by this document.
 
-## Repository findings at entry
+## Implemented contract
 
-Current repository evidence shows material semantic drift still exists:
+### Task modes / capability registry
 
-1. `ChatRequest.session_mode` defaults to `coding` and is passed to providers/debate, but there is no application-level capability registry that makes Coding/Research/Thinking determine participant eligibility/readiness/recommendation.
-2. `selected_skill` is forwarded to `DebateOrchestrator`; `SkillsManager` is a prompt-prefix system. This is useful but is not the accepted universal Prompt Style normalization contract.
-3. `PromptCompressor` is hard-wired through the Gemini agent in `MultiMindApplication.execute_chat`, while accepted DNA defines compressor as provider-independent application utility machinery.
-4. Compression currently trusts `gemini_agent.compress_prompt()` output without an application-level preservation contract for code, numbers, filenames, errors, constraints, and evidence.
-5. Current application routing receives explicit active agents, but mode/capability eligibility and recommended roster are not first-class application truth.
+- Canonical modes are `coding`, `research`, and `thinking`.
+- Each mode has distinct application-level semantic instructions.
+- Capability/readiness is application truth, separate from user preference and historical performance.
+- The application exposes deterministic ready/recommended participant state from configured resources.
+- Explicit user participant selection remains execution truth; recommendations never silently replace the selected roster.
+- Zero explicit participants remains zero.
 
-## Finite implementation contract
+### Prompt Style / templates / skills
 
-Implement the smallest coherent completion of the accepted product semantics:
+- Prompt Style is common task normalization rather than provider selection.
+- Raw user intent is retained separately from the normalized/effective prompt.
+- Existing skill cards remain compatible as normalization input; they no longer need to be re-applied inside `DebateOrchestrator` after application normalization.
+- Existing UI templates remain authoring helpers: once expanded, their task content enters the same common normalization path as ordinary user input.
+- All selected deliberation participants receive the same normalized/effective task; role/debate machinery may add its own bounded role context without changing participant identity.
 
-### A. Task modes / capability registry
+### Compressor
 
-- Canonical modes: `coding`, `research`, `thinking`.
-- Capability/readiness is application truth, separate from historical performance and user preference.
-- A mode resolves eligible/ready participants and a deterministic recommended roster from currently configured resources.
-- User explicit participant selection remains authoritative; mode recommendations never silently replace/check/uncheck the user's explicit roster.
-- Execution records mode and eligibility/recommendation provenance.
-- No hidden provider consumption.
+- Compression is now application utility machinery rather than a Gemini-hard-wired product law.
+- Utility selection is bounded to an explicitly selected participant resource; hidden/unselected providers are not consumed for compression.
+- `BaseProvider` exposes a provider-neutral compression utility capability through its own provider boundary, while specialized providers may override it.
+- Utility failure/unavailability degrades to the uncompressed normalized task.
+- A preservation guard rejects compression that drops task-critical code blocks, numeric literals, filenames/paths, error/exception constraints, explicit MUST/DO NOT/NEVER/REQUIRED lines, or SOURCE/EVIDENCE markers.
+- Compressor provenance/fallback metadata is application truth.
 
-### B. Prompt Style / normalization
+### Integration / persistence / presentation
 
-- Prompt Style is a common task-normalization layer, not provider selection.
-- The same normalized task is supplied to every selected participant.
-- Skills/templates may remain compatibility inputs, but their semantics must be reconciled behind the application normalization boundary rather than independently changing provider identity.
-- Normalization must preserve the raw user prompt in persisted truth and expose normalized prompt/provenance separately.
+Operational path:
 
-### C. Compressor
+`RAW TASK → TASK MODE → COMMON NORMALIZATION → OPTIONAL GUARDED COMPRESSION → CAPABILITY/READINESS → EXPLICIT PARTICIPANTS → DELIBERATION`
 
-- Compressor is an application utility capability, not permanently Gemini-specific.
-- Utility provider selection must be explicit/bounded and attributable; absence/failure degrades to the uncompressed normalized prompt.
-- Compression must have a preservation guard for task-critical literals/structures including code, numbers, filenames/paths, errors, explicit constraints, and evidence/source markers where present.
-- Compression may reduce multiplied context/token cost but must never silently change participant roster or task mode.
-- Compression metadata (applied/not applied, utility provider when used, token savings where known, fallback reason) is application truth.
+`MultiMindApplication` remains the presentation-independent owner of these semantics.
 
-### D. Integration / persistence / presentation
+Structured `product_semantics` is attached to execution truth and persisted with debate data, including raw/normalized/effective prompt state, mode, prompt style, capability/recommendation state, explicit participants, and compressor state.
 
-- Canonical flow becomes operationally meaningful: raw task → mode → normalization → optional compression → capability/readiness → explicit participants → deliberation.
-- Preserve `MultiMindApplication` as the boundary.
-- Persist enough structured metadata to reload/audit raw prompt, normalized/effective prompt semantics, mode, capability/recommendation state, compressor state, participants, and debate provenance without creating a second presentation truth.
-- Reflex/Streamlit may project this truth but must not implement separate mode/normalizer/compressor business logic.
+A renderer-neutral Reflex projection was added. Presentation projects application truth and does not become a second source of mode/compressor/provider semantics.
 
-## Verification matrix
+## Adversarial repair loop
 
-At minimum test:
+The implementation was not accepted at first green. The workstream iterated after adversarial inspection and repaired:
 
-- Coding, Research, Thinking each produce distinct semantic mode instructions and capability results;
-- eligible vs ineligible/unavailable participant classification;
-- recommended roster deterministic and explicit user override preserved;
-- zero explicit participants remains zero;
-- same normalized prompt reaches all participants;
-- prompt-style/skill compatibility does not select providers;
-- raw prompt remains intact for history;
-- compressor disabled;
-- compressor enabled and successful;
-- compressor utility unavailable/fails → safe uncompressed degradation;
-- preservation of code blocks, numeric literals, filenames/paths, error strings, MUST/DO NOT constraints, and source/evidence markers;
-- compressor cannot alter participant identity/roster;
-- no hidden paid/unselected provider use;
-- persistence/reload/projection metadata;
-- existing deliberation semantic correction regression remains green;
-- full Python regression + RJ5 + RJ6 + Final Gate on exact branch head, expected-head merge, then exact-main verification.
+1. legacy tests that encoded the pre-normalization exact runtime prompt instead of preserving the application boundary contract;
+2. upload/direct/debate routing expectations so uploaded context remains single-copy while the task is normalized once;
+3. compression preservation hazards for code, numbers, paths, errors, explicit constraints, and evidence markers;
+4. hidden-resource risk by bounding compressor utility selection to explicitly selected resources;
+5. Gemini-specific utility coupling by adding a provider-neutral utility capability behind `BaseProvider`;
+6. explicit utility error classification so failed compression cannot be reported as successful compression;
+7. malformed presentation metadata handling so projection degrades boringly instead of inventing truth.
 
-## Scope protection
+No FastAPI, REST/RPC glue, CrewAI, LangChain, AutoGen, new database, microservice, or external prompt service was introduced.
 
-Do not add FastAPI, REST/RPC glue, CrewAI, LangChain, AutoGen, new databases, microservices, external prompt services, or provider redesign.
+## Verification evidence
 
-Do not reopen Security, persistence, Design-DNA, Reflex platform selection, or the closed Deliberation Semantic Correction absent concrete invalidating evidence.
+Final PR head:
 
-## Exit condition
+`766664a87d36cb6b26ce6e95610a8b1157f9a2d9`
 
-Continue inspect → implement → targeted/adversarial test → repair → full regression → diff review until known in-scope residuals are zero.
+PR-head verification:
 
-Only then merge with expected-head guard and verify exact `main`.
+- Python Regression #249 — SUCCESS
+- RJ5 Dual-Host Torture #35 — SUCCESS
+- RJ6 Cutover Rollback Proof #46 — SUCCESS
+- Final Gate Operator Readiness #79 — SUCCESS
 
-STOP before final Railway integration. Production cutover remains unauthorized.
+PR #108 was marked ready only after those checks and final adversarial diff review, then squash-merged with expected-head guard against exactly `766664a87d36cb6b26ce6e95610a8b1157f9a2d9`.
+
+Implementation exact-main:
+
+`df2669a1aaf8225b44459d66a1a8da0475aa284a`
+
+Exact-main verification:
+
+- Python Regression #250 — SUCCESS
+- RJ5 Dual-Host Torture #36 — SUCCESS
+- RJ6 Cutover Rollback Proof #47 — SUCCESS
+- Final Gate Operator Readiness #80 — SUCCESS
+
+Known in-scope semantic residuals after the final adversarial pass: **0**.
+
+## Status vocabulary
+
+`AI_PRODUCT_SEMANTICS_COMPLETION = FULL FEATURE IMPLEMENTATION / CLOSED`
+
+This status applies to this finite mode/capability/prompt/compressor completion contract. It does not by itself claim every future AI Product DNA feature, every provider, real-provider operational readiness, or production cutover.
+
+`RAILWAY_FINAL_INTEGRATION = HOLD`
+
+`FINAL_RAILWAY_CANDIDATE = NOT DECLARED BY THIS WORKSTREAM`
+
+`PRODUCTION_CUTOVER_AUTHORIZED = NO`
+
+## Exit
+
+Implementation and exact-main verification are complete. Stop here before Railway final integration, as ordered.
