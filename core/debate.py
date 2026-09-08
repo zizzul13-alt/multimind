@@ -27,14 +27,6 @@ class DebateOrchestrator:
     """Orchestrate independent participants, bounded deliberation and synthesis."""
 
     MAX_ROUNDS = 5
-    PROVIDER_ORDER = (
-        "cloudflare",
-        "groq",
-        "openrouter",
-        "huggingface",
-        "deepseek",
-        "gemini",
-    )
 
     def __init__(
         self,
@@ -80,14 +72,10 @@ class DebateOrchestrator:
         try:
             full_prompt = self._build_full_prompt(prompt, context, skill)
             configured = self._configured_providers()
-
             if not configured:
                 raise ValueError("No providers configured on DebateOrchestrator")
 
-            # -----------------------------------------------------------------
-            # Phase 1: independent participant attempts.
-            # Each selected participant receives only its own provider route.
-            # -----------------------------------------------------------------
+            # Phase 1: every selected participant gets exactly its own provider route.
             successful_participants = []
             for index, agent_id in enumerate(active_agents, 1):
                 participant_id = f"participant-{index}-{agent_id}"
@@ -123,9 +111,13 @@ class DebateOrchestrator:
                 )
                 debate_log["participants"].append(participant)
                 debate_log["responses"].append(
-                    self._legacy_response(response, role=role, phase="candidate", participant_id=participant_id)
+                    self._legacy_response(
+                        response,
+                        role=role,
+                        phase="candidate",
+                        participant_id=participant_id,
+                    )
                 )
-
                 if participant["status"] == "success":
                     successful_participants.append(participant)
 
@@ -137,12 +129,8 @@ class DebateOrchestrator:
                 debate_log["end_time"] = datetime.now().isoformat()
                 return debate_log
 
-            # -----------------------------------------------------------------
-            # Phase 2: bounded deliberation.
-            # Rounds=1 means panel candidates + synthesis only.
-            # Each additional round asks every successful participant to perform
-            # one concise critique using its *own* provider route.
-            # -----------------------------------------------------------------
+            # Phase 2: rounds after 1 are real critique rounds. Each successful
+            # participant critiques through its own provider only.
             for deliberation_round in range(2, effective_rounds + 1):
                 comparison = self._format_participants(successful_participants)
                 earlier = self._format_critiques(debate_log["deliberation"])
@@ -160,7 +148,10 @@ class DebateOrchestrator:
                         own_participant_id=participant["participant_id"],
                         round_number=deliberation_round,
                     )
-                    role = f"{self._participant_role(mode, participant_index)} — Critic R{deliberation_round}"
+                    role = (
+                        f"{self._participant_role(mode, participant_index)} "
+                        f"— Critic R{deliberation_round}"
+                    )
                     response = self._execute_single_provider(
                         provider=provider,
                         role=role,
@@ -169,20 +160,22 @@ class DebateOrchestrator:
                         max_tokens=min(self._max_tokens(agent_id), 2048),
                     )
                     self._accumulate_usage(debate_log, response)
-
+                    usable = BaseProvider.has_usable_response(response)
                     critique = {
                         "round": deliberation_round,
                         "participant_id": participant["participant_id"],
                         "requested_provider": agent_id,
                         "actual_provider": (
                             response.get("agent", self._provider_label(provider))
-                            if BaseProvider.has_usable_response(response)
+                            if usable
                             else self._provider_label(provider)
                         ),
                         "model": getattr(provider, "model_name", self._provider_label(provider)),
-                        "status": "success" if BaseProvider.has_usable_response(response) else "error",
-                        "text": response.get("text", "") if BaseProvider.has_usable_response(response) else "",
-                        "failure_category": response.get("failure_category") if isinstance(response, dict) else None,
+                        "status": "success" if usable else "error",
+                        "text": response.get("text", "") if usable else "",
+                        "failure_category": (
+                            response.get("failure_category") if isinstance(response, dict) else None
+                        ),
                         "tokens": response.get("tokens", 0) if isinstance(response, dict) else 0,
                         "cost": response.get("cost", 0.0) if isinstance(response, dict) else 0.0,
                     }
@@ -197,13 +190,14 @@ class DebateOrchestrator:
                         )
                     )
 
-            # -----------------------------------------------------------------
-            # Phase 3: judge/synthesis utility.
-            # Utility routing may use bounded fallback, but actual provider/model
-            # provenance is recorded and never attributed to a selected mind.
-            # -----------------------------------------------------------------
+            # Phase 3: judge/synthesis is utility machinery. It may fallback only
+            # across resources the user explicitly selected and that successfully
+            # participated. This prevents an unselected paid/configured provider
+            # from being called invisibly by judge fallback.
+            judge_eligible_providers = self._judge_provider_ids(successful_participants)
             judge_response = self._run_judge(
                 configured=configured,
+                eligible_provider_ids=judge_eligible_providers,
                 successful_participants=successful_participants,
                 critiques=debate_log["deliberation"],
                 full_prompt=full_prompt,
@@ -221,30 +215,47 @@ class DebateOrchestrator:
                 candidate_for_gate = synthesis or judge_response.get("text", "")
                 debate_log["judge"] = {
                     "status": "success",
+                    "eligible_providers": judge_eligible_providers,
                     "actual_provider": judge_response.get("agent", "Unknown Provider"),
                     "text": judge_response.get("text", ""),
                     "tokens": judge_response.get("tokens", 0),
                     "cost": judge_response.get("cost", 0.0),
                 }
                 debate_log["responses"].append(
-                    self._legacy_response(judge_response, role=self._judge_role(mode), phase="judge")
+                    self._legacy_response(
+                        judge_response,
+                        role=self._judge_role(mode),
+                        phase="judge",
+                    )
                 )
                 debate_log["system_verdict"] = winner
             else:
-                # Preserve a useful answer even when synthesis utility is exhausted.
                 fallback = successful_participants[0]
                 candidate_for_gate = fallback["text"]
                 debate_log["judge"] = {
                     "status": "error",
-                    "actual_provider": judge_response.get("agent", "Router") if isinstance(judge_response, dict) else "Router",
+                    "eligible_providers": judge_eligible_providers,
+                    "actual_provider": (
+                        judge_response.get("agent", "Router")
+                        if isinstance(judge_response, dict)
+                        else "Router"
+                    ),
                     "text": "",
-                    "failure_category": judge_response.get("failure_category") if isinstance(judge_response, dict) else "provider_error",
+                    "failure_category": (
+                        judge_response.get("failure_category")
+                        if isinstance(judge_response, dict)
+                        else "provider_error"
+                    ),
                     "tokens": judge_response.get("tokens", 0) if isinstance(judge_response, dict) else 0,
                     "cost": judge_response.get("cost", 0.0) if isinstance(judge_response, dict) else 0.0,
                     "fallback_participant_id": fallback["participant_id"],
                 }
                 debate_log["responses"].append(
-                    self._legacy_response(judge_response, role=self._judge_role(mode), phase="judge")
+                    self._legacy_response(
+                        judge_response,
+                        role=self._judge_role(mode),
+                        phase="judge",
+                    )
                 )
 
             final_answer = self._apply_release_gate(candidate_for_gate, mode, debate_log)
@@ -262,9 +273,6 @@ class DebateOrchestrator:
 
         return debate_log
 
-    # ------------------------------------------------------------------
-    # Provider / participant helpers
-    # ------------------------------------------------------------------
     def _configured_providers(self):
         configured = {
             "cloudflare": self.cloudflare,
@@ -309,7 +317,7 @@ class DebateOrchestrator:
         return full_prompt
 
     def _execute_single_provider(self, provider, role, task, mode, max_tokens):
-        """Execute through exactly one provider; no cross-provider participant fallback."""
+        """Execute exactly one provider; no cross-provider participant fallback."""
         role_agent = RoleAgent(
             role=role,
             skill=self._participant_system_prompt(mode),
@@ -347,7 +355,9 @@ class DebateOrchestrator:
             "role": role,
             "status": "success" if usable else "error",
             "text": response.get("text", "") if usable else "",
-            "failure_category": response.get("failure_category") if isinstance(response, dict) else None,
+            "failure_category": (
+                response.get("failure_category") if isinstance(response, dict) else None
+            ),
             "status_code": response.get("status_code") if isinstance(response, dict) else None,
             "tokens": response.get("tokens", 0) if isinstance(response, dict) else 0,
             "cost": response.get("cost", 0.0) if isinstance(response, dict) else 0.0,
@@ -415,23 +425,46 @@ class DebateOrchestrator:
         debate_log["total_tokens"] += response.get("tokens", 0) or 0
         debate_log["total_cost"] += response.get("cost", 0.0) or 0.0
 
-    # ------------------------------------------------------------------
-    # Deliberation / judge helpers
-    # ------------------------------------------------------------------
-    def _run_judge(self, configured, successful_participants, critiques, full_prompt, mode):
-        providers = []
-        # Prefer Gemini as a historical high-context utility when configured,
-        # then preserve the stable provider order. This is a utility preference,
-        # not a participant requirement.
-        if configured.get("gemini") is not None:
-            providers.append(configured["gemini"])
-        for provider_id in self.PROVIDER_ORDER:
-            provider = configured.get(provider_id)
-            if provider is not None and provider not in providers:
-                providers.append(provider)
-        for provider in configured.values():
-            if provider not in providers:
-                providers.append(provider)
+    @staticmethod
+    def _judge_provider_ids(successful_participants):
+        """Bound judge utility to resources the user selected successfully.
+
+        Gemini may be preferred when it is already one of those selected resources,
+        preserving the historical high-context utility optimization without creating
+        a hidden unselected-provider call.
+        """
+        selected = []
+        for participant in successful_participants:
+            provider_id = participant.get("requested_provider")
+            if provider_id and provider_id not in selected:
+                selected.append(provider_id)
+        if "gemini" in selected:
+            return ["gemini"] + [item for item in selected if item != "gemini"]
+        return selected
+
+    def _run_judge(
+        self,
+        configured,
+        eligible_provider_ids,
+        successful_participants,
+        critiques,
+        full_prompt,
+        mode,
+    ):
+        providers = [
+            configured[provider_id]
+            for provider_id in eligible_provider_ids
+            if provider_id in configured
+        ]
+        if not providers:
+            return {
+                "status": "error",
+                "text": TERMINAL_PROVIDER_FAILURE_TEXT,
+                "agent": "Judge Router",
+                "tokens": 0,
+                "cost": 0.0,
+                "failure_category": "no_selected_judge_provider",
+            }
 
         router = ModelRouter(providers)
         role_agent = RoleAgent(
@@ -447,7 +480,10 @@ class DebateOrchestrator:
         try:
             return role_agent.execute(task=judge_task, mode=mode, max_tokens=8192)
         except Exception as exc:
-            error_logger.log("DELIBERATION_JUDGE_FAILURE", f"exception_type={type(exc).__name__}")
+            error_logger.log(
+                "DELIBERATION_JUDGE_FAILURE",
+                f"exception_type={type(exc).__name__}",
+            )
             return {
                 "status": "error",
                 "text": TERMINAL_PROVIDER_FAILURE_TEXT,
@@ -477,18 +513,26 @@ class DebateOrchestrator:
 
     @staticmethod
     def _format_critiques(critiques):
-        usable = [item for item in critiques if item.get("status") == "success" and item.get("text")]
+        usable = [
+            item
+            for item in critiques
+            if item.get("status") == "success" and item.get("text")
+        ]
         if not usable:
             return "(none)"
-        chunks = []
-        for item in usable:
-            chunks.append(
-                f"--- Round {item['round']} / {item['participant_id']} ---\n{item['text']}"
-            )
-        return "\n\n".join(chunks)
+        return "\n\n".join(
+            f"--- Round {item['round']} / {item['participant_id']} ---\n{item['text']}"
+            for item in usable
+        )
 
     @staticmethod
-    def _critique_prompt(original_task, comparison, earlier_critiques, own_participant_id, round_number):
+    def _critique_prompt(
+        original_task,
+        comparison,
+        earlier_critiques,
+        own_participant_id,
+        round_number,
+    ):
         return f"""You are participating in deliberation round {round_number}.
 
 ORIGINAL TASK:
@@ -569,9 +613,6 @@ material contributions from multiple participants."""
             final_answer += "\n\n---\n**Issues Found:**\n" + "\n".join(issues)
         return final_answer
 
-    # ------------------------------------------------------------------
-    # Prompt / role helpers
-    # ------------------------------------------------------------------
     def _participant_role(self, mode, index):
         roles_map = {
             "coding": [
@@ -599,7 +640,10 @@ material contributions from multiple participants."""
                 "🧱 Constraint Analyst",
             ],
         }
-        roles = roles_map.get(mode, ["🤖 Primary Expert", "👥 Peer Reviewer", "⚖️ Critical Critic"])
+        roles = roles_map.get(
+            mode,
+            ["🤖 Primary Expert", "👥 Peer Reviewer", "⚖️ Critical Critic"],
+        )
         if index < len(roles):
             return roles[index]
         return f"🤖 Panel Participant {index + 1}"
@@ -616,17 +660,36 @@ material contributions from multiple participants."""
     @staticmethod
     def _participant_system_prompt(mode):
         prompts = {
-            "coding": "Act as an independent expert coder. Produce a concrete, correct implementation-focused answer.",
-            "research": "Act as an independent researcher. Separate evidence, inference, uncertainty, and conclusions.",
-            "thinking": "Act as an independent systems thinker. Analyze constraints, alternatives, and failure modes clearly.",
+            "coding": (
+                "Act as an independent expert coder. Produce a concrete, correct "
+                "implementation-focused answer."
+            ),
+            "research": (
+                "Act as an independent researcher. Separate evidence, inference, "
+                "uncertainty, and conclusions."
+            ),
+            "thinking": (
+                "Act as an independent systems thinker. Analyze constraints, "
+                "alternatives, and failure modes clearly."
+            ),
         }
-        return prompts.get(mode, "Act as an independent expert. Produce your own answer before seeing other participants.")
+        return prompts.get(
+            mode,
+            "Act as an independent expert. Produce your own answer before seeing other participants.",
+        )
 
     @staticmethod
     def _judge_system_prompt(mode):
         prompts = {
-            "coding": "Judge implementation quality and synthesize the strongest correct coding answer.",
-            "research": "Judge evidence quality and synthesize the strongest research answer without inventing evidence.",
-            "thinking": "Judge reasoning quality and synthesize a coherent answer that preserves important dissent.",
+            "coding": (
+                "Judge implementation quality and synthesize the strongest correct coding answer."
+            ),
+            "research": (
+                "Judge evidence quality and synthesize the strongest research answer "
+                "without inventing evidence."
+            ),
+            "thinking": (
+                "Judge reasoning quality and synthesize a coherent answer that preserves important dissent."
+            ),
         }
         return prompts.get(mode, "Judge the panel fairly and synthesize the strongest answer.")
