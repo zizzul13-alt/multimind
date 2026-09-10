@@ -31,7 +31,8 @@ def test_locked_preworkspace_theme_handoff_and_studio_reentry_exist():
         "def reset_theme",
     ):
         assert token in STATE
-    assert 'rx.button("Theme Studio"' in SURFACE
+    assert '"Theme Studio"' in SURFACE
+    assert "on_click=HostState.open_theme_studio" in SURFACE
     assert 'rx.button("Apply Composition"' in SURFACE
 
 
