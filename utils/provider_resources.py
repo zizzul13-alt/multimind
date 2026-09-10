@@ -39,13 +39,15 @@ def parse_user_provider_pools(raw: str | None) -> dict[str, dict[str, str]]:
 
     Invalid JSON, invalid users, malformed provider specs, and malformed selected
     resources are ignored/fail closed.  Additional named resources remain inert;
-    there is intentionally no automatic credential rotation.
+    there is intentionally no automatic credential rotation. The ``default``
+    namespace is reserved for deployment/operator credentials and cannot be
+    supplied through the per-user pool JSON.
     """
     if not isinstance(raw, str) or not raw.strip():
         return {}
     try:
         document = json.loads(raw)
-    except (TypeError, ValueError, json.JSONDecodeError):
+    except (TypeError, ValueError):
         return {}
     if not isinstance(document, Mapping):
         return {}
@@ -56,6 +58,8 @@ def parse_user_provider_pools(raw: str | None) -> dict[str, dict[str, str]]:
         try:
             canonical_user = Config.validate_user_id(supplied_user)
         except (InvalidUserIdError, TypeError):
+            continue
+        if canonical_user == "default":
             continue
         if canonical_user in seen_users or not isinstance(providers, Mapping):
             # Duplicate canonical identities are ambiguous and therefore ignored.
