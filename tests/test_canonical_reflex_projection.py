@@ -3,6 +3,7 @@ import inspect
 import pytest
 
 import multimind_reflex.canonical_projection as projection
+import multimind_reflex.canonical_theme_studio as studio
 from multimind_reflex.canonical_projection import project_reflex_tokens
 from ui.canonical_dna_bridge import CanonicalHostRealizationPlan
 
@@ -43,6 +44,21 @@ def test_mapper_depends_on_vocabulary_not_reference_identity():
     assert "reference_id ==" not in source
 
 
+def test_layout_flow_projects_macro_distinct_host_templates():
+    layouts = ("grid", "components", "grouped", "paired", "continuous", "directional", "trace")
+    profiles = [project_reflex_tokens(plan(layout_flow=layout)) for layout in layouts]
+    assert len({profile.fixture_template for profile in profiles}) == len(layouts)
+    assert {profile.fixture_template for profile in profiles} == {
+        "matrix",
+        "component_hierarchy",
+        "group_bands",
+        "paired_blocks",
+        "continuous_surface",
+        "directional_path",
+        "trace_timeline",
+    }
+
+
 def test_structural_vocab_changes_visible_scalar_projection():
     ordered = project_reflex_tokens(plan())
     dense = project_reflex_tokens(plan(layout_flow="grouped", density="compact", hierarchy="strong"))
@@ -53,6 +69,37 @@ def test_structural_vocab_changes_visible_scalar_projection():
     assert organic.card_radius != directional.card_radius
     assert directional.heading_weight != ordered.heading_weight
     assert directional.hover_transform != ordered.hover_transform
+    assert ordered.fixture_template != dense.fixture_template != organic.fixture_template != directional.fixture_template
+
+
+def test_balance_projects_mobile_safe_macro_inset_not_micro_transform_only():
+    ordered = project_reflex_tokens(plan(balance="ordered"))
+    asymmetric = project_reflex_tokens(plan(balance="asymmetric"))
+    organic = project_reflex_tokens(plan(balance="organic"))
+    assert ordered.secondary_inset == "0rem"
+    assert ordered.secondary_width == "100%"
+    assert asymmetric.secondary_inset != ordered.secondary_inset
+    assert asymmetric.secondary_width != ordered.secondary_width
+    assert organic.secondary_inset != ordered.secondary_inset
+    assert organic.secondary_width != ordered.secondary_width
+
+
+def test_renderer_branches_only_on_host_template_not_reference_identity():
+    source = inspect.getsource(studio)
+    for forbidden in ("CW01", "CW02", "CW03", "CW04", "CW05", "CS07", "CS08", "CS10", "CS17"):
+        assert forbidden not in source
+    assert "selected_reference_id ==" not in source
+    assert "fixture_template ==" in source
+    for template in (
+        "matrix",
+        "component_hierarchy",
+        "group_bands",
+        "paired_blocks",
+        "continuous_surface",
+        "directional_path",
+        "trace_timeline",
+    ):
+        assert template in source
 
 
 def test_continuity_is_visibly_projected_without_changing_semantic_content():
