@@ -39,6 +39,9 @@ def _assert_neutral_fallback():
     assert bridge.dna_available() is False
     assert bridge.ensure_dna_registered() is False
     assert bridge.resolve_source_dna("anything") is None
+    assert bridge.list_theme_studio_dna_options("identity") == ()
+    assert bridge.list_theme_studio_dna_options("web_information") == ()
+    assert bridge.resolve_theme_studio_composition("identity", None, "chat_first") is None
 
     material = bridge.resolve_material("anything")
     assert material.status == "fallback"
@@ -85,9 +88,88 @@ def test_private_runtime_operation_failures_do_not_escape_bridge(monkeypatch):
     monkeypatch.setattr(bridge, "import_module", importer)
     assert bridge.dna_available() is True
     assert bridge.ensure_dna_registered() is False
+    assert bridge.list_theme_studio_dna_options("identity") == ()
+    assert bridge.resolve_theme_studio_composition("identity", None, "chat_first") is None
     assert bridge.resolve_source_dna("anything") is None
     assert bridge.resolve_material("anything").status == "fallback"
     assert isinstance(bridge.resolve_identity_projection(None), bridge.FallbackIdentityProjection)
+
+
+def test_theme_studio_catalog_and_projection_cross_bridge_as_host_safe_values(monkeypatch):
+    bootstrap = SimpleNamespace(ensure_proof_dna_and_themes_registered=lambda: None)
+    legacy = SimpleNamespace(
+        list_dna=lambda: [
+            SimpleNamespace(id="rinpa-decorative-spatial", display_name="Rinpa Decorative Spatial", role="identity", category="cultural"),
+            SimpleNamespace(id="japan-print-ink", display_name="Japan Print / Ink", role="identity", category="cultural"),
+            SimpleNamespace(id="japan-high-density-info", display_name="Japan High-Density Information", role="web_information", category="cultural_web"),
+        ]
+    )
+    policy = SimpleNamespace(
+        metadata_prominence="high",
+        status_richness="rich",
+        navigation_density="compact",
+        secondary_compactness=True,
+        information_discoverability="enhanced",
+        utility_grouping="structured",
+    )
+    identity_projection = SimpleNamespace(
+        hierarchy_contrast="strong",
+        border_stroke_style="soft",
+        energy_emphasis="expressive",
+        surface_treatment="layered",
+        transition_speed="deliberate",
+    )
+    projection = SimpleNamespace(
+        archetype_id="chat_first",
+        provenance={
+            "identity_display_name": "Rinpa Decorative Spatial",
+            "web_information_display_name": "Japan High-Density Information",
+        },
+        presentation_policy=policy,
+        identity_projection=identity_projection,
+    )
+    draft = SimpleNamespace(
+        identity_dna_id="rinpa-decorative-spatial",
+        web_information_dna_id="japan-high-density-info",
+        colors={"background": "#f2ece1", "primary": "#b8860b"},
+        typography={"font_family_base": "Georgia, serif"},
+        spacing={"md": "1rem"},
+        radius={"md": "4px"},
+        resolve=lambda: projection,
+    )
+    theme_state = SimpleNamespace(init_draft_from_composition=lambda **_kwargs: draft)
+    resolver = SimpleNamespace()
+
+    def importer(name: str):
+        if name.endswith("bootstrap"):
+            return bootstrap
+        if name == "dna_quarantine.legacy_ui_dna":
+            return legacy
+        if name == "dna_quarantine.legacy_ui_dna.resolver":
+            return resolver
+        if name == "dna_quarantine.theme_studio.state":
+            return theme_state
+        raise ModuleNotFoundError(name)
+
+    monkeypatch.setattr(bridge, "import_module", importer)
+
+    identity_options = bridge.list_theme_studio_dna_options("identity")
+    assert [item.id for item in identity_options] == ["japan-print-ink", "rinpa-decorative-spatial"]
+    assert all(item.role == "identity" for item in identity_options)
+    web_options = bridge.list_theme_studio_dna_options("web_information")
+    assert [item.id for item in web_options] == ["japan-high-density-info"]
+
+    result = bridge.resolve_theme_studio_composition(
+        "rinpa-decorative-spatial",
+        "japan-high-density-info",
+        "chat_first",
+    )
+    assert isinstance(result, bridge.ThemeStudioProjection)
+    assert result.identity_display_name == "Rinpa Decorative Spatial"
+    assert result.web_information_display_name == "Japan High-Density Information"
+    assert result.colors["primary"] == "#b8860b"
+    assert result.presentation_policy["navigation_density"] == "compact"
+    assert result.identity_projection["surface_treatment"] == "layered"
 
 
 def test_broken_theme_studio_render_uses_host_fallback(monkeypatch):
