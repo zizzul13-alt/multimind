@@ -71,7 +71,13 @@ class Config:
 
     @classmethod
     def get_api_keys(cls, user_id, secrets_source=None):
-        """Resolve per-user/default API settings from a plain mapping or callable."""
+        """Resolve API settings while honoring an optional isolation policy.
+
+        Historical plain mappings may fall back to ``default``. Deployment
+        sources can set ``__policy__.allow_default_fallback`` false so an
+        authenticated user never silently borrows the operator credential pool.
+        The explicit ``default`` identity always resolves the default pool.
+        """
         user_id = cls.validate_user_id(user_id)
         if secrets_source is None:
             return dict(cls.EMPTY_API_KEYS)
@@ -80,7 +86,9 @@ class Config:
             source = secrets_source() if callable(secrets_source) else secrets_source
             all_secrets = dict(source or {})
             selected = all_secrets.get(user_id)
-            if selected is None:
+            policy = dict(all_secrets.get("__policy__") or {})
+            allow_default = bool(policy.get("allow_default_fallback", True))
+            if selected is None and (user_id == "default" or allow_default):
                 selected = all_secrets.get("default")
             if selected is not None:
                 return dict(selected)
