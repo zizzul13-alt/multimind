@@ -155,14 +155,16 @@ def _user_pool(source: Mapping[str, str], slot: str) -> dict:
 def environment_secrets_source(environ: Mapping[str, str] | None = None):
     """Expose strict user-scoped deployment credentials plus an operator default.
 
-    Global MULTIMIND_* provider variables remain the explicit ``default`` pool.
-    Named deployment users are declared with ``MULTIMIND_USER_<SLOT>_ID`` and
-    receive only their own slot credentials. Additional numbered credentials are
-    retained as resource metadata but are not automatically rotated by runtime.
+    Global MULTIMIND_* provider variables remain the operator/default pool for
+    deployment smoke tooling, but strict Config resolution never lends that pool
+    to a browser identity. Named users receive only their own slot credentials.
     """
     source = os.environ if environ is None else environ
     result = {
-        "__policy__": {"allow_default_fallback": False},
+        "__policy__": {
+            "allow_default_fallback": False,
+            "allow_explicit_default_identity": False,
+        },
         "default": _default_environment_pool(source),
     }
 
@@ -171,8 +173,10 @@ def environment_secrets_source(environ: Mapping[str, str] | None = None):
         match = _USER_SLOT_ID_RE.fullmatch(name)
         if not match:
             continue
+        raw_user_id = source.get(name, "").strip()
+        if not raw_user_id:
+            continue
         slot = match.group(1)
-        raw_user_id = source.get(name, "")
         user_id = Config.validate_user_id(raw_user_id)
         if user_id == "default" or user_id in seen_user_ids:
             raise ValueError("Deployment user slots must map to unique non-default user ids.")
