@@ -48,18 +48,19 @@ def _theme_studio() -> rx.Component:
             rx.hstack(
                 rx.vstack(
                     rx.heading("Theme Studio", size="7"),
-                    rx.text("Draft → preview → explicit Apply → workspace"),
+                    rx.text("Choose DNA → preview → explicit Apply → workspace"),
                     align="start",
                 ),
                 rx.spacer(),
                 rx.badge(HostState.theme_status),
                 width="100%",
                 align="center",
+                wrap="wrap",
             ),
             rx.callout(
                 rx.cond(
                     HostState.dna_runtime_available,
-                    "Private Design-DNA is available server-side.",
+                    "Private Design-DNA is available server-side. Pick a role-based DNA below; you do not need to know its internal ID.",
                     "Private Design-DNA unavailable; safe neutral presentation remains operational.",
                 ),
                 icon="info",
@@ -69,25 +70,82 @@ def _theme_studio() -> rx.Component:
                 rx.card(
                     rx.vstack(
                         rx.heading("Composition draft", size="5"),
-                        rx.text("Archetype"),
+                        rx.text("UI / UX Archetype"),
                         rx.select(
                             ARCHETYPES,
                             value=HostState.draft_archetype,
                             on_change=HostState.set_draft_archetype,
                             width="100%",
                         ),
-                        rx.text("Identity / Cultural DNA reference"),
-                        rx.input(
-                            placeholder="Optional private DNA reference",
-                            value=HostState.draft_identity_dna,
-                            on_change=HostState.set_draft_identity_dna,
+                        rx.text("Identity / Cultural DNA"),
+                        rx.select(
+                            HostState.identity_dna_choices,
+                            value=HostState.draft_identity_choice,
+                            on_change=HostState.set_draft_identity_choice,
                             width="100%",
                         ),
-                        rx.text("Web / Information DNA reference"),
+                        rx.text("Web / Information DNA"),
+                        rx.select(
+                            HostState.web_dna_choices,
+                            value=HostState.draft_web_choice,
+                            on_change=HostState.set_draft_web_choice,
+                            width="100%",
+                        ),
+                        rx.separator(),
+                        rx.heading("Editable presentation controls", size="4"),
+                        rx.text("Semantic colors", size="2", weight="bold"),
+                        rx.grid(
+                            rx.input(
+                                placeholder="#RRGGBB background",
+                                value=HostState.draft_background,
+                                on_change=HostState.set_draft_background,
+                                width="100%",
+                            ),
+                            rx.input(
+                                placeholder="#RRGGBB surface",
+                                value=HostState.draft_surface,
+                                on_change=HostState.set_draft_surface,
+                                width="100%",
+                            ),
+                            rx.input(
+                                placeholder="#RRGGBB text",
+                                value=HostState.draft_text_color,
+                                on_change=HostState.set_draft_text_color,
+                                width="100%",
+                            ),
+                            rx.input(
+                                placeholder="#RRGGBB primary",
+                                value=HostState.draft_primary,
+                                on_change=HostState.set_draft_primary,
+                                width="100%",
+                            ),
+                            rx.input(
+                                placeholder="#RRGGBB accent",
+                                value=HostState.draft_accent,
+                                on_change=HostState.set_draft_accent,
+                                width="100%",
+                            ),
+                            rx.input(
+                                placeholder="#RRGGBB border",
+                                value=HostState.draft_border,
+                                on_change=HostState.set_draft_border,
+                                width="100%",
+                            ),
+                            columns=rx.breakpoints(initial="1", sm="2"),
+                            spacing="2",
+                            width="100%",
+                        ),
+                        rx.text("Typography", size="2", weight="bold"),
                         rx.input(
-                            placeholder="Optional private DNA reference",
-                            value=HostState.draft_web_dna,
-                            on_change=HostState.set_draft_web_dna,
+                            placeholder="Base font stack",
+                            value=HostState.draft_font_family,
+                            on_change=HostState.set_draft_font_family,
+                            width="100%",
+                        ),
+                        rx.input(
+                            placeholder="Monospace font stack",
+                            value=HostState.draft_mono_font,
+                            on_change=HostState.set_draft_mono_font,
                             width="100%",
                         ),
                         rx.text("Density"),
@@ -106,23 +164,84 @@ def _theme_studio() -> rx.Component:
                         ),
                         spacing="3",
                         width="100%",
-                    )
+                    ),
+                    width="100%",
                 ),
                 rx.card(
                     rx.vstack(
-                        rx.heading("Live preview contract", size="5"),
+                        rx.heading("Isolated composed live preview", size="5"),
+                        rx.badge("Draft only — active workspace unchanged", variant="soft"),
                         rx.text("Archetype: ", HostState.draft_archetype),
-                        rx.text("Identity: ", rx.cond(HostState.draft_identity_dna != "", HostState.draft_identity_dna, "neutral")),
-                        rx.text("Web DNA: ", rx.cond(HostState.draft_web_dna != "", HostState.draft_web_dna, "neutral")),
-                        rx.text("Density: ", HostState.draft_density),
-                        rx.text("Radius: ", HostState.draft_radius),
+                        rx.text("Identity: ", HostState.draft_identity_display_name),
+                        rx.text("Web DNA: ", HostState.draft_web_display_name),
+                        rx.text(
+                            "Information policy: metadata ",
+                            HostState.draft_metadata_prominence,
+                            " · status ",
+                            HostState.draft_status_richness,
+                            " · navigation ",
+                            HostState.draft_navigation_density,
+                            size="2",
+                        ),
+                        rx.text(
+                            "Identity semantics: hierarchy ",
+                            HostState.draft_hierarchy_contrast,
+                            " · surface ",
+                            HostState.draft_surface_treatment,
+                            " · energy ",
+                            HostState.draft_energy_emphasis,
+                            size="2",
+                        ),
                         rx.separator(),
-                        rx.heading("MultiMind", size="6"),
-                        rx.text("Application semantics stay unchanged while presentation composition changes."),
-                        rx.button("Example action", variant="soft"),
+                        rx.card(
+                            rx.vstack(
+                                rx.heading("MultiMind", size="6", color=HostState.draft_primary),
+                                rx.text(
+                                    "This preview is rendered from the selected private DNA composition. Application/session truth stays unchanged until Apply.",
+                                    color=HostState.draft_text_color,
+                                ),
+                                rx.hstack(
+                                    rx.button(
+                                        "Primary action",
+                                        background_color=HostState.draft_primary,
+                                        color=HostState.draft_background,
+                                        border_radius=HostState.draft_radius_value,
+                                    ),
+                                    rx.button(
+                                        "Accent action",
+                                        variant="outline",
+                                        color=HostState.draft_accent,
+                                        border=f"1px solid {HostState.draft_accent}",
+                                        border_radius=HostState.draft_radius_value,
+                                    ),
+                                    wrap="wrap",
+                                ),
+                                rx.text(
+                                    "Density preview: ",
+                                    HostState.draft_density,
+                                    " · spacing ",
+                                    HostState.draft_spacing_value,
+                                    size="2",
+                                    color=HostState.draft_text_color,
+                                ),
+                                spacing="3",
+                                width="100%",
+                            ),
+                            width="100%",
+                            background_color=HostState.draft_surface,
+                            border=f"1px solid {HostState.draft_border}",
+                            border_radius=HostState.draft_radius_value,
+                            padding=HostState.draft_spacing_value,
+                        ),
                         spacing="3",
                         width="100%",
-                    )
+                    ),
+                    width="100%",
+                    background_color=HostState.draft_background,
+                    color=HostState.draft_text_color,
+                    font_family=HostState.draft_font_family,
+                    border=f"1px solid {HostState.draft_border}",
+                    border_radius=HostState.draft_radius_value,
                 ),
                 columns=rx.breakpoints(initial="1", md="1fr 1fr"),
                 spacing="4",
@@ -147,7 +266,7 @@ def _theme_studio() -> rx.Component:
             spacing="4",
         ),
         max_width="72rem",
-        padding="1.5rem",
+        padding=rx.breakpoints(initial="0.75rem", sm="1rem", md="1.5rem"),
     )
 
 
@@ -527,19 +646,38 @@ def _data_ops() -> rx.Component:
 def _workspace() -> rx.Component:
     return rx.container(
         rx.vstack(
-            rx.hstack(
-                rx.vstack(
-                    rx.heading("MultiMind", size="7"),
-                    rx.text("Logged in as ", HostState.display_username),
-                    rx.text("Archetype: ", HostState.active_archetype, size="2"),
-                    align="start",
+            rx.card(
+                rx.hstack(
+                    rx.vstack(
+                        rx.heading("MultiMind", size="7", color=HostState.active_primary),
+                        rx.text("Logged in as ", HostState.display_username),
+                        rx.text("Archetype: ", HostState.active_archetype, size="2"),
+                        rx.text(
+                            "Active DNA: ",
+                            HostState.active_identity_display_name,
+                            " + ",
+                            HostState.active_web_display_name,
+                            size="2",
+                        ),
+                        align="start",
+                    ),
+                    rx.spacer(),
+                    rx.badge(rx.cond(HostState.busy, "BUSY", "READY")),
+                    rx.button(
+                        "Theme Studio",
+                        on_click=HostState.open_theme_studio,
+                        variant="soft",
+                        color=HostState.active_accent,
+                    ),
+                    width="100%",
+                    align="center",
+                    wrap="wrap",
                 ),
-                rx.spacer(),
-                rx.badge(rx.cond(HostState.busy, "BUSY", "READY")),
-                rx.button("Theme Studio", on_click=HostState.open_theme_studio, variant="soft"),
                 width="100%",
-                align="center",
-                wrap="wrap",
+                background_color=HostState.active_surface,
+                color=HostState.active_text_color,
+                border=f"1px solid {HostState.active_border}",
+                border_radius=HostState.active_radius_value,
             ),
             rx.grid(
                 rx.card(
@@ -549,7 +687,11 @@ def _workspace() -> rx.Component:
                         _data_ops(),
                         width="100%",
                         spacing="4",
-                    )
+                    ),
+                    background_color=HostState.active_surface,
+                    color=HostState.active_text_color,
+                    border=f"1px solid {HostState.active_border}",
+                    border_radius=HostState.active_radius_value,
                 ),
                 rx.vstack(
                     rx.card(
@@ -561,6 +703,7 @@ def _workspace() -> rx.Component:
                                     "Select or create a session",
                                 ),
                                 size="5",
+                                color=HostState.active_primary,
                             ),
                             _template_panel(),
                             rx.text_area(
@@ -579,6 +722,9 @@ def _workspace() -> rx.Component:
                                 disabled=HostState.busy,
                                 width="100%",
                                 size="3",
+                                background_color=HostState.active_primary,
+                                color=HostState.active_background,
+                                border_radius=HostState.active_radius_value,
                             ),
                             rx.cond(HostState.status_message != "", rx.text(HostState.status_message)),
                             rx.cond(
@@ -604,9 +750,19 @@ def _workspace() -> rx.Component:
                             _deliberation_panel(),
                             width="100%",
                             spacing="3",
-                        )
+                        ),
+                        background_color=HostState.active_surface,
+                        color=HostState.active_text_color,
+                        border=f"1px solid {HostState.active_border}",
+                        border_radius=HostState.active_radius_value,
                     ),
-                    rx.card(_history_panel()),
+                    rx.card(
+                        _history_panel(),
+                        background_color=HostState.active_surface,
+                        color=HostState.active_text_color,
+                        border=f"1px solid {HostState.active_border}",
+                        border_radius=HostState.active_radius_value,
+                    ),
                     width="100%",
                     spacing="4",
                 ),
@@ -619,6 +775,10 @@ def _workspace() -> rx.Component:
         ),
         max_width="88rem",
         padding=rx.breakpoints(initial="0.75rem", sm="1rem", md="1.5rem"),
+        background_color=HostState.active_background,
+        color=HostState.active_text_color,
+        font_family=HostState.active_font_family,
+        min_height="100vh",
     )
 
 
