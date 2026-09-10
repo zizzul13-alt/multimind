@@ -33,7 +33,6 @@ _USER_RESOURCE_SUFFIXES = {
     "gemini": "GEMINI_KEY",
     "deepseek": "DEEPSEEK_KEY",
     "groq": "GROQ_KEY",
-    "cloudflare": "CLOUDFLARE_KEY",
     "openrouter": "OPENROUTER_KEY",
     "huggingface": "HUGGINGFACE_KEY",
 }
@@ -53,24 +52,25 @@ def _default_environment_pool(source: Mapping[str, str]) -> dict:
     return resolved
 
 
-def _numbered_values(source: Mapping[str, str], prefix: str, suffix: str) -> list[str]:
-    """Return primary, then numbered resources in deterministic numeric order."""
+def _numbered_items(source: Mapping[str, str], prefix: str, suffix: str) -> list[tuple[int, str]]:
+    """Return configured resource values with stable original numeric identity."""
     values = []
     primary = source.get(f"{prefix}{suffix}", "")
     if primary:
-        values.append(primary)
+        values.append((1, primary))
 
-    numbered = []
     marker = f"{prefix}{suffix}_"
     for name, value in source.items():
         if not value or not name.startswith(marker):
             continue
         tail = name[len(marker):]
         if tail.isdigit() and int(tail) >= 2:
-            numbered.append((int(tail), value))
-    for _number, value in sorted(numbered):
-        values.append(value)
-    return values
+            values.append((int(tail), value))
+    return sorted(values)
+
+
+def _resource_id(index: int) -> str:
+    return "primary" if index == 1 else str(index)
 
 
 def _user_pool(source: Mapping[str, str], slot: str) -> dict:
@@ -88,21 +88,32 @@ def _user_pool(source: Mapping[str, str], slot: str) -> dict:
     }
 
     for provider, suffix in _USER_RESOURCE_SUFFIXES.items():
-        values = _numbered_values(source, prefix, suffix)
+        items = _numbered_items(source, prefix, suffix)
         provider_resources[provider] = tuple(
-            {"resource_id": "primary" if index == 1 else str(index), "credential": value}
-            for index, value in enumerate(values, start=1)
+            {"resource_id": _resource_id(index), "credential": value}
+            for index, value in items
         )
-        if values:
-            selected[f"{provider}_key"] = values[0]
+        if items:
+            selected[f"{provider}_key"] = items[0][1]
 
-    account_ids = _numbered_values(source, prefix, "CLOUDFLARE_ACCOUNT_ID")
-    if account_ids:
-        selected["cloudflare_account_id"] = account_ids[0]
-    provider_resources["cloudflare_account_id"] = tuple(
-        {"resource_id": "primary" if index == 1 else str(index), "value": value}
-        for index, value in enumerate(account_ids, start=1)
+    cf_keys = dict(_numbered_items(source, prefix, "CLOUDFLARE_KEY"))
+    cf_accounts = dict(_numbered_items(source, prefix, "CLOUDFLARE_ACCOUNT_ID"))
+    cf_indices = sorted(set(cf_keys) | set(cf_accounts))
+    provider_resources["cloudflare"] = tuple(
+        {
+            "resource_id": _resource_id(index),
+            "credential": cf_keys.get(index, ""),
+            "account_id": cf_accounts.get(index, ""),
+            "ready": bool(cf_keys.get(index) and cf_accounts.get(index)),
+        }
+        for index in cf_indices
     )
+    for index in cf_indices:
+        if cf_keys.get(index) and cf_accounts.get(index):
+            selected["cloudflare_key"] = cf_keys[index]
+            selected["cloudflare_account_id"] = cf_accounts[index]
+            break
+
     selected["provider_resources"] = provider_resources
     return selected
 
