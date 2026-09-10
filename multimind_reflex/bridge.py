@@ -73,9 +73,29 @@ def _resource_id(index: int) -> str:
     return "primary" if index == 1 else str(index)
 
 
+def _requested_primary_index(source: Mapping[str, str], prefix: str, provider: str) -> int | None:
+    raw = source.get(f"{prefix}{provider.upper()}_PRIMARY_RESOURCE", "").strip().lower()
+    if not raw:
+        return None
+    if raw in {"primary", "1"}:
+        return 1
+    if raw.isdigit() and int(raw) >= 2:
+        return int(raw)
+    raise ValueError(f"Invalid primary resource selector for {provider}.")
+
+
+def _select_item(items: list[tuple[int, str]], requested_index: int | None) -> tuple[int, str] | None:
+    if not items:
+        return None
+    if requested_index is None:
+        return items[0]
+    return next((item for item in items if item[0] == requested_index), None)
+
+
 def _user_pool(source: Mapping[str, str], slot: str) -> dict:
     prefix = f"MULTIMIND_USER_{slot}_"
     provider_resources = {}
+    selected_resource_ids = {}
     selected = {
         "gemini_key": "",
         "deepseek_key": "",
@@ -93,8 +113,13 @@ def _user_pool(source: Mapping[str, str], slot: str) -> dict:
             {"resource_id": _resource_id(index), "credential": value}
             for index, value in items
         )
-        if items:
-            selected[f"{provider}_key"] = items[0][1]
+        requested = _requested_primary_index(source, prefix, provider)
+        chosen = _select_item(items, requested)
+        if chosen is not None:
+            selected[f"{provider}_key"] = chosen[1]
+            selected_resource_ids[provider] = _resource_id(chosen[0])
+        elif requested is not None:
+            selected_resource_ids[provider] = "unavailable"
 
     cf_keys = dict(_numbered_items(source, prefix, "CLOUDFLARE_KEY"))
     cf_accounts = dict(_numbered_items(source, prefix, "CLOUDFLARE_ACCOUNT_ID"))
@@ -108,13 +133,22 @@ def _user_pool(source: Mapping[str, str], slot: str) -> dict:
         }
         for index in cf_indices
     )
-    for index in cf_indices:
-        if cf_keys.get(index) and cf_accounts.get(index):
-            selected["cloudflare_key"] = cf_keys[index]
-            selected["cloudflare_account_id"] = cf_accounts[index]
-            break
+    requested_cf = _requested_primary_index(source, prefix, "cloudflare")
+    ready_cf = [index for index in cf_indices if cf_keys.get(index) and cf_accounts.get(index)]
+    chosen_cf = None
+    if requested_cf is None and ready_cf:
+        chosen_cf = ready_cf[0]
+    elif requested_cf is not None and requested_cf in ready_cf:
+        chosen_cf = requested_cf
+    if chosen_cf is not None:
+        selected["cloudflare_key"] = cf_keys[chosen_cf]
+        selected["cloudflare_account_id"] = cf_accounts[chosen_cf]
+        selected_resource_ids["cloudflare"] = _resource_id(chosen_cf)
+    elif requested_cf is not None:
+        selected_resource_ids["cloudflare"] = "unavailable"
 
     selected["provider_resources"] = provider_resources
+    selected["selected_resource_ids"] = selected_resource_ids
     return selected
 
 
