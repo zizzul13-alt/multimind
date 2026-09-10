@@ -1,9 +1,9 @@
 """Canonical Design-DNA EQ4 proving panel for the Reflex host.
 
-One generic semantic fixture consumes typed host-realization scalars. The panel
+One generic semantic fixture consumes typed host-realization tokens. The panel
 shows all canonical references for discovery while clearly distinguishing the
-bounded M2 proving slice from references whose host realization is still
-pending. No reference ID/name branch exists in the renderer.
+bounded proving slice from references whose host realization is still pending.
+No reference ID/name branch exists in the renderer.
 """
 from __future__ import annotations
 
@@ -35,7 +35,13 @@ def _catalog_row(option) -> rx.Component:
     )
 
 
-def _semantic_card(title: str, body: str, *, alternate: bool = False, offset: bool = False) -> rx.Component:
+def _semantic_card(
+    title: str,
+    body: str,
+    *,
+    alternate: bool = False,
+    secondary: bool = False,
+) -> rx.Component:
     return rx.card(
         rx.vstack(
             rx.text(
@@ -50,16 +56,194 @@ def _semantic_card(title: str, body: str, *, alternate: bool = False, offset: bo
             spacing="2",
             width="100%",
         ),
-        width="100%",
+        width=CanonicalDnaState.secondary_width if secondary else "100%",
+        margin_left=CanonicalDnaState.secondary_inset if secondary else "0rem",
         background_color=CanonicalDnaState.surface_alt if alternate else CanonicalDnaState.surface,
         color=CanonicalDnaState.text_color,
         border=f"1px solid {CanonicalDnaState.border}",
         border_left=CanonicalDnaState.continuity_border,
         border_radius=CanonicalDnaState.card_radius,
         padding=CanonicalDnaState.card_padding,
-        transform=CanonicalDnaState.secondary_offset if offset else "none",
+        transform=CanonicalDnaState.secondary_offset if secondary else "none",
         transition=CanonicalDnaState.transition,
         _hover={"transform": CanonicalDnaState.hover_transform},
+    )
+
+
+def _work_surface() -> rx.Component:
+    return _semantic_card(
+        "Work surface",
+        "Stable prompt, history, and result meaning. DNA may change hierarchy and grouping, never the application truth.",
+    )
+
+
+def _primary_action(*, secondary: bool = False) -> rx.Component:
+    return _semantic_card(
+        "Primary action",
+        "The same action remains discoverable and semantically primary across every reference.",
+        alternate=True,
+        secondary=secondary,
+    )
+
+
+def _system_state(*, secondary: bool = False) -> rx.Component:
+    return _semantic_card(
+        "System state",
+        "Loading, success, warning, and failure meaning remain explicit while presentation structure changes.",
+        alternate=True,
+        secondary=secondary,
+    )
+
+
+def _auxiliary_context(*, secondary: bool = False) -> rx.Component:
+    return _semantic_card(
+        "Auxiliary context",
+        "Metadata remains available without replacing the primary work surface or reading sanctuary.",
+        secondary=secondary,
+    )
+
+
+def _group(label: str, *children: rx.Component) -> rx.Component:
+    return rx.box(
+        rx.vstack(
+            rx.text(label, size="1", weight="bold", text_transform="uppercase", letter_spacing="0.08em"),
+            *children,
+            width="100%",
+            spacing="2",
+        ),
+        width="100%",
+        border=f"1px solid {CanonicalDnaState.border}",
+        border_radius=CanonicalDnaState.group_radius,
+        padding=CanonicalDnaState.group_padding,
+        background_color=CanonicalDnaState.surface,
+    )
+
+
+def _matrix_fixture() -> rx.Component:
+    """Strict cell rhythm: the grid itself is the dominant visual grammar."""
+    return rx.grid(
+        _work_surface(),
+        _primary_action(),
+        _system_state(),
+        _auxiliary_context(),
+        grid_template_columns=rx.breakpoints(initial="1fr", md=CanonicalDnaState.desktop_columns),
+        gap=CanonicalDnaState.gap,
+        width="100%",
+    )
+
+
+def _component_hierarchy_fixture() -> rx.Component:
+    """One dominant work component with a visibly subordinate component rail."""
+    return rx.vstack(
+        _work_surface(),
+        rx.grid(
+            _primary_action(secondary=True),
+            _system_state(secondary=True),
+            _auxiliary_context(secondary=True),
+            grid_template_columns=rx.breakpoints(initial="1fr", md=CanonicalDnaState.support_columns),
+            gap=CanonicalDnaState.group_gap,
+            width="100%",
+        ),
+        width="100%",
+        spacing="4",
+    )
+
+
+def _group_bands_fixture() -> rx.Component:
+    """Semantics are organized into explicit context/action bands."""
+    return rx.vstack(
+        _group("Work context", _work_surface(), _auxiliary_context(secondary=True)),
+        _group("Action and state", _primary_action(), _system_state(secondary=True)),
+        width="100%",
+        spacing="4",
+    )
+
+
+def _paired_blocks_fixture() -> rx.Component:
+    """Two semantic pairs remain visually coupled even when stacked on mobile."""
+    return rx.grid(
+        _group("Work pair", _work_surface(), _auxiliary_context()),
+        _group("Action pair", _primary_action(), _system_state()),
+        grid_template_columns=rx.breakpoints(initial="1fr", md=CanonicalDnaState.desktop_columns),
+        gap=CanonicalDnaState.group_gap,
+        width="100%",
+    )
+
+
+def _continuous_surface_fixture() -> rx.Component:
+    """A single continuous reading surface replaces isolated card rhythm."""
+    return rx.box(
+        rx.vstack(
+            _work_surface(),
+            _primary_action(secondary=True),
+            _system_state(secondary=True),
+            _auxiliary_context(secondary=True),
+            width="100%",
+            spacing="1",
+        ),
+        width="100%",
+        padding=CanonicalDnaState.group_padding,
+        border=f"1px solid {CanonicalDnaState.border}",
+        border_radius=CanonicalDnaState.group_radius,
+        background_color=CanonicalDnaState.surface,
+    )
+
+
+def _directional_path_fixture() -> rx.Component:
+    """Alternating inset creates an obvious directional reading path."""
+    return rx.vstack(
+        _work_surface(),
+        _primary_action(secondary=True),
+        _system_state(),
+        _auxiliary_context(secondary=True),
+        width="100%",
+        spacing="3",
+    )
+
+
+def _trace_timeline_fixture() -> rx.Component:
+    """Trace semantics become a serial vertical lane without changing content."""
+    return rx.box(
+        rx.vstack(
+            _work_surface(),
+            _primary_action(secondary=True),
+            _system_state(secondary=True),
+            _auxiliary_context(secondary=True),
+            width="100%",
+            spacing="3",
+        ),
+        width="100%",
+        border_left=f"5px solid {CanonicalDnaState.accent}",
+        padding_left="1rem",
+    )
+
+
+def _structural_fixture() -> rx.Component:
+    """Select only by finite host template vocabulary, never by DNA identity."""
+    return rx.cond(
+        CanonicalDnaState.fixture_template == "matrix",
+        _matrix_fixture(),
+        rx.cond(
+            CanonicalDnaState.fixture_template == "component_hierarchy",
+            _component_hierarchy_fixture(),
+            rx.cond(
+                CanonicalDnaState.fixture_template == "group_bands",
+                _group_bands_fixture(),
+                rx.cond(
+                    CanonicalDnaState.fixture_template == "paired_blocks",
+                    _paired_blocks_fixture(),
+                    rx.cond(
+                        CanonicalDnaState.fixture_template == "continuous_surface",
+                        _continuous_surface_fixture(),
+                        rx.cond(
+                            CanonicalDnaState.fixture_template == "directional_path",
+                            _directional_path_fixture(),
+                            _trace_timeline_fixture(),
+                        ),
+                    ),
+                ),
+            ),
+        ),
     )
 
 
@@ -86,34 +270,7 @@ def _canonical_fixture() -> rx.Component:
                 wrap="wrap",
                 width="100%",
             ),
-            rx.grid(
-                _semantic_card(
-                    "Work surface",
-                    "Stable prompt, history, and result meaning. DNA may change hierarchy and grouping, never the application truth.",
-                ),
-                _semantic_card(
-                    "Primary action",
-                    "The same action remains discoverable and semantically primary across every reference.",
-                    alternate=True,
-                    offset=True,
-                ),
-                _semantic_card(
-                    "System state",
-                    "Loading, success, warning, and failure meaning remain explicit while presentation structure changes.",
-                    alternate=True,
-                ),
-                _semantic_card(
-                    "Auxiliary context",
-                    "Metadata remains available without replacing the primary work surface or reading sanctuary.",
-                    offset=True,
-                ),
-                grid_template_columns=rx.breakpoints(
-                    initial="1fr",
-                    md=CanonicalDnaState.desktop_columns,
-                ),
-                gap=CanonicalDnaState.gap,
-                width="100%",
-            ),
+            _structural_fixture(),
             rx.hstack(
                 rx.badge("density: ", CanonicalDnaState.density, variant="soft"),
                 rx.badge("hierarchy: ", CanonicalDnaState.hierarchy, variant="soft"),
@@ -123,7 +280,9 @@ def _canonical_fixture() -> rx.Component:
                 wrap="wrap",
             ),
             rx.text(
-                "Mobile strategy: ",
+                "Host template: ",
+                CanonicalDnaState.fixture_template,
+                " · mobile strategy: ",
                 CanonicalDnaState.mobile_strategy,
                 " · canonical viewport: ",
                 CanonicalDnaState.preview_viewport,
@@ -138,8 +297,8 @@ def _canonical_fixture() -> rx.Component:
         color=CanonicalDnaState.text_color,
         font_family=CanonicalDnaState.font_family,
         border=f"1px solid {CanonicalDnaState.border}",
-        border_radius=CanonicalDnaState.card_radius,
-        padding=CanonicalDnaState.card_padding,
+        border_radius=CanonicalDnaState.group_radius,
+        padding=CanonicalDnaState.group_padding,
     )
 
 
