@@ -78,7 +78,7 @@ def test_multiple_same_provider_resources_are_ordered_and_primary_is_first():
         "g-three",
         "g-ten",
     ]
-    assert [item["resource_id"] for item in resources] == ["primary", "2", "3", "4"]
+    assert [item["resource_id"] for item in resources] == ["primary", "2", "3", "10"]
 
 
 def test_numbered_resource_can_be_primary_when_unnumbered_is_absent():
@@ -94,6 +94,10 @@ def test_numbered_resource_can_be_primary_when_unnumbered_is_absent():
     assert [r["credential"] for r in alice["provider_resources"]["openrouter"]] == [
         "or-two",
         "or-three",
+    ]
+    assert [r["resource_id"] for r in alice["provider_resources"]["openrouter"]] == [
+        "2",
+        "3",
     ]
 
 
@@ -118,6 +122,38 @@ def test_cloudflare_account_resources_are_user_scoped_and_deterministic():
         "cf-key-b",
         "cf-account-b",
     )
+
+
+def test_cloudflare_never_cross_pairs_different_resource_numbers():
+    source = environment_secrets_source(
+        {
+            "MULTIMIND_USER_A_ID": "alice",
+            "MULTIMIND_USER_A_CLOUDFLARE_KEY": "key-one",
+            "MULTIMIND_USER_A_CLOUDFLARE_ACCOUNT_ID_2": "account-two",
+            "MULTIMIND_USER_A_CLOUDFLARE_KEY_3": "key-three",
+            "MULTIMIND_USER_A_CLOUDFLARE_ACCOUNT_ID_3": "account-three",
+        }
+    )
+    alice = Config.get_api_keys("alice", source)
+    assert (alice["cloudflare_key"], alice["cloudflare_account_id"]) == (
+        "key-three",
+        "account-three",
+    )
+    resources = alice["provider_resources"]["cloudflare"]
+    assert resources[0] == {
+        "resource_id": "primary",
+        "credential": "key-one",
+        "account_id": "",
+        "ready": False,
+    }
+    assert resources[1] == {
+        "resource_id": "2",
+        "credential": "",
+        "account_id": "account-two",
+        "ready": False,
+    }
+    assert resources[2]["resource_id"] == "3"
+    assert resources[2]["ready"] is True
 
 
 def test_duplicate_user_slot_ids_fail_closed():
