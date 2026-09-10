@@ -79,6 +79,7 @@ def build_application_for_user(
     user_id,
     secrets_source=None,
     *,
+    allow_default_credentials=True,
     runtime_memories=None,
     runtime=None,
     db=None,
@@ -96,11 +97,19 @@ def build_application_for_user(
     Generic callers get a concrete validated database by default. Hosts may
     supply a lazy ``db_factory`` when they need to preserve an existing
     lifecycle/cache seam; the application remains the only consumer of it.
+
+    ``allow_default_credentials=False`` is intended for authenticated production
+    hosts so a user without a credential namespace cannot silently inherit the
+    deployment operator/default provider pool.
     """
     user_id = Config.validate_user_id(user_id)
 
     if agents is None:
-        api_keys = Config.get_api_keys(user_id, secrets_source=secrets_source)
+        api_keys = Config.get_api_keys(
+            user_id,
+            secrets_source=secrets_source,
+            allow_default=allow_default_credentials,
+        )
         agents = agents_factory(api_keys)
 
     if db is None and db_factory is None:

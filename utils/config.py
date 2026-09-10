@@ -70,8 +70,14 @@ class Config:
         return display_username, cls.validate_user_id(display_username)
 
     @classmethod
-    def get_api_keys(cls, user_id, secrets_source=None):
-        """Resolve per-user/default API settings from a plain mapping or callable."""
+    def get_api_keys(cls, user_id, secrets_source=None, *, allow_default=True):
+        """Resolve per-user/default API settings from a plain mapping or callable.
+
+        ``allow_default=False`` is the strict authenticated-user mode: a missing
+        user namespace resolves to empty credentials rather than the deployment
+        operator/default pool.  The default remains ``True`` for compatibility
+        with existing generic callers and rollback/reference paths.
+        """
         user_id = cls.validate_user_id(user_id)
         if secrets_source is None:
             return dict(cls.EMPTY_API_KEYS)
@@ -80,7 +86,7 @@ class Config:
             source = secrets_source() if callable(secrets_source) else secrets_source
             all_secrets = dict(source or {})
             selected = all_secrets.get(user_id)
-            if selected is None:
+            if selected is None and allow_default:
                 selected = all_secrets.get("default")
             if selected is not None:
                 return dict(selected)
