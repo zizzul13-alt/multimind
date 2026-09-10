@@ -34,8 +34,19 @@ def _truthy(value: object) -> bool:
 
 
 def default_credentials_allowed_for_users(environ: Mapping[str, str] | None = None) -> bool:
+    """Resolve authenticated-user fallback policy without breaking migration.
+
+    Before a per-user pool is configured, the existing deployment/default pool
+    remains active so merging this code cannot silently disable an already
+    running deployment. As soon as ``MULTIMIND_USER_PROVIDER_POOLS_JSON`` is set,
+    fallback becomes fail-closed by default. Operators can explicitly override
+    either state with ``MULTIMIND_ALLOW_DEFAULT_CREDENTIALS_FOR_USERS``.
+    """
     source = os.environ if environ is None else environ
-    return _truthy(source.get("MULTIMIND_ALLOW_DEFAULT_CREDENTIALS_FOR_USERS", ""))
+    explicit = source.get("MULTIMIND_ALLOW_DEFAULT_CREDENTIALS_FOR_USERS")
+    if explicit is not None and str(explicit).strip() != "":
+        return _truthy(explicit)
+    return not bool(str(source.get("MULTIMIND_USER_PROVIDER_POOLS_JSON", "")).strip())
 
 
 def environment_secrets_source(environ: Mapping[str, str] | None = None):
