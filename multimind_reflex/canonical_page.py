@@ -1,0 +1,50 @@
+"""Isolated real-browser EQ4 proving route for canonical Design-DNA.
+
+This route is intentionally presentation-only. It exists to collect real Reflex
+host evidence before the canonical renderer is promoted into the main Theme
+Studio/workspace path.
+"""
+from __future__ import annotations
+
+import reflex as rx
+
+from multimind_reflex.canonical_dna_state import CanonicalDnaState
+from multimind_reflex.canonical_theme_studio import canonical_theme_studio_panel
+
+
+@rx.page(route="/canonical-dna", title="MultiMind · Canonical Design-DNA EQ4 Proving")
+def canonical_dna_proving_page() -> rx.Component:
+    return rx.container(
+        rx.vstack(
+            rx.hstack(
+                rx.vstack(
+                    rx.heading("Canonical Design-DNA", size="7"),
+                    rx.text("Isolated Reflex EQ4 proving surface · application truth untouched"),
+                    align="start",
+                ),
+                rx.spacer(),
+                rx.badge("PROVING · NOT CUTOVER", variant="soft"),
+                width="100%",
+                align="center",
+                wrap="wrap",
+            ),
+            rx.callout(
+                "This page validates canonical catalog, deterministic asset-off projection, responsive host realization, accessibility demotion, and A→B→A presentation behavior. It does not claim production cutover or asset approval.",
+                icon="shield_check",
+                width="100%",
+            ),
+            canonical_theme_studio_panel(),
+            rx.hstack(
+                rx.button("Refresh canonical catalog", on_click=CanonicalDnaState.refresh_catalog, variant="soft"),
+                rx.button("Clear proving selection", on_click=CanonicalDnaState.clear_reference, variant="ghost"),
+                wrap="wrap",
+            ),
+            width="100%",
+            spacing="4",
+        ),
+        max_width="80rem",
+        padding=rx.breakpoints(initial="0.75rem", sm="1rem", md="1.5rem"),
+    )
+
+
+__all__ = ["canonical_dna_proving_page"]
