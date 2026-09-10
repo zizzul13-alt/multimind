@@ -72,6 +72,7 @@ def test_multiple_same_provider_resources_are_ordered_and_primary_is_first():
     resources = alice["provider_resources"]["gemini"]
 
     assert alice["gemini_key"] == "g-primary"
+    assert alice["selected_resource_ids"]["gemini"] == "primary"
     assert [item["credential"] for item in resources] == [
         "g-primary",
         "g-two",
@@ -79,6 +80,44 @@ def test_multiple_same_provider_resources_are_ordered_and_primary_is_first():
         "g-ten",
     ]
     assert [item["resource_id"] for item in resources] == ["primary", "2", "3", "10"]
+
+
+def test_explicit_primary_resource_selects_requested_same_provider_credential():
+    source = environment_secrets_source(
+        {
+            "MULTIMIND_USER_A_ID": "alice",
+            "MULTIMIND_USER_A_GEMINI_KEY": "g-one",
+            "MULTIMIND_USER_A_GEMINI_KEY_2": "g-two",
+            "MULTIMIND_USER_A_GEMINI_PRIMARY_RESOURCE": "2",
+        }
+    )
+    alice = Config.get_api_keys("alice", source)
+    assert alice["gemini_key"] == "g-two"
+    assert alice["selected_resource_ids"]["gemini"] == "2"
+
+
+def test_missing_explicit_primary_fails_that_provider_closed_instead_of_rotating():
+    source = environment_secrets_source(
+        {
+            "MULTIMIND_USER_A_ID": "alice",
+            "MULTIMIND_USER_A_GROQ_KEY": "groq-one",
+            "MULTIMIND_USER_A_GROQ_PRIMARY_RESOURCE": "2",
+        }
+    )
+    alice = Config.get_api_keys("alice", source)
+    assert alice["groq_key"] == ""
+    assert alice["selected_resource_ids"]["groq"] == "unavailable"
+
+
+def test_invalid_primary_selector_fails_closed():
+    with pytest.raises(ValueError, match="Invalid primary resource selector"):
+        environment_secrets_source(
+            {
+                "MULTIMIND_USER_A_ID": "alice",
+                "MULTIMIND_USER_A_GEMINI_KEY": "g-one",
+                "MULTIMIND_USER_A_GEMINI_PRIMARY_RESOURCE": "banana",
+            }
+        )
 
 
 def test_numbered_resource_can_be_primary_when_unnumbered_is_absent():
@@ -91,6 +130,7 @@ def test_numbered_resource_can_be_primary_when_unnumbered_is_absent():
     )
     alice = Config.get_api_keys("alice", source)
     assert alice["openrouter_key"] == "or-two"
+    assert alice["selected_resource_ids"]["openrouter"] == "2"
     assert [r["credential"] for r in alice["provider_resources"]["openrouter"]] == [
         "or-two",
         "or-three",
@@ -139,6 +179,7 @@ def test_cloudflare_never_cross_pairs_different_resource_numbers():
         "key-three",
         "account-three",
     )
+    assert alice["selected_resource_ids"]["cloudflare"] == "3"
     resources = alice["provider_resources"]["cloudflare"]
     assert resources[0] == {
         "resource_id": "primary",
@@ -154,6 +195,22 @@ def test_cloudflare_never_cross_pairs_different_resource_numbers():
     }
     assert resources[2]["resource_id"] == "3"
     assert resources[2]["ready"] is True
+
+
+def test_cloudflare_explicit_primary_requires_matching_ready_pair():
+    source = environment_secrets_source(
+        {
+            "MULTIMIND_USER_A_ID": "alice",
+            "MULTIMIND_USER_A_CLOUDFLARE_KEY": "key-one",
+            "MULTIMIND_USER_A_CLOUDFLARE_ACCOUNT_ID": "account-one",
+            "MULTIMIND_USER_A_CLOUDFLARE_KEY_2": "key-two",
+            "MULTIMIND_USER_A_CLOUDFLARE_PRIMARY_RESOURCE": "2",
+        }
+    )
+    alice = Config.get_api_keys("alice", source)
+    assert alice["cloudflare_key"] == ""
+    assert alice["cloudflare_account_id"] == ""
+    assert alice["selected_resource_ids"]["cloudflare"] == "unavailable"
 
 
 def test_duplicate_user_slot_ids_fail_closed():
