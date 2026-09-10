@@ -7,6 +7,7 @@ import os
 from typing import Mapping
 
 from core.composition import build_application_for_user
+from utils.provider_resources import parse_user_provider_pools
 
 
 _ENV_KEY_ALIASES = {
@@ -28,10 +29,25 @@ _ENV_KEY_ALIASES = {
 }
 
 
-def environment_secrets_source(environ: Mapping[str, str] | None = None):
-    """Expose deployment environment variables through the generic RJ-1 source."""
+def _truthy(value: object) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def default_credentials_allowed_for_users(environ: Mapping[str, str] | None = None) -> bool:
     source = os.environ if environ is None else environ
-    resolved = {}
+    return _truthy(source.get("MULTIMIND_ALLOW_DEFAULT_CREDENTIALS_FOR_USERS", ""))
+
+
+def environment_secrets_source(environ: Mapping[str, str] | None = None):
+    """Expose user-scoped and operator/default provider credentials.
+
+    Per-user pools come from the server-side JSON resource map. Existing
+    deployment-level variables remain under ``default`` for explicit operator or
+    backwards-compatible proof use. Callers decide whether fallback to that
+    default pool is permitted.
+    """
+    source = os.environ if environ is None else environ
+    default_resolved = {}
     for key, names in _ENV_KEY_ALIASES.items():
         value = ""
         for name in names:
@@ -39,8 +55,11 @@ def environment_secrets_source(environ: Mapping[str, str] | None = None):
             if candidate:
                 value = candidate
                 break
-        resolved[key] = value
-    return {"default": resolved}
+        default_resolved[key] = value
+
+    pools = parse_user_provider_pools(source.get("MULTIMIND_USER_PROVIDER_POOLS_JSON", ""))
+    pools["default"] = default_resolved
+    return pools
 
 
 def build_host_application(user_id, runtime_memories, *, agents=None):
@@ -48,6 +67,7 @@ def build_host_application(user_id, runtime_memories, *, agents=None):
     return build_application_for_user(
         user_id,
         secrets_source=environment_secrets_source,
+        allow_default_credentials=default_credentials_allowed_for_users(),
         runtime_memories=runtime_memories,
         agents=agents,
     )
