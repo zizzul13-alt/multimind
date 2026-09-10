@@ -31,7 +31,8 @@ def test_locked_preworkspace_theme_handoff_and_studio_reentry_exist():
         "def reset_theme",
     ):
         assert token in STATE
-    assert 'rx.button("Theme Studio"' in SURFACE
+    assert '"Theme Studio"' in SURFACE
+    assert "on_click=HostState.open_theme_studio" in SURFACE
     assert 'rx.button("Apply Composition"' in SURFACE
 
 
@@ -39,9 +40,66 @@ def test_theme_draft_is_host_owned_and_private_dna_is_optional():
     assert "from ui.dna_bridge import" in STATE
     assert "dna_available" in STATE
     assert "theme_studio_available" in STATE
+    assert "list_theme_studio_dna_options" in STATE
+    assert "resolve_theme_studio_composition" in STATE
     assert "design_dna" not in STATE
     assert "dna_quarantine" not in STATE
     assert "database.manager" not in STATE
+
+
+def test_theme_studio_uses_role_catalogs_not_raw_private_ids():
+    assert "Optional private DNA reference" not in SURFACE
+    for token in (
+        "identity_dna_choices",
+        "web_dna_choices",
+        "draft_identity_choice",
+        "draft_web_choice",
+        "set_draft_identity_choice",
+        "set_draft_web_choice",
+    ):
+        assert token in STATE or token in SURFACE
+    assert "HostState.identity_dna_choices" in SURFACE
+    assert "HostState.web_dna_choices" in SURFACE
+
+
+def test_theme_studio_live_preview_consumes_resolved_draft_tokens():
+    for token in (
+        "HostState.draft_background",
+        "HostState.draft_surface",
+        "HostState.draft_text_color",
+        "HostState.draft_primary",
+        "HostState.draft_accent",
+        "HostState.draft_border",
+        "HostState.draft_font_family",
+        "HostState.draft_radius_value",
+        "HostState.draft_spacing_value",
+        "HostState.draft_identity_display_name",
+        "HostState.draft_web_display_name",
+        "HostState.draft_metadata_prominence",
+        "HostState.draft_status_richness",
+        "HostState.draft_navigation_density",
+    ):
+        assert token in SURFACE
+    assert "Isolated composed live preview" in SURFACE
+    assert "Draft only — active workspace unchanged" in SURFACE
+
+
+def test_apply_promotes_full_composition_and_workspace_consumes_active_tokens():
+    assert "self._copy_draft_to_active()" in STATE
+    for token in (
+        "HostState.active_background",
+        "HostState.active_surface",
+        "HostState.active_text_color",
+        "HostState.active_primary",
+        "HostState.active_accent",
+        "HostState.active_border",
+        "HostState.active_font_family",
+        "HostState.active_radius_value",
+        "HostState.active_identity_display_name",
+        "HostState.active_web_display_name",
+    ):
+        assert token in SURFACE
+    assert "Active DNA: " in SURFACE
 
 
 def test_composer_parity_controls_are_present():
