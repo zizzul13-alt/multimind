@@ -58,6 +58,31 @@ class CanonicalPresentationProjection:
         return not self.rejections
 
 
+@dataclass(frozen=True)
+class CanonicalHostRealizationPlan:
+    """Renderer-neutral typed plan safe to expose to public presentation hosts."""
+
+    reference_id: str
+    display_name: str
+    source_fingerprint: str
+    viewport: str
+    archetype_id: str
+    layout_flow: str
+    balance: str
+    density: str
+    hierarchy: str
+    continuity: str
+    motion: str
+    typography: str
+    mobile_strategy: str
+    active_axes: tuple[str, ...]
+    active_zones: tuple[str, ...]
+    degraded_mechanism_count: int
+    accessibility_applied: bool
+    reading_sanctuary_applied: bool
+    reduced_motion_applied: bool
+
+
 def _warn(operation: str, exc: Exception) -> None:
     logger.warning("Optional canonical Design-DNA %s failed; keeping safe presentation: %s", operation, exc)
 
@@ -102,6 +127,18 @@ def list_canonical_reference_options() -> tuple[CanonicalReferenceOption, ...]:
         return ()
 
 
+def list_host_realizable_reference_ids() -> tuple[str, ...]:
+    """Return references implemented by the current typed EQ4 host realizer."""
+    module = _optional_import("design_dna.host_realization")
+    if module is None:
+        return ()
+    try:
+        return tuple(str(item) for item in module.list_host_realizable_reference_ids())
+    except Exception as exc:
+        _warn("host-realizable catalog", exc)
+        return ()
+
+
 def _issue_snapshot(issue) -> dict[str, str]:
     return {
         "code": _enum_value(getattr(issue, "code", "")),
@@ -136,6 +173,37 @@ def _asset_snapshot(decision) -> dict[str, str]:
     }
 
 
+def _private_resolve(
+    reference_id: str,
+    *,
+    viewport: str,
+    asset_state: str,
+    archetype_id: str,
+    interaction_state: str,
+    reduced_motion: bool,
+    accessibility_required: bool,
+    language: str,
+    script: str,
+    host_capabilities: tuple[str, ...],
+):
+    runtime = _optional_import("design_dna.host_runtime")
+    models = _optional_import("design_dna.models")
+    if runtime is None or models is None:
+        return None
+    return runtime.resolve_reference(
+        str(reference_id),
+        viewport=models.Viewport(str(viewport)),
+        asset_state=models.AssetState(str(asset_state)),
+        archetype_id=str(archetype_id),
+        interaction_state=str(interaction_state),
+        reduced_motion=bool(reduced_motion),
+        accessibility_required=bool(accessibility_required),
+        language=str(language),
+        script=str(script),
+        host_capabilities=tuple(str(item) for item in host_capabilities),
+    )
+
+
 def resolve_canonical_reference(
     reference_id: str,
     *,
@@ -150,23 +218,21 @@ def resolve_canonical_reference(
     host_capabilities: tuple[str, ...] = (),
 ) -> Optional[CanonicalPresentationProjection]:
     """Resolve one canonical reference and strip all private implementation types."""
-    runtime = _optional_import("design_dna.host_runtime")
-    models = _optional_import("design_dna.models")
-    if runtime is None or models is None:
-        return None
     try:
-        resolved = runtime.resolve_reference(
-            str(reference_id),
-            viewport=models.Viewport(str(viewport)),
-            asset_state=models.AssetState(str(asset_state)),
-            archetype_id=str(archetype_id),
-            interaction_state=str(interaction_state),
-            reduced_motion=bool(reduced_motion),
-            accessibility_required=bool(accessibility_required),
-            language=str(language),
-            script=str(script),
-            host_capabilities=tuple(str(item) for item in host_capabilities),
+        resolved = _private_resolve(
+            reference_id,
+            viewport=viewport,
+            asset_state=asset_state,
+            archetype_id=archetype_id,
+            interaction_state=interaction_state,
+            reduced_motion=reduced_motion,
+            accessibility_required=accessibility_required,
+            language=language,
+            script=script,
+            host_capabilities=host_capabilities,
         )
+        if resolved is None:
+            return None
         projection = resolved.projection
         reference = CanonicalReferenceOption(
             id=str(resolved.reference.id),
@@ -209,11 +275,74 @@ def resolve_canonical_reference(
         return None
 
 
+def realize_canonical_reference(
+    reference_id: str,
+    *,
+    viewport: str = "desktop",
+    asset_state: str = "off",
+    archetype_id: str = "chat_first",
+    interaction_state: str = "default",
+    reduced_motion: bool = False,
+    accessibility_required: bool = True,
+    language: str = "",
+    script: str = "",
+    host_capabilities: tuple[str, ...] = (),
+) -> Optional[CanonicalHostRealizationPlan]:
+    """Resolve and translate an EQ4-proving reference into typed host vocabulary."""
+    realizer = _optional_import("design_dna.host_realization")
+    if realizer is None:
+        return None
+    try:
+        resolved = _private_resolve(
+            reference_id,
+            viewport=viewport,
+            asset_state=asset_state,
+            archetype_id=archetype_id,
+            interaction_state=interaction_state,
+            reduced_motion=reduced_motion,
+            accessibility_required=accessibility_required,
+            language=language,
+            script=script,
+            host_capabilities=host_capabilities,
+        )
+        if resolved is None:
+            return None
+        plan = realizer.realize_for_host(resolved)
+        profile = plan.profile
+        return CanonicalHostRealizationPlan(
+            reference_id=str(plan.reference_id),
+            display_name=str(plan.display_name),
+            source_fingerprint=str(plan.source_fingerprint),
+            viewport=str(plan.viewport),
+            archetype_id=str(plan.archetype_id),
+            layout_flow=_enum_value(profile.layout_flow),
+            balance=_enum_value(profile.balance),
+            density=_enum_value(profile.density),
+            hierarchy=_enum_value(profile.hierarchy),
+            continuity=_enum_value(profile.continuity),
+            motion=_enum_value(profile.motion),
+            typography=_enum_value(profile.typography),
+            mobile_strategy=_enum_value(profile.mobile_strategy),
+            active_axes=tuple(str(item) for item in plan.active_axes),
+            active_zones=tuple(str(item) for item in plan.active_zones),
+            degraded_mechanism_count=int(plan.degraded_mechanism_count),
+            accessibility_applied=bool(plan.accessibility_applied),
+            reading_sanctuary_applied=bool(plan.reading_sanctuary_applied),
+            reduced_motion_applied=bool(plan.reduced_motion_applied),
+        )
+    except Exception as exc:
+        _warn("host realization", exc)
+        return None
+
+
 __all__ = [
+    "CanonicalHostRealizationPlan",
     "CanonicalMechanismProjection",
     "CanonicalPresentationProjection",
     "CanonicalReferenceOption",
     "canonical_dna_available",
     "list_canonical_reference_options",
+    "list_host_realizable_reference_ids",
+    "realize_canonical_reference",
     "resolve_canonical_reference",
 ]
