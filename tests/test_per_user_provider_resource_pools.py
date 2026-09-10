@@ -39,23 +39,39 @@ def test_unknown_deployment_user_cannot_borrow_operator_default_pool():
     assert unknown == Config.EMPTY_API_KEYS
 
 
-def test_explicit_default_identity_can_use_operator_pool():
+def test_operator_default_exists_for_smoke_tooling_but_not_login_resolution():
     source = environment_secrets_source({"MULTIMIND_GEMINI_KEY": "operator-gemini"})
-    default = Config.get_api_keys("default", source)
-    assert default["gemini_key"] == "operator-gemini"
+    assert source["default"]["gemini_key"] == "operator-gemini"
+    assert Config.get_api_keys("default", source) == Config.EMPTY_API_KEYS
+
+
+def test_blank_optional_user_slots_are_ignored():
+    source = environment_secrets_source(
+        {
+            "MULTIMIND_GEMINI_KEY": "operator",
+            "MULTIMIND_USER_A_ID": "",
+            "MULTIMIND_USER_A_GEMINI_KEY": "must-not-bind",
+        }
+    )
+    assert set(source) == {"__policy__", "default"}
 
 
 def test_generic_mapping_preserves_historical_default_fallback():
     source = {"default": {"groq_key": "legacy-default"}}
     assert Config.get_api_keys("alice", source)["groq_key"] == "legacy-default"
+    assert Config.get_api_keys("default", source)["groq_key"] == "legacy-default"
 
 
 def test_explicit_strict_mapping_disables_default_fallback():
     source = {
-        "__policy__": {"allow_default_fallback": False},
+        "__policy__": {
+            "allow_default_fallback": False,
+            "allow_explicit_default_identity": False,
+        },
         "default": {"groq_key": "operator"},
     }
     assert Config.get_api_keys("alice", source) == Config.EMPTY_API_KEYS
+    assert Config.get_api_keys("default", source) == Config.EMPTY_API_KEYS
 
 
 def test_multiple_same_provider_resources_are_ordered_and_primary_is_first():
