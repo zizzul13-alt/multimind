@@ -83,14 +83,23 @@ class CanonicalDnaState(rx.State):
     reading_sanctuary_applied: bool = False
     reduced_motion_applied: bool = False
 
+    # Generic host template tokens. They are derived only from canonical host
+    # vocabulary and never from reference IDs/titles.
+    fixture_template: str = "matrix"
     desktop_columns: str = "repeat(2, minmax(0, 1fr))"
+    support_columns: str = "repeat(2, minmax(0, 1fr))"
     gap: str = "0.85rem"
+    group_gap: str = "0.9rem"
     card_padding: str = "1rem"
+    group_padding: str = "1.1rem"
     card_radius: str = "8px"
+    group_radius: str = "10px"
     heading_size: str = "1.35rem"
     heading_weight: str = "650"
     heading_tracking: str = "0"
     secondary_offset: str = "none"
+    secondary_inset: str = "0rem"
+    secondary_width: str = "100%"
     continuity_border: str = "0px solid transparent"
     transition: str = "none"
     hover_transform: str = "none"
@@ -203,14 +212,21 @@ class CanonicalDnaState(rx.State):
         self.reading_sanctuary_applied = plan.reading_sanctuary_applied
         self.reduced_motion_applied = plan.reduced_motion_applied
 
+        self.fixture_template = tokens.fixture_template
         self.desktop_columns = tokens.desktop_columns
+        self.support_columns = tokens.support_columns
         self.gap = tokens.gap
+        self.group_gap = tokens.group_gap
         self.card_padding = tokens.card_padding
+        self.group_padding = tokens.group_padding
         self.card_radius = tokens.card_radius
+        self.group_radius = tokens.group_radius
         self.heading_size = tokens.heading_size
         self.heading_weight = tokens.heading_weight
         self.heading_tracking = tokens.heading_tracking
         self.secondary_offset = tokens.secondary_offset
+        self.secondary_inset = tokens.secondary_inset
+        self.secondary_width = tokens.secondary_width
         self.continuity_border = tokens.continuity_border
         self.transition = tokens.transition
         self.hover_transform = tokens.hover_transform
