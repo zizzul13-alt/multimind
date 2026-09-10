@@ -82,10 +82,29 @@ def test_legacy_generic_default_fallback_remains_available():
     assert Config.get_api_keys("alice", source)["groq_key"] == "operator-groq"
 
 
-def test_explicit_default_user_policy_is_off_by_default_and_opt_in_only():
-    assert default_credentials_allowed_for_users({}) is False
-    assert default_credentials_allowed_for_users({"MULTIMIND_ALLOW_DEFAULT_CREDENTIALS_FOR_USERS": "false"}) is False
-    assert default_credentials_allowed_for_users({"MULTIMIND_ALLOW_DEFAULT_CREDENTIALS_FOR_USERS": "true"}) is True
+def test_default_policy_is_migration_safe_until_user_pool_is_configured():
+    assert default_credentials_allowed_for_users({}) is True
+    assert default_credentials_allowed_for_users({"MULTIMIND_USER_PROVIDER_POOLS_JSON": ""}) is True
+    assert default_credentials_allowed_for_users({
+        "MULTIMIND_USER_PROVIDER_POOLS_JSON": json.dumps({"izzul": {}})
+    }) is False
+    # Nonblank malformed configuration still activates strict isolation. It must
+    # fail closed rather than silently falling back to operator credentials.
+    assert default_credentials_allowed_for_users({"MULTIMIND_USER_PROVIDER_POOLS_JSON": "{bad"}) is False
+
+
+def test_explicit_default_policy_overrides_migration_inference():
+    assert default_credentials_allowed_for_users({
+        "MULTIMIND_ALLOW_DEFAULT_CREDENTIALS_FOR_USERS": "false"
+    }) is False
+    assert default_credentials_allowed_for_users({
+        "MULTIMIND_ALLOW_DEFAULT_CREDENTIALS_FOR_USERS": "true",
+        "MULTIMIND_USER_PROVIDER_POOLS_JSON": "{bad",
+    }) is True
+    assert default_credentials_allowed_for_users({
+        "MULTIMIND_ALLOW_DEFAULT_CREDENTIALS_FOR_USERS": "false",
+        "MULTIMIND_USER_PROVIDER_POOLS_JSON": "",
+    }) is False
 
 
 def test_environment_source_combines_user_pools_and_operator_default_without_cross_user_merge():
@@ -103,3 +122,16 @@ def test_environment_source_combines_user_pools_and_operator_default_without_cro
     assert source["miko"]["groq_key"] == "miko-groq"
     assert source["miko"]["gemini_key"] == ""
     assert source["default"]["gemini_key"] == "operator-gemini"
+
+
+def test_strict_user_lookup_and_explicit_fallback_are_deterministic():
+    env = {
+        "MULTIMIND_GEMINI_KEY": "operator-gemini",
+        "MULTIMIND_USER_PROVIDER_POOLS_JSON": json.dumps({
+            "izzul": _pool(gemini={"default": "p", "resources": {"p": "izzul-gemini"}})
+        }),
+    }
+    source = environment_secrets_source(env)
+    assert Config.get_api_keys("izzul", source, allow_default=False)["gemini_key"] == "izzul-gemini"
+    assert Config.get_api_keys("miko", source, allow_default=False) == Config.EMPTY_API_KEYS
+    assert Config.get_api_keys("miko", source, allow_default=True)["gemini_key"] == "operator-gemini"
