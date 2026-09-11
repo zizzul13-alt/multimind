@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import reflex as rx
 
+from multimind_reflex.canonical_archetype_proving import canonical_archetype_context_panel
 from multimind_reflex.canonical_dna_state import CanonicalDnaState
 from multimind_reflex.canonical_theme_studio import canonical_theme_studio_panel
 
@@ -29,11 +30,12 @@ def canonical_dna_proving_page() -> rx.Component:
                 wrap="wrap",
             ),
             rx.callout(
-                "This page validates canonical catalog, deterministic asset-off projection, responsive host realization, accessibility demotion, and A→B→A presentation behavior. It does not claim production cutover or asset approval.",
+                "This page validates canonical catalog, deterministic asset-off projection, responsive host realization, seven-archetype context survival, accessibility demotion, and A→B→A presentation behavior. It does not claim production cutover or asset approval.",
                 icon="shield_check",
                 width="100%",
             ),
             canonical_theme_studio_panel(),
+            canonical_archetype_context_panel(),
             rx.hstack(
                 rx.button("Refresh canonical catalog", on_click=CanonicalDnaState.refresh_catalog, variant="soft"),
                 rx.button("Clear proving selection", on_click=CanonicalDnaState.clear_reference, variant="ghost"),
