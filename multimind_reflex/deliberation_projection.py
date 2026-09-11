@@ -61,6 +61,27 @@ def critique_snapshots(raw):
     return snapshots
 
 
+def revision_snapshots(raw):
+    debate = _as_debate_dict(raw)
+    snapshots = []
+    for item in debate.get("revisions", []) if isinstance(debate.get("revisions"), list) else []:
+        if not isinstance(item, dict):
+            continue
+        snapshots.append(
+            {
+                "round": str(item.get("round", "")),
+                "participant_id": str(item.get("participant_id", "")),
+                "requested_provider": str(item.get("requested_provider", "")),
+                "actual_provider": str(item.get("actual_provider") or ""),
+                "model": str(item.get("model") or ""),
+                "status": str(item.get("status", "unknown")),
+                "text": str(item.get("text", "")),
+                "failure_category": str(item.get("failure_category") or ""),
+            }
+        )
+    return snapshots
+
+
 def run_summary(raw):
     debate = _as_debate_dict(raw)
     judge = debate.get("judge", {}) if isinstance(debate.get("judge"), dict) else {}
@@ -82,9 +103,14 @@ def run_summary(raw):
     return {
         "selected": selected,
         "successful": successful,
+        "deliberation_depth": str(debate.get("deliberation_depth") or ""),
         "system_verdict": str(debate.get("system_verdict") or ""),
+        "user_verdict": str(debate.get("user_verdict") or ""),
         "judge_provider": str(judge.get("actual_provider") or ""),
         "judge_status": str(judge.get("status") or ""),
+        "revision_count": sum(
+            1 for item in revision_snapshots(debate) if item["status"] == "success"
+        ),
     }
 
 
@@ -105,6 +131,9 @@ def history_snapshots(rows):
                 "final_answer": str(row.get("final_answer", "")),
                 "participant_summary": participant_summary,
                 "system_verdict": summary["system_verdict"],
+                "user_verdict": summary["user_verdict"],
+                "deliberation_depth": summary["deliberation_depth"],
+                "revision_count": str(summary["revision_count"]),
                 "judge_provider": summary["judge_provider"],
             }
         )
