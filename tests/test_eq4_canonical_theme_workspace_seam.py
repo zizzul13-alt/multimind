@@ -102,12 +102,19 @@ def test_workspace_still_instantiates_one_set_of_application_facing_zones():
 
 
 def test_canonical_seam_does_not_claim_application_or_persistence_ownership():
+    # Mentioning the stable application boundary in documentation is allowed;
+    # importing/constructing application, orchestration, persistence or network
+    # owners from this presentation-only extension is not.
     for forbidden in (
-        "MultiMindApplication",
-        "DebateOrchestrator",
+        "from core.application import MultiMindApplication",
+        "MultiMindApplication(",
+        "from core.orchestrator import DebateOrchestrator",
+        "DebateOrchestrator(",
         "Config.get_db_path",
         "database.manager",
+        "sqlite3.connect(",
         "requests.post(",
+        "httpx.post(",
         "FastAPI",
     ):
         assert forbidden not in STATE
