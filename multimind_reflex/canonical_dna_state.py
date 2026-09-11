@@ -6,12 +6,17 @@ provider/persistence state is never read or mutated here.
 
 Host-realization readiness and browser-proving evidence are deliberately kept
 separate: a reference may be previewable by the generic renderer without having
-any EQ4 credit.
+any EQ4 credit. Archetype context is likewise presentation-only and comes from
+the accepted seven-archetype registry semantics.
 """
 from __future__ import annotations
 
 import reflex as rx
 
+from multimind_reflex.canonical_contexts import (
+    CANONICAL_ARCHETYPE_IDS,
+    get_archetype_context,
+)
 from multimind_reflex.canonical_projection import project_reflex_tokens
 from ui.canonical_dna_bridge import (
     list_browser_proving_reference_ids,
@@ -22,6 +27,7 @@ from ui.canonical_dna_bridge import (
 
 
 _RESULT_LIMIT = 30
+_DEFAULT_CONTEXT = get_archetype_context("chat_first")
 
 
 def _catalog_snapshots() -> list[dict[str, str]]:
@@ -80,9 +86,25 @@ class CanonicalDnaState(rx.State):
     selected_category: str = ""
     selected_status: str = ""
     preview_viewport: str = "desktop"
+    preview_archetype: str = "chat_first"
     reduced_motion: bool = False
     preview_message: str = "Choose a host-realization-ready reference to render the canonical asset-off plan."
     plan_ready: bool = False
+
+    # Archetype semantic fixture. These strings change only when the selected
+    # accepted archetype changes; DNA controls hierarchy/layout, never meaning.
+    context_display_name: str = _DEFAULT_CONTEXT.display_name
+    context_primary_object: str = _DEFAULT_CONTEXT.primary_object
+    context_title: str = _DEFAULT_CONTEXT.context_title
+    context_body: str = _DEFAULT_CONTEXT.context_body
+    work_title: str = _DEFAULT_CONTEXT.work_title
+    work_body: str = _DEFAULT_CONTEXT.work_body
+    action_title: str = _DEFAULT_CONTEXT.action_title
+    action_body: str = _DEFAULT_CONTEXT.action_body
+    state_title: str = _DEFAULT_CONTEXT.state_title
+    state_body: str = _DEFAULT_CONTEXT.state_body
+    auxiliary_title: str = _DEFAULT_CONTEXT.auxiliary_title
+    auxiliary_body: str = _DEFAULT_CONTEXT.auxiliary_body
 
     fingerprint: str = ""
     layout_flow: str = ""
@@ -159,6 +181,25 @@ class CanonicalDnaState(rx.State):
             return "Simulated desktop composition"
         return "Simulated mobile composition"
 
+    @rx.var
+    def archetype_choices(self) -> list[str]:
+        return list(CANONICAL_ARCHETYPE_IDS)
+
+    def _load_context(self) -> None:
+        context = get_archetype_context(self.preview_archetype)
+        self.context_display_name = context.display_name
+        self.context_primary_object = context.primary_object
+        self.context_title = context.context_title
+        self.context_body = context.context_body
+        self.work_title = context.work_title
+        self.work_body = context.work_body
+        self.action_title = context.action_title
+        self.action_body = context.action_body
+        self.state_title = context.state_title
+        self.state_body = context.state_body
+        self.auxiliary_title = context.auxiliary_title
+        self.auxiliary_body = context.auxiliary_body
+
     @rx.event
     def refresh_catalog(self):
         self.catalog = _catalog_snapshots()
@@ -211,7 +252,7 @@ class CanonicalDnaState(rx.State):
             self.selected_reference_id,
             viewport=self.preview_viewport,
             asset_state="off",
-            archetype_id="chat_first",
+            archetype_id=self.preview_archetype,
             reduced_motion=self.reduced_motion,
             accessibility_required=True,
         )
@@ -226,9 +267,9 @@ class CanonicalDnaState(rx.State):
 
         self.plan_ready = True
         if selected.get("browser_proving") == "true":
-            self.preview_message = "Canonical asset-off host plan resolved in the bounded browser-proving slice. EQ4 credit still requires accepted evidence."
+            self.preview_message = "Canonical asset-off host plan resolved in the bounded browser-proving slice. EQ4 credit still requires accepted cross-context evidence."
         else:
-            self.preview_message = "Canonical asset-off host plan resolved by full-corpus machinery. Host-ready is not EQ4 credit; browser evidence remains pending."
+            self.preview_message = "Canonical asset-off host plan resolved by full-corpus machinery. Host-ready is not EQ4 credit; cross-context browser evidence remains pending."
         self.fingerprint = plan.source_fingerprint
         self.layout_flow = plan.layout_flow
         self.balance = plan.balance
@@ -292,6 +333,14 @@ class CanonicalDnaState(rx.State):
         self._refresh_plan()
 
     @rx.event
+    def set_preview_archetype(self, value: str):
+        if value not in CANONICAL_ARCHETYPE_IDS:
+            return
+        self.preview_archetype = value
+        self._load_context()
+        self._refresh_plan()
+
+    @rx.event
     def set_reduced_motion(self, value: bool):
         self.reduced_motion = bool(value)
         self._refresh_plan()
@@ -304,7 +353,7 @@ class CanonicalDnaState(rx.State):
         self.active_reference_id = self.selected_reference_id
         self.active_display_name = self.selected_display_name
         self.active_fingerprint = self.fingerprint
-        self.preview_message = "Canonical proving presentation applied to presentation state only; this action grants no EQ4 credit."
+        self.preview_message = "Canonical proving presentation applied to isolated presentation state only; this action grants no EQ4 credit."
 
     @rx.event
     def clear_reference(self):
