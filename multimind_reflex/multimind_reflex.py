@@ -2,7 +2,8 @@
 
 import reflex as rx
 
-from multimind_reflex.state import AGENT_OPTIONS, ARCHETYPES, SKILL_OPTIONS, TEMPLATE_OPTIONS, HostState
+from multimind_reflex.state import AGENT_OPTIONS, ARCHETYPES, SKILL_OPTIONS, TEMPLATE_OPTIONS
+from multimind_reflex.workspace_dna_state import WorkspaceDnaState as HostState
 
 
 UPLOAD_ID = "rj3_upload"
@@ -42,6 +43,28 @@ def _login_panel() -> rx.Component:
     )
 
 
+def _canonical_reference_result(item) -> rx.Component:
+    return rx.button(
+        rx.vstack(
+            rx.text(item["display_name"], weight="bold", text_align="left"),
+            rx.text(
+                item["id"],
+                " · ",
+                item["category"],
+                size="1",
+                text_align="left",
+            ),
+            align="start",
+            spacing="1",
+            width="100%",
+        ),
+        on_click=HostState.select_canonical_reference(item["id"]),
+        width="100%",
+        variant="soft",
+        justify_content="flex-start",
+    )
+
+
 def _theme_studio() -> rx.Component:
     return rx.container(
         rx.vstack(
@@ -60,7 +83,7 @@ def _theme_studio() -> rx.Component:
             rx.callout(
                 rx.cond(
                     HostState.dna_runtime_available,
-                    "Private Design-DNA is available server-side. Pick a role-based DNA below; you do not need to know its internal ID.",
+                    "Private Design-DNA is available server-side. Canonical references are preferred; the legacy role-based composition remains an explicit rollback path.",
                     "Private Design-DNA unavailable; safe neutral presentation remains operational.",
                 ),
                 icon="info",
@@ -74,21 +97,91 @@ def _theme_studio() -> rx.Component:
                         rx.select(
                             ARCHETYPES,
                             value=HostState.draft_archetype,
-                            on_change=HostState.set_draft_archetype,
+                            on_change=HostState.set_composed_archetype,
                             width="100%",
                         ),
+                        rx.separator(),
+                        rx.heading("Canonical Reference DNA", size="4"),
+                        rx.hstack(
+                            rx.badge("Canonical 160", variant="soft"),
+                            rx.text("Catalog: ", HostState.canonical_catalog_total, size="2"),
+                            rx.text("Host-ready: ", HostState.canonical_host_ready_total, size="2"),
+                            wrap="wrap",
+                        ),
+                        rx.input(
+                            placeholder="Search reference, family, category, lineage, or ID",
+                            value=HostState.canonical_query,
+                            on_change=HostState.set_canonical_query,
+                            width="100%",
+                        ),
+                        rx.cond(
+                            HostState.canonical_catalog_total > 0,
+                            rx.vstack(
+                                rx.foreach(HostState.filtered_canonical_catalog, _canonical_reference_result),
+                                width="100%",
+                                spacing="2",
+                                max_height="20rem",
+                                overflow_y="auto",
+                            ),
+                            rx.callout(
+                                "Canonical package unavailable in this host; legacy/neutral presentation remains safe.",
+                                icon="info",
+                                width="100%",
+                            ),
+                        ),
+                        rx.cond(
+                            HostState.draft_dna_mode == "canonical",
+                            rx.card(
+                                rx.vstack(
+                                    rx.hstack(
+                                        rx.badge("CANONICAL", variant="solid"),
+                                        rx.text(HostState.draft_canonical_reference_id, weight="bold"),
+                                        wrap="wrap",
+                                    ),
+                                    rx.text(HostState.draft_canonical_display_name, weight="bold"),
+                                    rx.text(
+                                        "Layout ",
+                                        HostState.draft_canonical_layout_flow,
+                                        " · mobile ",
+                                        HostState.draft_canonical_mobile_strategy,
+                                        size="2",
+                                    ),
+                                    rx.text(
+                                        "Density ",
+                                        HostState.draft_canonical_density,
+                                        " · hierarchy ",
+                                        HostState.draft_canonical_hierarchy,
+                                        " · balance ",
+                                        HostState.draft_canonical_balance,
+                                        size="2",
+                                    ),
+                                    width="100%",
+                                    spacing="2",
+                                    align="start",
+                                ),
+                                width="100%",
+                            ),
+                        ),
+                        rx.button(
+                            "Use legacy role-based composition",
+                            on_click=HostState.use_legacy_dna,
+                            variant="outline",
+                            width="100%",
+                        ),
+                        rx.separator(),
+                        rx.heading("Legacy rollback composition", size="4"),
                         rx.text("Identity / Cultural DNA"),
                         rx.select(
                             HostState.identity_dna_choices,
                             value=HostState.draft_identity_choice,
-                            on_change=HostState.set_draft_identity_choice,
+                            on_change=HostState.set_composed_identity_choice,
                             width="100%",
                         ),
                         rx.text("Web / Information DNA"),
                         rx.select(
                             HostState.web_dna_choices,
                             value=HostState.draft_web_choice,
-                            on_change=HostState.set_draft_web_choice,
+                            on_change=HostState.set_composed_web_choice,
                             width="100%",
                         ),
                         rx.separator(),
@@ -172,8 +265,30 @@ def _theme_studio() -> rx.Component:
                         rx.heading("Isolated composed live preview", size="5"),
                         rx.badge("Draft only — active workspace unchanged", variant="soft"),
                         rx.text("Archetype: ", HostState.draft_archetype),
-                        rx.text("Identity: ", HostState.draft_identity_display_name),
-                        rx.text("Web DNA: ", HostState.draft_web_display_name),
+                        rx.text("DNA mode: ", HostState.draft_dna_mode),
+                        rx.cond(
+                            HostState.draft_dna_mode == "canonical",
+                            rx.vstack(
+                                rx.text("Canonical reference: ", HostState.draft_canonical_display_name),
+                                rx.text(
+                                    "Host grammar: ",
+                                    HostState.draft_canonical_layout_flow,
+                                    " · ",
+                                    HostState.draft_canonical_mobile_strategy,
+                                    size="2",
+                                ),
+                                width="100%",
+                                align="start",
+                                spacing="1",
+                            ),
+                            rx.vstack(
+                                rx.text("Identity: ", HostState.draft_identity_display_name),
+                                rx.text("Web DNA: ", HostState.draft_web_display_name),
+                                width="100%",
+                                align="start",
+                                spacing="1",
+                            ),
+                        ),
                         rx.text(
                             "Information policy: metadata ",
                             HostState.draft_metadata_prominence,
@@ -197,7 +312,7 @@ def _theme_studio() -> rx.Component:
                             rx.vstack(
                                 rx.heading("MultiMind", size="6", color=HostState.draft_primary),
                                 rx.text(
-                                    "This preview is rendered from the selected private DNA composition. Application/session truth stays unchanged until Apply.",
+                                    "This preview is rendered from the selected presentation composition. Application/session truth stays unchanged until Apply.",
                                     color=HostState.draft_text_color,
                                 ),
                                 rx.hstack(
@@ -248,9 +363,9 @@ def _theme_studio() -> rx.Component:
                 width="100%",
             ),
             rx.hstack(
-                rx.button("Apply Composition", on_click=HostState.apply_theme, size="3"),
-                rx.button("Discard", on_click=HostState.discard_theme, variant="soft"),
-                rx.button("Reset", on_click=HostState.reset_theme, variant="ghost"),
+                rx.button("Apply Composition", on_click=HostState.apply_composed_theme, size="3"),
+                rx.button("Discard", on_click=HostState.discard_composed_theme, variant="soft"),
+                rx.button("Reset", on_click=HostState.reset_composed_theme, variant="ghost"),
                 rx.cond(
                     HostState.current_session_id != "",
                     rx.button("Back to workspace", on_click=HostState.return_to_workspace, variant="outline"),
@@ -275,7 +390,7 @@ def _session_panel() -> rx.Component:
         rx.hstack(
             rx.heading("Sessions", size="5"),
             rx.spacer(),
-            rx.button("Logout", on_click=HostState.logout, variant="soft"),
+            rx.button("Logout", on_click=HostState.logout_composed, variant="soft"),
             width="100%",
             align="center",
         ),
@@ -714,6 +829,93 @@ def _workspace_mobile_areas():
     )
 
 
+def _canonical_workspace_desktop_columns():
+    """Canonical layout-flow vocabulary → real workspace desktop columns."""
+    return rx.cond(
+        HostState.active_canonical_layout_flow == "grid",
+        "repeat(2, minmax(0, 1fr))",
+        rx.cond(
+            HostState.active_canonical_layout_flow == "components",
+            "minmax(16rem, 0.8fr) minmax(0, 1.2fr)",
+            rx.cond(
+                HostState.active_canonical_layout_flow == "grouped",
+                "minmax(16rem, 0.85fr) minmax(0, 1.15fr)",
+                rx.cond(
+                    HostState.active_canonical_layout_flow == "paired",
+                    "repeat(2, minmax(0, 1fr))",
+                    "minmax(0, 1fr)",
+                ),
+            ),
+        ),
+    )
+
+
+def _canonical_workspace_desktop_areas():
+    """Canonical structural grammar over the same four real semantic zones."""
+    return rx.cond(
+        HostState.active_canonical_layout_flow == "grid",
+        '"composer result" "utility history"',
+        rx.cond(
+            HostState.active_canonical_layout_flow == "components",
+            '"composer result" "utility result" "history history"',
+            rx.cond(
+                HostState.active_canonical_layout_flow == "grouped",
+                '"utility composer" "utility result" "history history"',
+                rx.cond(
+                    HostState.active_canonical_layout_flow == "paired",
+                    '"composer result" "utility history"',
+                    rx.cond(
+                        HostState.active_canonical_layout_flow == "continuous",
+                        '"composer" "result" "history" "utility"',
+                        rx.cond(
+                            HostState.active_canonical_layout_flow == "directional",
+                            '"utility" "composer" "result" "history"',
+                            '"utility" "composer" "result" "history"',
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def _canonical_workspace_mobile_areas():
+    """Canonical mobile strategy changes real mobile order, never desktop crop."""
+    return rx.cond(
+        HostState.active_canonical_mobile_strategy == "ordered_flow",
+        '"composer" "result" "history" "utility"',
+        rx.cond(
+            HostState.active_canonical_mobile_strategy == "component_reflow",
+            '"composer" "utility" "result" "history"',
+            rx.cond(
+                HostState.active_canonical_mobile_strategy == "serial_groups",
+                '"utility" "composer" "result" "history"',
+                rx.cond(
+                    HostState.active_canonical_mobile_strategy == "serial_clusters",
+                    '"result" "composer" "utility" "history"',
+                    rx.cond(
+                        HostState.active_canonical_mobile_strategy == "stack_pairs",
+                        '"composer" "result" "utility" "history"',
+                        rx.cond(
+                            HostState.active_canonical_mobile_strategy == "ordered_asymmetry",
+                            '"composer" "utility" "result" "history"',
+                            rx.cond(
+                                HostState.active_canonical_mobile_strategy == "reduced_continuity",
+                                '"composer" "result" "history" "utility"',
+                                rx.cond(
+                                    HostState.active_canonical_mobile_strategy == "vertical_punctuation",
+                                    '"utility" "composer" "result" "history"',
+                                    '"utility" "composer" "result" "history"',
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
 def _workspace_zone_card(child: rx.Component, area: str) -> rx.Component:
     return rx.card(
         child,
@@ -723,7 +925,16 @@ def _workspace_zone_card(child: rx.Component, area: str) -> rx.Component:
         background_color=HostState.active_surface,
         color=HostState.active_text_color,
         border=f"1px solid {HostState.active_border}",
-        border_radius=HostState.active_radius_value,
+        border_radius=rx.cond(
+            HostState.active_dna_mode == "canonical",
+            HostState.active_canonical_card_radius,
+            HostState.active_radius_value,
+        ),
+        padding=rx.cond(
+            HostState.active_dna_mode == "canonical",
+            HostState.active_canonical_card_padding,
+            HostState.active_spacing_value,
+        ),
     )
 
 
@@ -839,9 +1050,9 @@ def _workspace_history_zone() -> rx.Component:
 
 
 def _workspace() -> rx.Component:
-    # The four real semantic zones are instantiated exactly once. Archetype
-    # selection changes presentation composition only; it never duplicates or
-    # changes application/provider/persistence truth.
+    # The four real semantic zones are instantiated exactly once. Archetype and
+    # canonical DNA change only presentation composition; application/provider/
+    # persistence truth remains behind the same event and application paths.
     return rx.container(
         rx.vstack(
             rx.card(
@@ -850,12 +1061,22 @@ def _workspace() -> rx.Component:
                         rx.heading("MultiMind", size="7", color=HostState.active_primary),
                         rx.text("Logged in as ", HostState.display_username),
                         rx.text("Archetype: ", HostState.active_archetype, size="2"),
-                        rx.text(
-                            "Active DNA: ",
-                            HostState.active_identity_display_name,
-                            " + ",
-                            HostState.active_web_display_name,
-                            size="2",
+                        rx.cond(
+                            HostState.active_dna_mode == "canonical",
+                            rx.text(
+                                "Canonical DNA: ",
+                                HostState.active_canonical_display_name,
+                                " · ",
+                                HostState.active_canonical_reference_id,
+                                size="2",
+                            ),
+                            rx.text(
+                                "Active DNA: ",
+                                HostState.active_identity_display_name,
+                                " + ",
+                                HostState.active_web_display_name,
+                                size="2",
+                            ),
                         ),
                         align="start",
                     ),
@@ -875,7 +1096,11 @@ def _workspace() -> rx.Component:
                 background_color=HostState.active_surface,
                 color=HostState.active_text_color,
                 border=f"1px solid {HostState.active_border}",
-                border_radius=HostState.active_radius_value,
+                border_radius=rx.cond(
+                    HostState.active_dna_mode == "canonical",
+                    HostState.active_canonical_card_radius,
+                    HostState.active_radius_value,
+                ),
             ),
             rx.grid(
                 _workspace_utility_zone(),
@@ -884,13 +1109,29 @@ def _workspace() -> rx.Component:
                 _workspace_history_zone(),
                 grid_template_columns=rx.breakpoints(
                     initial="minmax(0, 1fr)",
-                    lg=_workspace_desktop_columns(),
+                    lg=rx.cond(
+                        HostState.active_dna_mode == "canonical",
+                        _canonical_workspace_desktop_columns(),
+                        _workspace_desktop_columns(),
+                    ),
                 ),
                 grid_template_areas=rx.breakpoints(
-                    initial=_workspace_mobile_areas(),
-                    lg=_workspace_desktop_areas(),
+                    initial=rx.cond(
+                        HostState.active_dna_mode == "canonical",
+                        _canonical_workspace_mobile_areas(),
+                        _workspace_mobile_areas(),
+                    ),
+                    lg=rx.cond(
+                        HostState.active_dna_mode == "canonical",
+                        _canonical_workspace_desktop_areas(),
+                        _workspace_desktop_areas(),
+                    ),
                 ),
-                gap="1rem",
+                gap=rx.cond(
+                    HostState.active_dna_mode == "canonical",
+                    HostState.active_canonical_gap,
+                    "1rem",
+                ),
                 width="100%",
                 align_items="start",
             ),
@@ -908,7 +1149,16 @@ def _workspace() -> rx.Component:
         font_family=rx.cond(
             HostState.active_archetype == "terminal_hacker",
             HostState.active_mono_font,
-            HostState.active_font_family,
+            rx.cond(
+                HostState.active_dna_mode == "canonical",
+                HostState.active_canonical_font_family,
+                HostState.active_font_family,
+            ),
+        ),
+        line_height=rx.cond(
+            HostState.active_dna_mode == "canonical",
+            HostState.active_canonical_line_height,
+            "1.5",
         ),
         min_height="100vh",
     )
