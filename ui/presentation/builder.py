@@ -135,12 +135,24 @@ def _build_debate_detail(debate_raw: Any) -> Optional[DebateDetailSnapshot]:
     if isinstance(judge, dict):
         judge_provider = str(judge.get("actual_provider") or "")
 
+    raw_revisions = debate_dict.get("revisions", [])
+    revision_count = 0
+    if isinstance(raw_revisions, list):
+        revision_count = sum(
+            1 for item in raw_revisions
+            if isinstance(item, dict) and item.get("status") == "success"
+        )
+
     system_verdict = debate_dict.get("system_verdict")
+    user_verdict = debate_dict.get("user_verdict")
     return DebateDetailSnapshot(
         gate_score=gate_score,
         responses=tuple(responses),
         participants=tuple(participants),
         system_verdict=str(system_verdict or ""),
+        user_verdict=str(user_verdict or ""),
+        deliberation_depth=str(debate_dict.get("deliberation_depth") or ""),
+        revision_count=revision_count,
         judge_provider=judge_provider,
         selected_participants=_safe_int(debate_dict.get("selected_participants"), len(participants)),
         successful_participants=_safe_int(
