@@ -128,7 +128,11 @@ def list_canonical_reference_options() -> tuple[CanonicalReferenceOption, ...]:
 
 
 def list_host_realizable_reference_ids() -> tuple[str, ...]:
-    """Return references implemented by the current typed EQ4 host realizer."""
+    """Return references supported by the current typed host realizer.
+
+    Host-realizable is an implementation/readiness statement only. It is not
+    browser evidence and grants no EQ4 credit by itself.
+    """
     module = _optional_import("design_dna.host_realization")
     if module is None:
         return ()
@@ -136,6 +140,25 @@ def list_host_realizable_reference_ids() -> tuple[str, ...]:
         return tuple(str(item) for item in module.list_host_realizable_reference_ids())
     except Exception as exc:
         _warn("host-realizable catalog", exc)
+        return ()
+
+
+def list_browser_proving_reference_ids() -> tuple[str, ...]:
+    """Return the bounded reference slice reserved for real-browser EQ4 proving.
+
+    Older private packages do not expose this distinction. Fail closed rather
+    than interpreting all host-realizable references as browser-proven.
+    """
+    module = _optional_import("design_dna.host_realization")
+    if module is None:
+        return ()
+    try:
+        getter = getattr(module, "list_browser_proving_reference_ids", None)
+        if getter is None:
+            return ()
+        return tuple(str(item) for item in getter())
+    except Exception as exc:
+        _warn("browser-proving catalog", exc)
         return ()
 
 
@@ -288,7 +311,7 @@ def realize_canonical_reference(
     script: str = "",
     host_capabilities: tuple[str, ...] = (),
 ) -> Optional[CanonicalHostRealizationPlan]:
-    """Resolve and translate an EQ4-proving reference into typed host vocabulary."""
+    """Resolve and translate a host-realizable reference into typed vocabulary."""
     realizer = _optional_import("design_dna.host_realization")
     if realizer is None:
         return None
@@ -341,6 +364,7 @@ __all__ = [
     "CanonicalPresentationProjection",
     "CanonicalReferenceOption",
     "canonical_dna_available",
+    "list_browser_proving_reference_ids",
     "list_canonical_reference_options",
     "list_host_realizable_reference_ids",
     "realize_canonical_reference",
