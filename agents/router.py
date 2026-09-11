@@ -26,6 +26,21 @@ def _is_rate_limited(response):
     return isinstance(text, str) and ("429" in text or "rate limit" in text.lower())
 
 
+def _sanitized_failure(response=None, *, exception_type=None):
+    """Keep only bounded diagnostics that are safe to persist or surface internally."""
+    if isinstance(response, dict):
+        return {
+            "failure_category": response.get("failure_category", "provider_error"),
+            "status_code": response.get("status_code"),
+            "exception_type": response.get("exception_type"),
+        }
+    return {
+        "failure_category": "provider_exception",
+        "status_code": None,
+        "exception_type": exception_type,
+    }
+
+
 class ModelRouter:
     """Provider routing with bounded fallback and sanitized diagnostics."""
 
@@ -41,6 +56,7 @@ class ModelRouter:
             rest = [p for p in self.providers if p not in pref]
             ordered_providers = pref + rest
 
+        last_failure = None
         for provider in ordered_providers:
             name = provider.name
             self.stats.setdefault(name, {"success": 0, "error": 0, "rate_limited": False, "last_error": ""})
@@ -49,6 +65,7 @@ class ModelRouter:
             try:
                 response = provider.generate(prompt=prompt, system_prompt=system_prompt, mode=mode, max_tokens=max_tokens)
                 if response.get("status") == "error":
+                    last_failure = _sanitized_failure(response)
                     failure_category = response.get("failure_category", "provider_error")
                     if _is_rate_limited(response):
                         self.stats[name]["rate_limited"] = True
@@ -68,17 +85,28 @@ class ModelRouter:
                 self.stats[name]["error"] += 1
                 self.stats[name]["last_error"] = "Empty or malformed response"
                 provider.set_availability(False, "Empty or malformed response")
+                last_failure = _sanitized_failure({"failure_category": "empty_response"})
                 _log_provider_failure(name, {"failure_category": "empty_response"})
             except Exception as e:
                 self.stats[name]["error"] += 1
                 self.stats[name]["last_error"] = type(e).__name__
                 provider.set_availability(False, type(e).__name__)
+                last_failure = _sanitized_failure(exception_type=type(e).__name__)
                 _log_provider_failure(name, exception_type=type(e).__name__)
 
         # If every route failed, allow a later independent request to retry all providers.
         for name in self.stats:
             self.stats[name]["rate_limited"] = False
-        return {"status": "error", "text": TERMINAL_PROVIDER_FAILURE_TEXT, "agent": "Router", "tokens": 0, "cost": 0.0}
+        terminal = {
+            "status": "error",
+            "text": TERMINAL_PROVIDER_FAILURE_TEXT,
+            "agent": "Router",
+            "tokens": 0,
+            "cost": 0.0,
+        }
+        if last_failure:
+            terminal.update({key: value for key, value in last_failure.items() if value is not None})
+        return terminal
 
     def reset_rate_limits(self):
         for name in self.stats:
