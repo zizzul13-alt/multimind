@@ -163,7 +163,13 @@ def test_busy_duplicate_guard_and_session_switch_guard_remain_present():
 
 
 def test_surface_keeps_phone_tablet_desktop_breakpoints():
-    assert 'rx.breakpoints(initial="1", lg="3fr 7fr")' in SURFACE
+    # Responsive parity is an invariant; the historical fixed 3fr/7fr desktop
+    # skeleton is not. Archetype promotion keeps a one-column mobile base,
+    # explicit mobile semantic ordering, and lg desktop composition.
+    assert 'initial="minmax(0, 1fr)"' in SURFACE
+    assert "initial=_workspace_mobile_areas()" in SURFACE
+    assert "lg=_workspace_desktop_columns()" in SURFACE
+    assert "lg=_workspace_desktop_areas()" in SURFACE
     assert 'padding=rx.breakpoints(initial="0.75rem", sm="1rem", md="1.5rem")' in SURFACE
 
 
