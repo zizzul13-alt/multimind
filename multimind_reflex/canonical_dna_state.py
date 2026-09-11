@@ -3,6 +3,10 @@
 This state owns presentation-only search/preview/apply state. Canonical truth is
 read exclusively through the optional public bridge; application/session/
 provider/persistence state is never read or mutated here.
+
+Host-realization readiness and browser-proving evidence are deliberately kept
+separate: a reference may be previewable by the generic renderer without having
+any EQ4 credit.
 """
 from __future__ import annotations
 
@@ -10,6 +14,7 @@ import reflex as rx
 
 from multimind_reflex.canonical_projection import project_reflex_tokens
 from ui.canonical_dna_bridge import (
+    list_browser_proving_reference_ids,
     list_canonical_reference_options,
     list_host_realizable_reference_ids,
     realize_canonical_reference,
@@ -20,19 +25,31 @@ _RESULT_LIMIT = 30
 
 
 def _catalog_snapshots() -> list[dict[str, str]]:
-    ready = set(list_host_realizable_reference_ids())
-    return [
-        {
-            "id": option.id,
-            "display_name": option.display_name,
-            "family": option.family,
-            "category": option.category,
-            "lineage": option.lineage,
-            "status": "EQ4 proving-ready" if option.id in ready else "Canonical · host realization pending",
-            "ready": "true" if option.id in ready else "false",
-        }
-        for option in list_canonical_reference_options()
-    ]
+    host_ready = set(list_host_realizable_reference_ids())
+    browser_proving = set(list_browser_proving_reference_ids())
+    result = []
+    for option in list_canonical_reference_options():
+        is_host_ready = option.id in host_ready
+        is_browser_proving = option.id in browser_proving
+        if is_browser_proving:
+            status = "Browser proving slice · EQ4 evidence pending"
+        elif is_host_ready:
+            status = "Host-realization ready · EQ4 evidence pending"
+        else:
+            status = "Canonical · host realization pending"
+        result.append(
+            {
+                "id": option.id,
+                "display_name": option.display_name,
+                "family": option.family,
+                "category": option.category,
+                "lineage": option.lineage,
+                "status": status,
+                "host_ready": "true" if is_host_ready else "false",
+                "browser_proving": "true" if is_browser_proving else "false",
+            }
+        )
+    return result
 
 
 def _filter_catalog(options: list[dict[str, str]], query: str) -> list[dict[str, str]]:
@@ -64,7 +81,7 @@ class CanonicalDnaState(rx.State):
     selected_status: str = ""
     preview_viewport: str = "desktop"
     reduced_motion: bool = False
-    preview_message: str = "Choose an EQ4 proving-ready reference to render the canonical host plan."
+    preview_message: str = "Choose a host-realization-ready reference to render the canonical asset-off plan."
     plan_ready: bool = False
 
     fingerprint: str = ""
@@ -83,8 +100,6 @@ class CanonicalDnaState(rx.State):
     reading_sanctuary_applied: bool = False
     reduced_motion_applied: bool = False
 
-    # Generic host template tokens. They are derived only from canonical host
-    # vocabulary and never from reference IDs/titles.
     fixture_template: str = "matrix"
     desktop_columns: str = "repeat(2, minmax(0, 1fr))"
     support_columns: str = "repeat(2, minmax(0, 1fr))"
@@ -126,27 +141,17 @@ class CanonicalDnaState(rx.State):
         return len(self.catalog)
 
     @rx.var
+    def host_realizable_total(self) -> int:
+        return sum(item.get("host_ready") == "true" for item in self.catalog)
+
+    @rx.var
+    def browser_proving_total(self) -> int:
+        return sum(item.get("browser_proving") == "true" for item in self.catalog)
+
+    @rx.var
     def proving_ready_total(self) -> int:
-        return sum(item.get("ready") == "true" for item in self.catalog)
-
-    @rx.var
-    def preview_primary_columns(self) -> str:
-        """Render the selected canonical viewport, not the browser breakpoint.
-
-        EQ4 proving often runs from a phone. The previous harness still used
-        CSS media queries, so selecting ``desktop`` while on a phone silently
-        collapsed every template to the mobile one-column branch. The selected
-        proving viewport is authoritative inside this isolated fixture.
-        """
-        if self.preview_viewport == "desktop":
-            return self.desktop_columns
-        return "1fr"
-
-    @rx.var
-    def preview_support_columns(self) -> str:
-        if self.preview_viewport == "desktop":
-            return self.support_columns
-        return "1fr"
+        """Compatibility alias for existing view code: this means browser slice only."""
+        return self.browser_proving_total
 
     @rx.var
     def preview_viewport_label(self) -> str:
@@ -187,7 +192,7 @@ class CanonicalDnaState(rx.State):
 
     def _refresh_plan(self):
         if not self.selected_reference_id:
-            self._clear_plan("Choose an EQ4 proving-ready reference to render the canonical host plan.")
+            self._clear_plan("Choose a host-realization-ready reference to render the canonical asset-off plan.")
             return
         selected = next(
             (item for item in self.catalog if item["id"] == self.selected_reference_id),
@@ -196,9 +201,9 @@ class CanonicalDnaState(rx.State):
         if selected is None:
             self._clear_plan("Selected reference is not present in the canonical catalog.")
             return
-        if selected.get("ready") != "true":
+        if selected.get("host_ready") != "true":
             self._clear_plan(
-                "Canonical contract is present, but this reference has not entered the EQ4 host-realization slice yet."
+                "Canonical contract is present, but this reference has not entered host realization yet."
             )
             return
 
@@ -220,7 +225,10 @@ class CanonicalDnaState(rx.State):
             return
 
         self.plan_ready = True
-        self.preview_message = "Canonical asset-off host plan resolved. EQ4 browser evidence still required."
+        if selected.get("browser_proving") == "true":
+            self.preview_message = "Canonical asset-off host plan resolved in the bounded browser-proving slice. EQ4 credit still requires accepted evidence."
+        else:
+            self.preview_message = "Canonical asset-off host plan resolved by full-corpus machinery. Host-ready is not EQ4 credit; browser evidence remains pending."
         self.fingerprint = plan.source_fingerprint
         self.layout_flow = plan.layout_flow
         self.balance = plan.balance
@@ -291,12 +299,12 @@ class CanonicalDnaState(rx.State):
     @rx.event
     def apply_reference(self):
         if not self.plan_ready:
-            self.preview_message = "Only an EQ4 proving-ready canonical host plan can be applied."
+            self.preview_message = "Only a host-realization-ready canonical plan can be applied."
             return
         self.active_reference_id = self.selected_reference_id
         self.active_display_name = self.selected_display_name
         self.active_fingerprint = self.fingerprint
-        self.preview_message = "Canonical proving presentation applied to presentation state only."
+        self.preview_message = "Canonical proving presentation applied to presentation state only; this action grants no EQ4 credit."
 
     @rx.event
     def clear_reference(self):
@@ -310,4 +318,4 @@ class CanonicalDnaState(rx.State):
         self._clear_plan("Canonical selection cleared; safe presentation remains available.")
 
 
-__all__ = ["CanonicalDnaState", "_filter_catalog"]
+__all__ = ["CanonicalDnaState", "_catalog_snapshots", "_filter_catalog"]
