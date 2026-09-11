@@ -36,6 +36,14 @@ class ChatResult:
     cost: float = 0.0
     warnings: list[str] = field(default_factory=list)
     persisted: bool = False
+    chat_id: str = ""
+
+
+@dataclass
+class UserVerdictResult:
+    status: str
+    system_verdict: str = ""
+    user_verdict: str = ""
 
 
 @dataclass
@@ -99,6 +107,78 @@ class MultiMindApplication:
     def select_session(self, session):
         get_or_hydrate_session_memory(self.runtime_memories, self._database(), session["id"])
         return session
+
+    def set_user_verdict(self, session_id, chat_id, participant_id=None):
+        """Persist human judgment without changing the system judge's verdict.
+
+        A verdict can select only a successful participant from the persisted chat.
+        Passing ``None`` or an empty string clears the human verdict. Presentation
+        hosts receive only the result; mutation remains application/persistence truth.
+        """
+        if not session_id or not chat_id:
+            return UserVerdictResult(status="chat_not_found")
+
+        database = self._database()
+        try:
+            chat = database.get_chat(session_id, chat_id)
+        except Exception as exc:
+            error_logger.log(
+                "USER_VERDICT_READ_ERROR",
+                f"User verdict chat lookup failed: {type(exc).__name__}",
+            )
+            return UserVerdictResult(status="persistence_failed")
+        if not chat:
+            return UserVerdictResult(status="chat_not_found")
+
+        raw_debate = chat.get("debate_data", "")
+        try:
+            debate_data = json.loads(raw_debate) if isinstance(raw_debate, str) else dict(raw_debate or {})
+        except (TypeError, ValueError):
+            return UserVerdictResult(status="invalid_debate_data")
+        if not isinstance(debate_data, dict):
+            return UserVerdictResult(status="invalid_debate_data")
+
+        system_verdict = str(debate_data.get("system_verdict") or "")
+        requested = str(participant_id or "").strip()
+        if requested:
+            successful_ids = {
+                str(item.get("participant_id") or "")
+                for item in debate_data.get("participants", [])
+                if isinstance(item, dict)
+                and item.get("status") == "success"
+                and item.get("participant_id")
+            }
+            if requested not in successful_ids:
+                return UserVerdictResult(
+                    status="invalid_participant",
+                    system_verdict=system_verdict,
+                    user_verdict=str(debate_data.get("user_verdict") or ""),
+                )
+            debate_data["user_verdict"] = requested
+        else:
+            debate_data.pop("user_verdict", None)
+
+        encoded = json.dumps(debate_data)
+        try:
+            updated = database.update_chat_debate_data(session_id, chat_id, encoded)
+        except Exception as exc:
+            error_logger.log(
+                "USER_VERDICT_WRITE_ERROR",
+                f"User verdict persistence failed: {type(exc).__name__}",
+            )
+            return UserVerdictResult(
+                status="persistence_failed",
+                system_verdict=system_verdict,
+                user_verdict=str(debate_data.get("user_verdict") or ""),
+            )
+        if not updated:
+            return UserVerdictResult(status="chat_not_found", system_verdict=system_verdict)
+
+        return UserVerdictResult(
+            status="success",
+            system_verdict=system_verdict,
+            user_verdict=str(debate_data.get("user_verdict") or ""),
+        )
 
     def restore_database(self, backup_bytes, runtime=None):
         active_runtime = runtime or self.runtime
@@ -209,9 +289,11 @@ class MultiMindApplication:
             return ChatResult(status="error", debate_data=result_data, warnings=warnings)
 
         persisted = False
+        chat_id = ""
         if request.session_id:
+            chat_id = str(uuid.uuid4())
             chat_data = {
-                "id": str(uuid.uuid4()), "prompt": request.original_prompt,
+                "id": chat_id, "prompt": request.original_prompt,
                 "prompt_compressed": json.dumps({
                     "normalized": normalized_prompt,
                     "effective": effective_prompt,
@@ -235,7 +317,7 @@ class MultiMindApplication:
         return ChatResult(
             status="success", final_answer=result_data.get("final_answer", ""), debate_data=result_data,
             tokens=result_data.get("total_tokens", 0), cost=result_data.get("total_cost", 0),
-            warnings=warnings, persisted=persisted,
+            warnings=warnings, persisted=persisted, chat_id=chat_id,
         )
 
     def _route(self, request, final_prompt, context):

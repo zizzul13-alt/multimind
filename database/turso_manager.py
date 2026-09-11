@@ -135,6 +135,44 @@ class TursoDatabaseManager:
             conn.close()
         return True
 
+    def get_chat(self, session_id, chat_id):
+        """Return one chat only from this adapter's user and supplied session."""
+        conn = self._connect()
+        try:
+            cursor = conn.execute(
+                f"SELECT {', '.join(CHAT_COLUMNS)} FROM {CHATS_TABLE} "
+                "WHERE user_id = ? AND session_id = ? AND id = ?",
+                (self.user_id, session_id, chat_id),
+            )
+            rows = _rows_as_dicts(cursor)
+            return rows[0] if rows else None
+        finally:
+            conn.close()
+
+    def update_chat_debate_data(self, session_id, chat_id, debate_data):
+        """Replace one chat's debate JSON within this adapter's user scope."""
+        conn = self._connect()
+        try:
+            cursor = conn.execute(
+                f"UPDATE {CHATS_TABLE} SET debate_data = ? "
+                "WHERE user_id = ? AND session_id = ? AND id = ?",
+                (debate_data, self.user_id, session_id, chat_id),
+            )
+            conn.commit()
+            rowcount = getattr(cursor, "rowcount", None)
+            if rowcount is not None and rowcount >= 0:
+                return rowcount == 1
+            # libSQL clients may not expose rowcount consistently; verify within
+            # the same user/session namespace rather than assuming success.
+            check = conn.execute(
+                f"SELECT debate_data FROM {CHATS_TABLE} "
+                "WHERE user_id = ? AND session_id = ? AND id = ?",
+                (self.user_id, session_id, chat_id),
+            ).fetchone()
+            return bool(check and check[0] == debate_data)
+        finally:
+            conn.close()
+
     def get_session_chats(self, session_id, limit=50):
         conn = self._connect()
         try:

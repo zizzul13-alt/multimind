@@ -210,6 +210,32 @@ class DatabaseManager:
         conn.close()
         return True
 
+    def get_chat(self, session_id, chat_id):
+        """Return one chat only when it belongs to the supplied session."""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            row = conn.execute(
+                "SELECT * FROM chats WHERE session_id = ? AND id = ?",
+                (session_id, chat_id),
+            ).fetchone()
+            return dict(row) if row is not None else None
+        finally:
+            conn.close()
+
+    def update_chat_debate_data(self, session_id, chat_id, debate_data):
+        """Atomically replace one session-scoped chat's structured debate JSON."""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            cursor = conn.execute(
+                "UPDATE chats SET debate_data = ? WHERE session_id = ? AND id = ?",
+                (debate_data, session_id, chat_id),
+            )
+            conn.commit()
+            return cursor.rowcount == 1
+        finally:
+            conn.close()
+
     def get_session_chats(self, session_id, limit=50):
         """Get chats"""
         conn = sqlite3.connect(self.db_path)
