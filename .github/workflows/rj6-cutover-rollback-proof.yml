@@ -7,6 +7,7 @@ on:
       - "multimind_reflex/**"
       - "core/application.py"
       - "core/composition.py"
+      - "core/debate.py"
       - "providers/**"
       - "database/**"
       - "Dockerfile"
@@ -14,6 +15,8 @@ on:
       - "rxconfig.py"
       - "scripts/rj6_cutover_rollback_probe.py"
       - "tests/test_rj6_cutover_rollback_proof.py"
+      - "tests/test_deliberation_semantics.py"
+      - "tests/test_deep_debate_revision_semantics.py"
       - ".github/workflows/rj6-cutover-rollback-proof.yml"
   push:
     branches: [main]
@@ -22,6 +25,7 @@ on:
       - "multimind_reflex/**"
       - "core/application.py"
       - "core/composition.py"
+      - "core/debate.py"
       - "providers/**"
       - "database/**"
       - "Dockerfile"
@@ -29,6 +33,8 @@ on:
       - "rxconfig.py"
       - "scripts/rj6_cutover_rollback_probe.py"
       - "tests/test_rj6_cutover_rollback_proof.py"
+      - "tests/test_deliberation_semantics.py"
+      - "tests/test_deep_debate_revision_semantics.py"
       - ".github/workflows/rj6-cutover-rollback-proof.yml"
 
 jobs:
