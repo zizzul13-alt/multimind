@@ -10,16 +10,13 @@ from agents.huggingface import HuggingFaceAgent
 from agents.openrouter import OpenRouterAgent
 from agents.remote_agent import RemoteAgent
 from agents.unified_agent import UnifiedAgent
-from core.ai_product_completion import AIProductApplication, DeepDebateOrchestrator
+from core.application import MultiMindApplication
 from core.compressor import PromptCompressor
+from core.debate import DebateOrchestrator
 from core.file_handler import FileHandler
 from core.memory import persist_chat_and_update_memory
 from database.manager import DatabaseManager
 from database.turso_manager import TursoDatabaseManager
-from database.verdict_persistence import (
-    VerdictDatabaseManager,
-    VerdictTursoDatabaseManager,
-)
 from utils.config import Config
 
 
@@ -46,10 +43,10 @@ def build_agents(api_keys):
 
 def build_database_for_user(
     user_id,
-    database_factory=VerdictDatabaseManager,
+    database_factory=DatabaseManager,
     *,
     environ=None,
-    turso_factory=VerdictTursoDatabaseManager,
+    turso_factory=TursoDatabaseManager,
 ):
     """Construct validated user-scoped persistence.
 
@@ -61,7 +58,7 @@ def build_database_for_user(
     """
     user_id = Config.validate_user_id(user_id)
 
-    if database_factory is not VerdictDatabaseManager:
+    if database_factory is not DatabaseManager:
         return database_factory(Config.get_db_path(user_id))
 
     environ = os.environ if environ is None else environ
@@ -89,10 +86,10 @@ def build_application_for_user(
     db_factory=None,
     agents=None,
     agents_factory=build_agents,
-    database_factory=VerdictDatabaseManager,
+    database_factory=DatabaseManager,
     compressor=PromptCompressor,
     file_handler=FileHandler,
-    debate_factory=DeepDebateOrchestrator,
+    debate_factory=DebateOrchestrator,
     persist_chat=persist_chat_and_update_memory,
 ):
     """Build one user-scoped application boundary for any presentation host.
@@ -118,7 +115,7 @@ def build_application_for_user(
     if db is None and db_factory is None:
         db = build_database_for_user(user_id, database_factory=database_factory)
 
-    return AIProductApplication(
+    return MultiMindApplication(
         agents=agents,
         runtime_memories=runtime_memories,
         runtime=runtime,
