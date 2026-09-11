@@ -57,6 +57,9 @@ class DebateDetailSnapshot:
     responses: Tuple[DebateResponseSnapshot, ...] = ()
     participants: Tuple[DebateParticipantSnapshot, ...] = ()
     system_verdict: str = ""
+    user_verdict: str = ""
+    deliberation_depth: str = ""
+    revision_count: int = 0
     judge_provider: str = ""
     selected_participants: int = 0
     successful_participants: int = 0
