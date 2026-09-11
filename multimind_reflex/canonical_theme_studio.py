@@ -14,18 +14,27 @@ from multimind_reflex.canonical_dna_state import CanonicalDnaState
 
 def _catalog_row(option) -> rx.Component:
     return rx.button(
-        rx.hstack(
+        rx.flex(
             rx.vstack(
-                rx.text(option["display_name"], weight="bold", text_align="left"),
+                rx.text(
+                    option["display_name"],
+                    weight="bold",
+                    text_align="left",
+                    overflow_wrap="normal",
+                ),
                 rx.text(option["id"], size="1", text_align="left"),
                 rx.text(option["category"], size="1", text_align="left"),
                 align="start",
                 spacing="1",
+                min_width="12rem",
+                flex="1 1 12rem",
             ),
-            rx.spacer(),
-            rx.badge(option["status"], variant="soft"),
+            rx.badge(option["status"], variant="soft", flex_shrink="0"),
             width="100%",
             align="center",
+            justify="between",
+            gap="0.5rem",
+            wrap="wrap",
         ),
         on_click=CanonicalDnaState.select_reference(option["id"]),
         variant="soft",
