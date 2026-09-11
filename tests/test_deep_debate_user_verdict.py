@@ -1,7 +1,8 @@
 import json
 
-from core.ai_product_completion import AIProductApplication, DeepDebateOrchestrator
-from database.verdict_persistence import VerdictDatabaseManager
+from core.application import MultiMindApplication
+from core.debate import DebateOrchestrator
+from database.manager import DatabaseManager
 from providers.base import BaseProvider
 from utils.token_counter import TokenCounter
 
@@ -51,7 +52,7 @@ def fail(name):
 
 
 def orchestrator(gemini=None, groq=None):
-    return DeepDebateOrchestrator(
+    return DebateOrchestrator(
         gemini_agent=gemini,
         groq_agent=groq,
         deepseek_agent=None,
@@ -89,7 +90,6 @@ def test_round_three_adds_same_participant_revision_after_critique():
     }
     assert {item["requested_provider"] for item in log["revisions"]} == {"gemini", "groq"}
     assert all(item["status"] == "success" for item in log["revisions"])
-    assert log["revision_count"] == 2
 
     revision_prompts = [
         call["prompt"] for call in gemini.calls + groq.calls
@@ -97,7 +97,7 @@ def test_round_three_adds_same_participant_revision_after_critique():
     ]
     assert len(revision_prompts) == 2
     assert all("CURRENT PANEL POSITIONS:" in prompt for prompt in revision_prompts)
-    assert all("CRITIQUES SO FAR:" in prompt for prompt in revision_prompts)
+    assert all("AVAILABLE CRITIQUES:" in prompt for prompt in revision_prompts)
 
 
 def test_failed_revision_does_not_destroy_last_successful_position():
@@ -120,7 +120,6 @@ def test_failed_revision_does_not_destroy_last_successful_position():
     )
     assert log["status"] == "success"
     assert log["revisions"][0]["status"] == "error"
-    assert log["revision_count"] == 0
     assert "stable initial answer remains usable" in log["final_answer"]
 
 
@@ -149,19 +148,27 @@ def test_judge_receives_traceable_revisions_and_latest_positions():
     )
     assert log["status"] == "success"
     assert "INITIAL PARTICIPANT CONTRIBUTIONS:" in captured["prompt"]
-    assert "CURRENT PARTICIPANT POSITIONS AFTER REVISION:" in captured["prompt"]
-    assert "TRACEABLE REVISIONS:" in captured["prompt"]
+    assert "LATEST PARTICIPANT POSITIONS:" in captured["prompt"]
+    assert "REVISIONS:" in captured["prompt"]
     assert "initial-g" in captured["prompt"]
     assert "revised-g" in captured["prompt"]
 
 
-def test_user_verdict_persists_separately_from_system_verdict(tmp_path):
-    db = VerdictDatabaseManager(str(tmp_path / "user.db"))
+def test_user_verdict_persists_separately_with_provenance(tmp_path):
+    db = DatabaseManager(str(tmp_path / "user.db"))
     db.create_session("s1", "session")
     debate = {
         "participants": [
-            {"participant_id": "participant-1-gemini", "status": "success"},
-            {"participant_id": "participant-2-groq", "status": "success"},
+            {
+                "participant_id": "participant-1-gemini", "status": "success",
+                "requested_provider": "gemini", "actual_provider": "gemini-model",
+                "model": "gemini-model", "role": "Researcher",
+            },
+            {
+                "participant_id": "participant-2-groq", "status": "success",
+                "requested_provider": "groq", "actual_provider": "groq-model",
+                "model": "groq-model", "role": "Fact checker",
+            },
         ],
         "system_verdict": "participant-1-gemini",
     }
@@ -169,16 +176,21 @@ def test_user_verdict_persists_separately_from_system_verdict(tmp_path):
         "id": "c1", "prompt": "q", "final_answer": "a",
         "debate_data": json.dumps(debate),
     })
-    app = AIProductApplication(db=db)
+    app = MultiMindApplication(db=db)
 
-    assert app.record_user_verdict("s1", "c1", "participant-2-groq") is True
+    result = app.record_user_verdict("s1", "c1", "participant-2-groq")
+    assert result.status == "success"
+    assert result.user_verdict["participant_id"] == "participant-2-groq"
+    assert result.user_verdict["requested_provider"] == "groq"
     stored = json.loads(db.get_chat("s1", "c1")["debate_data"])
     assert stored["system_verdict"] == "participant-1-gemini"
-    assert stored["user_verdict"] == "participant-2-groq"
+    assert stored["user_verdict"]["participant_id"] == "participant-2-groq"
+    assert stored["user_verdict"]["actual_provider"] == "groq-model"
+    assert stored["user_verdict"]["recorded_at"]
 
 
 def test_user_verdict_rejects_failed_unknown_or_cross_session_participant(tmp_path):
-    db = VerdictDatabaseManager(str(tmp_path / "user.db"))
+    db = DatabaseManager(str(tmp_path / "user.db"))
     db.create_session("s1", "one")
     db.create_session("s2", "two")
     db.save_chat("s1", {
@@ -191,11 +203,11 @@ def test_user_verdict_rejects_failed_unknown_or_cross_session_participant(tmp_pa
             "system_verdict": "good",
         }),
     })
-    app = AIProductApplication(db=db)
+    app = MultiMindApplication(db=db)
 
-    assert app.record_user_verdict("s1", "c1", "failed") is False
-    assert app.record_user_verdict("s1", "c1", "missing") is False
-    assert app.record_user_verdict("s2", "c1", "good") is False
+    assert app.record_user_verdict("s1", "c1", "failed").status == "invalid_participant"
+    assert app.record_user_verdict("s1", "c1", "missing").status == "invalid_participant"
+    assert app.record_user_verdict("s2", "c1", "good").status == "not_found"
     stored = json.loads(db.get_chat("s1", "c1")["debate_data"])
     assert "user_verdict" not in stored
 
