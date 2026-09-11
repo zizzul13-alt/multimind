@@ -84,12 +84,13 @@ def test_balance_projects_mobile_safe_macro_inset_not_micro_transform_only():
     assert organic.secondary_width != ordered.secondary_width
 
 
-def test_renderer_branches_only_on_host_template_not_reference_identity():
+def test_renderer_branches_only_on_host_vocabulary_not_reference_identity():
     source = inspect.getsource(studio)
     for forbidden in ("CW01", "CW02", "CW03", "CW04", "CW05", "CS07", "CS08", "CS10", "CS17"):
         assert forbidden not in source
     assert "selected_reference_id ==" not in source
     assert "fixture_template ==" in source
+    assert "mobile_strategy ==" in source
     for template in (
         "matrix",
         "component_hierarchy",
@@ -100,6 +101,27 @@ def test_renderer_branches_only_on_host_template_not_reference_identity():
         "trace_timeline",
     ):
         assert template in source
+    for strategy in (
+        "ordered_flow",
+        "component_reflow",
+        "serial_groups",
+        "serial_clusters",
+        "stack_pairs",
+        "ordered_asymmetry",
+        "reduced_continuity",
+        "vertical_punctuation",
+        "linear_trace",
+    ):
+        assert strategy in source
+
+
+def test_mobile_renderer_is_not_desktop_one_column_fallback():
+    source = inspect.getsource(studio)
+    assert "preview_viewport == \"mobile\"" in source
+    assert "_mobile_structural_fixture" in source
+    assert "_desktop_structural_fixture" in source
+    assert "rx.breakpoints" not in source
+    assert 'grid_template_columns="1fr"' not in source
 
 
 def test_continuity_is_visibly_projected_without_changing_semantic_content():
