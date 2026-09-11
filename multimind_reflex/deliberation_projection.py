@@ -21,6 +21,13 @@ def _as_debate_dict(raw):
     return {}
 
 
+def _user_verdict_id(debate):
+    verdict = debate.get("user_verdict") if isinstance(debate, dict) else None
+    if isinstance(verdict, dict):
+        return str(verdict.get("participant_id") or "")
+    return str(verdict or "")
+
+
 def participant_snapshots(raw):
     debate = _as_debate_dict(raw)
     snapshots = []
@@ -105,7 +112,7 @@ def run_summary(raw):
         "successful": successful,
         "deliberation_depth": str(debate.get("deliberation_depth") or ""),
         "system_verdict": str(debate.get("system_verdict") or ""),
-        "user_verdict": str(debate.get("user_verdict") or ""),
+        "user_verdict": _user_verdict_id(debate),
         "judge_provider": str(judge.get("actual_provider") or ""),
         "judge_status": str(judge.get("status") or ""),
         "revision_count": sum(
