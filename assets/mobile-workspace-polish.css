@@ -1,0 +1,186 @@
+/* MultiMind mobile workspace polish.
+ * Presentation-only: no application, provider, persistence, or DNA truth lives here.
+ *
+ * The production workspace already emits semantic CSS grid areas (utility,
+ * composer, result, history). Target those stable presentation seams rather
+ * than creating a second mobile component tree or depending on DNA IDs.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  max-width: 100%;
+}
+
+pre,
+code,
+p,
+.mm-readable {
+  overflow-wrap: anywhere;
+}
+
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.mm-touch-target {
+  touch-action: manipulation;
+}
+
+.mm-workspace-grid,
+.mm-zone,
+.mm-result-card,
+.mm-participant-card,
+.mm-critique-card,
+.mm-history-card {
+  min-width: 0;
+}
+
+/* Real workspace semantic zones emitted by grid_area=... in the accepted host. */
+[style*="grid-area: utility"],
+[style*="grid-area: composer"],
+[style*="grid-area: result"],
+[style*="grid-area: history"],
+[style*="grid-area:utility"],
+[style*="grid-area:composer"],
+[style*="grid-area:result"],
+[style*="grid-area:history"] {
+  min-width: 0;
+  overflow: hidden;
+}
+
+[style*="grid-area: result"] *,
+[style*="grid-area: history"] *,
+[style*="grid-area:result"] *,
+[style*="grid-area:history"] * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  body {
+    line-height: 1.55;
+  }
+
+  button,
+  input,
+  select,
+  .mm-touch-target {
+    min-height: 2.875rem;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 1rem;
+  }
+
+  .mm-workspace {
+    padding-inline: 0.625rem !important;
+  }
+
+  .mm-workspace-header {
+    padding: 0.75rem !important;
+  }
+
+  .mm-workspace-header h1,
+  .mm-workspace-header h2 {
+    line-height: 1.1;
+  }
+
+  /* Keep the actual prompt comfortable on phone-sized viewports. */
+  .mm-prompt,
+  [style*="grid-area: composer"] textarea,
+  [style*="grid-area:composer"] textarea {
+    min-height: 8.5rem;
+    line-height: 1.5;
+  }
+
+  .mm-run-button {
+    min-height: 3rem;
+    font-weight: 700;
+  }
+
+  /* Tighten only real workspace zones; canonical/archetype ordering remains
+   * owned by the existing responsive grid contract. */
+  .mm-zone,
+  [style*="grid-area: utility"],
+  [style*="grid-area: composer"],
+  [style*="grid-area: result"],
+  [style*="grid-area: history"],
+  [style*="grid-area:utility"],
+  [style*="grid-area:composer"],
+  [style*="grid-area:result"],
+  [style*="grid-area:history"] {
+    padding: 0.75rem !important;
+  }
+
+  .mm-result-card,
+  .mm-participant-card,
+  .mm-critique-card,
+  .mm-history-card {
+    padding: 0.75rem !important;
+  }
+
+  [style*="grid-area: result"] p,
+  [style*="grid-area: history"] p,
+  [style*="grid-area:result"] p,
+  [style*="grid-area:history"] p,
+  .mm-readable {
+    font-size: 0.98rem;
+    line-height: 1.58;
+  }
+
+  [style*="grid-area: result"] pre,
+  [style*="grid-area: history"] pre,
+  [style*="grid-area:result"] pre,
+  [style*="grid-area:history"] pre {
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  /* Theme Studio is intentionally long because legacy rollback and editable
+   * controls remain available. Keep the explicit draft actions reachable while
+   * the user scrolls; this does not auto-apply or mutate application truth. */
+  .mm-theme-actions {
+    position: sticky;
+    bottom: 0.5rem;
+    z-index: 20;
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, Canvas 94%, transparent);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.08);
+  }
+
+  .mm-theme-actions > * {
+    flex: 1 1 9rem;
+  }
+
+  .mm-canonical-results {
+    max-height: min(42vh, 18rem) !important;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

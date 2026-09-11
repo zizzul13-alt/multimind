@@ -11,6 +11,10 @@ radius). Real mobile browser evidence showed that technically distinct plans
 could still look nearly identical. The projection therefore includes a finite
 *structural template* vocabulary as well as style scalars. The Reflex host may
 branch on these template tokens, but never on reference identity.
+
+Spacing and inset scalars intentionally use CSS ``clamp`` values. This keeps the
+same canonical density contract while avoiding desktop-sized whitespace on
+narrow phones; no browser width is promoted into application or DNA truth.
 """
 from __future__ import annotations
 
@@ -61,25 +65,50 @@ _LAYOUT = {
     "directional": ("directional_path", "1fr", "1fr"),
     "trace": ("trace_timeline", "1fr", "1fr"),
 }
+
+# gap, card padding, group gap, group padding. The upper bound preserves the
+# accepted desktop density; the lower bound removes avoidable mobile bloat.
 _DENSITY = {
-    "compact": ("0.55rem", "0.8rem", "0.65rem", "0.85rem"),
-    "comfortable": ("0.85rem", "1rem", "0.9rem", "1.1rem"),
-    "spacious": ("1.25rem", "1.35rem", "1.25rem", "1.4rem"),
+    "compact": (
+        "clamp(0.45rem, 1.8vw, 0.55rem)",
+        "clamp(0.62rem, 2.2vw, 0.8rem)",
+        "clamp(0.52rem, 2vw, 0.65rem)",
+        "clamp(0.68rem, 2.4vw, 0.85rem)",
+    ),
+    "comfortable": (
+        "clamp(0.62rem, 2.2vw, 0.85rem)",
+        "clamp(0.72rem, 2.6vw, 1rem)",
+        "clamp(0.68rem, 2.5vw, 0.9rem)",
+        "clamp(0.78rem, 2.8vw, 1.1rem)",
+    ),
+    "spacious": (
+        "clamp(0.82rem, 2.8vw, 1.25rem)",
+        "clamp(0.88rem, 3vw, 1.35rem)",
+        "clamp(0.9rem, 3vw, 1.25rem)",
+        "clamp(0.95rem, 3.2vw, 1.4rem)",
+    ),
 }
 _HIERARCHY = {
-    "soft": ("1.25rem", "500", "0"),
-    "measured": ("1.35rem", "650", "0.01em"),
-    "strong": ("1.5rem", "750", "0"),
-    "dramatic": ("1.7rem", "850", "0.035em"),
-    "task_first": ("1.45rem", "750", "-0.01em"),
+    "soft": ("clamp(1.15rem, 3.5vw, 1.25rem)", "500", "0"),
+    "measured": ("clamp(1.2rem, 3.8vw, 1.35rem)", "650", "0.01em"),
+    "strong": ("clamp(1.28rem, 4vw, 1.5rem)", "750", "0"),
+    "dramatic": ("clamp(1.4rem, 4.5vw, 1.7rem)", "850", "0.035em"),
+    "task_first": ("clamp(1.25rem, 4vw, 1.45rem)", "750", "-0.01em"),
 }
-# Inset/width changes are layout-safe on mobile. The original transform-only
-# treatment barely changed perceived composition and could overflow narrow
-# screens.
+# Inset/width changes are layout-safe on mobile. Responsive clamps preserve the
+# structural asymmetry without wasting narrow-screen horizontal space.
 _BALANCE = {
     "ordered": ("none", "0rem", "100%"),
-    "asymmetric": ("none", "1.35rem", "calc(100% - 1.35rem)"),
-    "organic": ("none", "0.7rem", "calc(100% - 0.7rem)"),
+    "asymmetric": (
+        "none",
+        "clamp(0.7rem, 3.8vw, 1.35rem)",
+        "calc(100% - clamp(0.7rem, 3.8vw, 1.35rem))",
+    ),
+    "organic": (
+        "none",
+        "clamp(0.4rem, 2.2vw, 0.7rem)",
+        "calc(100% - clamp(0.4rem, 2.2vw, 0.7rem))",
+    ),
 }
 _FLOW_RADIUS = {
     "grid": ("3px", "3px"),
