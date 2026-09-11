@@ -51,8 +51,15 @@ def test_streamlit_remains_reference_and_reflex_keeps_theme_studio_contract():
 
 def test_reflex_surface_has_responsive_breakpoints_without_pixel_parity_claim():
     assert "rx.breakpoints" in REFLEX_SURFACE
-    assert 'initial="1"' in REFLEX_SURFACE
-    assert 'lg="3fr 7fr"' in REFLEX_SURFACE
+    # RJ5 protects responsive behavior, not the historical single 3fr/7fr
+    # skeleton. The production workspace now keeps a one-column mobile base and
+    # promotes finite archetype-specific desktop composition at lg.
+    assert 'initial="minmax(0, 1fr)"' in REFLEX_SURFACE
+    assert "lg=_workspace_desktop_columns()" in REFLEX_SURFACE
+    assert "initial=_workspace_mobile_areas()" in REFLEX_SURFACE
+    assert "lg=_workspace_desktop_areas()" in REFLEX_SURFACE
+    for zone in ("utility", "composer", "result", "history"):
+        assert f'"{zone}"' in REFLEX_SURFACE
 
 
 def test_no_transport_layer_or_second_persistence_owner_was_added_to_hosts():
