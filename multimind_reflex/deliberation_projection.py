@@ -83,6 +83,7 @@ def run_summary(raw):
         "selected": selected,
         "successful": successful,
         "system_verdict": str(debate.get("system_verdict") or ""),
+        "user_verdict": str(debate.get("user_verdict") or ""),
         "judge_provider": str(judge.get("actual_provider") or ""),
         "judge_status": str(judge.get("status") or ""),
     }
@@ -105,6 +106,7 @@ def history_snapshots(rows):
                 "final_answer": str(row.get("final_answer", "")),
                 "participant_summary": participant_summary,
                 "system_verdict": summary["system_verdict"],
+                "user_verdict": summary["user_verdict"],
                 "judge_provider": summary["judge_provider"],
             }
         )
