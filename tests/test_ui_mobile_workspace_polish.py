@@ -2,11 +2,16 @@
 from __future__ import annotations
 
 import inspect
+from pathlib import Path
 
 import multimind_reflex.canonical_projection as projection
 import multimind_reflex.workspace_dna_state as dna_state
 from multimind_reflex.canonical_projection import project_reflex_tokens
 from ui.canonical_dna_bridge import CanonicalHostRealizationPlan
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DNA_STATE_SOURCE = (ROOT / "multimind_reflex" / "workspace_dna_state.py").read_text(encoding="utf-8")
 
 
 def _plan(**overrides):
@@ -52,14 +57,14 @@ def test_canonical_picker_keeps_phone_result_window_bounded():
 
 
 def test_successful_reference_tap_collapses_picker_to_selected_identity():
-    source = inspect.getsource(dna_state.WorkspaceDnaState.select_canonical_reference)
-    assert 'self.canonical_query = selected["id"]' in source
-    assert "Canonical draft selected:" in source
+    # Reflex wraps @rx.event methods as EventHandler objects at import time, so
+    # lock the authored source contract rather than introspecting the wrapper.
+    assert 'self.canonical_query = selected["id"]' in DNA_STATE_SOURCE
+    assert "Canonical draft selected:" in DNA_STATE_SOURCE
 
 
 def test_legacy_reset_and_logout_clear_canonical_search_context():
-    source = inspect.getsource(dna_state)
-    assert source.count('self.canonical_query = ""') >= 4
+    assert DNA_STATE_SOURCE.count('self.canonical_query = ""') >= 4
 
 
 def test_canonical_density_tokens_are_responsive_without_browser_truth_branching():
