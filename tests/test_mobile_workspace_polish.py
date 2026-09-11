@@ -62,11 +62,17 @@ def test_mobile_polish_is_presentation_only():
         assert forbidden not in combined
 
 
-def test_phone_readability_and_reduced_motion_are_explicit():
+def test_phone_readability_reachable_actions_and_reduced_motion_are_explicit():
     assert "@media (max-width: 767px)" in CSS
     assert "min-height: 2.875rem" in CSS
     assert "min-height: 8.5rem" in CSS
     assert "overflow-wrap: anywhere" in CSS
+    assert ".mm-theme-actions" in CSS
+    assert "position: sticky" in CSS
+    assert ".mm-run-button" in CSS
+    assert ".mm-result-card" in CSS
+    assert ".mm-participant-card" in CSS
+    assert ".mm-history-card" in CSS
     assert "@media (prefers-reduced-motion: reduce)" in CSS
 
 
