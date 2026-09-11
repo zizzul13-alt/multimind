@@ -8,10 +8,13 @@ on:
       - "ui/dna_bridge.py"
       - "core/application.py"
       - "core/composition.py"
+      - "core/debate.py"
       - "providers/**"
       - "database/**"
       - "scripts/rj5_dual_host_torture.py"
       - "tests/test_rj5_dual_host_torture.py"
+      - "tests/test_deliberation_semantics.py"
+      - "tests/test_deep_debate_revision_semantics.py"
       - ".github/workflows/rj5-dual-host-torture.yml"
   push:
     branches: [main]
@@ -21,10 +24,13 @@ on:
       - "ui/dna_bridge.py"
       - "core/application.py"
       - "core/composition.py"
+      - "core/debate.py"
       - "providers/**"
       - "database/**"
       - "scripts/rj5_dual_host_torture.py"
       - "tests/test_rj5_dual_host_torture.py"
+      - "tests/test_deliberation_semantics.py"
+      - "tests/test_deep_debate_revision_semantics.py"
       - ".github/workflows/rj5-dual-host-torture.yml"
 
 jobs:
