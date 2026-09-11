@@ -129,6 +129,31 @@ class CanonicalDnaState(rx.State):
     def proving_ready_total(self) -> int:
         return sum(item.get("ready") == "true" for item in self.catalog)
 
+    @rx.var
+    def preview_primary_columns(self) -> str:
+        """Render the selected canonical viewport, not the browser breakpoint.
+
+        EQ4 proving often runs from a phone. The previous harness still used
+        CSS media queries, so selecting ``desktop`` while on a phone silently
+        collapsed every template to the mobile one-column branch. The selected
+        proving viewport is authoritative inside this isolated fixture.
+        """
+        if self.preview_viewport == "desktop":
+            return self.desktop_columns
+        return "1fr"
+
+    @rx.var
+    def preview_support_columns(self) -> str:
+        if self.preview_viewport == "desktop":
+            return self.support_columns
+        return "1fr"
+
+    @rx.var
+    def preview_viewport_label(self) -> str:
+        if self.preview_viewport == "desktop":
+            return "Simulated desktop composition"
+        return "Simulated mobile composition"
+
     @rx.event
     def refresh_catalog(self):
         self.catalog = _catalog_snapshots()
