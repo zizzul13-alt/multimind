@@ -151,6 +151,11 @@ class CanonicalDnaState(rx.State):
         return sum(item.get("proving") == "true" for item in self.catalog)
 
     @rx.var
+    def proving_ready_total(self) -> int:
+        """Compatibility name for the existing panel; means browser-proving slice."""
+        return sum(item.get("proving") == "true" for item in self.catalog)
+
+    @rx.var
     def preview_viewport_label(self) -> str:
         if self.preview_viewport == "desktop":
             return "Simulated desktop composition"
@@ -199,9 +204,7 @@ class CanonicalDnaState(rx.State):
             self._clear_plan("Selected reference is not present in the canonical catalog.")
             return
         if selected.get("host_ready") != "true":
-            self._clear_plan(
-                "Canonical contract is present, but this reference has not entered host realization yet."
-            )
+            self._clear_plan("Canonical contract is present, but this reference has not entered host realization yet.")
             return
 
         plan = realize_canonical_reference(
