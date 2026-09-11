@@ -8,6 +8,7 @@ only applies conservative global browser ergonomics before exposing the same
 from __future__ import annotations
 
 from multimind_reflex.multimind_reflex import app
+from multimind_reflex import verdict_entry as _verdict_entry  # noqa: F401
 
 
 _MOBILE_POLISH = {
