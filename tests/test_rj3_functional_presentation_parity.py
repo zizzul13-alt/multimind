@@ -163,13 +163,22 @@ def test_busy_duplicate_guard_and_session_switch_guard_remain_present():
 
 
 def test_surface_keeps_phone_tablet_desktop_breakpoints():
-    # Responsive parity is an invariant; the historical fixed 3fr/7fr desktop
-    # skeleton is not. Archetype promotion keeps a one-column mobile base,
-    # explicit mobile semantic ordering, and lg desktop composition.
+    # Responsive parity is the invariant. Canonical migration adds a second
+    # presentation grammar inside the same breakpoints rather than replacing
+    # phone/desktop behavior or creating a second workspace.
     assert 'initial="minmax(0, 1fr)"' in SURFACE
-    assert "initial=_workspace_mobile_areas()" in SURFACE
-    assert "lg=_workspace_desktop_columns()" in SURFACE
-    assert "lg=_workspace_desktop_areas()" in SURFACE
+    assert "grid_template_columns=rx.breakpoints" in SURFACE
+    assert "grid_template_areas=rx.breakpoints" in SURFACE
+    assert "HostState.active_dna_mode == \"canonical\"" in SURFACE
+    for helper in (
+        "_workspace_mobile_areas()",
+        "_canonical_workspace_mobile_areas()",
+        "_workspace_desktop_columns()",
+        "_canonical_workspace_desktop_columns()",
+        "_workspace_desktop_areas()",
+        "_canonical_workspace_desktop_areas()",
+    ):
+        assert helper in SURFACE
     assert 'padding=rx.breakpoints(initial="0.75rem", sm="1rem", md="1.5rem")' in SURFACE
 
 

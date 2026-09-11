@@ -51,13 +51,22 @@ def test_streamlit_remains_reference_and_reflex_keeps_theme_studio_contract():
 
 def test_reflex_surface_has_responsive_breakpoints_without_pixel_parity_claim():
     assert "rx.breakpoints" in REFLEX_SURFACE
-    # RJ5 protects responsive behavior, not the historical single 3fr/7fr
-    # skeleton. The production workspace now keeps a one-column mobile base and
-    # promotes finite archetype-specific desktop composition at lg.
+    # RJ5 protects responsive semantics, not one historical literal grid. Both
+    # the accepted archetype grammar and canonical DNA grammar must share the
+    # same one-column mobile base and lg promotion seam.
     assert 'initial="minmax(0, 1fr)"' in REFLEX_SURFACE
-    assert "lg=_workspace_desktop_columns()" in REFLEX_SURFACE
-    assert "initial=_workspace_mobile_areas()" in REFLEX_SURFACE
-    assert "lg=_workspace_desktop_areas()" in REFLEX_SURFACE
+    assert "grid_template_columns=rx.breakpoints" in REFLEX_SURFACE
+    assert "grid_template_areas=rx.breakpoints" in REFLEX_SURFACE
+    assert "HostState.active_dna_mode == \"canonical\"" in REFLEX_SURFACE
+    for helper in (
+        "_workspace_desktop_columns()",
+        "_canonical_workspace_desktop_columns()",
+        "_workspace_mobile_areas()",
+        "_canonical_workspace_mobile_areas()",
+        "_workspace_desktop_areas()",
+        "_canonical_workspace_desktop_areas()",
+    ):
+        assert helper in REFLEX_SURFACE
     for zone in ("utility", "composer", "result", "history"):
         assert f'"{zone}"' in REFLEX_SURFACE
 
