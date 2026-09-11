@@ -49,6 +49,45 @@ pre {
   min-width: 0;
 }
 
+/* Long model output should read like prose rather than an infinitely wide
+ * debug surface. This remains neutral presentation: no result content is
+ * hidden, truncated, or reordered. */
+.mm-readable {
+  max-width: 78ch;
+  line-height: 1.62;
+}
+
+.mm-result-card,
+.mm-participant-card,
+.mm-critique-card,
+.mm-history-card {
+  overflow: hidden;
+}
+
+.mm-result-card {
+  border-inline-start: 0.25rem solid color-mix(in srgb, currentColor 28%, transparent);
+  background: color-mix(in srgb, Canvas 98%, currentColor 2%);
+}
+
+.mm-participant-card {
+  border-inline-start: 0.2rem solid color-mix(in srgb, currentColor 20%, transparent);
+  background: color-mix(in srgb, Canvas 98.5%, currentColor 1.5%);
+}
+
+.mm-critique-card {
+  border-inline-start: 0.18rem dashed color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, Canvas 99%, currentColor 1%);
+}
+
+.mm-history-card {
+  border-inline-start: 0.16rem solid color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.mm-zone-result,
+.mm-zone-history {
+  scroll-margin-block: 1rem;
+}
+
 /* Real workspace semantic zones emitted by grid_area=... in the accepted host. */
 [style*="grid-area: utility"],
 [style*="grid-area: composer"],
@@ -133,6 +172,10 @@ pre {
   .mm-critique-card,
   .mm-history-card {
     padding: 0.75rem !important;
+  }
+
+  .mm-readable {
+    max-width: 100%;
   }
 
   [style*="grid-area: result"] p,

@@ -76,6 +76,32 @@ def test_phone_readability_reachable_actions_and_reduced_motion_are_explicit():
     assert "@media (prefers-reduced-motion: reduce)" in CSS
 
 
+def test_deliberation_polish_improves_scanability_without_hiding_evidence():
+    for token in (
+        ".mm-readable",
+        "max-width: 78ch",
+        ".mm-result-card",
+        ".mm-participant-card",
+        ".mm-critique-card",
+        ".mm-history-card",
+        "border-inline-start",
+        "scroll-margin-block",
+    ):
+        assert token in CSS
+
+    # Presentation may group and visually separate evidence, but it must not
+    # hide, truncate, reorder, or replace participant/judge/history truth.
+    lowered = CSS.casefold()
+    for forbidden in (
+        "display: none",
+        "visibility: hidden",
+        "text-overflow: ellipsis",
+        "line-clamp",
+        "order:",
+    ):
+        assert forbidden not in lowered
+
+
 def test_existing_workspace_and_theme_studio_remain_owners():
     assert "from multimind_reflex.multimind_reflex import app" in ENTRY
     assert "def _workspace()" in SURFACE
