@@ -34,11 +34,11 @@ class TokenCounter:
     ):
         """Estimate bounded deliberation usage from the real call-graph semantics.
 
-        Deliberation currently performs one independent call per participant,
-        one critique call per successful participant for each round after round 1,
-        and one judge/synthesis utility call. This estimate assumes every selected
-        participant remains successful, so it intentionally represents the upper
-        normal call count rather than silently underestimating a full panel.
+        Round 1 performs one independent call per participant. Round 2 adds one
+        critique call per successful participant. Deep rounds (3+) add both one
+        critique and one revision call per successful participant, followed by one
+        judge/synthesis utility call. This estimate assumes all selected participants
+        remain successful so it intentionally represents the upper normal call count.
         """
         try:
             participant_count = max(1, int(participants))
@@ -56,11 +56,13 @@ class TokenCounter:
         file_tokens = max(0, int(files_count or 0)) * 500
         shared_input_tokens = prompt_tokens + file_tokens
 
-        # Approximate one response as 3x the shared input. Critiques are usually
-        # shorter, but they also receive panel context; keep one simple conservative
-        # estimate instead of pretending we can price provider-specific contexts here.
+        # Approximate one response as 3x the shared input. Critiques/revisions also
+        # receive panel context, so keep a simple conservative provider-neutral model.
         output_tokens = shared_input_tokens * 3
-        participant_calls = participant_count * round_count
+        candidate_calls = participant_count
+        critique_calls = participant_count * max(0, round_count - 1)
+        revision_calls = participant_count * max(0, round_count - 2)
+        participant_calls = candidate_calls + critique_calls + revision_calls
         judge_calls = 1
         provider_calls_estimate = participant_calls + judge_calls
         total = int((shared_input_tokens + output_tokens) * provider_calls_estimate)
@@ -73,6 +75,9 @@ class TokenCounter:
             "multiplier": float(provider_calls_estimate),
             "participants": participant_count,
             "rounds": round_count,
+            "candidate_calls_estimate": candidate_calls,
+            "critique_calls_estimate": critique_calls,
+            "revision_calls_estimate": revision_calls,
             "participant_calls_estimate": participant_calls,
             "judge_calls_estimate": judge_calls,
             "provider_calls_estimate": provider_calls_estimate,
