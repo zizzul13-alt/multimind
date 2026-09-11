@@ -643,7 +643,205 @@ def _data_ops() -> rx.Component:
     )
 
 
+def _workspace_desktop_columns():
+    """Finite archetype vocabulary → desktop workspace columns."""
+    return rx.cond(
+        HostState.active_archetype == "chat_first",
+        "minmax(16rem, 3fr) minmax(0, 7fr)",
+        rx.cond(
+            HostState.active_archetype == "command_center",
+            "minmax(0, 1fr) minmax(0, 1fr)",
+            rx.cond(
+                HostState.active_archetype == "ai_workspace",
+                "minmax(16rem, 0.8fr) minmax(0, 1.4fr)",
+                rx.cond(
+                    HostState.active_archetype == "ai_research_lab",
+                    "minmax(0, 1.45fr) minmax(16rem, 0.65fr)",
+                    rx.cond(
+                        HostState.active_archetype == "agent_canvas",
+                        "minmax(16rem, 0.75fr) minmax(0, 1.25fr)",
+                        "minmax(0, 1fr)",
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def _workspace_desktop_areas():
+    """Map semantic zones without duplicating application-owned controls."""
+    return rx.cond(
+        HostState.active_archetype == "chat_first",
+        '"utility composer" "utility result" "utility history"',
+        rx.cond(
+            HostState.active_archetype == "command_center",
+            '"result result" "utility composer" "history history"',
+            rx.cond(
+                HostState.active_archetype == "ai_workspace",
+                '"utility composer" "utility result" "history history"',
+                rx.cond(
+                    HostState.active_archetype == "ai_research_lab",
+                    '"result utility" "result composer" "history history"',
+                    rx.cond(
+                        HostState.active_archetype == "agent_canvas",
+                        '"composer result" "utility result" "history history"',
+                        rx.cond(
+                            HostState.active_archetype == "terminal_hacker",
+                            '"composer" "result" "history" "utility"',
+                            '"composer" "result" "history" "utility"',
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def _workspace_mobile_areas():
+    """Mobile order follows archetype meaning instead of desktop cropping."""
+    return rx.cond(
+        HostState.active_archetype == "command_center",
+        '"result" "composer" "history" "utility"',
+        rx.cond(
+            HostState.active_archetype == "ai_research_lab",
+            '"result" "history" "composer" "utility"',
+            rx.cond(
+                HostState.active_archetype == "agent_canvas",
+                '"composer" "result" "utility" "history"',
+                '"composer" "result" "history" "utility"',
+            ),
+        ),
+    )
+
+
+def _workspace_zone_card(child: rx.Component, area: str) -> rx.Component:
+    return rx.card(
+        child,
+        grid_area=area,
+        min_width="0",
+        width="100%",
+        background_color=HostState.active_surface,
+        color=HostState.active_text_color,
+        border=f"1px solid {HostState.active_border}",
+        border_radius=HostState.active_radius_value,
+    )
+
+
+def _workspace_utility_zone() -> rx.Component:
+    return _workspace_zone_card(
+        rx.vstack(
+            _session_panel(),
+            rx.separator(),
+            _data_ops(),
+            width="100%",
+            spacing="4",
+        ),
+        "utility",
+    )
+
+
+def _workspace_composer_zone() -> rx.Component:
+    return _workspace_zone_card(
+        rx.vstack(
+            rx.heading(
+                rx.cond(
+                    HostState.current_session_name != "",
+                    HostState.current_session_name,
+                    "Select or create a session",
+                ),
+                size="5",
+                color=HostState.active_primary,
+            ),
+            _template_panel(),
+            rx.text_area(
+                placeholder="Prompt",
+                value=HostState.prompt,
+                on_change=HostState.set_prompt,
+                min_height="10rem",
+                width="100%",
+            ),
+            _execution_controls(),
+            _upload_panel(),
+            _estimate_panel(),
+            rx.button(
+                rx.cond(HostState.busy, "Running…", "Run"),
+                on_click=HostState.run_chat,
+                disabled=HostState.busy,
+                width="100%",
+                size="3",
+                background_color=HostState.active_primary,
+                color=HostState.active_background,
+                border_radius=HostState.active_radius_value,
+            ),
+            rx.cond(HostState.status_message != "", rx.text(HostState.status_message)),
+            rx.cond(
+                HostState.error_message != "",
+                rx.callout(HostState.error_message, icon="triangle_alert", width="100%"),
+            ),
+            rx.cond(
+                HostState.success_message != "",
+                rx.callout(HostState.success_message, icon="circle_check", width="100%"),
+            ),
+            rx.foreach(HostState.warnings, lambda warning: rx.callout(warning, icon="info", width="100%")),
+            width="100%",
+            spacing="3",
+        ),
+        "composer",
+    )
+
+
+def _workspace_result_zone() -> rx.Component:
+    return _workspace_zone_card(
+        rx.vstack(
+            rx.heading(
+                rx.cond(
+                    HostState.active_archetype == "command_center",
+                    "Operational result",
+                    rx.cond(
+                        HostState.active_archetype == "ai_research_lab",
+                        "Synthesis / evidence",
+                        rx.cond(
+                            HostState.active_archetype == "agent_canvas",
+                            "Execution topology / result",
+                            rx.cond(
+                                HostState.active_archetype == "terminal_hacker",
+                                "Execution output",
+                                "Result / deliberation",
+                            ),
+                        ),
+                    ),
+                ),
+                size="4",
+                color=HostState.active_primary,
+            ),
+            rx.cond(
+                HostState.final_answer != "",
+                rx.card(
+                    rx.vstack(
+                        rx.heading("Final answer", size="4"),
+                        rx.text(HostState.final_answer, white_space="pre-wrap"),
+                        align="start",
+                    ),
+                    width="100%",
+                ),
+                rx.text("No result yet.", size="2"),
+            ),
+            _deliberation_panel(),
+            width="100%",
+            spacing="3",
+        ),
+        "result",
+    )
+
+
+def _workspace_history_zone() -> rx.Component:
+    return _workspace_zone_card(_history_panel(), "history")
+
+
 def _workspace() -> rx.Component:
+    # The four real semantic zones are instantiated exactly once. Archetype
+    # selection changes presentation composition only; it never duplicates or
+    # changes application/provider/persistence truth.
     return rx.container(
         rx.vstack(
             rx.card(
@@ -680,104 +878,38 @@ def _workspace() -> rx.Component:
                 border_radius=HostState.active_radius_value,
             ),
             rx.grid(
-                rx.card(
-                    rx.vstack(
-                        _session_panel(),
-                        rx.separator(),
-                        _data_ops(),
-                        width="100%",
-                        spacing="4",
-                    ),
-                    background_color=HostState.active_surface,
-                    color=HostState.active_text_color,
-                    border=f"1px solid {HostState.active_border}",
-                    border_radius=HostState.active_radius_value,
+                _workspace_utility_zone(),
+                _workspace_composer_zone(),
+                _workspace_result_zone(),
+                _workspace_history_zone(),
+                grid_template_columns=rx.breakpoints(
+                    initial="minmax(0, 1fr)",
+                    lg=_workspace_desktop_columns(),
                 ),
-                rx.vstack(
-                    rx.card(
-                        rx.vstack(
-                            rx.heading(
-                                rx.cond(
-                                    HostState.current_session_name != "",
-                                    HostState.current_session_name,
-                                    "Select or create a session",
-                                ),
-                                size="5",
-                                color=HostState.active_primary,
-                            ),
-                            _template_panel(),
-                            rx.text_area(
-                                placeholder="Prompt",
-                                value=HostState.prompt,
-                                on_change=HostState.set_prompt,
-                                min_height="10rem",
-                                width="100%",
-                            ),
-                            _execution_controls(),
-                            _upload_panel(),
-                            _estimate_panel(),
-                            rx.button(
-                                rx.cond(HostState.busy, "Running…", "Run"),
-                                on_click=HostState.run_chat,
-                                disabled=HostState.busy,
-                                width="100%",
-                                size="3",
-                                background_color=HostState.active_primary,
-                                color=HostState.active_background,
-                                border_radius=HostState.active_radius_value,
-                            ),
-                            rx.cond(HostState.status_message != "", rx.text(HostState.status_message)),
-                            rx.cond(
-                                HostState.error_message != "",
-                                rx.callout(HostState.error_message, icon="triangle_alert", width="100%"),
-                            ),
-                            rx.cond(
-                                HostState.success_message != "",
-                                rx.callout(HostState.success_message, icon="circle_check", width="100%"),
-                            ),
-                            rx.foreach(HostState.warnings, lambda warning: rx.callout(warning, icon="info", width="100%")),
-                            rx.cond(
-                                HostState.final_answer != "",
-                                rx.card(
-                                    rx.vstack(
-                                        rx.heading("Final answer", size="4"),
-                                        rx.text(HostState.final_answer, white_space="pre-wrap"),
-                                        align="start",
-                                    ),
-                                    width="100%",
-                                ),
-                            ),
-                            _deliberation_panel(),
-                            width="100%",
-                            spacing="3",
-                        ),
-                        background_color=HostState.active_surface,
-                        color=HostState.active_text_color,
-                        border=f"1px solid {HostState.active_border}",
-                        border_radius=HostState.active_radius_value,
-                    ),
-                    rx.card(
-                        _history_panel(),
-                        background_color=HostState.active_surface,
-                        color=HostState.active_text_color,
-                        border=f"1px solid {HostState.active_border}",
-                        border_radius=HostState.active_radius_value,
-                    ),
-                    width="100%",
-                    spacing="4",
+                grid_template_areas=rx.breakpoints(
+                    initial=_workspace_mobile_areas(),
+                    lg=_workspace_desktop_areas(),
                 ),
-                columns=rx.breakpoints(initial="1", lg="3fr 7fr"),
-                spacing="4",
+                gap="1rem",
                 width="100%",
+                align_items="start",
             ),
             width="100%",
             spacing="4",
         ),
-        max_width="88rem",
+        max_width=rx.cond(
+            HostState.active_archetype == "minimal_saas",
+            "68rem",
+            rx.cond(HostState.active_archetype == "terminal_hacker", "76rem", "88rem"),
+        ),
         padding=rx.breakpoints(initial="0.75rem", sm="1rem", md="1.5rem"),
         background_color=HostState.active_background,
         color=HostState.active_text_color,
-        font_family=HostState.active_font_family,
+        font_family=rx.cond(
+            HostState.active_archetype == "terminal_hacker",
+            HostState.active_mono_font,
+            HostState.active_font_family,
+        ),
         min_height="100vh",
     )
 
