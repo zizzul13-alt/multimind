@@ -1,0 +1,259 @@
+schema_version: 1
+project: multimind
+purpose: >-
+  Compact machine-readable collaboration profile for recovering the established
+  human/AI operating contract when conversational context is reduced.
+authority:
+  rank: collaboration_aid
+  implementation_truth_precedence:
+    - current_repository_or_filesystem
+    - merged_implementation_evidence
+    - current_governance_or_status_artifacts
+    - accepted_governor_state
+    - old_chat_memory_or_handoff_assumptions
+  higher_authority_documents:
+    - AGENTS.md
+    - docs/governance/MULTIMIND_PROJECT_OPERATING_CONSTITUTION.md
+  mutable_project_state_stored_here: false
+privacy:
+  repository_visibility_assumption: public
+  allow_only_project_operational_patterns: true
+  forbid_unrelated_personal_or_sensitive_context: true
+
+operator_objective:
+  priority_chain:
+    - DEPLOYABLE
+    - RELIABLE
+    - RECOVERABLE
+    - BORING
+    - LOW_MAINTENANCE
+  preservation_chain:
+    - DATA
+    - CORE_BEHAVIOR
+    - PROVIDER_INDEPENDENCE
+    - RECOVERABILITY
+    - PRESENTATION_CONTRACTS
+
+repository_recovery:
+  required_sequence:
+    - verify_repository_identity_and_current_head
+    - inspect_relevant_governance_and_status
+    - reconcile_handoff_against_repository_reality
+    - skip_already_completed_work
+    - continue_from_first_actual_unfinished_step
+    - preserve_closed_gates_without_invalidating_evidence
+  rule: repository_reality_wins
+
+command_semantics:
+  ACC_KEEP_MASTER:
+    means:
+      - accept_substantive_result
+      - persist_important_governance_or_closure_when_applicable
+    does_not_mean:
+      - authorize_production_cutover
+      - authorize_unrelated_scope
+      - treat_plan_as_implementation
+  NEXT:
+    means:
+      - continue_to_next_logical_bounded_step
+      - do_not_implicitly_lock_current_result
+  DEEP:
+    aliases: [mendalam]
+    means:
+      - adversarial_investigation
+      - challenge_assumptions
+      - inspect_edge_cases_failure_paths_and_conflicts
+    does_not_mean:
+      - implementation_authorization
+      - acceptance
+  CODEX:
+    means:
+      - authorize_currently_accepted_bounded_implementation_package
+    does_not_mean:
+      - production_cutover
+      - architecture_expansion
+  GAS:
+    aliases: [gas, lanjut, ayo_gas]
+    means:
+      - continue_understood_bounded_work
+      - avoid_low_value_confirmation
+      - execute_next_justified_step
+    boundary: stop_for_true_blocker_reserved_decision_destructive_action_or_material_scope_expansion
+  RORO_JONGGRANG:
+    aliases: [gaspoll, roro_jonggrang, was_wes_wos, sampai_selesai]
+    means:
+      - execute_complete_already_authorized_bounded_chain
+      - serial_completion_preferred
+      - repair_within_scope_and_continue
+      - verify_regress_review_and_persist_closure
+    boundary: more_execution_not_more_scope
+  COBA:
+    aliases: [coba]
+    means:
+      - bounded_experiment_or_proof
+      - report_observed_result
+    does_not_mean:
+      - production_promotion
+      - architecture_lock
+  READ_ONLY:
+    aliases: [jangan_implement_dulu]
+    means:
+      - inspect_research_compare_only
+      - no_repository_mutation_until_authorized
+  REAL_OR_FAKE:
+    aliases: [real_or_fake, rill_apa_fakes]
+    means:
+      - verify_claim_against_actual_evidence
+      - separate_demo_or_marketing_from_proven_reality
+      - eliminate_weak_interpretations_early
+  STATUS_CHECK:
+    aliases: [udah, selesai_berarti, sudah_selesai]
+    response_shape:
+      - verdict
+      - proof
+      - blocker_vs_residual
+      - next_required_action_if_any
+  HOLD:
+    aliases: [hold, park]
+    means:
+      - stop_active_expansion
+      - preserve_continuation_state
+  CORRECTION:
+    aliases: [bukan_bukan, wait, lah]
+    means:
+      - recheck_disputed_premise
+      - reanchor_on_user_correction
+      - discard_invalid_interpretation
+  CONSTRAINT_PATCH:
+    trigger: additional_brief_or_constraint_mid_work
+    means:
+      - integrate_if_compatible
+      - do_not_restart_without_need
+      - escalate_only_if_it_invalidates_locked_or_completed_work
+
+accepted_output_characteristics:
+  - repository_grounded
+  - clear_verdict_near_top
+  - evidence_chain_with_exact_identifiers_when_available
+  - blockers_separated_from_residuals
+  - authorized_bounded_chain_carried_to_completion
+  - copy_paste_ready_layer_c_handoffs
+  - exact_local_commands_when_human_execution_is_required
+  - comparisons_that_converge_to_shortlist_recommendation_and_fallback
+
+finding_classes:
+  BLOCKER: prevents_current_exit_condition
+  REPAIRABLE_WITHIN_SCOPE: fix_now_when_execution_is_authorized
+  RESIDUAL: real_but_nonblocking_followup
+  PARK_IDEA: interesting_but_not_active_roadmap
+  OUT_OF_SCOPE: report_do_not_implement
+
+execution_workflow:
+  - INSPECT
+  - RECONCILE
+  - PLAN_BOUNDED_CHANGE
+  - IMPLEMENT
+  - TARGETED_VERIFY
+  - ADVERSARIAL_REVIEW
+  - REPAIR
+  - REGRESSION
+  - DIFF_REVIEW
+  - DURABLE_CHECKPOINT
+
+autonomy:
+  continue_without_reasking_when:
+    - next_step_is_implied_by_accepted_scope
+    - action_is_routine_or_reversible
+    - no_product_or_architecture_redefinition
+    - accepted_guarantees_are_preserved
+    - no_new_paid_or_credit_card_dependency
+    - no_cutover_authorization
+    - no_reserved_destructive_or_security_sensitive_boundary
+  escalate_when:
+    - true_blocker
+    - material_scope_expansion
+    - cross_workstream_conflict
+    - destructive_or_irreversible_decision
+    - invalidated_locked_assumption
+    - governor_reserved_architecture_or_product_decision
+    - production_cutover_authorization
+
+response_shapes:
+  status_or_closure:
+    - verdict
+    - exact_proof
+    - blockers_vs_nonblocking_residuals
+    - next_required_action_only_if_needed
+  implementation_completion:
+    - changes_made
+    - verification_performed
+    - repair_and_retest
+    - branch_commit_pr_merge_state_when_available
+    - unresolved_blockers_or_NONE
+    - production_cutover_status_when_relevant
+  research_or_comparison:
+    - decision_question
+    - evidence_and_constraints
+    - weak_candidates_eliminated
+    - serious_survivors_compared
+    - recommendation_and_fallback
+    - uncertainties_or_required_proof
+    - no_implementation_without_authorization
+  handoff:
+    - ROLE
+    - CURRENT_AUTHORITATIVE_BASELINE
+    - TASK_OR_MISSION
+    - INHERITED_LOCKS_RELEVANT_TO_TASK
+    - ALLOWED_SCOPE
+    - FORBIDDEN_SCOPE
+    - REQUIRED_EVIDENCE_OR_EXIT_CONDITION
+    - RETURN_TO_GOVERNOR_CONDITION
+
+reduced_context_boot:
+  read_in_order:
+    - AGENTS.md
+    - docs/governance/AI_OPERATOR_CONTINUITY_PROFILE.yaml
+    - exact_current_status_artifact_for_active_workstream
+    - current_task_handoff
+    - repository_evidence_needed_for_decision
+  load_full_playbook_when: collaboration_semantics_remain_ambiguous
+
+emergency_rules:
+  - repository_reality_wins
+  - skip_completed_work
+  - gas_means_continue_bounded_work_not_expand_scope
+  - roro_jonggrang_means_finish_bounded_chain_with_repair_and_verification
+  - deep_means_investigate_not_authorize
+  - acc_keep_master_means_accept_and_persist_not_cutover
+  - closed_gates_stay_closed_without_invalidating_evidence
+  - blockers_and_residuals_are_distinct
+  - do_not_claim_done_without_implementation_evidence
+  - execute_when_authorized_and_tooling_permits_instead_of_only_proposing
+  - protect_public_repository_privacy
+
+anti_patterns:
+  - ask_user_to_repeat_repository_or_handoff_information
+  - trust_stale_chat_over_current_repository
+  - stop_at_plan_after_implementation_authorized
+  - request_confirmation_for_every_routine_substep
+  - silently_expand_scope
+  - reopen_closed_gate_for_curiosity_or_new_tool
+  - introduce_unnecessary_service_transport_or_database
+  - treat_research_merge_or_acceptance_as_cutover
+  - claim_pass_or_complete_from_plan_only
+  - hide_failures_or_residuals
+  - classify_every_residual_as_blocker
+  - duplicate_project_DNA_in_large_handoffs
+  - hide_upstream_contract_failure_with_downstream_workaround
+  - weaken_tests_or_guarantees_to_make_migration_pass
+  - copy_unrelated_private_conversation_context_into_public_repo
+
+maintenance:
+  update_only_for:
+    - repeated_durable_project_collaboration_pattern
+    - future_agent_utility
+    - public_repo_safe_project_specific_content
+    - compatibility_with_higher_authority_governance
+  never_use_as:
+    - chat_transcript
+    - mutable_current_state_ledger

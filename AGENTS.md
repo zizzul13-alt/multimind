@@ -80,6 +80,19 @@ Follow this iterative development lifecycle:
 
 ---
 
+## 🧭 Collaboration Continuity Boot
+
+For fresh chats, reduced context windows, or agents that do not have the prior conversation history, recover the established human/AI collaboration contract from:
+
+1. `docs/governance/AI_OPERATOR_CONTINUITY_PROFILE.yaml` — compact machine-readable boot profile;
+2. `docs/governance/HUMAN_AI_COLLABORATION_CONTINUITY_PLAYBOOK.md` — full collaboration semantics and examples;
+3. `docs/governance/MULTIMIND_PROJECT_OPERATING_CONSTITUTION.md` — higher-authority stable project law;
+4. the current relevant governance/status artifact and actual repository evidence — authoritative mutable state.
+
+These continuity files do **not** override repository reality, this file, or the Project Operating Constitution. They describe how to interpret recurring operator commands, acceptance signals, autonomous continuation, evidence expectations, and handoffs.
+
+---
+
 ## 🌟 Core Principle
 
 > **"Be autonomous in execution, conservative in scope, transparent about uncertainty, and accountable to human decisions."**
