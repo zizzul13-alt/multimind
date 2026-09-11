@@ -31,6 +31,8 @@ def test_workspace_structurally_consumes_all_seven_archetypes():
 def test_workspace_uses_one_set_of_real_semantic_zones():
     source = inspect.getsource(surface)
     workspace_source = inspect.getsource(surface._workspace)
+    upload_source = inspect.getsource(surface._upload_panel)
+    restore_source = inspect.getsource(surface._data_ops)
 
     # Four application-facing zones are instantiated exactly once by the real
     # workspace. Archetype changes composition, not ownership or event paths.
@@ -42,10 +44,14 @@ def test_workspace_uses_one_set_of_real_semantic_zones():
     ):
         assert workspace_source.count(call) == 1
 
-    # Upload/restore identifiers remain single canonical controls rather than
-    # seven archetype-specific copies.
-    assert source.count('id=UPLOAD_ID') == 1
-    assert source.count('id=RESTORE_ID') == 1
+    # There are exactly two upload widgets in the entire production surface:
+    # the existing prompt-file input and the existing restore input. Archetype
+    # promotion must not create per-archetype copies of either control.
+    assert source.count("rx.upload(") == 2
+    assert "id=UPLOAD_ID" in upload_source
+    assert "id=RESTORE_ID" in restore_source
+    assert upload_source.count("rx.upload(") == 1
+    assert restore_source.count("rx.upload(") == 1
 
 
 def test_mobile_archetype_layout_is_not_desktop_crop():
@@ -62,7 +68,11 @@ def test_workspace_promotion_stays_presentation_only_and_reference_neutral():
     source = inspect.getsource(surface)
     assert "MultiMindApplication" not in source
     assert "DebateOrchestrator" not in source
-    assert "sqlite3" not in source
+    # SQLite filenames/MIME strings are legitimate restore UI metadata. What
+    # presentation must never acquire is database connection/path ownership.
+    assert "sqlite3.connect(" not in source
+    assert "Config.get_db_path" not in source
+    assert "database.manager" not in source
     assert "design_dna" not in source
 
     for forbidden in (
