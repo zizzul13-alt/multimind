@@ -1,7 +1,7 @@
 """Presentation-only mobile ergonomics layer for the Reflex host.
 
 The production workspace, Theme Studio, application events, provider routing,
-and persistence ownership remain in their accepted modules.  This entry module
+and persistence ownership remain in their accepted modules. This entry module
 only applies conservative global browser ergonomics before exposing the same
 ``rx.App`` instance to Reflex.
 """
@@ -68,9 +68,11 @@ _MOBILE_POLISH = {
     },
 }
 
-# ``app`` is the exact accepted application instance; only presentation style
-# is extended.  No page, state, event, transport, or persistence owner is
-# replaced here.
+# Keep the same accepted App instance. The stylesheet is static presentation
+# only and deliberately targets existing semantic grid-area output instead of
+# introducing a second workspace/component tree.
+if "/mobile-workspace-polish.css" not in app.stylesheets:
+    app.stylesheets.append("/mobile-workspace-polish.css")
 app.style.update(_MOBILE_POLISH)
 
 
