@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import reflex as rx
 
+from multimind_reflex.canonical_contexts import get_context_fixture, list_context_ids
 from multimind_reflex.canonical_projection import project_reflex_tokens
 from ui.canonical_dna_bridge import (
     list_browser_proving_reference_ids,
@@ -22,6 +23,7 @@ from ui.canonical_dna_bridge import (
 
 
 _RESULT_LIMIT = 30
+_CANONICAL_CONTEXT_IDS = list_context_ids()
 
 
 def _catalog_snapshots() -> list[dict[str, str]]:
@@ -80,6 +82,7 @@ class CanonicalDnaState(rx.State):
     selected_category: str = ""
     selected_status: str = ""
     preview_viewport: str = "desktop"
+    preview_archetype: str = "chat_first"
     reduced_motion: bool = False
     preview_message: str = "Choose a host-realization-ready reference to render the canonical asset-off plan."
     plan_ready: bool = False
@@ -159,6 +162,50 @@ class CanonicalDnaState(rx.State):
             return "Simulated desktop composition"
         return "Simulated mobile composition"
 
+    @rx.var
+    def context_display_name(self) -> str:
+        return get_context_fixture(self.preview_archetype).display_name
+
+    @rx.var
+    def context_mental_model(self) -> str:
+        return get_context_fixture(self.preview_archetype).mental_model
+
+    @rx.var
+    def context_primary_object(self) -> str:
+        return get_context_fixture(self.preview_archetype).primary_object
+
+    @rx.var
+    def context_work_title(self) -> str:
+        return get_context_fixture(self.preview_archetype).work_title
+
+    @rx.var
+    def context_work_body(self) -> str:
+        return get_context_fixture(self.preview_archetype).work_body
+
+    @rx.var
+    def context_action_title(self) -> str:
+        return get_context_fixture(self.preview_archetype).action_title
+
+    @rx.var
+    def context_action_body(self) -> str:
+        return get_context_fixture(self.preview_archetype).action_body
+
+    @rx.var
+    def context_state_title(self) -> str:
+        return get_context_fixture(self.preview_archetype).state_title
+
+    @rx.var
+    def context_state_body(self) -> str:
+        return get_context_fixture(self.preview_archetype).state_body
+
+    @rx.var
+    def context_auxiliary_title(self) -> str:
+        return get_context_fixture(self.preview_archetype).auxiliary_title
+
+    @rx.var
+    def context_auxiliary_body(self) -> str:
+        return get_context_fixture(self.preview_archetype).auxiliary_body
+
     @rx.event
     def refresh_catalog(self):
         self.catalog = _catalog_snapshots()
@@ -211,7 +258,7 @@ class CanonicalDnaState(rx.State):
             self.selected_reference_id,
             viewport=self.preview_viewport,
             asset_state="off",
-            archetype_id="chat_first",
+            archetype_id=self.preview_archetype,
             reduced_motion=self.reduced_motion,
             accessibility_required=True,
         )
@@ -292,6 +339,13 @@ class CanonicalDnaState(rx.State):
         self._refresh_plan()
 
     @rx.event
+    def set_preview_archetype(self, value: str):
+        if value not in _CANONICAL_CONTEXT_IDS:
+            return
+        self.preview_archetype = value
+        self._refresh_plan()
+
+    @rx.event
     def set_reduced_motion(self, value: bool):
         self.reduced_motion = bool(value)
         self._refresh_plan()
@@ -318,4 +372,4 @@ class CanonicalDnaState(rx.State):
         self._clear_plan("Canonical selection cleared; safe presentation remains available.")
 
 
-__all__ = ["CanonicalDnaState", "_catalog_snapshots", "_filter_catalog"]
+__all__ = ["CanonicalDnaState", "_CANONICAL_CONTEXT_IDS", "_catalog_snapshots", "_filter_catalog"]
