@@ -1,0 +1,142 @@
+/* MultiMind mobile workspace polish.
+ * Presentation-only: no application, provider, persistence, or DNA truth lives here.
+ */
+
+.mm-workspace,
+.mm-workspace * {
+  box-sizing: border-box;
+}
+
+.mm-workspace {
+  width: 100%;
+  overflow-x: clip;
+}
+
+.mm-workspace-header,
+.mm-zone,
+.mm-result-card,
+.mm-participant-card,
+.mm-critique-card,
+.mm-history-card {
+  min-width: 0;
+}
+
+.mm-readable,
+.mm-result-card,
+.mm-participant-card,
+.mm-critique-card,
+.mm-history-card {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.mm-run-button {
+  min-height: 2.75rem;
+  font-weight: 700;
+}
+
+.mm-touch-target {
+  min-height: 2.65rem;
+}
+
+.mm-theme-actions {
+  gap: 0.5rem;
+}
+
+@media (max-width: 767px) {
+  .mm-workspace {
+    padding-left: 0.55rem !important;
+    padding-right: 0.55rem !important;
+    padding-bottom: 5rem !important;
+  }
+
+  .mm-workspace-header {
+    padding: 0.75rem !important;
+  }
+
+  .mm-workspace-grid {
+    gap: 0.65rem !important;
+  }
+
+  .mm-zone {
+    padding: 0.75rem !important;
+    border-radius: 0.75rem !important;
+  }
+
+  .mm-zone h1,
+  .mm-zone h2,
+  .mm-zone h3,
+  .mm-zone h4,
+  .mm-zone h5 {
+    line-height: 1.18;
+  }
+
+  .mm-prompt textarea,
+  textarea.mm-prompt {
+    min-height: 8.5rem !important;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .mm-run-button {
+    position: sticky;
+    bottom: 0.65rem;
+    z-index: 20;
+    min-height: 3rem;
+    box-shadow: 0 0.45rem 1.2rem rgba(0, 0, 0, 0.14);
+  }
+
+  .mm-result-card,
+  .mm-participant-card,
+  .mm-critique-card,
+  .mm-history-card {
+    padding: 0.75rem !important;
+  }
+
+  .mm-readable {
+    font-size: 0.98rem;
+    line-height: 1.58;
+  }
+
+  .mm-theme-studio {
+    padding-left: 0.55rem !important;
+    padding-right: 0.55rem !important;
+    padding-bottom: 5.5rem !important;
+  }
+
+  .mm-theme-actions {
+    position: sticky;
+    bottom: 0.5rem;
+    z-index: 25;
+    padding: 0.55rem;
+    border-radius: 0.8rem;
+    background: color-mix(in srgb, var(--color-panel-solid, white) 92%, transparent);
+    backdrop-filter: blur(8px);
+  }
+
+  .mm-theme-actions > * {
+    flex: 1 1 auto;
+    min-height: 2.7rem;
+  }
+
+  .mm-canonical-results {
+    max-height: 14rem !important;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (min-width: 768px) {
+  .mm-readable {
+    max-width: 72ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-workspace *,
+  .mm-theme-studio * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
