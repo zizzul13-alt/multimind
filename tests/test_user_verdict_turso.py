@@ -66,12 +66,15 @@ def test_turso_user_verdict_update_never_crosses_user_scope(tmp_path):
         "shared-session", "shared-chat", "participant-2-groq"
     )
     assert result.status == "success"
+    assert result.user_verdict["requested_provider"] == "groq"
+    assert result.user_verdict["actual_provider"] == "groq-model"
 
     alice_data = json.loads(alice.get_chat("shared-session", "shared-chat")["debate_data"])
     bob_data = json.loads(bob.get_chat("shared-session", "shared-chat")["debate_data"])
 
     assert alice_data["system_verdict"] == "participant-1-gemini"
     assert alice_data["user_verdict"]["participant_id"] == "participant-2-groq"
+    assert alice_data["user_verdict"]["actual_provider"] == "groq-model"
     assert bob_data["system_verdict"] == "participant-2-groq"
     assert "user_verdict" not in bob_data
 
