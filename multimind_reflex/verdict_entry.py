@@ -1,21 +1,20 @@
-"""Production Reflex entry with persistent user-verdict presentation wiring.
+"""Persistent user-verdict presentation wiring for the accepted Reflex app.
 
-The accepted workspace remains the rendering implementation. This module only
-binds its existing presentation functions to ``VerdictHostState`` and adds the
-small participant-level human verdict controls required by product semantics.
-Application/persistence truth remains behind ``MultiMindApplication``.
+This module patches presentation globals on the existing workspace module. It
+never creates a second ``rx.App`` and never owns application/persistence truth.
+The production ``mobile_entry`` remains the accepted host entry and imports this
+module only to install the bounded verdict-aware presentation extension.
 """
 from __future__ import annotations
 
 import reflex as rx
 
 import multimind_reflex.multimind_reflex as workspace
-from multimind_reflex.mobile_entry import _MOBILE_POLISH
 from multimind_reflex.verdict_state import VerdictHostState
 
 
-# Existing workspace functions resolve these module globals at render time.
-# Bind the production page to the verdict-aware state without cloning the
+# Existing workspace functions resolve these module globals when Reflex renders
+# the registered page. Bind them to the verdict-aware state without cloning the
 # workspace or moving business logic into presentation.
 workspace.HostState = VerdictHostState
 
@@ -116,11 +115,6 @@ def _history_panel() -> rx.Component:
 
 workspace._participant_card = _participant_card
 workspace._history_panel = _history_panel
-
-# Rebuild one page against the patched presentation globals. The accepted
-# workspace functions remain single-source; only the production entry changes.
-app = rx.App(stylesheets=["/mobile-workspace-polish.css"])
-app.style.update(_MOBILE_POLISH)
-app.add_page(workspace.index, title="MultiMind AI — Reflex Host")
+app = workspace.app
 
 __all__ = ["app"]
