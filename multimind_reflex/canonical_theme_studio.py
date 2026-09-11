@@ -2,6 +2,8 @@
 
 The renderer consumes finite host-realization vocabulary only. Reference IDs,
 titles, families, and private directive prose never choose layout branches.
+Desktop composition follows ``layout_flow``; mobile composition follows the
+canonical ``mobile_strategy`` instead of merely collapsing desktop columns.
 """
 from __future__ import annotations
 
@@ -62,6 +64,25 @@ def _semantic_card(title: str, body: str, *, alternate: bool = False, secondary:
     )
 
 
+def _semantic_section(title: str, body: str, *, alternate: bool = False) -> rx.Component:
+    """Semantic content without card chrome for continuous mobile grammars."""
+    return rx.vstack(
+        rx.text(
+            title,
+            font_size=CanonicalDnaState.heading_size,
+            font_weight=CanonicalDnaState.heading_weight,
+            letter_spacing=CanonicalDnaState.heading_tracking,
+        ),
+        rx.text(body, color=CanonicalDnaState.text_muted, line_height=CanonicalDnaState.line_height),
+        rx.badge("semantic content unchanged", variant="soft"),
+        align="start",
+        spacing="2",
+        width="100%",
+        padding=CanonicalDnaState.card_padding,
+        background_color=CanonicalDnaState.surface_alt if alternate else "transparent",
+    )
+
+
 def _work_surface() -> rx.Component:
     return _semantic_card(
         "Work surface",
@@ -111,13 +132,18 @@ def _group(label: str, *children: rx.Component) -> rx.Component:
     )
 
 
+# ---------------------------------------------------------------------------
+# Desktop host templates: controlled only by finite layout_flow vocabulary.
+# ---------------------------------------------------------------------------
+
+
 def _matrix_fixture() -> rx.Component:
     return rx.grid(
         _work_surface(),
         _primary_action(),
         _system_state(),
         _auxiliary_context(),
-        grid_template_columns=CanonicalDnaState.preview_primary_columns,
+        grid_template_columns=CanonicalDnaState.desktop_columns,
         gap=CanonicalDnaState.gap,
         width="100%",
     )
@@ -130,7 +156,7 @@ def _component_hierarchy_fixture() -> rx.Component:
             _primary_action(secondary=True),
             _system_state(secondary=True),
             _auxiliary_context(secondary=True),
-            grid_template_columns=CanonicalDnaState.preview_support_columns,
+            grid_template_columns=CanonicalDnaState.support_columns,
             gap=CanonicalDnaState.group_gap,
             width="100%",
         ),
@@ -152,7 +178,7 @@ def _paired_blocks_fixture() -> rx.Component:
     return rx.grid(
         _group("Work pair", _work_surface(), _auxiliary_context()),
         _group("Action pair", _primary_action(), _system_state()),
-        grid_template_columns=CanonicalDnaState.preview_primary_columns,
+        grid_template_columns=CanonicalDnaState.desktop_columns,
         gap=CanonicalDnaState.group_gap,
         width="100%",
     )
@@ -161,12 +187,29 @@ def _paired_blocks_fixture() -> rx.Component:
 def _continuous_surface_fixture() -> rx.Component:
     return rx.box(
         rx.vstack(
-            _work_surface(),
-            _primary_action(secondary=True),
-            _system_state(secondary=True),
-            _auxiliary_context(secondary=True),
+            _semantic_section(
+                "Work surface",
+                "Stable prompt, history, and result meaning. DNA may change hierarchy and grouping, never the application truth.",
+            ),
+            rx.separator(),
+            _semantic_section(
+                "Primary action",
+                "The same action remains discoverable and semantically primary across every reference.",
+                alternate=True,
+            ),
+            rx.separator(),
+            _semantic_section(
+                "System state",
+                "Loading, success, warning, and failure meaning remain explicit while presentation structure changes.",
+                alternate=True,
+            ),
+            rx.separator(),
+            _semantic_section(
+                "Auxiliary context",
+                "Metadata remains available without replacing the primary work surface or reading sanctuary.",
+            ),
             width="100%",
-            spacing="1",
+            spacing="0",
         ),
         width="100%",
         padding=CanonicalDnaState.group_padding,
@@ -179,9 +222,9 @@ def _continuous_surface_fixture() -> rx.Component:
 def _directional_path_fixture() -> rx.Component:
     return rx.vstack(
         _work_surface(),
-        _primary_action(secondary=True),
-        _system_state(),
-        _auxiliary_context(secondary=True),
+        rx.box(_primary_action(), width="88%", margin_left="12%"),
+        rx.box(_system_state(), width="88%"),
+        rx.box(_auxiliary_context(), width="82%", margin_left="18%"),
         width="100%",
         spacing="3",
     )
@@ -191,9 +234,9 @@ def _trace_timeline_fixture() -> rx.Component:
     return rx.box(
         rx.vstack(
             _work_surface(),
-            _primary_action(secondary=True),
-            _system_state(secondary=True),
-            _auxiliary_context(secondary=True),
+            _primary_action(),
+            _system_state(),
+            _auxiliary_context(),
             width="100%",
             spacing="3",
         ),
@@ -203,7 +246,7 @@ def _trace_timeline_fixture() -> rx.Component:
     )
 
 
-def _structural_fixture() -> rx.Component:
+def _desktop_structural_fixture() -> rx.Component:
     return rx.cond(
         CanonicalDnaState.fixture_template == "matrix",
         _matrix_fixture(),
@@ -228,6 +271,218 @@ def _structural_fixture() -> rx.Component:
                 ),
             ),
         ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Mobile host templates: controlled only by canonical mobile_strategy.
+# These are not desktop templates with columns collapsed to 1fr.
+# ---------------------------------------------------------------------------
+
+
+def _mobile_marker(label: str) -> rx.Component:
+    return rx.box(
+        rx.text(label, size="1", weight="bold"),
+        min_width="2rem",
+        height="2rem",
+        display="flex",
+        align_items="center",
+        justify_content="center",
+        border=f"2px solid {CanonicalDnaState.accent}",
+        border_radius="999px",
+        background_color=CanonicalDnaState.surface,
+    )
+
+
+def _mobile_step(label: str, child: rx.Component) -> rx.Component:
+    return rx.hstack(
+        _mobile_marker(label),
+        rx.box(child, width="calc(100% - 2.75rem)"),
+        width="100%",
+        align="start",
+        spacing="2",
+    )
+
+
+def _mobile_ordered_flow() -> rx.Component:
+    return rx.vstack(
+        _mobile_step("1", _work_surface()),
+        _mobile_step("2", _primary_action()),
+        _mobile_step("3", _system_state()),
+        _mobile_step("4", _auxiliary_context()),
+        width="100%",
+        spacing="3",
+    )
+
+
+def _mobile_component_reflow() -> rx.Component:
+    return rx.vstack(
+        _work_surface(),
+        rx.box(
+            rx.vstack(
+                rx.text("Supporting components", size="1", weight="bold", text_transform="uppercase"),
+                _primary_action(),
+                _system_state(),
+                _auxiliary_context(),
+                width="100%",
+                spacing="2",
+            ),
+            width="94%",
+            margin_left="6%",
+            border_left=f"5px solid {CanonicalDnaState.accent}",
+            padding_left="0.75rem",
+        ),
+        width="100%",
+        spacing="4",
+    )
+
+
+def _mobile_serial_groups() -> rx.Component:
+    return rx.vstack(
+        _group("01 · Work group", _work_surface(), _auxiliary_context()),
+        _group("02 · Action group", _primary_action(), _system_state()),
+        width="100%",
+        spacing="3",
+    )
+
+
+def _mobile_serial_clusters() -> rx.Component:
+    return rx.vstack(
+        _group("Context cluster", _work_surface()),
+        rx.box(_primary_action(), width="92%", margin_left="8%"),
+        _group("Service state cluster", _system_state(), _auxiliary_context()),
+        width="100%",
+        spacing="3",
+    )
+
+
+def _mobile_stack_pairs() -> rx.Component:
+    return rx.vstack(
+        _group("Pair A", _work_surface(), _auxiliary_context()),
+        rx.center(rx.text("↕", size="5", weight="bold"), width="100%"),
+        _group("Pair B", _primary_action(), _system_state()),
+        width="100%",
+        spacing="2",
+    )
+
+
+def _mobile_ordered_asymmetry() -> rx.Component:
+    return rx.vstack(
+        rx.box(_work_surface(), width="94%"),
+        rx.box(_primary_action(), width="88%", margin_left="12%"),
+        rx.box(_system_state(), width="90%"),
+        rx.box(_auxiliary_context(), width="84%", margin_left="16%"),
+        width="100%",
+        spacing="3",
+    )
+
+
+def _mobile_reduced_continuity() -> rx.Component:
+    return rx.box(
+        rx.vstack(
+            _semantic_section(
+                "Work surface",
+                "Stable prompt, history, and result meaning. DNA may change hierarchy and grouping, never the application truth.",
+            ),
+            rx.separator(),
+            _semantic_section(
+                "Primary action",
+                "The same action remains discoverable and semantically primary across every reference.",
+                alternate=True,
+            ),
+            rx.separator(),
+            _semantic_section(
+                "System state",
+                "Loading, success, warning, and failure meaning remain explicit while presentation structure changes.",
+            ),
+            rx.separator(),
+            _semantic_section(
+                "Auxiliary context",
+                "Metadata remains available without replacing the primary work surface or reading sanctuary.",
+            ),
+            width="100%",
+            spacing="0",
+        ),
+        width="100%",
+        border=f"1px solid {CanonicalDnaState.border}",
+        border_radius=CanonicalDnaState.group_radius,
+        overflow="hidden",
+        background_color=CanonicalDnaState.surface,
+    )
+
+
+def _mobile_vertical_punctuation() -> rx.Component:
+    return rx.box(
+        rx.vstack(
+            _mobile_step("•", _work_surface()),
+            _mobile_step("!", _primary_action()),
+            _mobile_step("•", _system_state()),
+            _mobile_step("→", _auxiliary_context()),
+            width="100%",
+            spacing="3",
+        ),
+        width="100%",
+        border_left=f"3px dashed {CanonicalDnaState.accent}",
+        padding_left="0.5rem",
+    )
+
+
+def _mobile_linear_trace() -> rx.Component:
+    return rx.vstack(
+        rx.hstack(rx.badge("01", variant="solid"), rx.text("WORK TRACE", size="1", weight="bold"), width="100%"),
+        rx.box(_work_surface(), width="96%", margin_left="4%", border_left=f"4px solid {CanonicalDnaState.accent}", padding_left="0.5rem"),
+        rx.hstack(rx.badge("02", variant="solid"), rx.text("ACTION TRACE", size="1", weight="bold"), width="100%"),
+        rx.box(_primary_action(), width="96%", margin_left="4%", border_left=f"4px solid {CanonicalDnaState.accent}", padding_left="0.5rem"),
+        rx.hstack(rx.badge("03", variant="solid"), rx.text("STATE TRACE", size="1", weight="bold"), width="100%"),
+        rx.box(_system_state(), width="96%", margin_left="4%", border_left=f"4px solid {CanonicalDnaState.accent}", padding_left="0.5rem"),
+        rx.hstack(rx.badge("04", variant="solid"), rx.text("AUX TRACE", size="1", weight="bold"), width="100%"),
+        rx.box(_auxiliary_context(), width="96%", margin_left="4%", border_left=f"4px solid {CanonicalDnaState.accent}", padding_left="0.5rem"),
+        width="100%",
+        spacing="2",
+    )
+
+
+def _mobile_structural_fixture() -> rx.Component:
+    return rx.cond(
+        CanonicalDnaState.mobile_strategy == "ordered_flow",
+        _mobile_ordered_flow(),
+        rx.cond(
+            CanonicalDnaState.mobile_strategy == "component_reflow",
+            _mobile_component_reflow(),
+            rx.cond(
+                CanonicalDnaState.mobile_strategy == "serial_groups",
+                _mobile_serial_groups(),
+                rx.cond(
+                    CanonicalDnaState.mobile_strategy == "serial_clusters",
+                    _mobile_serial_clusters(),
+                    rx.cond(
+                        CanonicalDnaState.mobile_strategy == "stack_pairs",
+                        _mobile_stack_pairs(),
+                        rx.cond(
+                            CanonicalDnaState.mobile_strategy == "ordered_asymmetry",
+                            _mobile_ordered_asymmetry(),
+                            rx.cond(
+                                CanonicalDnaState.mobile_strategy == "reduced_continuity",
+                                _mobile_reduced_continuity(),
+                                rx.cond(
+                                    CanonicalDnaState.mobile_strategy == "vertical_punctuation",
+                                    _mobile_vertical_punctuation(),
+                                    _mobile_linear_trace(),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def _structural_fixture() -> rx.Component:
+    return rx.cond(
+        CanonicalDnaState.preview_viewport == "mobile",
+        _mobile_structural_fixture(),
+        _desktop_structural_fixture(),
     )
 
 
