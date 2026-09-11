@@ -9,6 +9,7 @@ def _csv_env(name: str, default: str) -> list[str]:
 
 config = rx.Config(
     app_name="multimind_reflex",
+    app_module_import="multimind_reflex.mobile_entry",
     api_url=os.getenv("MULTIMIND_API_URL", "http://localhost:8000"),
     deploy_url=os.getenv("MULTIMIND_DEPLOY_URL", "http://localhost:3000"),
     cors_allowed_origins=_csv_env(
