@@ -37,6 +37,13 @@ def _safe_float(val: Any, default: float = 0.0) -> float:
         return default
 
 
+def _user_verdict_id(debate_dict: Dict[str, Any]) -> str:
+    verdict = debate_dict.get("user_verdict")
+    if isinstance(verdict, dict):
+        return str(verdict.get("participant_id") or "")
+    return str(verdict or "")
+
+
 def _build_session_metadata(session_dict: Dict[str, Any]) -> SessionMetadataSnapshot:
     """Safely builds SessionMetadataSnapshot from current session dict."""
     session_id = str(session_dict.get("id", ""))
@@ -143,14 +150,12 @@ def _build_debate_detail(debate_raw: Any) -> Optional[DebateDetailSnapshot]:
             if isinstance(item, dict) and item.get("status") == "success"
         )
 
-    system_verdict = debate_dict.get("system_verdict")
-    user_verdict = debate_dict.get("user_verdict")
     return DebateDetailSnapshot(
         gate_score=gate_score,
         responses=tuple(responses),
         participants=tuple(participants),
-        system_verdict=str(system_verdict or ""),
-        user_verdict=str(user_verdict or ""),
+        system_verdict=str(debate_dict.get("system_verdict") or ""),
+        user_verdict=_user_verdict_id(debate_dict),
         deliberation_depth=str(debate_dict.get("deliberation_depth") or ""),
         revision_count=revision_count,
         judge_provider=judge_provider,
