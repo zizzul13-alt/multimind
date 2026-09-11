@@ -1,5 +1,6 @@
 """Frontend-independent application operations for MultiMind chat sessions."""
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 import json
 import uuid
 
@@ -36,6 +37,14 @@ class ChatResult:
     cost: float = 0.0
     warnings: list[str] = field(default_factory=list)
     persisted: bool = False
+    chat_id: str = ""
+
+
+@dataclass
+class VerdictResult:
+    status: str
+    user_verdict: dict = field(default_factory=dict)
+    debate_data: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -115,6 +124,64 @@ class MultiMindApplication:
             return RestoreResult(status="operation_failed")
         active_runtime.invalidate_database_derived_state()
         return RestoreResult(status="success", runtime_invalidated=True)
+
+    def record_user_verdict(self, session_id, chat_id, participant_id):
+        """Persist the human winner independently from the system judge verdict."""
+        if not all(isinstance(value, str) and value for value in (session_id, chat_id, participant_id)):
+            return VerdictResult(status="invalid_request")
+
+        database = self._database()
+        try:
+            row = database.get_chat(session_id, chat_id)
+        except Exception as exc:
+            error_logger.log("USER_VERDICT_READ_ERROR", f"exception_type={type(exc).__name__}")
+            return VerdictResult(status="persistence_error")
+        if not row:
+            return VerdictResult(status="not_found")
+
+        try:
+            debate_data = json.loads(row.get("debate_data") or "{}")
+        except (TypeError, ValueError):
+            return VerdictResult(status="invalid_debate_data")
+        if not isinstance(debate_data, dict):
+            return VerdictResult(status="invalid_debate_data")
+
+        participants = debate_data.get("participants")
+        if not isinstance(participants, list):
+            participants = []
+        selected = next(
+            (
+                item for item in participants
+                if isinstance(item, dict)
+                and item.get("participant_id") == participant_id
+                and item.get("status") == "success"
+            ),
+            None,
+        )
+        if selected is None:
+            return VerdictResult(status="invalid_participant", debate_data=debate_data)
+
+        verdict = {
+            "participant_id": participant_id,
+            "requested_provider": selected.get("requested_provider"),
+            "actual_provider": selected.get("actual_provider"),
+            "model": selected.get("model"),
+            "role": selected.get("role"),
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+        }
+        debate_data["user_verdict"] = verdict
+        try:
+            updated = database.update_chat_debate_data(
+                session_id,
+                chat_id,
+                json.dumps(debate_data),
+            )
+        except Exception as exc:
+            error_logger.log("USER_VERDICT_WRITE_ERROR", f"exception_type={type(exc).__name__}")
+            return VerdictResult(status="persistence_error", debate_data=debate_data)
+        if not updated:
+            return VerdictResult(status="not_found")
+        return VerdictResult(status="success", user_verdict=verdict, debate_data=debate_data)
 
     def capability_state(self, mode):
         states = self.capability_registry.evaluate(mode, self.agents)
@@ -209,9 +276,11 @@ class MultiMindApplication:
             return ChatResult(status="error", debate_data=result_data, warnings=warnings)
 
         persisted = False
+        chat_id = ""
         if request.session_id:
+            chat_id = str(uuid.uuid4())
             chat_data = {
-                "id": str(uuid.uuid4()), "prompt": request.original_prompt,
+                "id": chat_id, "prompt": request.original_prompt,
                 "prompt_compressed": json.dumps({
                     "normalized": normalized_prompt,
                     "effective": effective_prompt,
@@ -235,7 +304,7 @@ class MultiMindApplication:
         return ChatResult(
             status="success", final_answer=result_data.get("final_answer", ""), debate_data=result_data,
             tokens=result_data.get("total_tokens", 0), cost=result_data.get("total_cost", 0),
-            warnings=warnings, persisted=persisted,
+            warnings=warnings, persisted=persisted, chat_id=chat_id,
         )
 
     def _route(self, request, final_prompt, context):
