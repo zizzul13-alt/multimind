@@ -28,7 +28,7 @@ def _login_panel() -> rx.Component:
                     on_change=HostState.set_username,
                     width="100%",
                 ),
-                rx.button("Login", on_click=HostState.login, width="100%"),
+                rx.button("Login", on_click=HostState.login, width="100%", min_height="2.75rem"),
                 rx.cond(
                     HostState.error_message != "",
                     rx.callout(HostState.error_message, icon="triangle_alert"),
@@ -39,20 +39,28 @@ def _login_panel() -> rx.Component:
             width="min(92vw, 28rem)",
         ),
         min_height="100vh",
-        padding="1.5rem",
+        padding="1rem",
     )
 
 
 def _canonical_reference_result(item) -> rx.Component:
     return rx.button(
         rx.vstack(
-            rx.text(item["display_name"], weight="bold", text_align="left"),
+            rx.text(
+                item["display_name"],
+                weight="bold",
+                text_align="left",
+                white_space="normal",
+                overflow_wrap="anywhere",
+            ),
             rx.text(
                 item["id"],
                 " · ",
                 item["category"],
                 size="1",
                 text_align="left",
+                white_space="normal",
+                overflow_wrap="anywhere",
             ),
             align="start",
             spacing="1",
@@ -60,25 +68,78 @@ def _canonical_reference_result(item) -> rx.Component:
         ),
         on_click=HostState.select_canonical_reference(item["id"]),
         width="100%",
+        min_height="3.25rem",
         variant="soft",
         justify_content="flex-start",
+        white_space="normal",
+    )
+
+
+def _theme_studio_actions() -> rx.Component:
+    # One action surface only. It becomes sticky on narrow screens so Apply /
+    # Discard / Reset stay reachable after scrolling a long catalog or preview.
+    return rx.box(
+        rx.hstack(
+            rx.button(
+                "Apply Composition",
+                on_click=HostState.apply_composed_theme,
+                size="3",
+                min_height="2.75rem",
+            ),
+            rx.button(
+                "Discard",
+                on_click=HostState.discard_composed_theme,
+                variant="soft",
+                min_height="2.75rem",
+            ),
+            rx.button(
+                "Reset",
+                on_click=HostState.reset_composed_theme,
+                variant="ghost",
+                min_height="2.75rem",
+            ),
+            rx.cond(
+                HostState.current_session_id != "",
+                rx.button(
+                    "Back to workspace",
+                    on_click=HostState.return_to_workspace,
+                    variant="outline",
+                    min_height="2.75rem",
+                ),
+            ),
+            wrap="wrap",
+            width="100%",
+            spacing="2",
+        ),
+        position=rx.breakpoints(initial="sticky", md="static"),
+        bottom=rx.breakpoints(initial="0.5rem", md="auto"),
+        z_index="20",
+        width="100%",
+        padding=rx.breakpoints(initial="0.6rem", md="0"),
+        background_color=rx.breakpoints(initial="var(--color-panel-solid)", md="transparent"),
+        border=rx.breakpoints(initial="1px solid var(--gray-a5)", md="none"),
+        border_radius=rx.breakpoints(initial="0.75rem", md="0"),
+        box_shadow=rx.breakpoints(initial="0 8px 24px var(--black-a4)", md="none"),
     )
 
 
 def _theme_studio() -> rx.Component:
     return rx.container(
         rx.vstack(
-            rx.hstack(
+            rx.flex(
                 rx.vstack(
                     rx.heading("Theme Studio", size="7"),
-                    rx.text("Choose DNA → preview → explicit Apply → workspace"),
+                    rx.text("Choose DNA → preview → explicit Apply → workspace", size="2"),
                     align="start",
+                    spacing="1",
+                    min_width="0",
                 ),
                 rx.spacer(),
                 rx.badge(HostState.theme_status),
                 width="100%",
                 align="center",
                 wrap="wrap",
+                gap="0.75rem",
             ),
             rx.callout(
                 rx.cond(
@@ -93,7 +154,7 @@ def _theme_studio() -> rx.Component:
                 rx.card(
                     rx.vstack(
                         rx.heading("Composition draft", size="5"),
-                        rx.text("UI / UX Archetype"),
+                        rx.text("UI / UX Archetype", size="2", weight="bold"),
                         rx.select(
                             ARCHETYPES,
                             value=HostState.draft_archetype,
@@ -107,9 +168,10 @@ def _theme_studio() -> rx.Component:
                             rx.text("Catalog: ", HostState.canonical_catalog_total, size="2"),
                             rx.text("Host-ready: ", HostState.canonical_host_ready_total, size="2"),
                             wrap="wrap",
+                            spacing="2",
                         ),
                         rx.input(
-                            placeholder="Search reference, family, category, lineage, or ID",
+                            placeholder="Search name, family, category, lineage, or ID",
                             value=HostState.canonical_query,
                             on_change=HostState.set_canonical_query,
                             width="100%",
@@ -120,8 +182,9 @@ def _theme_studio() -> rx.Component:
                                 rx.foreach(HostState.filtered_canonical_catalog, _canonical_reference_result),
                                 width="100%",
                                 spacing="2",
-                                max_height="20rem",
+                                max_height=rx.breakpoints(initial="14rem", md="20rem"),
                                 overflow_y="auto",
+                                padding_right="0.15rem",
                             ),
                             rx.callout(
                                 "Canonical package unavailable in this host; legacy/neutral presentation remains safe.",
@@ -135,16 +198,25 @@ def _theme_studio() -> rx.Component:
                                 rx.vstack(
                                     rx.hstack(
                                         rx.badge("CANONICAL", variant="solid"),
-                                        rx.text(HostState.draft_canonical_reference_id, weight="bold"),
+                                        rx.text(
+                                            HostState.draft_canonical_reference_id,
+                                            weight="bold",
+                                            overflow_wrap="anywhere",
+                                        ),
                                         wrap="wrap",
                                     ),
-                                    rx.text(HostState.draft_canonical_display_name, weight="bold"),
+                                    rx.text(
+                                        HostState.draft_canonical_display_name,
+                                        weight="bold",
+                                        overflow_wrap="anywhere",
+                                    ),
                                     rx.text(
                                         "Layout ",
                                         HostState.draft_canonical_layout_flow,
                                         " · mobile ",
                                         HostState.draft_canonical_mobile_strategy,
                                         size="2",
+                                        overflow_wrap="anywhere",
                                     ),
                                     rx.text(
                                         "Density ",
@@ -154,6 +226,7 @@ def _theme_studio() -> rx.Component:
                                         " · balance ",
                                         HostState.draft_canonical_balance,
                                         size="2",
+                                        overflow_wrap="anywhere",
                                     ),
                                     width="100%",
                                     spacing="2",
@@ -167,17 +240,18 @@ def _theme_studio() -> rx.Component:
                             on_click=HostState.use_legacy_dna,
                             variant="outline",
                             width="100%",
+                            min_height="2.75rem",
                         ),
                         rx.separator(),
                         rx.heading("Legacy rollback composition", size="4"),
-                        rx.text("Identity / Cultural DNA"),
+                        rx.text("Identity / Cultural DNA", size="2", weight="bold"),
                         rx.select(
                             HostState.identity_dna_choices,
                             value=HostState.draft_identity_choice,
                             on_change=HostState.set_composed_identity_choice,
                             width="100%",
                         ),
-                        rx.text("Web / Information DNA"),
+                        rx.text("Web / Information DNA", size="2", weight="bold"),
                         rx.select(
                             HostState.web_dna_choices,
                             value=HostState.draft_web_choice,
@@ -241,18 +315,31 @@ def _theme_studio() -> rx.Component:
                             on_change=HostState.set_draft_mono_font,
                             width="100%",
                         ),
-                        rx.text("Density"),
-                        rx.select(
-                            ["compact", "comfortable", "spacious"],
-                            value=HostState.draft_density,
-                            on_change=HostState.set_draft_density,
-                            width="100%",
-                        ),
-                        rx.text("Radius"),
-                        rx.select(
-                            ["none", "small", "medium", "large"],
-                            value=HostState.draft_radius,
-                            on_change=HostState.set_draft_radius,
+                        rx.grid(
+                            rx.vstack(
+                                rx.text("Density", size="2", weight="bold"),
+                                rx.select(
+                                    ["compact", "comfortable", "spacious"],
+                                    value=HostState.draft_density,
+                                    on_change=HostState.set_draft_density,
+                                    width="100%",
+                                ),
+                                width="100%",
+                                spacing="1",
+                            ),
+                            rx.vstack(
+                                rx.text("Radius", size="2", weight="bold"),
+                                rx.select(
+                                    ["none", "small", "medium", "large"],
+                                    value=HostState.draft_radius,
+                                    on_change=HostState.set_draft_radius,
+                                    width="100%",
+                                ),
+                                width="100%",
+                                spacing="1",
+                            ),
+                            columns=rx.breakpoints(initial="1", sm="2"),
+                            spacing="2",
                             width="100%",
                         ),
                         spacing="3",
@@ -264,18 +351,27 @@ def _theme_studio() -> rx.Component:
                     rx.vstack(
                         rx.heading("Isolated composed live preview", size="5"),
                         rx.badge("Draft only — active workspace unchanged", variant="soft"),
-                        rx.text("Archetype: ", HostState.draft_archetype),
-                        rx.text("DNA mode: ", HostState.draft_dna_mode),
+                        rx.hstack(
+                            rx.text("Archetype: ", HostState.draft_archetype, size="2"),
+                            rx.text("DNA mode: ", HostState.draft_dna_mode, size="2"),
+                            wrap="wrap",
+                            spacing="2",
+                        ),
                         rx.cond(
                             HostState.draft_dna_mode == "canonical",
                             rx.vstack(
-                                rx.text("Canonical reference: ", HostState.draft_canonical_display_name),
+                                rx.text(
+                                    "Canonical reference: ",
+                                    HostState.draft_canonical_display_name,
+                                    overflow_wrap="anywhere",
+                                ),
                                 rx.text(
                                     "Host grammar: ",
                                     HostState.draft_canonical_layout_flow,
                                     " · ",
                                     HostState.draft_canonical_mobile_strategy,
                                     size="2",
+                                    overflow_wrap="anywhere",
                                 ),
                                 width="100%",
                                 align="start",
@@ -297,6 +393,7 @@ def _theme_studio() -> rx.Component:
                             " · navigation ",
                             HostState.draft_navigation_density,
                             size="2",
+                            overflow_wrap="anywhere",
                         ),
                         rx.text(
                             "Identity semantics: hierarchy ",
@@ -306,6 +403,7 @@ def _theme_studio() -> rx.Component:
                             " · energy ",
                             HostState.draft_energy_emphasis,
                             size="2",
+                            overflow_wrap="anywhere",
                         ),
                         rx.separator(),
                         rx.card(
@@ -314,6 +412,7 @@ def _theme_studio() -> rx.Component:
                                 rx.text(
                                     "This preview is rendered from the selected presentation composition. Application/session truth stays unchanged until Apply.",
                                     color=HostState.draft_text_color,
+                                    overflow_wrap="anywhere",
                                 ),
                                 rx.hstack(
                                     rx.button(
@@ -321,6 +420,7 @@ def _theme_studio() -> rx.Component:
                                         background_color=HostState.draft_primary,
                                         color=HostState.draft_background,
                                         border_radius=HostState.draft_radius_value,
+                                        min_height="2.75rem",
                                     ),
                                     rx.button(
                                         "Accent action",
@@ -328,6 +428,7 @@ def _theme_studio() -> rx.Component:
                                         color=HostState.draft_accent,
                                         border=f"1px solid {HostState.draft_accent}",
                                         border_radius=HostState.draft_radius_value,
+                                        min_height="2.75rem",
                                     ),
                                     wrap="wrap",
                                 ),
@@ -352,6 +453,7 @@ def _theme_studio() -> rx.Component:
                         width="100%",
                     ),
                     width="100%",
+                    min_width="0",
                     background_color=HostState.draft_background,
                     color=HostState.draft_text_color,
                     font_family=HostState.draft_font_family,
@@ -359,29 +461,19 @@ def _theme_studio() -> rx.Component:
                     border_radius=HostState.draft_radius_value,
                 ),
                 columns=rx.breakpoints(initial="1", md="1fr 1fr"),
-                spacing="4",
+                spacing=rx.breakpoints(initial="3", md="4"),
                 width="100%",
             ),
-            rx.hstack(
-                rx.button("Apply Composition", on_click=HostState.apply_composed_theme, size="3"),
-                rx.button("Discard", on_click=HostState.discard_composed_theme, variant="soft"),
-                rx.button("Reset", on_click=HostState.reset_composed_theme, variant="ghost"),
-                rx.cond(
-                    HostState.current_session_id != "",
-                    rx.button("Back to workspace", on_click=HostState.return_to_workspace, variant="outline"),
-                ),
-                wrap="wrap",
-                width="100%",
-            ),
+            _theme_studio_actions(),
             rx.cond(
                 HostState.success_message != "",
                 rx.callout(HostState.success_message, icon="circle_check", width="100%"),
             ),
             width="100%",
-            spacing="4",
+            spacing=rx.breakpoints(initial="3", md="4"),
         ),
         max_width="72rem",
-        padding=rx.breakpoints(initial="0.75rem", sm="1rem", md="1.5rem"),
+        padding=rx.breakpoints(initial="0.5rem", sm="1rem", md="1.5rem"),
     )
 
 
@@ -390,36 +482,53 @@ def _session_panel() -> rx.Component:
         rx.hstack(
             rx.heading("Sessions", size="5"),
             rx.spacer(),
-            rx.button("Logout", on_click=HostState.logout_composed, variant="soft"),
+            rx.button(
+                "Logout",
+                on_click=HostState.logout_composed,
+                variant="soft",
+                min_height="2.6rem",
+            ),
             width="100%",
             align="center",
         ),
-        rx.input(
-            placeholder="New session",
-            value=HostState.new_session_name,
-            on_change=HostState.set_new_session_name,
+        rx.grid(
+            rx.input(
+                placeholder="New session",
+                value=HostState.new_session_name,
+                on_change=HostState.set_new_session_name,
+                width="100%",
+            ),
+            rx.select(
+                SESSION_MODES,
+                value=HostState.new_session_mode,
+                on_change=HostState.set_new_session_mode,
+                width="100%",
+            ),
+            columns=rx.breakpoints(initial="1", sm="2"),
+            spacing="2",
             width="100%",
         ),
-        rx.select(
-            SESSION_MODES,
-            value=HostState.new_session_mode,
-            on_change=HostState.set_new_session_mode,
+        rx.button(
+            "Create session",
+            on_click=HostState.create_session,
             width="100%",
+            min_height="2.75rem",
         ),
-        rx.button("Create session", on_click=HostState.create_session, width="100%"),
         rx.separator(),
         rx.foreach(
             HostState.sessions,
             lambda session: rx.button(
                 rx.vstack(
-                    rx.text(session["name"], weight="bold"),
+                    rx.text(session["name"], weight="bold", overflow_wrap="anywhere"),
                     rx.text(session["mode"], size="1"),
                     align="start",
                     spacing="1",
                 ),
                 on_click=HostState.select_session(session["id"]),
                 width="100%",
+                min_height="2.75rem",
                 variant="soft",
+                white_space="normal",
             ),
         ),
         spacing="3",
@@ -439,12 +548,17 @@ def _template_panel() -> rx.Component:
         ),
         rx.cond(
             HostState.template_description != "",
-            rx.text(HostState.template_description, size="2"),
+            rx.text(HostState.template_description, size="2", overflow_wrap="anywhere"),
         ),
         rx.cond(
             HostState.template_variables.length() > 0,
             rx.vstack(
-                rx.text("Variables: ", HostState.template_variables.to_string(), size="2"),
+                rx.text(
+                    "Variables: ",
+                    HostState.template_variables.to_string(),
+                    size="2",
+                    overflow_wrap="anywhere",
+                ),
                 rx.text_area(
                     placeholder='{"topic":"..."}',
                     value=HostState.template_variables_json,
@@ -458,7 +572,13 @@ def _template_panel() -> rx.Component:
                     width="100%",
                     min_height="7rem",
                 ),
-                rx.button("Use preview as editable prompt", on_click=HostState.use_template_preview, variant="soft"),
+                rx.button(
+                    "Use preview as editable prompt",
+                    on_click=HostState.use_template_preview,
+                    variant="soft",
+                    min_height="2.75rem",
+                    width=rx.breakpoints(initial="100%", sm="auto"),
+                ),
                 width="100%",
             ),
         ),
@@ -470,7 +590,7 @@ def _template_panel() -> rx.Component:
 def _execution_controls() -> rx.Component:
     return rx.vstack(
         rx.heading("Execution", size="4"),
-        rx.hstack(
+        rx.flex(
             rx.radio(
                 ["continue", "standalone"],
                 value=HostState.context_mode,
@@ -485,9 +605,10 @@ def _execution_controls() -> rx.Component:
             width="100%",
             align="center",
             wrap="wrap",
+            gap="0.75rem",
         ),
         rx.text("Agents", size="2", weight="bold"),
-        rx.hstack(
+        rx.flex(
             *[
                 rx.checkbox(
                     agent,
@@ -498,28 +619,36 @@ def _execution_controls() -> rx.Component:
             ],
             wrap="wrap",
             width="100%",
+            gap="0.65rem 1rem",
         ),
-        rx.hstack(
+        rx.grid(
             rx.vstack(
-                rx.text("Rounds", size="2"),
+                rx.text("Rounds", size="2", weight="bold"),
                 rx.select(
                     ["1", "2", "3", "4", "5"],
                     value=HostState.debate_rounds.to_string(),
                     on_change=HostState.set_debate_rounds,
+                    width="100%",
                 ),
                 align="start",
+                width="100%",
+                spacing="1",
             ),
             rx.vstack(
-                rx.text("Skill", size="2"),
+                rx.text("Skill", size="2", weight="bold"),
                 rx.select(
                     SKILL_OPTIONS,
                     value=HostState.selected_skill,
                     on_change=HostState.set_selected_skill,
+                    width="100%",
                 ),
                 align="start",
+                width="100%",
+                spacing="1",
             ),
+            columns=rx.breakpoints(initial="1", sm="2"),
+            spacing="2",
             width="100%",
-            wrap="wrap",
         ),
         spacing="3",
         width="100%",
@@ -530,16 +659,18 @@ def _upload_panel() -> rx.Component:
     return rx.vstack(
         rx.upload(
             rx.vstack(
-                rx.text("Drop files here or click to select"),
+                rx.text("Add files · up to 5", weight="bold"),
+                rx.text("Tap to choose or drop files here", size="2"),
                 rx.foreach(rx.selected_files(UPLOAD_ID), rx.text),
                 align="center",
                 width="100%",
+                spacing="1",
             ),
             id=UPLOAD_ID,
             multiple=True,
             max_files=5,
             border="1px dashed var(--gray-a8)",
-            padding="1rem",
+            padding=rx.breakpoints(initial="0.75rem", md="1rem"),
             width="100%",
         ),
         rx.hstack(
@@ -547,16 +678,19 @@ def _upload_panel() -> rx.Component:
                 "Stage files",
                 on_click=HostState.stage_uploads(rx.upload_files(upload_id=UPLOAD_ID)),
                 variant="soft",
+                min_height="2.6rem",
             ),
             rx.button(
                 "Clear",
                 on_click=[HostState.clear_uploads, rx.clear_selected_files(UPLOAD_ID)],
                 variant="ghost",
+                min_height="2.6rem",
             ),
+            wrap="wrap",
         ),
         rx.cond(
             HostState.upload_names.length() > 0,
-            rx.text("Staged: ", HostState.upload_names.to_string()),
+            rx.text("Staged: ", HostState.upload_names.to_string(), size="2", overflow_wrap="anywhere"),
         ),
         width="100%",
         spacing="2",
@@ -567,14 +701,16 @@ def _estimate_panel() -> rx.Component:
     return rx.card(
         rx.vstack(
             rx.heading("Pre-send estimate", size="3"),
-            rx.hstack(
-                rx.text("Participants: ", HostState.active_agents.length()),
-                rx.text("Provider calls: ~", HostState.estimated_provider_calls),
-                rx.text("Prompt: ", HostState.estimated_prompt_tokens, " tok"),
-                rx.text("Files: ", HostState.estimated_file_tokens, " tok"),
-                rx.text("Total: ", HostState.estimated_total_tokens, " tok"),
-                rx.text("Cost hint: $", HostState.estimated_cost),
-                wrap="wrap",
+            rx.grid(
+                rx.text("Participants: ", HostState.active_agents.length(), size="2"),
+                rx.text("Provider calls: ~", HostState.estimated_provider_calls, size="2"),
+                rx.text("Prompt: ", HostState.estimated_prompt_tokens, " tok", size="2"),
+                rx.text("Files: ", HostState.estimated_file_tokens, " tok", size="2"),
+                rx.text("Total: ", HostState.estimated_total_tokens, " tok", size="2"),
+                rx.text("Cost hint: $", HostState.estimated_cost, size="2"),
+                columns=rx.breakpoints(initial="2", sm="3"),
+                spacing="2",
+                width="100%",
             ),
             rx.cond(
                 HostState.token_warning_level == "high",
@@ -594,22 +730,36 @@ def _estimate_panel() -> rx.Component:
 def _participant_card(participant) -> rx.Component:
     return rx.card(
         rx.vstack(
-            rx.hstack(
-                rx.text(participant["participant_id"], weight="bold"),
+            rx.flex(
+                rx.text(participant["participant_id"], weight="bold", overflow_wrap="anywhere"),
                 rx.badge(participant["status"]),
                 wrap="wrap",
+                gap="0.5rem",
+                align="center",
+                width="100%",
             ),
-            rx.text("Selected: ", participant["requested_provider"], size="2"),
-            rx.text(
-                "Actual: ",
-                rx.cond(participant["actual_provider"] != "", participant["actual_provider"], "not executed"),
-                size="2",
+            rx.grid(
+                rx.text("Selected: ", participant["requested_provider"], size="2", overflow_wrap="anywhere"),
+                rx.text(
+                    "Actual: ",
+                    rx.cond(participant["actual_provider"] != "", participant["actual_provider"], "not executed"),
+                    size="2",
+                    overflow_wrap="anywhere",
+                ),
+                rx.cond(participant["model"] != "", rx.text("Model: ", participant["model"], size="2", overflow_wrap="anywhere")),
+                rx.cond(participant["role"] != "", rx.text("Role: ", participant["role"], size="2", overflow_wrap="anywhere")),
+                columns=rx.breakpoints(initial="1", sm="2"),
+                spacing="1",
+                width="100%",
             ),
-            rx.cond(participant["model"] != "", rx.text("Model: ", participant["model"], size="2")),
-            rx.cond(participant["role"] != "", rx.text("Role: ", participant["role"], size="2")),
             rx.cond(
                 participant["text"] != "",
-                rx.text(participant["text"], white_space="pre-wrap"),
+                rx.text(
+                    participant["text"],
+                    white_space="pre-wrap",
+                    overflow_wrap="anywhere",
+                    line_height="1.6",
+                ),
                 rx.text("No contribution returned.", size="2"),
             ),
             rx.cond(
@@ -618,30 +768,40 @@ def _participant_card(participant) -> rx.Component:
             ),
             align="start",
             width="100%",
+            spacing="2",
         ),
         width="100%",
+        min_width="0",
     )
 
 
 def _critique_card(critique) -> rx.Component:
     return rx.card(
         rx.vstack(
-            rx.hstack(
+            rx.flex(
                 rx.text("Round ", critique["round"], weight="bold"),
-                rx.text(critique["participant_id"]),
+                rx.text(critique["participant_id"], overflow_wrap="anywhere"),
                 rx.badge(critique["status"]),
                 wrap="wrap",
+                gap="0.5rem",
             ),
-            rx.text("Actual provider: ", critique["actual_provider"], size="2"),
+            rx.text("Actual provider: ", critique["actual_provider"], size="2", overflow_wrap="anywhere"),
             rx.cond(
                 critique["text"] != "",
-                rx.text(critique["text"], white_space="pre-wrap"),
+                rx.text(
+                    critique["text"],
+                    white_space="pre-wrap",
+                    overflow_wrap="anywhere",
+                    line_height="1.6",
+                ),
                 rx.text("No critique returned.", size="2"),
             ),
             align="start",
             width="100%",
+            spacing="2",
         ),
         width="100%",
+        min_width="0",
     )
 
 
@@ -659,23 +819,27 @@ def _deliberation_panel() -> rx.Component:
                         rx.heading("Deliberation critiques", size="3"),
                         rx.foreach(HostState.current_critiques, _critique_card),
                         width="100%",
+                        spacing="2",
                     ),
                 ),
                 rx.separator(),
-                rx.hstack(
+                rx.flex(
                     rx.text(
                         "Judge: ",
                         rx.cond(HostState.current_judge_provider != "", HostState.current_judge_provider, "unavailable"),
+                        overflow_wrap="anywhere",
                     ),
                     rx.cond(
                         HostState.current_judge_status != "",
                         rx.badge(HostState.current_judge_status),
                     ),
                     wrap="wrap",
+                    gap="0.5rem",
+                    align="center",
                 ),
                 rx.cond(
                     HostState.current_system_verdict != "",
-                    rx.text("System winner: ", HostState.current_system_verdict, weight="bold"),
+                    rx.text("System winner: ", HostState.current_system_verdict, weight="bold", overflow_wrap="anywhere"),
                     rx.text("System winner: no valid winner marker recorded.", size="2"),
                 ),
                 align="start",
@@ -683,6 +847,7 @@ def _deliberation_panel() -> rx.Component:
                 spacing="3",
             ),
             width="100%",
+            min_width="0",
         ),
     )
 
@@ -694,24 +859,36 @@ def _history_panel() -> rx.Component:
             HostState.history,
             lambda row: rx.card(
                 rx.vstack(
-                    rx.text(row["prompt"], weight="bold", white_space="pre-wrap"),
-                    rx.text(row["final_answer"], white_space="pre-wrap"),
+                    rx.text(
+                        row["prompt"],
+                        weight="bold",
+                        white_space="pre-wrap",
+                        overflow_wrap="anywhere",
+                    ),
+                    rx.text(
+                        row["final_answer"],
+                        white_space="pre-wrap",
+                        overflow_wrap="anywhere",
+                        line_height="1.6",
+                    ),
                     rx.cond(
                         row["participant_summary"] != "",
-                        rx.text("Participants: ", row["participant_summary"], size="2"),
+                        rx.text("Participants: ", row["participant_summary"], size="2", overflow_wrap="anywhere"),
                     ),
                     rx.cond(
                         row["judge_provider"] != "",
-                        rx.text("Judge provider: ", row["judge_provider"], size="2"),
+                        rx.text("Judge provider: ", row["judge_provider"], size="2", overflow_wrap="anywhere"),
                     ),
                     rx.cond(
                         row["system_verdict"] != "",
-                        rx.text("System winner: ", row["system_verdict"], size="2", weight="bold"),
+                        rx.text("System winner: ", row["system_verdict"], size="2", weight="bold", overflow_wrap="anywhere"),
                     ),
                     align="start",
                     width="100%",
+                    spacing="2",
                 ),
                 width="100%",
+                min_width="0",
             ),
         ),
         width="100%",
@@ -722,11 +899,17 @@ def _history_panel() -> rx.Component:
 def _data_ops() -> rx.Component:
     return rx.vstack(
         rx.heading("Backup / Restore", size="4"),
-        rx.button("Export SQLite backup", on_click=HostState.export_database, variant="soft"),
+        rx.button(
+            "Export SQLite backup",
+            on_click=HostState.export_database,
+            variant="soft",
+            min_height="2.6rem",
+        ),
         rx.text(
             "Restore accepts MultiMind SQLite backups (.db/.sqlite/.sqlite3). "
             "Tap the area below, choose one backup, confirm its filename appears, then stage it.",
             size="2",
+            overflow_wrap="anywhere",
         ),
         rx.upload(
             rx.vstack(
@@ -748,11 +931,20 @@ def _data_ops() -> rx.Component:
                 "Stage selected backup",
                 on_click=HostState.stage_restore(rx.upload_files(upload_id=RESTORE_ID)),
                 variant="soft",
+                min_height="2.6rem",
             ),
-            rx.button("Restore safely", on_click=HostState.restore_database, variant="outline"),
+            rx.button(
+                "Restore safely",
+                on_click=HostState.restore_database,
+                variant="outline",
+                min_height="2.6rem",
+            ),
             wrap="wrap",
         ),
-        rx.cond(HostState.restore_name != "", rx.text("Staged: ", HostState.restore_name)),
+        rx.cond(
+            HostState.restore_name != "",
+            rx.text("Staged: ", HostState.restore_name, size="2", overflow_wrap="anywhere"),
+        ),
         width="100%",
         spacing="2",
     )
@@ -922,6 +1114,7 @@ def _workspace_zone_card(child: rx.Component, area: str) -> rx.Component:
         grid_area=area,
         min_width="0",
         width="100%",
+        overflow_x="hidden",
         background_color=HostState.active_surface,
         color=HostState.active_text_color,
         border=f"1px solid {HostState.active_border}",
@@ -945,9 +1138,34 @@ def _workspace_utility_zone() -> rx.Component:
             rx.separator(),
             _data_ops(),
             width="100%",
-            spacing="4",
+            spacing=rx.breakpoints(initial="3", md="4"),
         ),
         "utility",
+    )
+
+
+def _primary_run_button() -> rx.Component:
+    # Keep exactly one Run control. Sticky positioning on phones removes the
+    # long-scroll penalty without creating a second execution path.
+    return rx.box(
+        rx.button(
+            rx.cond(HostState.busy, "Running…", "Run"),
+            on_click=HostState.run_chat,
+            disabled=HostState.busy,
+            width="100%",
+            size="3",
+            min_height="3rem",
+            background_color=HostState.active_primary,
+            color=HostState.active_background,
+            border_radius=HostState.active_radius_value,
+        ),
+        position=rx.breakpoints(initial="sticky", md="static"),
+        bottom=rx.breakpoints(initial="0.5rem", md="auto"),
+        z_index="10",
+        width="100%",
+        padding=rx.breakpoints(initial="0.35rem", md="0"),
+        background_color=rx.breakpoints(initial=HostState.active_surface, md="transparent"),
+        border_radius=HostState.active_radius_value,
     )
 
 
@@ -962,29 +1180,24 @@ def _workspace_composer_zone() -> rx.Component:
                 ),
                 size="5",
                 color=HostState.active_primary,
+                overflow_wrap="anywhere",
             ),
             _template_panel(),
             rx.text_area(
                 placeholder="Prompt",
                 value=HostState.prompt,
                 on_change=HostState.set_prompt,
-                min_height="10rem",
+                min_height=rx.breakpoints(initial="8rem", md="10rem"),
                 width="100%",
             ),
             _execution_controls(),
             _upload_panel(),
             _estimate_panel(),
-            rx.button(
-                rx.cond(HostState.busy, "Running…", "Run"),
-                on_click=HostState.run_chat,
-                disabled=HostState.busy,
-                width="100%",
-                size="3",
-                background_color=HostState.active_primary,
-                color=HostState.active_background,
-                border_radius=HostState.active_radius_value,
+            _primary_run_button(),
+            rx.cond(
+                HostState.status_message != "",
+                rx.text(HostState.status_message, overflow_wrap="anywhere"),
             ),
-            rx.cond(HostState.status_message != "", rx.text(HostState.status_message)),
             rx.cond(
                 HostState.error_message != "",
                 rx.callout(HostState.error_message, icon="triangle_alert", width="100%"),
@@ -995,7 +1208,7 @@ def _workspace_composer_zone() -> rx.Component:
             ),
             rx.foreach(HostState.warnings, lambda warning: rx.callout(warning, icon="info", width="100%")),
             width="100%",
-            spacing="3",
+            spacing=rx.breakpoints(initial="2", sm="3"),
         ),
         "composer",
     )
@@ -1030,16 +1243,24 @@ def _workspace_result_zone() -> rx.Component:
                 rx.card(
                     rx.vstack(
                         rx.heading("Final answer", size="4"),
-                        rx.text(HostState.final_answer, white_space="pre-wrap"),
+                        rx.text(
+                            HostState.final_answer,
+                            white_space="pre-wrap",
+                            overflow_wrap="anywhere",
+                            line_height="1.65",
+                        ),
                         align="start",
+                        width="100%",
+                        spacing="2",
                     ),
                     width="100%",
+                    min_width="0",
                 ),
                 rx.text("No result yet.", size="2"),
             ),
             _deliberation_panel(),
             width="100%",
-            spacing="3",
+            spacing=rx.breakpoints(initial="2", sm="3"),
         ),
         "result",
     )
@@ -1049,59 +1270,77 @@ def _workspace_history_zone() -> rx.Component:
     return _workspace_zone_card(_history_panel(), "history")
 
 
+def _workspace_header() -> rx.Component:
+    return rx.card(
+        rx.flex(
+            rx.vstack(
+                rx.heading("MultiMind", size="6", color=HostState.active_primary),
+                rx.hstack(
+                    rx.text("@", HostState.display_username, size="2"),
+                    rx.badge(HostState.active_archetype, variant="soft"),
+                    wrap="wrap",
+                    spacing="2",
+                ),
+                rx.cond(
+                    HostState.active_dna_mode == "canonical",
+                    rx.text(
+                        HostState.active_canonical_display_name,
+                        " · ",
+                        HostState.active_canonical_reference_id,
+                        size="2",
+                        overflow_wrap="anywhere",
+                    ),
+                    rx.text(
+                        HostState.active_identity_display_name,
+                        " + ",
+                        HostState.active_web_display_name,
+                        size="2",
+                        overflow_wrap="anywhere",
+                    ),
+                ),
+                align="start",
+                spacing="1",
+                min_width="0",
+                flex="1",
+            ),
+            rx.hstack(
+                rx.badge(rx.cond(HostState.busy, "BUSY", "READY")),
+                rx.button(
+                    "Theme Studio",
+                    on_click=HostState.open_theme_studio,
+                    variant="soft",
+                    color=HostState.active_accent,
+                    min_height="2.6rem",
+                ),
+                wrap="wrap",
+                spacing="2",
+            ),
+            width="100%",
+            align="center",
+            justify="between",
+            wrap="wrap",
+            gap="0.75rem",
+        ),
+        width="100%",
+        background_color=HostState.active_surface,
+        color=HostState.active_text_color,
+        border=f"1px solid {HostState.active_border}",
+        border_radius=rx.cond(
+            HostState.active_dna_mode == "canonical",
+            HostState.active_canonical_card_radius,
+            HostState.active_radius_value,
+        ),
+        padding=rx.breakpoints(initial="0.75rem", md="1rem"),
+    )
+
+
 def _workspace() -> rx.Component:
     # The four real semantic zones are instantiated exactly once. Archetype and
     # canonical DNA change only presentation composition; application/provider/
     # persistence truth remains behind the same event and application paths.
     return rx.container(
         rx.vstack(
-            rx.card(
-                rx.hstack(
-                    rx.vstack(
-                        rx.heading("MultiMind", size="7", color=HostState.active_primary),
-                        rx.text("Logged in as ", HostState.display_username),
-                        rx.text("Archetype: ", HostState.active_archetype, size="2"),
-                        rx.cond(
-                            HostState.active_dna_mode == "canonical",
-                            rx.text(
-                                "Canonical DNA: ",
-                                HostState.active_canonical_display_name,
-                                " · ",
-                                HostState.active_canonical_reference_id,
-                                size="2",
-                            ),
-                            rx.text(
-                                "Active DNA: ",
-                                HostState.active_identity_display_name,
-                                " + ",
-                                HostState.active_web_display_name,
-                                size="2",
-                            ),
-                        ),
-                        align="start",
-                    ),
-                    rx.spacer(),
-                    rx.badge(rx.cond(HostState.busy, "BUSY", "READY")),
-                    rx.button(
-                        "Theme Studio",
-                        on_click=HostState.open_theme_studio,
-                        variant="soft",
-                        color=HostState.active_accent,
-                    ),
-                    width="100%",
-                    align="center",
-                    wrap="wrap",
-                ),
-                width="100%",
-                background_color=HostState.active_surface,
-                color=HostState.active_text_color,
-                border=f"1px solid {HostState.active_border}",
-                border_radius=rx.cond(
-                    HostState.active_dna_mode == "canonical",
-                    HostState.active_canonical_card_radius,
-                    HostState.active_radius_value,
-                ),
-            ),
+            _workspace_header(),
             rx.grid(
                 _workspace_utility_zone(),
                 _workspace_composer_zone(),
@@ -1136,14 +1375,14 @@ def _workspace() -> rx.Component:
                 align_items="start",
             ),
             width="100%",
-            spacing="4",
+            spacing=rx.breakpoints(initial="3", md="4"),
         ),
         max_width=rx.cond(
             HostState.active_archetype == "minimal_saas",
             "68rem",
             rx.cond(HostState.active_archetype == "terminal_hacker", "76rem", "88rem"),
         ),
-        padding=rx.breakpoints(initial="0.75rem", sm="1rem", md="1.5rem"),
+        padding=rx.breakpoints(initial="0.5rem", sm="1rem", md="1.5rem"),
         background_color=HostState.active_background,
         color=HostState.active_text_color,
         font_family=rx.cond(
