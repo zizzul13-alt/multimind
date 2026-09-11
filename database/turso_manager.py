@@ -135,6 +135,34 @@ class TursoDatabaseManager:
             conn.close()
         return True
 
+    def get_chat(self, session_id, chat_id):
+        """Return one chat only from this manager's user and requested session."""
+        conn = self._connect()
+        try:
+            cursor = conn.execute(
+                f"SELECT {', '.join(CHAT_COLUMNS)} FROM {CHATS_TABLE} "
+                "WHERE user_id = ? AND session_id = ? AND id = ?",
+                (self.user_id, session_id, chat_id),
+            )
+            rows = _rows_as_dicts(cursor)
+            return rows[0] if rows else None
+        finally:
+            conn.close()
+
+    def update_chat_debate_data(self, session_id, chat_id, debate_data):
+        """Replace debate JSON without crossing user/session boundaries."""
+        conn = self._connect()
+        try:
+            cursor = conn.execute(
+                f"UPDATE {CHATS_TABLE} SET debate_data = ? "
+                "WHERE user_id = ? AND session_id = ? AND id = ?",
+                (debate_data, self.user_id, session_id, chat_id),
+            )
+            conn.commit()
+            return cursor.rowcount == 1
+        finally:
+            conn.close()
+
     def get_session_chats(self, session_id, limit=50):
         conn = self._connect()
         try:
