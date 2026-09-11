@@ -37,7 +37,10 @@ from ui.canonical_dna_bridge import (
 )
 
 
-_CANONICAL_RESULT_LIMIT = 30
+# Theme Studio is phone-first in practice. A small result window avoids forcing
+# users through a 30-item scroll wall while preserving the full 160-reference
+# catalog behind search.
+_CANONICAL_RESULT_LIMIT = 12
 
 
 def _canonical_catalog_snapshots() -> list[dict[str, str]]:
@@ -309,10 +312,18 @@ class WorkspaceDnaState(LegacyHostState):
                 self._refresh_canonical_draft()
             else:
                 self._restore_legacy_draft()
+            return
+
+        # Collapse the long result list to the selected item after a successful
+        # tap. The field remains editable, so finding the next DNA is one tap +
+        # typing rather than another long mobile scroll.
+        self.canonical_query = selected["id"]
+        self.success_message = f"Canonical draft selected: {selected['display_name']}"
 
     @rx.event
     def use_legacy_dna(self):
         self._restore_legacy_draft()
+        self.canonical_query = ""
         self.success_message = "Legacy role-based presentation selected as draft."
 
     @rx.event
@@ -337,6 +348,7 @@ class WorkspaceDnaState(LegacyHostState):
             return
         self.draft_dna_mode = "legacy"
         self._clear_canonical_draft()
+        self.canonical_query = ""
         self.draft_identity_choice = value
         self.draft_identity_dna = unit_id
         self._refresh_theme_draft_from_composition()
@@ -349,6 +361,7 @@ class WorkspaceDnaState(LegacyHostState):
             return
         self.draft_dna_mode = "legacy"
         self._clear_canonical_draft()
+        self.canonical_query = ""
         self.draft_web_choice = value or _NONE_WEB_CHOICE
         self.draft_web_dna = unit_id
         self._refresh_theme_draft_from_composition()
@@ -368,12 +381,14 @@ class WorkspaceDnaState(LegacyHostState):
     def discard_composed_theme(self):
         self._copy_active_to_draft()
         self._copy_canonical_active_to_draft()
+        self.canonical_query = self.draft_canonical_reference_id if self.draft_dna_mode == "canonical" else ""
         self.success_message = "Presentation draft discarded."
 
     @rx.event
     def reset_composed_theme(self):
         self.draft_dna_mode = "legacy"
         self._clear_canonical_draft()
+        self.canonical_query = ""
         identity_ids = {_choice_id(choice) for choice in self.identity_dna_choices}
         web_ids = {_choice_id(choice) for choice in self.web_dna_choices}
         if _DEFAULT_IDENTITY_DNA in identity_ids:
@@ -433,6 +448,7 @@ class WorkspaceDnaState(LegacyHostState):
         self._set_neutral_theme_draft()
         self.draft_dna_mode = "legacy"
         self.active_dna_mode = "legacy"
+        self.canonical_query = ""
         self._clear_canonical_draft()
         self._clear_canonical_active()
         self._copy_draft_to_active()
