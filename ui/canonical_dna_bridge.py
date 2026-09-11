@@ -128,7 +128,11 @@ def list_canonical_reference_options() -> tuple[CanonicalReferenceOption, ...]:
 
 
 def list_host_realizable_reference_ids() -> tuple[str, ...]:
-    """Return references implemented by the current typed EQ4 host realizer."""
+    """Return references implemented by the typed host realizer.
+
+    Host-realizable is an implementation/readiness fact, not an EQ4 evidence
+    claim. Browser/operator proving membership is exposed separately.
+    """
     module = _optional_import("design_dna.host_realization")
     if module is None:
         return ()
@@ -136,6 +140,26 @@ def list_host_realizable_reference_ids() -> tuple[str, ...]:
         return tuple(str(item) for item in module.list_host_realizable_reference_ids())
     except Exception as exc:
         _warn("host-realizable catalog", exc)
+        return ()
+
+
+def list_browser_proving_reference_ids() -> tuple[str, ...]:
+    """Return the bounded real-browser proving slice without inventing credit.
+
+    Older compatible private packages predate this split. In that case the
+    previously accepted host-realizable list *was* exactly the nine-member M2
+    proving slice, so using it as the compatibility fallback is safe.
+    """
+    module = _optional_import("design_dna.host_realization")
+    if module is None:
+        return ()
+    try:
+        method = getattr(module, "list_browser_proving_reference_ids", None)
+        if callable(method):
+            return tuple(str(item) for item in method())
+        return tuple(str(item) for item in module.list_host_realizable_reference_ids())
+    except Exception as exc:
+        _warn("browser-proving catalog", exc)
         return ()
 
 
@@ -288,7 +312,7 @@ def realize_canonical_reference(
     script: str = "",
     host_capabilities: tuple[str, ...] = (),
 ) -> Optional[CanonicalHostRealizationPlan]:
-    """Resolve and translate an EQ4-proving reference into typed host vocabulary."""
+    """Resolve and translate a host-realizable reference into typed vocabulary."""
     realizer = _optional_import("design_dna.host_realization")
     if realizer is None:
         return None
@@ -341,6 +365,7 @@ __all__ = [
     "CanonicalPresentationProjection",
     "CanonicalReferenceOption",
     "canonical_dna_available",
+    "list_browser_proving_reference_ids",
     "list_canonical_reference_options",
     "list_host_realizable_reference_ids",
     "realize_canonical_reference",
