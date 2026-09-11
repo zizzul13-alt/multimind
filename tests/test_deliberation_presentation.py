@@ -112,6 +112,7 @@ def test_reflex_projection_uses_persisted_truth_without_reassigning_identity():
         "selected": 2,
         "successful": 1,
         "system_verdict": "participant-1-gemini",
+        "user_verdict": "",
         "judge_provider": "cloudflare-model",
         "judge_status": "success",
     }
@@ -131,6 +132,7 @@ def test_reflex_history_rehydrates_deliberation_provenance_from_json():
     assert "participant-1-gemini=success:gemini-model" in projected["participant_summary"]
     assert "participant-2-groq=error:groq" in projected["participant_summary"]
     assert projected["system_verdict"] == "participant-1-gemini"
+    assert projected["user_verdict"] == ""
     assert projected["judge_provider"] == "cloudflare-model"
 
 
@@ -140,6 +142,7 @@ def test_malformed_persisted_debate_data_fails_boring_in_reflex_projection():
     )[0]
     assert projected["participant_summary"] == ""
     assert projected["system_verdict"] == ""
+    assert projected["user_verdict"] == ""
     assert projected["judge_provider"] == ""
 
 
