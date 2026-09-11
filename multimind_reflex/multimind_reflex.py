@@ -28,7 +28,7 @@ def _login_panel() -> rx.Component:
                     on_change=HostState.set_username,
                     width="100%",
                 ),
-                rx.button("Login", on_click=HostState.login, width="100%"),
+                rx.button("Login", on_click=HostState.login, width="100%", class_name="mm-touch-target"),
                 rx.cond(
                     HostState.error_message != "",
                     rx.callout(HostState.error_message, icon="triangle_alert"),
@@ -62,6 +62,7 @@ def _canonical_reference_result(item) -> rx.Component:
         width="100%",
         variant="soft",
         justify_content="flex-start",
+        class_name="mm-touch-target",
     )
 
 
@@ -122,6 +123,7 @@ def _theme_studio() -> rx.Component:
                                 spacing="2",
                                 max_height="20rem",
                                 overflow_y="auto",
+                                class_name="mm-canonical-results",
                             ),
                             rx.callout(
                                 "Canonical package unavailable in this host; legacy/neutral presentation remains safe.",
@@ -167,6 +169,7 @@ def _theme_studio() -> rx.Component:
                             on_click=HostState.use_legacy_dna,
                             variant="outline",
                             width="100%",
+                            class_name="mm-touch-target",
                         ),
                         rx.separator(),
                         rx.heading("Legacy rollback composition", size="4"),
@@ -321,6 +324,7 @@ def _theme_studio() -> rx.Component:
                                         background_color=HostState.draft_primary,
                                         color=HostState.draft_background,
                                         border_radius=HostState.draft_radius_value,
+                                        class_name="mm-touch-target",
                                     ),
                                     rx.button(
                                         "Accent action",
@@ -328,6 +332,7 @@ def _theme_studio() -> rx.Component:
                                         color=HostState.draft_accent,
                                         border=f"1px solid {HostState.draft_accent}",
                                         border_radius=HostState.draft_radius_value,
+                                        class_name="mm-touch-target",
                                     ),
                                     wrap="wrap",
                                 ),
@@ -363,15 +368,16 @@ def _theme_studio() -> rx.Component:
                 width="100%",
             ),
             rx.hstack(
-                rx.button("Apply Composition", on_click=HostState.apply_composed_theme, size="3"),
-                rx.button("Discard", on_click=HostState.discard_composed_theme, variant="soft"),
-                rx.button("Reset", on_click=HostState.reset_composed_theme, variant="ghost"),
+                rx.button("Apply Composition", on_click=HostState.apply_composed_theme, size="3", class_name="mm-touch-target"),
+                rx.button("Discard", on_click=HostState.discard_composed_theme, variant="soft", class_name="mm-touch-target"),
+                rx.button("Reset", on_click=HostState.reset_composed_theme, variant="ghost", class_name="mm-touch-target"),
                 rx.cond(
                     HostState.current_session_id != "",
-                    rx.button("Back to workspace", on_click=HostState.return_to_workspace, variant="outline"),
+                    rx.button("Back to workspace", on_click=HostState.return_to_workspace, variant="outline", class_name="mm-touch-target"),
                 ),
                 wrap="wrap",
                 width="100%",
+                class_name="mm-theme-actions",
             ),
             rx.cond(
                 HostState.success_message != "",
@@ -382,6 +388,7 @@ def _theme_studio() -> rx.Component:
         ),
         max_width="72rem",
         padding=rx.breakpoints(initial="0.75rem", sm="1rem", md="1.5rem"),
+        class_name="mm-theme-studio",
     )
 
 
@@ -390,7 +397,7 @@ def _session_panel() -> rx.Component:
         rx.hstack(
             rx.heading("Sessions", size="5"),
             rx.spacer(),
-            rx.button("Logout", on_click=HostState.logout_composed, variant="soft"),
+            rx.button("Logout", on_click=HostState.logout_composed, variant="soft", class_name="mm-touch-target"),
             width="100%",
             align="center",
         ),
@@ -406,7 +413,7 @@ def _session_panel() -> rx.Component:
             on_change=HostState.set_new_session_mode,
             width="100%",
         ),
-        rx.button("Create session", on_click=HostState.create_session, width="100%"),
+        rx.button("Create session", on_click=HostState.create_session, width="100%", class_name="mm-touch-target"),
         rx.separator(),
         rx.foreach(
             HostState.sessions,
@@ -420,6 +427,7 @@ def _session_panel() -> rx.Component:
                 on_click=HostState.select_session(session["id"]),
                 width="100%",
                 variant="soft",
+                class_name="mm-touch-target",
             ),
         ),
         spacing="3",
@@ -458,7 +466,7 @@ def _template_panel() -> rx.Component:
                     width="100%",
                     min_height="7rem",
                 ),
-                rx.button("Use preview as editable prompt", on_click=HostState.use_template_preview, variant="soft"),
+                rx.button("Use preview as editable prompt", on_click=HostState.use_template_preview, variant="soft", class_name="mm-touch-target"),
                 width="100%",
             ),
         ),
@@ -547,16 +555,19 @@ def _upload_panel() -> rx.Component:
                 "Stage files",
                 on_click=HostState.stage_uploads(rx.upload_files(upload_id=UPLOAD_ID)),
                 variant="soft",
+                class_name="mm-touch-target",
             ),
             rx.button(
                 "Clear",
                 on_click=[HostState.clear_uploads, rx.clear_selected_files(UPLOAD_ID)],
                 variant="ghost",
+                class_name="mm-touch-target",
             ),
+            wrap="wrap",
         ),
         rx.cond(
             HostState.upload_names.length() > 0,
-            rx.text("Staged: ", HostState.upload_names.to_string()),
+            rx.text("Staged: ", HostState.upload_names.to_string(), class_name="mm-readable"),
         ),
         width="100%",
         spacing="2",
@@ -609,7 +620,7 @@ def _participant_card(participant) -> rx.Component:
             rx.cond(participant["role"] != "", rx.text("Role: ", participant["role"], size="2")),
             rx.cond(
                 participant["text"] != "",
-                rx.text(participant["text"], white_space="pre-wrap"),
+                rx.text(participant["text"], white_space="pre-wrap", class_name="mm-readable"),
                 rx.text("No contribution returned.", size="2"),
             ),
             rx.cond(
@@ -620,6 +631,7 @@ def _participant_card(participant) -> rx.Component:
             width="100%",
         ),
         width="100%",
+        class_name="mm-participant-card",
     )
 
 
@@ -635,13 +647,14 @@ def _critique_card(critique) -> rx.Component:
             rx.text("Actual provider: ", critique["actual_provider"], size="2"),
             rx.cond(
                 critique["text"] != "",
-                rx.text(critique["text"], white_space="pre-wrap"),
+                rx.text(critique["text"], white_space="pre-wrap", class_name="mm-readable"),
                 rx.text("No critique returned.", size="2"),
             ),
             align="start",
             width="100%",
         ),
         width="100%",
+        class_name="mm-critique-card",
     )
 
 
@@ -675,7 +688,7 @@ def _deliberation_panel() -> rx.Component:
                 ),
                 rx.cond(
                     HostState.current_system_verdict != "",
-                    rx.text("System winner: ", HostState.current_system_verdict, weight="bold"),
+                    rx.text("System winner: ", HostState.current_system_verdict, weight="bold", class_name="mm-readable"),
                     rx.text("System winner: no valid winner marker recorded.", size="2"),
                 ),
                 align="start",
@@ -694,8 +707,8 @@ def _history_panel() -> rx.Component:
             HostState.history,
             lambda row: rx.card(
                 rx.vstack(
-                    rx.text(row["prompt"], weight="bold", white_space="pre-wrap"),
-                    rx.text(row["final_answer"], white_space="pre-wrap"),
+                    rx.text(row["prompt"], weight="bold", white_space="pre-wrap", class_name="mm-readable"),
+                    rx.text(row["final_answer"], white_space="pre-wrap", class_name="mm-readable"),
                     rx.cond(
                         row["participant_summary"] != "",
                         rx.text("Participants: ", row["participant_summary"], size="2"),
@@ -712,6 +725,7 @@ def _history_panel() -> rx.Component:
                     width="100%",
                 ),
                 width="100%",
+                class_name="mm-history-card",
             ),
         ),
         width="100%",
@@ -722,7 +736,7 @@ def _history_panel() -> rx.Component:
 def _data_ops() -> rx.Component:
     return rx.vstack(
         rx.heading("Backup / Restore", size="4"),
-        rx.button("Export SQLite backup", on_click=HostState.export_database, variant="soft"),
+        rx.button("Export SQLite backup", on_click=HostState.export_database, variant="soft", class_name="mm-touch-target"),
         rx.text(
             "Restore accepts MultiMind SQLite backups (.db/.sqlite/.sqlite3). "
             "Tap the area below, choose one backup, confirm its filename appears, then stage it.",
@@ -748,11 +762,12 @@ def _data_ops() -> rx.Component:
                 "Stage selected backup",
                 on_click=HostState.stage_restore(rx.upload_files(upload_id=RESTORE_ID)),
                 variant="soft",
+                class_name="mm-touch-target",
             ),
-            rx.button("Restore safely", on_click=HostState.restore_database, variant="outline"),
+            rx.button("Restore safely", on_click=HostState.restore_database, variant="outline", class_name="mm-touch-target"),
             wrap="wrap",
         ),
-        rx.cond(HostState.restore_name != "", rx.text("Staged: ", HostState.restore_name)),
+        rx.cond(HostState.restore_name != "", rx.text("Staged: ", HostState.restore_name, class_name="mm-readable")),
         width="100%",
         spacing="2",
     )
@@ -935,6 +950,7 @@ def _workspace_zone_card(child: rx.Component, area: str) -> rx.Component:
             HostState.active_canonical_card_padding,
             HostState.active_spacing_value,
         ),
+        class_name=f"mm-zone mm-zone-{area}",
     )
 
 
@@ -970,6 +986,7 @@ def _workspace_composer_zone() -> rx.Component:
                 on_change=HostState.set_prompt,
                 min_height="10rem",
                 width="100%",
+                class_name="mm-prompt",
             ),
             _execution_controls(),
             _upload_panel(),
@@ -983,8 +1000,9 @@ def _workspace_composer_zone() -> rx.Component:
                 background_color=HostState.active_primary,
                 color=HostState.active_background,
                 border_radius=HostState.active_radius_value,
+                class_name="mm-run-button",
             ),
-            rx.cond(HostState.status_message != "", rx.text(HostState.status_message)),
+            rx.cond(HostState.status_message != "", rx.text(HostState.status_message, class_name="mm-readable")),
             rx.cond(
                 HostState.error_message != "",
                 rx.callout(HostState.error_message, icon="triangle_alert", width="100%"),
@@ -1030,10 +1048,11 @@ def _workspace_result_zone() -> rx.Component:
                 rx.card(
                     rx.vstack(
                         rx.heading("Final answer", size="4"),
-                        rx.text(HostState.final_answer, white_space="pre-wrap"),
+                        rx.text(HostState.final_answer, white_space="pre-wrap", class_name="mm-readable"),
                         align="start",
                     ),
                     width="100%",
+                    class_name="mm-result-card",
                 ),
                 rx.text("No result yet.", size="2"),
             ),
@@ -1069,6 +1088,7 @@ def _workspace() -> rx.Component:
                                 " · ",
                                 HostState.active_canonical_reference_id,
                                 size="2",
+                                class_name="mm-readable",
                             ),
                             rx.text(
                                 "Active DNA: ",
@@ -1076,6 +1096,7 @@ def _workspace() -> rx.Component:
                                 " + ",
                                 HostState.active_web_display_name,
                                 size="2",
+                                class_name="mm-readable",
                             ),
                         ),
                         align="start",
@@ -1087,6 +1108,7 @@ def _workspace() -> rx.Component:
                         on_click=HostState.open_theme_studio,
                         variant="soft",
                         color=HostState.active_accent,
+                        class_name="mm-touch-target",
                     ),
                     width="100%",
                     align="center",
@@ -1101,6 +1123,7 @@ def _workspace() -> rx.Component:
                     HostState.active_canonical_card_radius,
                     HostState.active_radius_value,
                 ),
+                class_name="mm-workspace-header",
             ),
             rx.grid(
                 _workspace_utility_zone(),
@@ -1134,6 +1157,7 @@ def _workspace() -> rx.Component:
                 ),
                 width="100%",
                 align_items="start",
+                class_name="mm-workspace-grid",
             ),
             width="100%",
             spacing="4",
@@ -1161,6 +1185,7 @@ def _workspace() -> rx.Component:
             "1.5",
         ),
         min_height="100vh",
+        class_name="mm-workspace",
     )
 
 
@@ -1172,5 +1197,5 @@ def index() -> rx.Component:
     return rx.cond(HostState.logged_in, _authenticated_surface(), _login_panel())
 
 
-app = rx.App()
+app = rx.App(stylesheets=["/mobile-workspace-polish.css"])
 app.add_page(index, title="MultiMind AI — Reflex Host")
