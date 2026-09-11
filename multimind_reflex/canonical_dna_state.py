@@ -150,8 +150,8 @@ class CanonicalDnaState(rx.State):
 
     @rx.var
     def proving_ready_total(self) -> int:
-        """Compatibility alias for existing view code: this means browser slice only."""
-        return self.browser_proving_total
+        """Compatibility alias for the existing Host proving-ready UI label."""
+        return self.host_realizable_total
 
     @rx.var
     def preview_viewport_label(self) -> str:
