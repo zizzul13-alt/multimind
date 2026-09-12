@@ -2,7 +2,7 @@
 
 The accepted workspace and Theme Studio remain their existing implementations.
 This module only wraps the authenticated presentation once with an optional
-material/typography environment derived from the already-active canonical
+material/typography/mark environment derived from the already-active canonical
 reference. Application/provider/persistence ownership is untouched.
 """
 from __future__ import annotations
@@ -33,6 +33,26 @@ def _signature_authenticated_surface() -> rx.Component:
             pointer_events="none",
             z_index="0",
             data_signature_material_layer="true",
+        ),
+        rx.box(
+            position="absolute",
+            top="1rem",
+            right="1rem",
+            width=HostState.active_signature_mark_width,
+            height=HostState.active_signature_mark_height,
+            border_width=HostState.active_signature_mark_stroke_width,
+            border_style="solid",
+            border_color=HostState.active_accent,
+            border_radius=HostState.active_signature_mark_radius,
+            transform=HostState.active_signature_mark_transform,
+            opacity=HostState.active_signature_mark_opacity,
+            display=rx.cond(HostState.active_signature_mark_available, "block", "none"),
+            pointer_events="none",
+            z_index="0",
+            data_signature_mark_layer="true",
+            data_signature_mark_pack=HostState.active_signature_mark_pack_id,
+            data_signature_mark_shape=HostState.active_signature_mark_shape,
+            aria_hidden="true",
         ),
         rx.box(
             _original_authenticated_surface(),
