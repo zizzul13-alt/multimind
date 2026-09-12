@@ -22,7 +22,7 @@ def test_signature_layer_preserves_accepted_workspace_and_entry_owners():
         "_workspace_result_zone()",
         "_workspace_history_zone()",
     ):
-        assert SURFACE.count(call) == 2  # definition + one accepted workspace instantiation
+        assert SURFACE.count(call) == 2
         assert call not in SIGNATURE_ENTRY
 
 
@@ -52,7 +52,6 @@ def test_material_is_bounded_behind_opaque_workspace_zones():
     assert "active_signature_material_opacity" in SIGNATURE_ENTRY
     assert "active_signature_material_tile_size" in SIGNATURE_ENTRY
     assert '"transparent !important"' in SIGNATURE_ENTRY
-    # Accepted semantic zone cards remain opaque and owned by the original surface.
     assert "background_color=HostState.active_surface" in SURFACE
     assert 'class_name=f"mm-zone mm-zone-{area}"' in SURFACE
 
@@ -67,7 +66,7 @@ def test_signature_typography_is_secondary_channel_not_new_renderer():
     assert "rx.App(" not in SIGNATURE_ENTRY
 
 
-def test_optional_mark_is_one_generic_noninteractive_layer_not_theme_renderers():
+def test_optional_mark_is_visible_bounded_noninteractive_layer_not_theme_renderers():
     assert 'data_signature_mark_layer="true"' in SIGNATURE_ENTRY
     assert "active_signature_mark_pack_id" in SIGNATURE_ENTRY
     assert "active_signature_mark_shape" in SIGNATURE_ENTRY
@@ -76,6 +75,11 @@ def test_optional_mark_is_one_generic_noninteractive_layer_not_theme_renderers()
     assert 'border_color=HostState.active_accent' in SIGNATURE_ENTRY
     assert 'pointer_events="none"' in SIGNATURE_ENTRY
     assert 'aria_hidden="true"' in SIGNATURE_ENTRY
+    # The material stays behind the workspace, while the tiny low-opacity mark
+    # must sit above it or the secondary channel can be technically present yet invisible.
+    assert 'z_index="2"' in SIGNATURE_ENTRY
+    assert 'top="0.75rem"' in SIGNATURE_ENTRY
+    assert 'right="0.75rem"' in SIGNATURE_ENTRY
     for forbidden in (
         "<svg",
         "data:image",
