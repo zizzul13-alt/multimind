@@ -1,25 +1,16 @@
-"""Reflex projection/actions for persistent human deliberation verdicts.
-
-This state adds no business truth. It delegates validation and persistence to
-``MultiMindApplication.set_user_verdict`` and then refreshes persisted history.
-The active verdict target is the exact ``ChatResult.chat_id`` returned by the
-application, never an inferred "latest" history row.
-"""
+"""Reflex projection/actions for persistent human deliberation verdicts."""
 from __future__ import annotations
 
 import asyncio
-
 import reflex as rx
 
-from core.application import ChatRequest
+from core.conversation_application import OperatingChatRequest
 from multimind_reflex.bridge import BufferedUpload, build_host_application
 from multimind_reflex.deliberation_projection import history_snapshots, run_summary
 from multimind_reflex.workspace_signature_state import WorkspaceSignatureState
 
 
 class VerdictHostState(WorkspaceSignatureState):
-    """Presentation extension for independent, persisted human judgment."""
-
     current_user_verdict: str = ""
     current_chat_id: str = ""
 
@@ -40,7 +31,6 @@ class VerdictHostState(WorkspaceSignatureState):
         if not self.current_session_id or not self.current_chat_id:
             self.error_message = "No persisted deliberation is available for a verdict."
             return
-
         result = self._application().set_user_verdict(
             self.current_session_id,
             self.current_chat_id,
@@ -53,9 +43,11 @@ class VerdictHostState(WorkspaceSignatureState):
                 "invalid_debate_data": "The saved deliberation record is invalid.",
                 "persistence_failed": "Your verdict could not be saved. Please try again.",
             }
-            self.error_message = messages.get(result.status, "Your verdict could not be saved.")
+            self.error_message = messages.get(
+                result.status,
+                "Your verdict could not be saved.",
+            )
             return
-
         self.current_user_verdict = result.user_verdict
         self.error_message = ""
         self.success_message = (
@@ -71,7 +63,6 @@ class VerdictHostState(WorkspaceSignatureState):
 
     @rx.event(background=True)
     async def run_chat(self):
-        """Run the accepted app path while retaining the exact persisted chat id."""
         async with self:
             if self.busy:
                 return
@@ -85,8 +76,11 @@ class VerdictHostState(WorkspaceSignatureState):
             if not prompt and not self._pending_uploads:
                 self.error_message = "Enter a prompt or stage at least one file."
                 return
-            if not self.active_agents:
-                self.error_message = "Select at least one agent."
+            ai_policy = str(
+                getattr(self, "ai_selection_policy", "manual") or "manual"
+            )
+            if ai_policy != "auto" and not self.active_agents:
+                self.error_message = "Select at least one AI or use Auto AI."
                 return
 
             self.busy = True
@@ -96,15 +90,17 @@ class VerdictHostState(WorkspaceSignatureState):
             self.final_answer = ""
             self._clear_deliberation_projection()
             self.warnings = []
-
             user_id = self.user_id
             session_id = self.current_session_id
             session_mode = self.current_session_mode
             runtime_memories = self._runtime_memories
             staged_uploads = [dict(item) for item in self._pending_uploads]
-            request = ChatRequest(
+            request = OperatingChatRequest(
                 original_prompt=prompt,
-                uploads=[BufferedUpload(item["name"], item["data"]) for item in staged_uploads],
+                uploads=[
+                    BufferedUpload(item["name"], item["data"])
+                    for item in staged_uploads
+                ],
                 context_mode=self.context_mode,
                 session_id=session_id,
                 session_mode=session_mode,
@@ -112,12 +108,22 @@ class VerdictHostState(WorkspaceSignatureState):
                 active_agents=list(self.active_agents),
                 debate_rounds=self.debate_rounds,
                 selected_skill=self.selected_skill,
+                work_mode_policy=str(
+                    getattr(self, "work_mode_policy", "manual") or "manual"
+                ),
+                ai_selection_policy=ai_policy,
+                authority="think",
+                auto_ai_count=int(getattr(self, "auto_ai_count", 1) or 1),
             )
 
         try:
             application = build_host_application(user_id, runtime_memories)
             result = await asyncio.to_thread(application.execute_chat, request)
-            history = await asyncio.to_thread(application.get_session_chats, session_id, 50)
+            history = await asyncio.to_thread(
+                application.get_session_chats,
+                session_id,
+                50,
+            )
         except Exception:
             result = None
             history = None
@@ -128,15 +134,16 @@ class VerdictHostState(WorkspaceSignatureState):
             if result is None:
                 self.error_message = "Chat execution failed. Please try again."
                 return
-
             self.warnings = list(result.warnings)
             self._set_deliberation_projection(result.debate_data)
             if result.status != "success":
                 self.error_message = "No usable provider response was returned."
                 return
-
             if not result.persisted or not result.chat_id:
-                self.error_message = "The response was not durably persisted; no verdict target is available."
+                self.error_message = (
+                    "The response was not durably persisted; "
+                    "no verdict target is available."
+                )
                 self.current_chat_id = ""
                 return
 
