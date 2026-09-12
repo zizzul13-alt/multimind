@@ -10,10 +10,10 @@ from agents.huggingface import HuggingFaceAgent
 from agents.openrouter import OpenRouterAgent
 from agents.remote_agent import RemoteAgent
 from agents.unified_agent import UnifiedAgent
-from core.application import MultiMindApplication
 from core.compressor import PromptCompressor
 from core.debate import DebateOrchestrator
 from core.file_handler import FileHandler
+from core.identity_application import IdentityFirstApplication
 from core.memory import persist_chat_and_update_memory
 from database.manager import DatabaseManager
 from database.turso_manager import TursoDatabaseManager
@@ -94,13 +94,9 @@ def build_application_for_user(
 ):
     """Build one user-scoped application boundary for any presentation host.
 
-    Generic callers get a concrete validated database by default. Hosts may
-    supply a lazy ``db_factory`` when they need to preserve an existing
-    lifecycle/cache seam; the application remains the only consumer of it.
-
-    ``allow_default_credentials=False`` is intended for authenticated production
-    hosts so a user without a credential namespace cannot silently inherit the
-    deployment operator/default provider pool.
+    Provider adapters remain the infrastructure layer. The returned application
+    adds a stable AI-identity routing seam above those adapters while preserving
+    provider-keyed compatibility for existing tests/reference callers.
     """
     user_id = Config.validate_user_id(user_id)
 
@@ -115,7 +111,7 @@ def build_application_for_user(
     if db is None and db_factory is None:
         db = build_database_for_user(user_id, database_factory=database_factory)
 
-    return MultiMindApplication(
+    return IdentityFirstApplication(
         agents=agents,
         runtime_memories=runtime_memories,
         runtime=runtime,

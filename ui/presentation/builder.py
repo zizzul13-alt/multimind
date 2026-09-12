@@ -108,6 +108,9 @@ def _build_debate_detail(debate_raw: Any) -> Optional[DebateDetailSnapshot]:
                     phase=str(resp.get("phase", "candidate")),
                     participant_id=str(resp.get("participant_id", "")),
                     actual_provider=str(resp.get("actual_provider", "")),
+                    requested_identity=str(resp.get("requested_identity") or ""),
+                    effective_identity=str(resp.get("effective_identity") or ""),
+                    route_provider=str(resp.get("route_provider") or resp.get("actual_provider") or ""),
                 )
             )
 
@@ -127,6 +130,11 @@ def _build_debate_detail(debate_raw: Any) -> Optional[DebateDetailSnapshot]:
                     status=str(participant.get("status", "unknown")),
                     text=str(participant.get("text", "")),
                     failure_category=str(participant.get("failure_category") or ""),
+                    requested_identity=str(participant.get("requested_identity") or ""),
+                    effective_identity=str(participant.get("effective_identity") or ""),
+                    route_provider=str(participant.get("route_provider") or participant.get("actual_provider") or ""),
+                    identity_route_fallback=bool(participant.get("identity_route_fallback", False)),
+                    identity_fallback_reason=str(participant.get("identity_fallback_reason") or ""),
                 )
             )
 
@@ -183,7 +191,7 @@ def build_presentation_snapshot(
 ) -> PresentationSnapshot:
     """Build a non-mutating, read-only presentation projection."""
     session_snapshot = _build_session_metadata(session_dict)
-    memory_snapshot = _build_memory_summary(memory_obj)
+    memory_summary = _build_memory_summary(memory_obj)
 
     chat_snapshots = []
     if isinstance(chats_list, list):
@@ -194,5 +202,5 @@ def build_presentation_snapshot(
     return PresentationSnapshot(
         session=session_snapshot,
         chats=tuple(chat_snapshots),
-        memory=memory_snapshot,
+        memory=memory_summary,
     )
