@@ -6,6 +6,7 @@ from core.identity_application import IdentityFirstApplication
 from core.ai_identity import AI_IDENTITY_OPTIONS, infer_ai_identity
 from database.manager import DatabaseManager
 from multimind_reflex.deliberation_projection import history_snapshots
+from ui.presentation.builder import build_presentation_snapshot
 
 
 class FakeProvider(BaseProvider):
@@ -160,8 +161,18 @@ def test_identity_provenance_survives_database_reload(tmp_path):
     assert participant["requested_identity"] == "gemini"
     assert participant["effective_identity"] == "gemini"
     assert participant["route_provider"] == "gemini"
+
     projected = history_snapshots(rows)[0]
     assert "Gemini=success via gemini" in projected["participant_summary"]
+
+    reference = build_presentation_snapshot(
+        {"id": session_id, "name": "Identity", "mode": "thinking", "created_at": "now"},
+        rows,
+    )
+    reference_participant = reference.chats[0].debate_detail.participants[0]
+    assert reference_participant.requested_identity == "gemini"
+    assert reference_participant.effective_identity == "gemini"
+    assert reference_participant.route_provider == "gemini"
 
 
 def test_primary_identity_catalog_contains_no_gateway_brands():
