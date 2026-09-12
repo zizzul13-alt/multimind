@@ -1,8 +1,7 @@
-"""Isolated real-browser EQ4 proving route for canonical Design-DNA.
+"""Isolated real-browser proving route for canonical Design-DNA.
 
-This route is intentionally presentation-only. It exists to collect real Reflex
-host evidence before the canonical renderer is promoted into the main Theme
-Studio/workspace path.
+This route is intentionally presentation-only. It collects Reflex host evidence
+without mutating application, session, provider, persistence, or cutover truth.
 """
 from __future__ import annotations
 
@@ -10,17 +9,18 @@ import reflex as rx
 
 from multimind_reflex.canonical_archetype_proving import canonical_archetype_context_panel
 from multimind_reflex.canonical_dna_state import CanonicalDnaState
+from multimind_reflex.canonical_material_proving import canonical_material_proving_panel
 from multimind_reflex.canonical_theme_studio import canonical_theme_studio_panel
 
 
-@rx.page(route="/canonical-dna", title="MultiMind · Canonical Design-DNA EQ4 Proving")
+@rx.page(route="/canonical-dna", title="MultiMind · Canonical Design-DNA Proving")
 def canonical_dna_proving_page() -> rx.Component:
     return rx.container(
         rx.vstack(
             rx.hstack(
                 rx.vstack(
                     rx.heading("Canonical Design-DNA", size="7"),
-                    rx.text("Isolated Reflex EQ4 proving surface · application truth untouched"),
+                    rx.text("Isolated Reflex proving surface · application truth untouched"),
                     align="start",
                 ),
                 rx.spacer(),
@@ -30,12 +30,13 @@ def canonical_dna_proving_page() -> rx.Component:
                 wrap="wrap",
             ),
             rx.callout(
-                "This page validates canonical catalog, deterministic asset-off projection, responsive host realization, seven-archetype context survival, accessibility demotion, and A→B→A presentation behavior. It does not claim production cutover or asset approval.",
+                "This page validates canonical catalog, deterministic asset-off projection, responsive host realization, seven-archetype context survival, accessibility demotion, A→B→A presentation behavior, and separately approved material payload rendering. It does not authorize production cutover.",
                 icon="shield_check",
                 width="100%",
             ),
             canonical_theme_studio_panel(),
             canonical_archetype_context_panel(),
+            canonical_material_proving_panel(),
             rx.hstack(
                 rx.button("Refresh canonical catalog", on_click=CanonicalDnaState.refresh_catalog, variant="soft"),
                 rx.button("Clear proving selection", on_click=CanonicalDnaState.clear_reference, variant="ghost"),
