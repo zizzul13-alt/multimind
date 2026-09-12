@@ -14,7 +14,17 @@ def _clear_signature_bridge_caches():
     bridge.resolve_approved_visual_signature.cache_clear()
 
 
-def _payload(*, approved=True, placement="bounded_material_frame_outside_text_surface", opacity=0.38):
+def _mark(*, pack_id="generic-ring", shape="ring", size_px=28, stroke_px=2, opacity=0.42):
+    return SimpleNamespace(
+        pack_id=pack_id,
+        shape=shape,
+        size_px=size_px,
+        stroke_px=stroke_px,
+        opacity=opacity,
+    )
+
+
+def _payload(*, approved=True, placement="bounded_material_frame_outside_text_surface", opacity=0.38, mark=None):
     typography = SimpleNamespace(
         pack_id="demo-pack",
         font_family="Arial, sans-serif",
@@ -24,7 +34,7 @@ def _payload(*, approved=True, placement="bounded_material_frame_outside_text_su
         body_letter_spacing="0em",
         line_height=1.45,
     )
-    return SimpleNamespace(
+    payload = SimpleNamespace(
         reference_id="CA21",
         material_unit_id="M4",
         material_variant="concrete-frame",
@@ -38,6 +48,17 @@ def _payload(*, approved=True, placement="bounded_material_frame_outside_text_su
         typography=typography,
         final_approved=approved,
     )
+    if mark is not None:
+        payload.mark = mark
+    return payload
+
+
+def _resolve(monkeypatch, payload):
+    bridge._private_module.cache_clear()
+    bridge.resolve_approved_visual_signature.cache_clear()
+    module = SimpleNamespace(read_approved_signature=lambda _reference_id: payload)
+    monkeypatch.setattr(bridge, "import_module", lambda _name: module)
+    return bridge.resolve_approved_visual_signature("CA21")
 
 
 def test_missing_private_signature_runtime_fails_closed(monkeypatch):
@@ -52,9 +73,7 @@ def test_draft_signature_never_crosses_normal_runtime_bridge(monkeypatch):
 
 
 def test_final_signature_is_projected_without_private_paths(monkeypatch):
-    module = SimpleNamespace(read_approved_signature=lambda _reference_id: _payload())
-    monkeypatch.setattr(bridge, "import_module", lambda _name: module)
-    result = bridge.resolve_approved_visual_signature("CA21")
+    result = _resolve(monkeypatch, _payload())
     assert result is not None
     assert result.reference_id == "CA21"
     assert result.material_unit_id == "M4"
@@ -63,7 +82,47 @@ def test_final_signature_is_projected_without_private_paths(monkeypatch):
     assert result.material_opacity == 0.38
     assert result.typography_pack_id == "demo-pack"
     assert result.font_weight == 700
+    assert result.mark_pack_id == ""
+    assert result.mark_shape == ""
+    assert result.mark_size_px == 0
+    assert result.mark_stroke_px == 0
+    assert result.mark_opacity == 0.0
     assert "design_dna/" not in result.material_data_uri
+
+
+def test_valid_generic_mark_crosses_as_bounded_scalars(monkeypatch):
+    result = _resolve(monkeypatch, _payload(mark=_mark()))
+    assert result is not None
+    assert result.mark_pack_id == "generic-ring"
+    assert result.mark_shape == "ring"
+    assert result.mark_size_px == 28
+    assert result.mark_stroke_px == 2
+    assert result.mark_opacity == 0.42
+
+
+@pytest.mark.parametrize(
+    "mark",
+    (
+        _mark(shape="glyph"),
+        _mark(size_px=7),
+        _mark(size_px=65),
+        _mark(stroke_px=0),
+        _mark(stroke_px=7),
+        _mark(opacity=0.01),
+        _mark(opacity=0.71),
+        _mark(pack_id=""),
+    ),
+)
+def test_unsafe_optional_mark_degrades_to_no_mark_without_killing_signature(monkeypatch, mark):
+    result = _resolve(monkeypatch, _payload(mark=mark))
+    assert result is not None
+    assert result.material_unit_id == "M4"
+    assert result.typography_pack_id == "demo-pack"
+    assert result.mark_pack_id == ""
+    assert result.mark_shape == ""
+    assert result.mark_size_px == 0
+    assert result.mark_stroke_px == 0
+    assert result.mark_opacity == 0.0
 
 
 def test_unsafe_placement_or_opacity_fails_closed(monkeypatch):
@@ -72,8 +131,4 @@ def test_unsafe_placement_or_opacity_fails_closed(monkeypatch):
         _payload(placement="surface_overlay", opacity=0.30),
         _payload(placement="bounded_material_frame_outside_text_surface", opacity=0.51),
     ):
-        bridge._private_module.cache_clear()
-        bridge.resolve_approved_visual_signature.cache_clear()
-        module = SimpleNamespace(read_approved_signature=lambda _reference_id, payload=payload: payload)
-        monkeypatch.setattr(bridge, "import_module", lambda _name, module=module: module)
-        assert bridge.resolve_approved_visual_signature("CA21") is None
+        assert _resolve(monkeypatch, payload) is None

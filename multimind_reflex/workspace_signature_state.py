@@ -1,9 +1,9 @@
 """Presentation-only approved visual-signature extension for the Reflex workspace.
 
-This layer derives material/typography scalars from the already-active canonical
-reference. It owns no application/session/provider/persistence truth. Missing or
-invalid private Design-DNA signatures collapse to neutral empty values, leaving
-the accepted structural workspace unchanged.
+This layer derives material/typography/mark scalars from the already-active
+canonical reference. It owns no application/session/provider/persistence truth.
+Missing or invalid private Design-DNA signatures collapse to neutral empty
+values, leaving the accepted structural workspace unchanged.
 """
 from __future__ import annotations
 
@@ -17,6 +17,15 @@ def _signature(reference_id: str):
     if not str(reference_id or "").strip():
         return None
     return resolve_approved_visual_signature(reference_id)
+
+
+def _mark_dimensions(payload) -> tuple[str, str]:
+    if payload is None or not payload.mark_pack_id:
+        return "0px", "0px"
+    size = int(payload.mark_size_px)
+    if payload.mark_shape == "bar":
+        return f"{size * 2}px", f"{max(payload.mark_stroke_px * 3, size // 3)}px"
+    return f"{size}px", f"{size}px"
 
 
 class WorkspaceSignatureState(WorkspaceDnaState):
@@ -75,6 +84,51 @@ class WorkspaceSignatureState(WorkspaceDnaState):
     def active_signature_line_height(self) -> str:
         payload = _signature(self.active_canonical_reference_id)
         return str(payload.line_height) if payload is not None else "1.5"
+
+    @rx.var
+    def active_signature_mark_available(self) -> bool:
+        payload = _signature(self.active_canonical_reference_id)
+        return bool(payload is not None and payload.mark_pack_id)
+
+    @rx.var
+    def active_signature_mark_pack_id(self) -> str:
+        payload = _signature(self.active_canonical_reference_id)
+        return payload.mark_pack_id if payload is not None else ""
+
+    @rx.var
+    def active_signature_mark_shape(self) -> str:
+        payload = _signature(self.active_canonical_reference_id)
+        return payload.mark_shape if payload is not None else ""
+
+    @rx.var
+    def active_signature_mark_width(self) -> str:
+        payload = _signature(self.active_canonical_reference_id)
+        return _mark_dimensions(payload)[0]
+
+    @rx.var
+    def active_signature_mark_height(self) -> str:
+        payload = _signature(self.active_canonical_reference_id)
+        return _mark_dimensions(payload)[1]
+
+    @rx.var
+    def active_signature_mark_stroke_width(self) -> str:
+        payload = _signature(self.active_canonical_reference_id)
+        return f"{payload.mark_stroke_px}px" if payload is not None and payload.mark_pack_id else "0px"
+
+    @rx.var
+    def active_signature_mark_opacity(self) -> float:
+        payload = _signature(self.active_canonical_reference_id)
+        return payload.mark_opacity if payload is not None and payload.mark_pack_id else 0.0
+
+    @rx.var
+    def active_signature_mark_radius(self) -> str:
+        payload = _signature(self.active_canonical_reference_id)
+        return "999px" if payload is not None and payload.mark_shape == "ring" else "0px"
+
+    @rx.var
+    def active_signature_mark_transform(self) -> str:
+        payload = _signature(self.active_canonical_reference_id)
+        return "rotate(45deg)" if payload is not None and payload.mark_shape == "diamond" else "none"
 
     @rx.var
     def draft_signature_available(self) -> bool:
