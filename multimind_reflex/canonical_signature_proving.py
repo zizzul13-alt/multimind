@@ -1,8 +1,9 @@
-"""Isolated visual-signature proving panel for canonical Design-DNA.
+"""Isolated visual-signature proving panels for canonical Design-DNA.
 
-This panel may render draft private signature packs only for evidence collection.
-It never changes application truth, theme selection truth, or production cutover
-state. Draft packs remain unavailable to normal presentation resolution.
+These panels may render draft private signature packs only for evidence collection.
+They never change application truth, theme selection truth, visual-complete credit,
+or production cutover state. Draft packs remain unavailable to normal presentation
+resolution.
 """
 from __future__ import annotations
 
@@ -11,15 +12,34 @@ import reflex as rx
 from ui.canonical_signature_bridge import resolve_signature_for_proving
 
 
-_BATCH = (
-    ("CA20", "Arts & Crafts"),
-    ("CA21", "De Stijl"),
-    ("CA22", "Cassandre"),
-    ("CA24", "Art Deco"),
-    ("CA27", "Streamline"),
-    ("CA28", "Eames"),
+_BATCHES = (
+    (
+        "01",
+        "material + typography · accepted baseline",
+        (
+            ("CA20", "Arts & Crafts"),
+            ("CA21", "De Stijl"),
+            ("CA22", "Cassandre"),
+            ("CA24", "Art Deco"),
+            ("CA27", "Streamline"),
+            ("CA28", "Eames"),
+        ),
+    ),
+    (
+        "02",
+        "generic material + typography · cultural-safe draft proving",
+        (
+            ("CA16", "Adire"),
+            ("CA01", "Batik"),
+            ("CA19", "Bògòlanfini"),
+            ("CA14", "Ghadamès"),
+            ("CA23", "Guimard"),
+            ("CA29", "Guna Mola"),
+        ),
+    ),
 )
-_SURFACES = {reference_id: resolve_signature_for_proving(reference_id) for reference_id, _ in _BATCH}
+_REFERENCES = tuple(item for _, _, batch in _BATCHES for item in batch)
+_SURFACES = {reference_id: resolve_signature_for_proving(reference_id) for reference_id, _ in _REFERENCES}
 
 
 def _signature_card(reference_id: str, label: str) -> rx.Component:
@@ -34,7 +54,7 @@ def _signature_card(reference_id: str, label: str) -> rx.Component:
                     width="100%",
                     wrap="wrap",
                 ),
-                rx.text("Private draft signature unavailable; structural fallback retained.", size="2"),
+                rx.text("Private signature unavailable; structural fallback retained.", size="2"),
                 align="start",
                 width="100%",
             ),
@@ -44,8 +64,6 @@ def _signature_card(reference_id: str, label: str) -> rx.Component:
         )
 
     t = surface.typography
-    # Material is intentionally placed in a frame/gutter field around the opaque
-    # semantic content surface. It is never a blanket texture under text.
     return rx.box(
         rx.box(
             position="absolute",
@@ -124,31 +142,28 @@ def _signature_card(reference_id: str, label: str) -> rx.Component:
     )
 
 
-def canonical_signature_proving_panel() -> rx.Component:
-    available = sum(surface is not None for surface in _SURFACES.values())
+def _batch_panel(batch_id: str, subtitle: str, batch: tuple[tuple[str, str], ...]) -> rx.Component:
+    available = sum(_SURFACES.get(reference_id) is not None for reference_id, _ in batch)
     return rx.card(
         rx.vstack(
             rx.hstack(
                 rx.vstack(
-                    rx.heading("Theme visual-signature proving", size="5"),
-                    rx.text(
-                        "Batch 01 · material + typography · isolated evidence only",
-                        size="2",
-                    ),
+                    rx.heading(f"Theme visual-signature proving · Batch {batch_id}", size="5"),
+                    rx.text(subtitle, size="2"),
                     align="start",
                 ),
                 rx.spacer(),
-                rx.badge(f"{available}/6 PRIVATE DRAFTS AVAILABLE", variant="soft"),
+                rx.badge(f"{available}/{len(batch)} PRIVATE SIGNATURES AVAILABLE", variant="soft"),
                 width="100%",
                 wrap="wrap",
             ),
             rx.callout(
-                "A theme does not receive visual-complete credit here. Final approval requires browser evidence and explicit private-governance promotion.",
+                "This proving surface grants no visual-complete credit. Draft promotion still requires browser evidence and explicit private governance.",
                 icon="shield_check",
                 width="100%",
             ),
             rx.grid(
-                *(_signature_card(reference_id, label) for reference_id, label in _BATCH),
+                *(_signature_card(reference_id, label) for reference_id, label in batch),
                 columns=rx.breakpoints(initial="1", md="2"),
                 spacing="3",
                 width="100%",
@@ -157,8 +172,16 @@ def canonical_signature_proving_panel() -> rx.Component:
             spacing="3",
         ),
         width="100%",
-        data_signature_batch="01",
+        data_signature_batch=batch_id,
         data_signature_complete_credit="0",
+    )
+
+
+def canonical_signature_proving_panel() -> rx.Component:
+    return rx.vstack(
+        *(_batch_panel(batch_id, subtitle, batch) for batch_id, subtitle, batch in _BATCHES),
+        width="100%",
+        spacing="4",
     )
 
 
