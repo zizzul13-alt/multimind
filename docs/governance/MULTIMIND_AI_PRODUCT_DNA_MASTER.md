@@ -2,6 +2,7 @@
 
 Status: **ACC KEEP MASTER**
 Accepted by user: 2026-09-08
+Updated acceptance: 2026-09-12 — conversation-first operation and independent Auto/Manual work-mode + AI/model selection locked.
 Scope: durable product intent for MultiMind's AI/chat/debate/provider/capability layer.
 
 This document records product DNA. It is not a claim that the current implementation already satisfies every item below, and it does not authorize production cutover.
@@ -10,7 +11,7 @@ This document records product DNA. It is not a claim that the current implementa
 
 MultiMind is not intended to collapse into an ordinary single-model chatbot with fallback.
 
-Its defining product is a **free-first, paid-optional, provider-independent, deliberation-centered AI workspace**. Multiple legitimate AI resources may independently contribute to the same task, inspectably deliberate/review, and produce a final synthesis while preserving the individual contributions and their provenance.
+Its defining product is a **free-first, paid-optional, provider-independent, deliberation-centered, conversation-first AI workspace**. Multiple legitimate AI resources may independently contribute to the same task, inspectably deliberate/review, and produce a final synthesis while preserving the individual contributions and their provenance. Conversation may remain exploratory for as long as needed, then crystallize into bounded work without requiring the user to reconstruct context or surrender authority.
 
 Inspiration includes the useful product ideas behind AI councils / multi-model comparison: many minds contribute, disagreement is useful, the system may recommend a result, and the human retains final judgment. MultiMind does not need to copy another product's architecture or feature set.
 
@@ -24,9 +25,11 @@ The baseline application must remain useful without requiring paid AI APIs. Reas
 
 Target product semantics:
 
-`LOGIN PROFILE → RAW TASK/IDEA → TASK MODE → PROMPT NORMALIZATION → OPTIONAL SEMANTIC COMPRESSION → CAPABILITY/AVAILABILITY FILTER → EXPLICIT PARTICIPANTS → INDEPENDENT CONTRIBUTIONS → DELIBERATION/REVIEW → JUDGE/SYNTHESIS → RELEASE GATE → FINAL ANSWER + HISTORY + USER VERDICT`
+`LOGIN PROFILE → RAW TASK/IDEA/CONVERSATION → AUTO OR MANUAL TASK MODE → AUTO OR MANUAL AI/MODEL SELECTION → PROMPT NORMALIZATION → OPTIONAL SEMANTIC COMPRESSION → CAPABILITY/AVAILABILITY FILTER → EXPLICIT PARTICIPANTS → INDEPENDENT CONTRIBUTIONS → DELIBERATION/REVIEW → JUDGE/SYNTHESIS → RELEASE GATE → FINAL ANSWER + HISTORY + USER VERDICT`
 
 This is product truth. Exact implementation may evolve behind stable application boundaries.
+
+Conversation-first operation does not require every message to become a task. Exploratory conversation may span topics. When intent becomes sufficiently explicit, the application may crystallize relevant conversation into bounded task state: objective, constraints, accepted/rejected decisions, open questions, authority, and exit condition. Crystallization must preserve user control and must not manufacture authority.
 
 ## 3. Participant contract
 
@@ -89,9 +92,11 @@ Exact names/algorithms may be refined, but a UI control representing rounds/dept
 
 Before execution, where practical, MultiMind should make participant count and expected call/token/cost implications understandable to the user.
 
+Deliberation/council is not a peer task mode. It is machinery that may operate within Chat/General, Thinking, Research, Coding, and future compatible work modes at an appropriate depth.
+
 ## 7. Task modes are capabilities, not cosmetic prompt styles
 
-Coding, Research, and Thinking are task/capability modes.
+Coding, Research, and Thinking are task/capability modes. Chat/General is the ordinary conversational path.
 
 - CODING should identify coding-ready participants and produce implementation/code-focused work.
 - RESEARCH should identify research-ready participants and support evidence/cross-checking semantics appropriate to research.
@@ -104,6 +109,14 @@ Desired interaction:
 `MODE → ELIGIBLE/READY PARTICIPANTS → RECOMMENDED ROSTER / SELECT ALL READY → USER MAY CHECK/UNCHECK`
 
 Capability registry determines eligibility. Historical performance provides evidence. User preference provides personal judgment. These must not be collapsed into one field.
+
+### 7.1 Auto/Manual work-mode selection
+
+MultiMind may provide a Lazy/Auto policy that infers the appropriate work mode from the current conversation/task. Explicit manual mode selection remains available at all times and overrides automatic selection for the scope selected by the user.
+
+Lazy/Auto is a selector/policy, not a replacement for task modes and not a new deliberation mode.
+
+Automatic work-mode escalation does **not** imply automatic authority escalation. Selecting or inferring Coding may authorize coding-oriented reasoning/capability selection, but edit/commit/merge/deploy/delete/production authority remains governed independently by the accepted authority boundary.
 
 ## 8. Prompt Style is universal task normalization
 
@@ -151,6 +164,23 @@ A new API credential should conceptually enter through:
 `REGISTER PROVIDER/RESOURCE → DISCOVER/EVALUATE MODELS → ASSIGN CAPABILITIES/ELIGIBILITY → CURATE PARTICIPANTS → EXPOSE TO USER`
 
 not merely become another anonymous fallback slot.
+
+### 10.1 Independent Auto/Manual AI/model selection
+
+AI/model selection is a separate control axis from work-mode selection.
+
+The product must support both:
+
+- **AUTO AI/MODEL** — MultiMind selects an eligible available AI/model/resource according to task suitability, capability, availability, accepted cost/resource policy, operational health, diversity needs, and user preferences; and
+- **MANUAL AI/MODEL** — the user explicitly selects the desired AI/model/participant identity.
+
+The two axes may be combined independently. Examples include `Lazy + Auto AI`, `Research + Auto AI`, `Lazy + Claude`, and `Coding + Qwen`.
+
+A manual AI/model choice outranks automatic model selection. If that requested identity is unavailable, MultiMind must report/offer an honest fallback according to accepted semantics rather than silently substituting another identity.
+
+Adaptive resource routing remains distinct from AI/model identity. The same selected AI/model identity may have multiple legitimate provider/gateway routes, but route provenance must remain truthful. Provider/resource discovery must not invent upstream model identity when an endpoint only declares an unverifiable label.
+
+Auto selection may change computational strategy across turns/stages as task requirements change, while preserving conversation/task continuity. It must obey hard user resource policies such as no-paid-API constraints.
 
 ## 11. Current provider doctrine / non-binding roster direction
 
@@ -200,11 +230,13 @@ The Release Gate evaluates whether the resulting output meets the accepted quali
 
 A release-quality mechanism must not erase the underlying debate/provenance.
 
-## 15. History, persistence, and presentation
+## 15. History, persistence, memory, and presentation
 
-Debate history, participant provenance, system judgment, user judgment, and final synthesis are application truth and should remain persistable/reloadable according to the accepted persistence model.
+Debate history, participant provenance, system judgment, user judgment, final synthesis, accepted decisions, and active task state are application truth and should remain persistable/reloadable according to the accepted persistence model.
 
-Presentation may render the same truth differently through Reflex/Design-DNA themes, but presentation must not invent or mutate participant/debate truth.
+Conversation history may span multiple topics/projects/tasks. Retrieval/indexing should therefore be capable of separating relevant topic/project/decision/task context rather than treating an entire conversation as one undifferentiated summary blob. Retrieved memory aids continuity; current repository/filesystem and authoritative governance remain superior implementation truth.
+
+Presentation may render the same truth differently through Reflex/Design-DNA themes, but presentation must not invent or mutate participant/debate/task truth.
 
 Design-DNA remains presentation intelligence. It may project deliberation as council, laboratory, courtroom, editorial room, or another archetype without moving deliberation business logic into the theme package.
 
@@ -243,9 +275,19 @@ Preserve the current MultiMindApplication boundary, provider abstraction, persis
 
 Historical ideas such as code execution, autonomous self-loops, marketplace, visual workflow, and large-user scaling remain outside this lock unless separately accepted.
 
+Auto mode/model selection, conversation crystallization, or richer retrieval do not by themselves authorize those parked features or new infrastructure.
+
 ## 19. Acceptance
 
 `AI_PRODUCT_DNA = ACC KEEP MASTER`
+
+Accepted addition 2026-09-12:
+
+`WORK MODE SELECTION = AUTO OR MANUAL`
+
+`AI/MODEL SELECTION = AUTO OR MANUAL`
+
+These are independent axes. Manual selection overrides automatic selection within its selected scope. Deliberation/council remains cross-mode machinery rather than a peer mode. Automatic selection never implies automatic authority escalation.
 
 This document supersedes conflicting informal/historical interpretations of MultiMind's AI/chat/debate product intent while preserving repository reality as the authority for what is actually implemented today.
 
