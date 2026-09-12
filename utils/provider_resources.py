@@ -1,8 +1,7 @@
 """Server-side per-user provider credential resource parsing.
 
-This module deliberately returns only the currently selected credential values
-needed by existing provider adapters.  It never performs quota rotation and it
-never persists or presents secret material.
+Secret values remain server-side. Named resources are selected explicitly; there
+is no automatic credential rotation or cross-user merge.
 """
 from __future__ import annotations
 
@@ -34,15 +33,21 @@ def _selected_resource(spec):
     return resources.get(default_name)
 
 
-def parse_user_provider_pools(raw: str | None) -> dict[str, dict[str, str]]:
-    """Parse redaction-safe per-user resource pools into adapter key mappings.
+def _compatible_resource(provider_name: str, resource) -> dict[str, str] | None:
+    if not isinstance(resource, Mapping):
+        return None
+    base_url = resource.get("base_url")
+    key = resource.get("key") or resource.get("api_key")
+    if not isinstance(base_url, str) or not base_url.strip() or not isinstance(key, str) or not key:
+        return None
+    resource_id = str(resource.get("id") or provider_name or "").strip()
+    if not resource_id:
+        return None
+    return {"id": resource_id, "label": str(resource.get("label") or provider_name).strip(), "base_url": base_url.strip(), "api_key": key}
 
-    Invalid JSON, invalid users, malformed provider specs, and malformed selected
-    resources are ignored/fail closed.  Additional named resources remain inert;
-    there is intentionally no automatic credential rotation. The ``default``
-    namespace is reserved for deployment/operator credentials and cannot be
-    supplied through the per-user pool JSON.
-    """
+
+def parse_user_provider_pools(raw: str | None) -> dict[str, dict[str, object]]:
+    """Parse redaction-safe per-user resources into adapter settings."""
     if not isinstance(raw, str) or not raw.strip():
         return {}
     try:
@@ -52,7 +57,7 @@ def parse_user_provider_pools(raw: str | None) -> dict[str, dict[str, str]]:
     if not isinstance(document, Mapping):
         return {}
 
-    result: dict[str, dict[str, str]] = {}
+    result: dict[str, dict[str, object]] = {}
     seen_users: set[str] = set()
     for supplied_user, providers in document.items():
         try:
@@ -62,13 +67,13 @@ def parse_user_provider_pools(raw: str | None) -> dict[str, dict[str, str]]:
         if canonical_user == "default":
             continue
         if canonical_user in seen_users or not isinstance(providers, Mapping):
-            # Duplicate canonical identities are ambiguous and therefore ignored.
             result.pop(canonical_user, None)
             continue
         seen_users.add(canonical_user)
 
-        selected: dict[str, str] = dict(Config.EMPTY_API_KEYS)
+        selected: dict[str, object] = dict(Config.EMPTY_API_KEYS)
         selected["remote_url"] = ""
+        selected["openai_compatible_resources"] = []
         any_valid = False
         for provider_name, spec in providers.items():
             provider = str(provider_name or "").strip().lower()
@@ -83,11 +88,14 @@ def parse_user_provider_pools(raw: str | None) -> dict[str, dict[str, str]]:
                     selected["cloudflare_account_id"] = account_id
                     any_valid = True
                 continue
-
-            target_key = _PROVIDER_TO_KEY.get(provider)
-            if target_key is None:
+            if provider in {"openai_compatible", "compatible", "custom"}:
+                compatible = _compatible_resource(provider, resource)
+                if compatible:
+                    selected["openai_compatible_resources"].append(compatible)
+                    any_valid = True
                 continue
-            if isinstance(resource, str) and resource:
+            target_key = _PROVIDER_TO_KEY.get(provider)
+            if target_key is not None and isinstance(resource, str) and resource:
                 selected[target_key] = resource
                 any_valid = True
 

@@ -37,6 +37,7 @@ class Config:
         "cloudflare_account_id": "",
         "openrouter_key": "",
         "huggingface_key": "",
+        "openai_compatible_resources": [],
     }
 
     USER_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
@@ -75,8 +76,7 @@ class Config:
 
         ``allow_default=False`` is the strict authenticated-user mode: a missing
         user namespace resolves to empty credentials rather than the deployment
-        operator/default pool.  The default remains ``True`` for compatibility
-        with existing generic callers and rollback/reference paths.
+        operator/default pool. The default remains ``True`` for compatibility.
         """
         user_id = cls.validate_user_id(user_id)
         if secrets_source is None:
