@@ -4,6 +4,12 @@ The public host never imports private registry types or paths. It receives only
 opaque, bounded presentation scalars plus a self-contained material data URI.
 Missing, draft, incompatible, or invalid private signatures resolve to ``None``
 so MultiMind keeps the existing neutral/canonical structural presentation.
+
+Optional mark decoration is deliberately tiny and declarative. The private
+package may request one generic shape from a bounded vocabulary; arbitrary CSS,
+SVG, image paths, cultural symbols, and franchise marks never cross this seam.
+An absent or invalid mark degrades to no mark without disabling an otherwise
+valid material/typography signature.
 """
 from __future__ import annotations
 
@@ -24,6 +30,8 @@ _MAX_OPACITY = {
     _SURFACE_OVERLAY: 0.25,
     _FRAME_OUTSIDE_TEXT: 0.50,
 }
+_ALLOWED_MARK_SHAPES = {"ring", "square", "diamond", "bar"}
+_MARK_DEFAULTS = ("", "", 0, 0, 0.0)
 
 
 @dataclass(frozen=True)
@@ -44,6 +52,11 @@ class ApprovedVisualSignatureProjection:
     heading_text_transform: str
     body_letter_spacing: str
     line_height: float
+    mark_pack_id: str = ""
+    mark_shape: str = ""
+    mark_size_px: int = 0
+    mark_stroke_px: int = 0
+    mark_opacity: float = 0.0
 
 
 def _warn(exc: Exception) -> None:
@@ -73,6 +86,38 @@ def _data_uri(mime_type: str, payload: bytes) -> str:
         raise ValueError("signature material MIME type must be image/*")
     encoded = base64.b64encode(payload).decode("ascii")
     return f"data:{mime_type};base64,{encoded}"
+
+
+def _safe_mark(payload) -> tuple[str, str, int, int, float]:
+    """Project one optional generic mark or return neutral mark scalars.
+
+    Decoration may fail independently from the required material/typography
+    channels. This keeps malformed optional presentation metadata from taking
+    down an otherwise accepted signature.
+    """
+    mark = getattr(payload, "mark", None)
+    if mark is None:
+        return _MARK_DEFAULTS
+    try:
+        pack_id = str(mark.pack_id).strip()
+        shape = str(mark.shape).strip().lower()
+        size_px = int(mark.size_px)
+        stroke_px = int(mark.stroke_px)
+        opacity = float(mark.opacity)
+        if not pack_id:
+            raise ValueError("signature mark pack id is empty")
+        if shape not in _ALLOWED_MARK_SHAPES:
+            raise ValueError(f"unsupported signature mark shape: {shape}")
+        if not 8 <= size_px <= 64:
+            raise ValueError(f"unsafe signature mark size: {size_px}")
+        if not 1 <= stroke_px <= 6:
+            raise ValueError(f"unsafe signature mark stroke: {stroke_px}")
+        if not 0.05 <= opacity <= 0.70:
+            raise ValueError(f"unsafe signature mark opacity: {opacity}")
+        return pack_id, shape, size_px, stroke_px, opacity
+    except Exception as exc:
+        _warn(exc)
+        return _MARK_DEFAULTS
 
 
 @lru_cache(maxsize=256)
@@ -110,6 +155,7 @@ def resolve_approved_visual_signature(
         if line_height < 1.2 or line_height > 2.0:
             raise ValueError(f"unsafe signature line height: {line_height}")
 
+        mark_pack_id, mark_shape, mark_size_px, mark_stroke_px, mark_opacity = _safe_mark(payload)
         return ApprovedVisualSignatureProjection(
             reference_id=str(payload.reference_id),
             material_unit_id=str(payload.material_unit_id),
@@ -127,6 +173,11 @@ def resolve_approved_visual_signature(
             heading_text_transform=str(typography.heading_text_transform),
             body_letter_spacing=str(typography.body_letter_spacing),
             line_height=line_height,
+            mark_pack_id=mark_pack_id,
+            mark_shape=mark_shape,
+            mark_size_px=mark_size_px,
+            mark_stroke_px=mark_stroke_px,
+            mark_opacity=mark_opacity,
         )
     except Exception as exc:
         _warn(exc)
