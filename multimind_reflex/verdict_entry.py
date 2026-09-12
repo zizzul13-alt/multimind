@@ -1,43 +1,66 @@
-"""Persistent user-verdict presentation wiring for the accepted Reflex app.
+"""Persistent user-verdict + AI-identity presentation wiring for Reflex.
 
-This module patches presentation globals on the existing workspace module. It
-never creates a second ``rx.App`` and never owns application/persistence truth.
-The production ``mobile_entry`` remains the accepted host entry and imports this
-module only to install the bounded verdict-aware presentation extension.
+The accepted workspace remains the single rendering implementation. This module
+binds it to identity-aware state and keeps provider/model route detail secondary.
+Application/persistence truth remains behind MultiMindApplication.
 """
 from __future__ import annotations
 
 import reflex as rx
 
 import multimind_reflex.multimind_reflex as workspace
-from multimind_reflex.verdict_state import VerdictHostState
+from core.ai_identity import AI_IDENTITY_OPTIONS
+from multimind_reflex.identity_state import IdentityVerdictHostState
 
 
-# Existing workspace functions resolve these module globals when Reflex renders
-# the registered page. Bind them to the verdict-aware state without cloning the
-# workspace or moving business logic into presentation.
-workspace.HostState = VerdictHostState
+HostState = IdentityVerdictHostState
+workspace.HostState = HostState
+workspace.AGENT_OPTIONS = list(AI_IDENTITY_OPTIONS)
 
 
 def _participant_card(participant) -> rx.Component:
     return rx.card(
         rx.vstack(
             rx.hstack(
-                rx.text(participant["participant_id"], weight="bold"),
+                rx.text(
+                    rx.cond(
+                        participant["effective_identity_label"] != "",
+                        participant["effective_identity_label"],
+                        rx.cond(
+                            participant["requested_identity_label"] != "",
+                            participant["requested_identity_label"],
+                            participant["participant_id"],
+                        ),
+                    ),
+                    weight="bold",
+                ),
                 rx.badge(participant["status"]),
                 rx.cond(
-                    VerdictHostState.current_user_verdict == participant["participant_id"],
+                    HostState.current_user_verdict == participant["participant_id"],
                     rx.badge("MY WINNER", variant="solid"),
                 ),
                 wrap="wrap",
             ),
-            rx.text("Selected: ", participant["requested_provider"], size="2"),
-            rx.text(
-                "Actual: ",
-                rx.cond(participant["actual_provider"] != "", participant["actual_provider"], "not executed"),
-                size="2",
+            rx.cond(
+                participant["requested_identity_label"] != "",
+                rx.text("Requested AI: ", participant["requested_identity_label"], size="2"),
             ),
-            rx.cond(participant["model"] != "", rx.text("Model: ", participant["model"], size="2")),
+            rx.cond(
+                participant["effective_identity_label"] != "",
+                rx.text("Effective AI: ", participant["effective_identity_label"], size="2", weight="bold"),
+            ),
+            rx.cond(
+                participant["identity_route_fallback"],
+                rx.callout("Same-AI route fallback was used.", icon="info", width="100%"),
+            ),
+            rx.cond(
+                participant["model"] != "",
+                rx.text("Model: ", participant["model"], size="2"),
+            ),
+            rx.cond(
+                participant["route_provider"] != "",
+                rx.text("Route: ", participant["route_provider"], size="2"),
+            ),
             rx.cond(participant["role"] != "", rx.text("Role: ", participant["role"], size="2")),
             rx.cond(
                 participant["text"] != "",
@@ -51,17 +74,17 @@ def _participant_card(participant) -> rx.Component:
             rx.cond(
                 participant["status"] == "success",
                 rx.cond(
-                    VerdictHostState.current_user_verdict == participant["participant_id"],
+                    HostState.current_user_verdict == participant["participant_id"],
                     rx.button(
                         "Clear my winner",
-                        on_click=VerdictHostState.clear_current_user_verdict,
+                        on_click=HostState.clear_current_user_verdict,
                         variant="outline",
                         size="2",
                         class_name="mm-touch-target",
                     ),
                     rx.button(
                         "My winner",
-                        on_click=VerdictHostState.set_current_user_verdict(participant["participant_id"]),
+                        on_click=HostState.set_current_user_verdict(participant["participant_id"]),
                         variant="soft",
                         size="2",
                         class_name="mm-touch-target",
@@ -80,18 +103,18 @@ def _history_panel() -> rx.Component:
     return rx.vstack(
         rx.heading("Session history", size="4"),
         rx.foreach(
-            VerdictHostState.history,
+            HostState.history,
             lambda row: rx.card(
                 rx.vstack(
                     rx.text(row["prompt"], weight="bold", white_space="pre-wrap", class_name="mm-readable"),
                     rx.text(row["final_answer"], white_space="pre-wrap", class_name="mm-readable"),
                     rx.cond(
                         row["participant_summary"] != "",
-                        rx.text("Participants: ", row["participant_summary"], size="2"),
+                        rx.text("AI participants: ", row["participant_summary"], size="2"),
                     ),
                     rx.cond(
                         row["judge_provider"] != "",
-                        rx.text("Judge provider: ", row["judge_provider"], size="2"),
+                        rx.text("Judge route: ", row["judge_provider"], size="2"),
                     ),
                     rx.cond(
                         row["system_verdict"] != "",
