@@ -93,6 +93,17 @@ def test_identity_mismatch_is_rejected_instead_of_cosplay():
     assert participant["failure_category"] == "identity_unavailable"
 
 
+def test_concrete_model_identity_beats_conflicting_family_hint():
+    impostor = FakeProvider("groq-route", model="anthropic/claude-sonnet", family="gpt-oss")
+    app = _app(groq=impostor)
+
+    result = _run(app, ["gpt-oss"])
+
+    assert result.status == "error"
+    assert result.debate_data["participants"][0]["effective_identity"] == ""
+    assert infer_ai_identity(model_id="anthropic/claude-sonnet", family="gpt-oss") == "claude"
+
+
 def test_cross_identity_fallback_is_disabled_by_current_deliberation_policy():
     failed_gpt = FakeProvider("groq-route", model="openai/gpt-oss-20b", family="gpt-oss", status="error")
     available_gemini = FakeProvider("google-route", model="gemini-2.5-flash", family="gemini")
