@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 
+from core.ai_identity import AI_IDENTITY_LABELS
+
 
 def _as_debate_dict(raw):
     if isinstance(raw, dict):
@@ -21,17 +23,26 @@ def _as_debate_dict(raw):
     return {}
 
 
+def _identity_label(identity_id: str) -> str:
+    identity_id = str(identity_id or "")
+    return AI_IDENTITY_LABELS.get(identity_id, identity_id)
+
+
 def participant_snapshots(raw):
     debate = _as_debate_dict(raw)
     snapshots = []
     for item in debate.get("participants", []) if isinstance(debate.get("participants"), list) else []:
         if not isinstance(item, dict):
             continue
+        requested_identity = str(item.get("requested_identity") or "")
+        effective_identity = str(item.get("effective_identity") or "")
         snapshots.append(
             {
                 "participant_id": str(item.get("participant_id", "")),
-                "requested_identity": str(item.get("requested_identity") or ""),
-                "effective_identity": str(item.get("effective_identity") or ""),
+                "requested_identity": requested_identity,
+                "requested_identity_label": _identity_label(requested_identity),
+                "effective_identity": effective_identity,
+                "effective_identity_label": _identity_label(effective_identity),
                 "requested_provider": str(item.get("requested_provider", "")),
                 "actual_provider": str(item.get("actual_provider") or ""),
                 "route_provider": str(item.get("route_provider") or item.get("actual_provider") or ""),
@@ -53,12 +64,16 @@ def critique_snapshots(raw):
     for item in debate.get("deliberation", []) if isinstance(debate.get("deliberation"), list) else []:
         if not isinstance(item, dict):
             continue
+        requested_identity = str(item.get("requested_identity") or "")
+        effective_identity = str(item.get("effective_identity") or "")
         snapshots.append(
             {
                 "round": str(item.get("round", "")),
                 "participant_id": str(item.get("participant_id", "")),
-                "requested_identity": str(item.get("requested_identity") or ""),
-                "effective_identity": str(item.get("effective_identity") or ""),
+                "requested_identity": requested_identity,
+                "requested_identity_label": _identity_label(requested_identity),
+                "effective_identity": effective_identity,
+                "effective_identity_label": _identity_label(effective_identity),
                 "requested_provider": str(item.get("requested_provider", "")),
                 "actual_provider": str(item.get("actual_provider") or ""),
                 "route_provider": str(item.get("route_provider") or item.get("actual_provider") or ""),
@@ -105,7 +120,7 @@ def history_snapshots(rows):
         participants = participant_snapshots(debate)
         participant_summary = "; ".join(
             (
-                f"{item['effective_identity'] or item['requested_identity']}={item['status']}"
+                f"{item['effective_identity_label'] or item['requested_identity_label']}={item['status']}"
                 f" via {item['route_provider']}"
             ) if item["requested_identity"] else
             f"{item['participant_id']}={item['status']}:{item['actual_provider'] or item['requested_provider']}"
