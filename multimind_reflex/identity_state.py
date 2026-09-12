@@ -10,8 +10,8 @@ from multimind_reflex.verdict_state import VerdictHostState
 class IdentityVerdictHostState(VerdictHostState):
     """Keep provider routing behind the application boundary."""
 
-    active_agents: list[str] = ["gemini"]
-
+    # active_agents is inherited as a real Reflex State Var. Config.DEFAULT_AGENTS
+    # is already ["gemini"], so do not shadow it with a plain Python list here.
     @rx.event
     def set_agent_enabled(self, agent: str, enabled: bool):
         if agent not in AI_IDENTITIES:
