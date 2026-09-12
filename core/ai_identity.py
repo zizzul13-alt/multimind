@@ -36,48 +36,48 @@ AI_IDENTITIES: dict[str, AiIdentitySpec] = {
 AI_IDENTITY_OPTIONS = tuple(AI_IDENTITIES)
 AI_IDENTITY_LABELS = {key: spec.display_name for key, spec in AI_IDENTITIES.items()}
 
+_MODEL_IDENTITY_CHECKS = (
+    (("gemini",), "gemini"),
+    (("gpt-oss",), "gpt-oss"),
+    (("llama", "meta/llama", "meta-llama"), "llama"),
+    (("deepseek",), "deepseek"),
+    (("claude", "anthropic/"), "claude"),
+    (("qwen",), "qwen"),
+    (("kimi", "moonshot"), "kimi"),
+    (("grok", "x-ai/", "xai/"), "grok"),
+    (("gpt-", "openai/gpt-"), "gpt"),
+)
+
+_FAMILY_ALIASES = {
+    "gemini": "gemini",
+    "gpt-oss": "gpt-oss",
+    "llama": "llama",
+    "deepseek": "deepseek",
+    "claude": "claude",
+    "qwen": "qwen",
+    "kimi": "kimi",
+    "moonshot": "kimi",
+    "grok": "grok",
+    "gpt": "gpt",
+}
+
 
 def infer_ai_identity(*, model_id: str | None = None, family: str | None = None) -> str | None:
-    """Infer a durable AI identity only from provider-supplied model provenance.
+    """Infer identity conservatively from provider-supplied provenance.
 
-    Unknown/dynamic models return ``None`` rather than being guessed. Extra
-    families below are forward-compatible recognition only; they do not make a
-    route selectable unless the catalogue above explicitly maps one.
+    A concrete model identifier is stronger evidence than a family hint. If the
+    model is recognizable, it wins even when a stale/misconfigured family field
+    claims something else. Family is used only when the model string itself is
+    absent or not recognizable. Unknown provenance returns ``None``.
     """
-    family_value = str(family or "").strip().lower()
-    family_aliases = {
-        "gemini": "gemini",
-        "gpt-oss": "gpt-oss",
-        "llama": "llama",
-        "deepseek": "deepseek",
-        "claude": "claude",
-        "qwen": "qwen",
-        "kimi": "kimi",
-        "moonshot": "kimi",
-        "grok": "grok",
-        "gpt": "gpt",
-    }
-    if family_value in family_aliases:
-        return family_aliases[family_value]
-
     model = str(model_id or "").strip().lower()
-    if not model:
-        return None
-    checks = (
-        (("gemini",), "gemini"),
-        (("gpt-oss",), "gpt-oss"),
-        (("llama", "meta/llama", "meta-llama"), "llama"),
-        (("deepseek",), "deepseek"),
-        (("claude", "anthropic/"), "claude"),
-        (("qwen",), "qwen"),
-        (("kimi", "moonshot"), "kimi"),
-        (("grok", "x-ai/", "xai/"), "grok"),
-        (("gpt-", "openai/gpt-"), "gpt"),
-    )
-    for needles, identity in checks:
-        if any(needle in model for needle in needles):
-            return identity
-    return None
+    if model:
+        for needles, identity in _MODEL_IDENTITY_CHECKS:
+            if any(needle in model for needle in needles):
+                return identity
+
+    family_value = str(family or "").strip().lower()
+    return _FAMILY_ALIASES.get(family_value)
 
 
 def _model_from_response(response: dict, provider) -> str:
