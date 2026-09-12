@@ -35,11 +35,14 @@ class DebateResponseSnapshot:
     phase: str = "candidate"
     participant_id: str = ""
     actual_provider: str = ""
+    requested_identity: str = ""
+    effective_identity: str = ""
+    route_provider: str = ""
 
 
 @dataclass(frozen=True)
 class DebateParticipantSnapshot:
-    """Read-only participant attempt preserving selected and actual provenance."""
+    """Read-only participant attempt preserving AI identity and route provenance."""
     participant_id: str
     requested_provider: str
     actual_provider: str
@@ -48,6 +51,11 @@ class DebateParticipantSnapshot:
     status: str
     text: str
     failure_category: str = ""
+    requested_identity: str = ""
+    effective_identity: str = ""
+    route_provider: str = ""
+    identity_route_fallback: bool = False
+    identity_fallback_reason: str = ""
 
 
 @dataclass(frozen=True)
