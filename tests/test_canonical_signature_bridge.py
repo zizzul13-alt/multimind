@@ -10,6 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PANEL = (ROOT / "multimind_reflex/canonical_signature_proving.py").read_text(encoding="utf-8")
 PAGE = (ROOT / "multimind_reflex/canonical_page.py").read_text(encoding="utf-8")
 
+BATCH_01 = ("CA20", "CA21", "CA22", "CA24", "CA27", "CA28")
+BATCH_02 = ("CA16", "CA01", "CA19", "CA14", "CA23", "CA29")
+
 
 def _fake_payload(*, placement="bounded_material_frame_outside_text_surface", opacity=0.34):
     return SimpleNamespace(
@@ -68,11 +71,13 @@ def test_bridge_rejects_unknown_placement_or_unsafe_opacity(monkeypatch):
         assert bridge.resolve_signature_for_proving("CA20") is None
 
 
-def test_signature_panel_is_isolated_draft_proving_only():
-    for reference_id in ("CA20", "CA21", "CA22", "CA24", "CA27", "CA28"):
+def test_signature_panel_keeps_both_batches_isolated_and_credit_neutral():
+    for reference_id in BATCH_01 + BATCH_02:
         assert reference_id in PANEL
     assert 'data_signature_batch="01"' in PANEL
+    assert 'data_signature_batch="02"' in PANEL
     assert 'data_signature_complete_credit="0"' in PANEL
     assert "DRAFT PROVING" in PANEL
+    assert "cultural-safe draft proving" in PANEL
     assert "canonical_signature_proving_panel()" in PAGE
     assert "PROVING · NOT CUTOVER" in PAGE
