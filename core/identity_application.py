@@ -88,15 +88,21 @@ class IdentityFirstApplication(MultiMindApplication):
             error_logger.log("IDENTITY_DEBATE_EXECUTION_FAILURE", f"exception_type={type(exc).__name__}")
             return {"status": "error", "responses": [], "total_tokens": 0, "total_cost": 0}
 
-        # Decorate persisted deliberation truth with identity provenance. The
-        # wrapper only returns success after verifying model-family identity.
+        # Decorate persisted deliberation truth with identity provenance. Keep
+        # internal provider execution slots out of durable/user-facing participant IDs.
         participant_identity: dict[str, str] = {}
-        for participant in result.get("participants", []):
+        participant_id_map: dict[str, str] = {}
+        for index, participant in enumerate(result.get("participants", []), 1):
             slot = str(participant.get("requested_provider") or "")
             identity_id = slot_to_identity.get(slot, "")
             if not identity_id:
                 continue
-            participant_identity[str(participant.get("participant_id") or "")] = identity_id
+            old_participant_id = str(participant.get("participant_id") or "")
+            new_participant_id = f"participant-{index}-{identity_id}"
+            participant_identity[old_participant_id] = identity_id
+            participant_id_map[old_participant_id] = new_participant_id
+            participant["participant_id"] = new_participant_id
+
             spec = AI_IDENTITIES[identity_id]
             route = str(participant.get("actual_provider") or "")
             participant["requested_identity"] = identity_id
@@ -109,9 +115,11 @@ class IdentityFirstApplication(MultiMindApplication):
 
         for collection_name in ("deliberation", "revisions"):
             for item in result.get(collection_name, []):
-                identity_id = participant_identity.get(str(item.get("participant_id") or ""), "")
+                old_participant_id = str(item.get("participant_id") or "")
+                identity_id = participant_identity.get(old_participant_id, "")
                 if not identity_id:
                     continue
+                item["participant_id"] = participant_id_map.get(old_participant_id, old_participant_id)
                 spec = AI_IDENTITIES[identity_id]
                 route = str(item.get("actual_provider") or "")
                 item["requested_identity"] = identity_id
@@ -121,6 +129,17 @@ class IdentityFirstApplication(MultiMindApplication):
                 item["identity_fallback_reason"] = (
                     "same_identity_route_failure" if item["identity_route_fallback"] else ""
                 )
+
+        # Legacy response rows already carry wrapper identity metadata; only the
+        # provider-slot-derived participant identifier needs normalization.
+        for item in result.get("responses", []):
+            old_participant_id = str(item.get("participant_id") or "")
+            if old_participant_id in participant_id_map:
+                item["participant_id"] = participant_id_map[old_participant_id]
+
+        old_verdict = str(result.get("system_verdict") or "")
+        if old_verdict in participant_id_map:
+            result["system_verdict"] = participant_id_map[old_verdict]
 
         result["requested_identities"] = list(request.active_agents)
         result["identity_routing"] = {
