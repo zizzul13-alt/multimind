@@ -52,9 +52,9 @@ class WorkspaceSignatureState(WorkspaceDnaState):
         return payload.font_family if payload is not None else self.active_font_family
 
     @rx.var
-    def active_signature_font_weight(self) -> int:
+    def active_signature_heading_font_weight_css(self) -> str:
         payload = _signature(self.active_canonical_reference_id)
-        return payload.font_weight if payload is not None else 600
+        return str(payload.font_weight) if payload is not None else "inherit"
 
     @rx.var
     def active_signature_heading_letter_spacing(self) -> str:
@@ -101,9 +101,9 @@ class WorkspaceSignatureState(WorkspaceDnaState):
         return payload.font_family if payload is not None else self.draft_font_family
 
     @rx.var
-    def draft_signature_font_weight(self) -> int:
+    def draft_signature_heading_font_weight_css(self) -> str:
         payload = _signature(self.draft_canonical_reference_id)
-        return payload.font_weight if payload is not None else 600
+        return str(payload.font_weight) if payload is not None else "inherit"
 
     @rx.var
     def draft_signature_heading_letter_spacing(self) -> str:
