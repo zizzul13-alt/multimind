@@ -32,7 +32,9 @@ class VerdictHostState(WorkspaceSignatureState):
             self.error_message = "No persisted deliberation is available for a verdict."
             return
         result = self._application().set_user_verdict(
-            self.current_session_id, self.current_chat_id, participant_id
+            self.current_session_id,
+            self.current_chat_id,
+            participant_id,
         )
         if result.status != "success":
             messages = {
@@ -41,7 +43,10 @@ class VerdictHostState(WorkspaceSignatureState):
                 "invalid_debate_data": "The saved deliberation record is invalid.",
                 "persistence_failed": "Your verdict could not be saved. Please try again.",
             }
-            self.error_message = messages.get(result.status, "Your verdict could not be saved.")
+            self.error_message = messages.get(
+                result.status,
+                "Your verdict could not be saved.",
+            )
             return
         self.current_user_verdict = result.user_verdict
         self.error_message = ""
@@ -71,7 +76,9 @@ class VerdictHostState(WorkspaceSignatureState):
             if not prompt and not self._pending_uploads:
                 self.error_message = "Enter a prompt or stage at least one file."
                 return
-            ai_policy = str(getattr(self, "ai_selection_policy", "manual") or "manual")
+            ai_policy = str(
+                getattr(self, "ai_selection_policy", "manual") or "manual"
+            )
             if ai_policy != "auto" and not self.active_agents:
                 self.error_message = "Select at least one AI or use Auto AI."
                 return
@@ -90,7 +97,10 @@ class VerdictHostState(WorkspaceSignatureState):
             staged_uploads = [dict(item) for item in self._pending_uploads]
             request = OperatingChatRequest(
                 original_prompt=prompt,
-                uploads=[BufferedUpload(item["name"], item["data"]) for item in staged_uploads],
+                uploads=[
+                    BufferedUpload(item["name"], item["data"])
+                    for item in staged_uploads
+                ],
                 context_mode=self.context_mode,
                 session_id=session_id,
                 session_mode=session_mode,
@@ -98,7 +108,9 @@ class VerdictHostState(WorkspaceSignatureState):
                 active_agents=list(self.active_agents),
                 debate_rounds=self.debate_rounds,
                 selected_skill=self.selected_skill,
-                work_mode_policy=str(getattr(self, "work_mode_policy", "manual") or "manual"),
+                work_mode_policy=str(
+                    getattr(self, "work_mode_policy", "manual") or "manual"
+                ),
                 ai_selection_policy=ai_policy,
                 authority="think",
                 auto_ai_count=int(getattr(self, "auto_ai_count", 1) or 1),
@@ -107,7 +119,11 @@ class VerdictHostState(WorkspaceSignatureState):
         try:
             application = build_host_application(user_id, runtime_memories)
             result = await asyncio.to_thread(application.execute_chat, request)
-            history = await asyncio.to_thread(application.get_session_chats, session_id, 50)
+            history = await asyncio.to_thread(
+                application.get_session_chats,
+                session_id,
+                50,
+            )
         except Exception:
             result = None
             history = None
@@ -124,7 +140,10 @@ class VerdictHostState(WorkspaceSignatureState):
                 self.error_message = "No usable provider response was returned."
                 return
             if not result.persisted or not result.chat_id:
-                self.error_message = "The response was not durably persisted; no verdict target is available."
+                self.error_message = (
+                    "The response was not durably persisted; "
+                    "no verdict target is available."
+                )
                 self.current_chat_id = ""
                 return
 
