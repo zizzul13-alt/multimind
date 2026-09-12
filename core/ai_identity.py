@@ -1,11 +1,9 @@
-"""AI-identity-first routing over existing provider adapters.
+"""AI-identity-first routing over built-in and discovered provider resources.
 
-Users select an AI/model identity. This module resolves the boring infrastructure
-route underneath it and refuses to surface a response whose effective model
-identity does not match the selected identity.
-
-It intentionally does not own credentials, persistence, presentation, pricing,
-or cross-identity fallback policy.
+Users select an AI/model identity. Infrastructure routes remain server-side and
+responses are rejected when their effective identity does not match the selected
+identity. Endpoint-declared model IDs are useful routing evidence, not proof of
+upstream vendor provenance.
 """
 from __future__ import annotations
 
@@ -24,8 +22,6 @@ class AiIdentitySpec:
     execution_slot: str
 
 
-# Product identities over routes the current repository can truthfully pin today.
-# Gateway/inference brands are deliberately absent from the user-facing identity list.
 AI_IDENTITIES: dict[str, AiIdentitySpec] = {
     "gemini": AiIdentitySpec("gemini", "Gemini", ("gemini",), ("gemini",), "gemini"),
     "gpt-oss": AiIdentitySpec("gpt-oss", "GPT-OSS", ("gpt-oss",), ("groq", "huggingface"), "groq"),
@@ -49,44 +45,64 @@ _MODEL_IDENTITY_CHECKS = (
 )
 
 _FAMILY_ALIASES = {
-    "gemini": "gemini",
-    "gpt-oss": "gpt-oss",
-    "llama": "llama",
-    "deepseek": "deepseek",
-    "claude": "claude",
-    "qwen": "qwen",
-    "kimi": "kimi",
-    "moonshot": "kimi",
-    "grok": "grok",
-    "gpt": "gpt",
+    "gemini": "gemini", "gpt-oss": "gpt-oss", "llama": "llama",
+    "deepseek": "deepseek", "claude": "claude", "qwen": "qwen",
+    "kimi": "kimi", "moonshot": "kimi", "grok": "grok", "gpt": "gpt",
+}
+
+_DYNAMIC_LABELS = {
+    "claude": "Claude", "gpt": "GPT", "qwen": "Qwen", "kimi": "Kimi",
+    "grok": "Grok", "gemini": "Gemini", "deepseek": "DeepSeek",
+    "llama": "Llama", "gpt-oss": "GPT-OSS",
 }
 
 
 def infer_ai_identity(*, model_id: str | None = None, family: str | None = None) -> str | None:
-    """Infer identity conservatively from provider-supplied provenance.
-
-    A concrete model identifier is stronger evidence than a family hint. If the
-    model is recognizable, it wins even when a stale/misconfigured family field
-    claims something else. Family is used only when the model string itself is
-    absent or not recognizable. Unknown provenance returns ``None``.
-    """
+    """Infer identity conservatively from provider-supplied provenance."""
     model = str(model_id or "").strip().lower()
     if model:
         for needles, identity in _MODEL_IDENTITY_CHECKS:
             if any(needle in model for needle in needles):
                 return identity
-
-    family_value = str(family or "").strip().lower()
-    return _FAMILY_ALIASES.get(family_value)
+    return _FAMILY_ALIASES.get(str(family or "").strip().lower())
 
 
 def _model_from_response(response: dict, provider) -> str:
-    return str(
-        response.get("actual_model")
-        or response.get("resolved_model")
-        or getattr(provider, "model_name", "")
-        or ""
-    )
+    return str(response.get("actual_model") or response.get("resolved_model") or getattr(provider, "model_name", "") or "")
+
+
+def runtime_identity_specs(agents: Mapping[str, object] | None) -> dict[str, AiIdentitySpec]:
+    """Return static identities plus identities truthfully classifiable from routes.
+
+    Discovered resources use route IDs prefixed with ``resource:``. Multiple
+    models/routes for the same family become same-identity fallbacks. Unknown
+    catalogue entries stay inert rather than being guessed into the UI.
+    """
+    configured = agents or {}
+    route_map: dict[str, list[str]] = {key: list(spec.route_order) for key, spec in AI_IDENTITIES.items()}
+    for route_id, provider in configured.items():
+        if not str(route_id).startswith("resource:") or provider is None:
+            continue
+        identity_id = infer_ai_identity(model_id=getattr(provider, "model_name", None))
+        if not identity_id:
+            continue
+        route_map.setdefault(identity_id, []).append(str(route_id))
+
+    result = dict(AI_IDENTITIES)
+    for identity_id, routes in route_map.items():
+        unique_routes = tuple(dict.fromkeys(routes))
+        if identity_id in result:
+            base = result[identity_id]
+            result[identity_id] = AiIdentitySpec(base.identity_id, base.display_name, base.families, unique_routes, base.execution_slot)
+            continue
+        result[identity_id] = AiIdentitySpec(
+            identity_id=identity_id,
+            display_name=_DYNAMIC_LABELS.get(identity_id, identity_id.title()),
+            families=(identity_id,),
+            route_order=unique_routes,
+            execution_slot="groq",
+        )
+    return result
 
 
 class IdentityRoutedProvider(BaseProvider):
@@ -102,35 +118,18 @@ class IdentityRoutedProvider(BaseProvider):
         attempts: list[dict[str, str]] = []
         for route_index, (route_id, provider) in enumerate(self.routes):
             try:
-                response = provider.generate(
-                    prompt=prompt,
-                    system_prompt=system_prompt,
-                    mode=mode,
-                    max_tokens=max_tokens,
-                    **kwargs,
-                )
+                response = provider.generate(prompt=prompt, system_prompt=system_prompt, mode=mode, max_tokens=max_tokens, **kwargs)
             except Exception as exc:
                 attempts.append({"route": route_id, "status": "error", "reason": type(exc).__name__})
                 continue
-
             if not BaseProvider.has_usable_response(response):
-                attempts.append({
-                    "route": route_id,
-                    "status": "error",
-                    "reason": str(response.get("failure_category") or "provider_error") if isinstance(response, dict) else "provider_error",
-                })
+                attempts.append({"route": route_id, "status": "error", "reason": str(response.get("failure_category") or "provider_error") if isinstance(response, dict) else "provider_error"})
                 continue
-
             model_id = _model_from_response(response, provider)
-            effective_identity = infer_ai_identity(
-                model_id=model_id,
-                family=response.get("model_family") if isinstance(response, dict) else None,
-            )
+            effective_identity = infer_ai_identity(model_id=model_id, family=response.get("model_family") if isinstance(response, dict) else None)
             if effective_identity != self.spec.identity_id:
-                # Infrastructure may be abstracted; the AI identity may not be falsified.
                 attempts.append({"route": route_id, "status": "rejected", "reason": "identity_mismatch"})
                 continue
-
             result = dict(response)
             result.update({
                 "requested_identity": self.spec.identity_id,
@@ -140,8 +139,8 @@ class IdentityRoutedProvider(BaseProvider):
                 "identity_route_fallback": route_index > 0,
                 "identity_fallback_reason": "same_identity_route_failure" if route_index > 0 else None,
                 "route_attempts": attempts + [{"route": route_id, "status": "success", "reason": ""}],
+                "identity_provenance": response.get("identity_provenance", "provider_model_provenance"),
             })
-            # Old orchestration records response['agent'] as actual provider provenance.
             result["agent"] = route_id
             self.model_name = model_id or self.spec.display_name
             self.set_availability(True)
@@ -149,31 +148,19 @@ class IdentityRoutedProvider(BaseProvider):
 
         self.set_availability(False, "No truthful route available")
         return {
-            "status": "error",
-            "text": "Provider temporarily unavailable. Trying another provider.",
-            "agent": self.spec.display_name,
-            "tokens": 0,
-            "cost": 0.0,
-            "failure_category": "identity_unavailable",
-            "requested_identity": self.spec.identity_id,
-            "effective_identity": None,
-            "route_provider": None,
-            "identity_route_fallback": False,
-            "identity_fallback_reason": "all_same_identity_routes_failed",
-            "route_attempts": attempts,
+            "status": "error", "text": "Provider temporarily unavailable. Trying another provider.",
+            "agent": self.spec.display_name, "tokens": 0, "cost": 0.0,
+            "failure_category": "identity_unavailable", "requested_identity": self.spec.identity_id,
+            "effective_identity": None, "route_provider": None, "identity_route_fallback": False,
+            "identity_fallback_reason": "all_same_identity_routes_failed", "route_attempts": attempts,
         }
 
 
 def build_identity_providers(agents: Mapping[str, object] | None) -> dict[str, IdentityRoutedProvider]:
-    """Build available identity participants from already-composed provider adapters."""
     configured = agents or {}
     identities: dict[str, IdentityRoutedProvider] = {}
-    for identity_id, spec in AI_IDENTITIES.items():
-        routes = [
-            (route_id, configured[route_id])
-            for route_id in spec.route_order
-            if configured.get(route_id) is not None
-        ]
+    for identity_id, spec in runtime_identity_specs(configured).items():
+        routes = [(route_id, configured[route_id]) for route_id in spec.route_order if configured.get(route_id) is not None]
         if routes:
             identities[identity_id] = IdentityRoutedProvider(spec, routes)
     return identities
