@@ -9,13 +9,76 @@ from __future__ import annotations
 import reflex as rx
 
 import multimind_reflex.multimind_reflex as workspace
-from core.ai_identity import AI_IDENTITY_OPTIONS
+from core.ai_identity import AI_IDENTITY_LABELS, AI_IDENTITY_OPTIONS
 from multimind_reflex.identity_state import IdentityVerdictHostState
 
 
 HostState = IdentityVerdictHostState
 workspace.HostState = HostState
 workspace.AGENT_OPTIONS = list(AI_IDENTITY_OPTIONS)
+
+
+def _execution_controls() -> rx.Component:
+    return rx.vstack(
+        rx.heading("Execution", size="4"),
+        rx.hstack(
+            rx.radio(
+                ["continue", "standalone"],
+                value=HostState.context_mode,
+                on_change=HostState.set_context_mode,
+            ),
+            rx.spacer(),
+            rx.checkbox(
+                "Compressor",
+                checked=HostState.compressor_enabled,
+                on_change=HostState.set_compressor_enabled,
+            ),
+            width="100%",
+            align="center",
+            wrap="wrap",
+        ),
+        rx.text("AI participants", size="2", weight="bold"),
+        rx.hstack(
+            *[
+                rx.checkbox(
+                    AI_IDENTITY_LABELS[identity_id],
+                    checked=HostState.active_agents.contains(identity_id),
+                    on_change=lambda enabled, identity_id=identity_id: HostState.set_agent_enabled(identity_id, enabled),
+                )
+                for identity_id in AI_IDENTITY_OPTIONS
+            ],
+            wrap="wrap",
+            width="100%",
+        ),
+        rx.text(
+            "Infrastructure routes are resolved automatically. Route/model details remain visible in result provenance.",
+            size="1",
+        ),
+        rx.hstack(
+            rx.vstack(
+                rx.text("Rounds", size="2"),
+                rx.select(
+                    ["1", "2", "3", "4", "5"],
+                    value=HostState.debate_rounds.to_string(),
+                    on_change=HostState.set_debate_rounds,
+                ),
+                align="start",
+            ),
+            rx.vstack(
+                rx.text("Skill", size="2"),
+                rx.select(
+                    workspace.SKILL_OPTIONS,
+                    value=HostState.selected_skill,
+                    on_change=HostState.set_selected_skill,
+                ),
+                align="start",
+            ),
+            width="100%",
+            wrap="wrap",
+        ),
+        spacing="3",
+        width="100%",
+    )
 
 
 def _participant_card(participant) -> rx.Component:
@@ -136,6 +199,7 @@ def _history_panel() -> rx.Component:
     )
 
 
+workspace._execution_controls = _execution_controls
 workspace._participant_card = _participant_card
 workspace._history_panel = _history_panel
 app = workspace.app
