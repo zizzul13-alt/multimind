@@ -1,6 +1,6 @@
 """AI-identity-first routing over existing provider adapters.
 
-Users select an AI/model identity.  This module resolves the boring infrastructure
+Users select an AI/model identity. This module resolves the boring infrastructure
 route underneath it and refuses to surface a response whose effective model
 identity does not match the selected identity.
 
@@ -21,15 +21,16 @@ class AiIdentitySpec:
     display_name: str
     families: tuple[str, ...]
     route_order: tuple[str, ...]
+    execution_slot: str
 
 
-# This is a product-identity catalogue over routes that the current repository
-# can truthfully pin today.  Gateway brands are deliberately absent as identities.
+# Product identities over routes the current repository can truthfully pin today.
+# Gateway/inference brands are deliberately absent from the user-facing identity list.
 AI_IDENTITIES: dict[str, AiIdentitySpec] = {
-    "gemini": AiIdentitySpec("gemini", "Gemini", ("gemini",), ("gemini",)),
-    "gpt-oss": AiIdentitySpec("gpt-oss", "GPT-OSS", ("gpt-oss",), ("groq", "huggingface")),
-    "llama": AiIdentitySpec("llama", "Llama", ("llama",), ("cloudflare",)),
-    "deepseek": AiIdentitySpec("deepseek", "DeepSeek", ("deepseek",), ("deepseek",)),
+    "gemini": AiIdentitySpec("gemini", "Gemini", ("gemini",), ("gemini",), "gemini"),
+    "gpt-oss": AiIdentitySpec("gpt-oss", "GPT-OSS", ("gpt-oss",), ("groq", "huggingface"), "groq"),
+    "llama": AiIdentitySpec("llama", "Llama", ("llama",), ("cloudflare",), "cloudflare"),
+    "deepseek": AiIdentitySpec("deepseek", "DeepSeek", ("deepseek",), ("deepseek",), "deepseek"),
 }
 
 AI_IDENTITY_OPTIONS = tuple(AI_IDENTITIES)
@@ -39,7 +40,7 @@ AI_IDENTITY_LABELS = {key: spec.display_name for key, spec in AI_IDENTITIES.item
 def infer_ai_identity(*, model_id: str | None = None, family: str | None = None) -> str | None:
     """Infer a durable AI identity only from provider-supplied model provenance.
 
-    Unknown/dynamic models return ``None`` rather than being guessed.  The extra
+    Unknown/dynamic models return ``None`` rather than being guessed. Extra
     families below are forward-compatible recognition only; they do not make a
     route selectable unless the catalogue above explicitly maps one.
     """
@@ -126,7 +127,7 @@ class IdentityRoutedProvider(BaseProvider):
                 family=response.get("model_family") if isinstance(response, dict) else None,
             )
             if effective_identity != self.spec.identity_id:
-                # A gateway/provider response is not allowed to cosplay the selected AI.
+                # Infrastructure may be abstracted; the AI identity may not be falsified.
                 attempts.append({"route": route_id, "status": "rejected", "reason": "identity_mismatch"})
                 continue
 
@@ -140,7 +141,7 @@ class IdentityRoutedProvider(BaseProvider):
                 "identity_fallback_reason": "same_identity_route_failure" if route_index > 0 else None,
                 "route_attempts": attempts + [{"route": route_id, "status": "success", "reason": ""}],
             })
-            # Preserve old response consumers while making the actual route explicit.
+            # Old orchestration records response['agent'] as actual provider provenance.
             result["agent"] = route_id
             self.model_name = model_id or self.spec.display_name
             self.set_availability(True)
