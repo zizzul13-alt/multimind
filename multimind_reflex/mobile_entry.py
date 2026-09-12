@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from multimind_reflex.multimind_reflex import app
 from multimind_reflex import verdict_entry as _verdict_entry  # noqa: F401
+from multimind_reflex import signature_entry as _signature_entry  # noqa: F401
 
 
 _MOBILE_POLISH = {
