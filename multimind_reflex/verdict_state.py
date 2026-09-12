@@ -38,109 +38,113 @@ class VerdictHostState(WorkspaceSignatureState):
             self.error_message = "Finish the active run before recording a verdict."
             return
         if not self.current_session_id or not self.current_chat_id:
-            self.error_message = "No active deliberation result to judge."
+            self.error_message = "No persisted deliberation is available for a verdict."
             return
-        application = build_host_application(self.username)
-        try:
-            application.set_user_verdict(
-                self.current_session_id,
-                self.current_chat_id,
-                participant_id,
-            )
-        except Exception as exc:
-            self.error_message = str(exc)
+
+        result = self._application().set_user_verdict(
+            self.current_session_id,
+            self.current_chat_id,
+            participant_id,
+        )
+        if result.status != "success":
+            messages = {
+                "invalid_participant": "Only a successful participant can be selected as your winner.",
+                "chat_not_found": "The persisted chat could not be found.",
+                "invalid_debate_data": "The saved deliberation record is invalid.",
+                "persistence_failed": "Your verdict could not be saved. Please try again.",
+            }
+            self.error_message = messages.get(result.status, "Your verdict could not be saved.")
             return
-        self.current_user_verdict = participant_id
-        self.history = history_snapshots(application.get_session_history(self.current_session_id))
-        self.success_message = "Your independent winner was saved."
+
+        self.current_user_verdict = result.user_verdict
         self.error_message = ""
+        self.success_message = (
+            f"Your winner: {result.user_verdict}"
+            if result.user_verdict
+            else "Your winner selection was cleared."
+        )
+        self._refresh_history()
 
     @rx.event
     def clear_current_user_verdict(self):
-        if self.busy:
-            self.error_message = "Finish the active run before clearing a verdict."
-            return
-        if not self.current_session_id or not self.current_chat_id:
-            self.error_message = "No active deliberation result to judge."
-            return
-        application = build_host_application(self.username)
-        try:
-            application.set_user_verdict(
-                self.current_session_id,
-                self.current_chat_id,
-                None,
-            )
-        except Exception as exc:
-            self.error_message = str(exc)
-            return
-        self.current_user_verdict = ""
-        self.history = history_snapshots(application.get_session_history(self.current_session_id))
-        self.success_message = "Your independent winner was cleared."
-        self.error_message = ""
+        self.set_current_user_verdict("")
 
     @rx.event(background=True)
     async def run_chat(self):
+        """Run the accepted app path while retaining the exact persisted chat id."""
         async with self:
             if self.busy:
                 return
+            if not self.logged_in:
+                self.error_message = "Login required."
+                return
             if not self.current_session_id:
-                self.error_message = "Select a session first."
+                self.error_message = "Select or create a session first."
                 return
-            if not self.prompt.strip():
-                self.error_message = "Prompt is required."
+            prompt = self.prompt.strip()
+            if not prompt and not self._pending_uploads:
+                self.error_message = "Enter a prompt or stage at least one file."
                 return
+            if not self.active_agents:
+                self.error_message = "Select at least one agent."
+                return
+
             self.busy = True
+            self.status_message = "Running…"
             self.error_message = ""
             self.success_message = ""
-            self.status_message = "Preparing request..."
-            self.warnings = []
+            self.final_answer = ""
             self._clear_deliberation_projection()
-            username = self.username
-            session_id = self.current_session_id
-            context_mode = self.context_mode
-            agents = list(self.active_agents)
-            prompt = self.prompt
-            rounds = self.debate_rounds
-            compressor_enabled = self.compressor_enabled
-            attachments = [BufferedUpload(item.name, item.data) for item in self.staged_uploads]
-            template_name = self.selected_template or None
-            template_variables_json = self.template_variables_json
-            selected_skill = self.selected_skill or None
+            self.warnings = []
 
-        application = build_host_application(username)
-        request = ChatRequest(
-            session_id=session_id,
-            prompt=prompt,
-            context_mode=context_mode,
-            agents=agents,
-            debate_rounds=rounds,
-            compressor_enabled=compressor_enabled,
-            attachments=attachments,
-            template_name=template_name,
-            template_variables_json=template_variables_json,
-            selected_skill=selected_skill,
-        )
+            user_id = self.user_id
+            session_id = self.current_session_id
+            session_mode = self.current_session_mode
+            runtime_memories = self._runtime_memories
+            staged_uploads = [dict(item) for item in self._pending_uploads]
+            request = ChatRequest(
+                original_prompt=prompt,
+                uploads=[BufferedUpload(item["name"], item["data"]) for item in staged_uploads],
+                context_mode=self.context_mode,
+                session_id=session_id,
+                session_mode=session_mode,
+                compressor_enabled=self.compressor_enabled,
+                active_agents=list(self.active_agents),
+                debate_rounds=self.debate_rounds,
+                selected_skill=self.selected_skill,
+            )
 
         try:
-            result = await asyncio.to_thread(application.run_chat, request)
-        except Exception as exc:
-            async with self:
-                self.busy = False
-                self.status_message = ""
-                self.error_message = str(exc)
-            return
+            application = build_host_application(user_id, runtime_memories)
+            result = await asyncio.to_thread(application.execute_chat, request)
+            history = await asyncio.to_thread(application.get_session_chats, session_id, 50)
+        except Exception:
+            result = None
+            history = None
 
         async with self:
             self.busy = False
-            self.status_message = "Done"
+            self.status_message = ""
+            if result is None:
+                self.error_message = "Chat execution failed. Please try again."
+                return
+
             self.warnings = list(result.warnings)
-            self.final_answer = result.final_answer
             self._set_deliberation_projection(result.debate_data)
+            if result.status != "success":
+                self.error_message = "No usable provider response was returned."
+                return
+
+            if not result.persisted or not result.chat_id:
+                self.error_message = "The response was not durably persisted; no verdict target is available."
+                self.current_chat_id = ""
+                return
+
             self.current_chat_id = result.chat_id
-            self.history = history_snapshots(application.get_session_history(session_id))
+            self.final_answer = result.final_answer
+            self.history = history_snapshots(history or [])
             self.prompt = ""
-            self.staged_uploads = []
-            self.success_message = "Run completed."
-
-
-__all__ = ["VerdictHostState"]
+            self._pending_uploads = []
+            self.upload_names = []
+            self.success_message = "Response saved to session history."
+            self._refresh_estimate()
