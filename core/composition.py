@@ -17,16 +17,17 @@ from core.identity_application import IdentityFirstApplication
 from core.memory import persist_chat_and_update_memory
 from database.manager import DatabaseManager
 from database.turso_manager import TursoDatabaseManager
+from providers.openai_compatible import discover_resource_providers
 from utils.config import Config
 
 
 def build_agents(api_keys):
-    """Construct the existing provider set without presentation dependencies."""
+    """Construct built-in providers plus declared generic resources."""
     unified = UnifiedAgent(api_keys)
     remote_url = api_keys.get("remote_url", "")
     remote = RemoteAgent(remote_url) if remote_url else None
 
-    return {
+    agents = {
         "unified": unified,
         "remote": remote,
         "gemini": GeminiAgent(api_keys.get("gemini_key", "")) if api_keys.get("gemini_key") else None,
@@ -39,6 +40,9 @@ def build_agents(api_keys):
         "openrouter": OpenRouterAgent(api_keys.get("openrouter_key", "")) if api_keys.get("openrouter_key") else None,
         "huggingface": HuggingFaceAgent(api_keys.get("huggingface_key", "")) if api_keys.get("huggingface_key") else None,
     }
+    for spec in api_keys.get("openai_compatible_resources", ()) or ():
+        agents.update(discover_resource_providers(spec))
+    return agents
 
 
 def build_database_for_user(
@@ -92,12 +96,7 @@ def build_application_for_user(
     debate_factory=DebateOrchestrator,
     persist_chat=persist_chat_and_update_memory,
 ):
-    """Build one user-scoped application boundary for any presentation host.
-
-    Provider adapters remain the infrastructure layer. The returned application
-    adds a stable AI-identity routing seam above those adapters while preserving
-    provider-keyed compatibility for existing tests/reference callers.
-    """
+    """Build one user-scoped application boundary for any presentation host."""
     user_id = Config.validate_user_id(user_id)
 
     if agents is None:
