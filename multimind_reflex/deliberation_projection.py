@@ -30,13 +30,18 @@ def participant_snapshots(raw):
         snapshots.append(
             {
                 "participant_id": str(item.get("participant_id", "")),
+                "requested_identity": str(item.get("requested_identity") or ""),
+                "effective_identity": str(item.get("effective_identity") or ""),
                 "requested_provider": str(item.get("requested_provider", "")),
                 "actual_provider": str(item.get("actual_provider") or ""),
+                "route_provider": str(item.get("route_provider") or item.get("actual_provider") or ""),
                 "model": str(item.get("model") or ""),
                 "role": str(item.get("role", "")),
                 "status": str(item.get("status", "unknown")),
                 "text": str(item.get("text", "")),
                 "failure_category": str(item.get("failure_category") or ""),
+                "identity_route_fallback": bool(item.get("identity_route_fallback", False)),
+                "identity_fallback_reason": str(item.get("identity_fallback_reason") or ""),
             }
         )
     return snapshots
@@ -52,8 +57,11 @@ def critique_snapshots(raw):
             {
                 "round": str(item.get("round", "")),
                 "participant_id": str(item.get("participant_id", "")),
+                "requested_identity": str(item.get("requested_identity") or ""),
+                "effective_identity": str(item.get("effective_identity") or ""),
                 "requested_provider": str(item.get("requested_provider", "")),
                 "actual_provider": str(item.get("actual_provider") or ""),
+                "route_provider": str(item.get("route_provider") or item.get("actual_provider") or ""),
                 "status": str(item.get("status", "unknown")),
                 "text": str(item.get("text", "")),
             }
@@ -96,6 +104,10 @@ def history_snapshots(rows):
         summary = run_summary(debate)
         participants = participant_snapshots(debate)
         participant_summary = "; ".join(
+            (
+                f"{item['effective_identity'] or item['requested_identity']}={item['status']}"
+                f" via {item['route_provider']}"
+            ) if item["requested_identity"] else
             f"{item['participant_id']}={item['status']}:{item['actual_provider'] or item['requested_provider']}"
             for item in participants
         )
