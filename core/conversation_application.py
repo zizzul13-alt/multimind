@@ -1,7 +1,6 @@
 """Conversation-first application extension over the accepted identity boundary."""
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 
 from core.ai_identity import available_identity_options
@@ -52,8 +51,8 @@ class ConversationFirstApplication(IdentityFirstApplication):
 
     def execute_chat(self, request: ChatRequest):
         # Existing hosts and compatibility seams use the accepted ChatRequest
-        # contract. Keep that path byte-for-behaviour compatible: conversation
-        # retrieval/checkpoint work is opt-in through OperatingChatRequest.
+        # contract. Keep that path behaviour-compatible: conversation retrieval
+        # and checkpoints are opt-in through OperatingChatRequest.
         if not isinstance(request, OperatingChatRequest):
             return super().execute_chat(request)
 
@@ -145,14 +144,12 @@ class ConversationFirstApplication(IdentityFirstApplication):
         result.debate_data.setdefault("product_semantics", {}).update(operating)
 
         if result.persisted and result.chat_id and request.session_id:
-            try:
-                database.update_chat_debate_data(
-                    request.session_id,
-                    result.chat_id,
-                    json.dumps(result.debate_data),
-                )
-            except Exception:
+            if not service.persist_checkpoint(
+                request.session_id,
+                result.chat_id,
+                result.debate_data,
+            ):
                 result.warnings.append(
-                    "Operating-model checkpoint could not be persisted."
+                    "Operating-model checkpoint could not be durably verified."
                 )
         return result
