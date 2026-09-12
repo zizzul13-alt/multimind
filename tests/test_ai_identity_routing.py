@@ -55,6 +55,7 @@ def test_primary_identity_route_preserves_ai_and_route_truth():
 
     assert result.status == "success"
     participant = result.debate_data["participants"][0]
+    assert participant["participant_id"] == "participant-1-gemini"
     assert participant["requested_identity"] == "gemini"
     assert participant["effective_identity"] == "gemini"
     assert participant["route_provider"] == "gemini"
@@ -71,6 +72,7 @@ def test_same_identity_route_fallback_keeps_identity_and_records_actual_route():
     participant = result.debate_data["participants"][0]
 
     assert result.status == "success"
+    assert participant["participant_id"] == "participant-1-gpt-oss"
     assert participant["requested_identity"] == "gpt-oss"
     assert participant["effective_identity"] == "gpt-oss"
     assert participant["route_provider"] == "huggingface"
@@ -89,6 +91,7 @@ def test_identity_mismatch_is_rejected_instead_of_cosplay():
 
     assert result.status == "error"
     assert participant["status"] == "error"
+    assert participant["participant_id"] == "participant-1-gpt-oss"
     assert participant["requested_identity"] == "gpt-oss"
     assert participant["effective_identity"] == ""
     assert participant["failure_category"] == "identity_unavailable"
@@ -128,6 +131,11 @@ def test_multi_ai_debate_preserves_each_identity_separately_from_route():
     participants = result.debate_data["participants"]
 
     assert result.status == "success"
+    assert [item["participant_id"] for item in participants] == [
+        "participant-1-gemini",
+        "participant-2-gpt-oss",
+        "participant-3-llama",
+    ]
     assert [item["requested_identity"] for item in participants] == ["gemini", "gpt-oss", "llama"]
     assert [item["effective_identity"] for item in participants] == ["gemini", "gpt-oss", "llama"]
     assert [item["route_provider"] for item in participants] == ["gemini", "groq", "cloudflare"]
@@ -158,6 +166,7 @@ def test_identity_provenance_survives_database_reload(tmp_path):
     rows = reopened.get_session_chats(session_id)
     debate = json.loads(rows[0]["debate_data"])
     participant = debate["participants"][0]
+    assert participant["participant_id"] == "participant-1-gemini"
     assert participant["requested_identity"] == "gemini"
     assert participant["effective_identity"] == "gemini"
     assert participant["route_provider"] == "gemini"
