@@ -23,7 +23,8 @@ class ConversationFirstApplication(IdentityFirstApplication):
     """Resolve Auto/Manual axes without changing user authority or provider truth."""
     def execute_chat(self,request:ChatRequest):
         mode_policy=str(getattr(request,"work_mode_policy","manual") or "manual"); mode_selection=select_work_mode(request.original_prompt,request.session_mode,mode_policy); ai_policy=str(getattr(request,"ai_selection_policy","manual") or "manual").lower(); authority=normalize_authority(getattr(request,"authority","think")); explicit=list(dict.fromkeys(request.active_agents or [])); available=available_identity_options(self.agents)
-        if ai_policy=="auto": count=max(1,min(6,int(getattr(request,"auto_ai_count",1) or 1)); selected=select_auto_identities(mode_selection["selected"],available,count=count)
+        if ai_policy=="auto":
+            count=max(1,min(6,int(getattr(request,"auto_ai_count",1) or 1))); selected=select_auto_identities(mode_selection["selected"],available,count=count)
         else: selected=explicit
         routed=ChatRequest(original_prompt=request.original_prompt,uploads=request.uploads,context_mode=request.context_mode,session_id=request.session_id,session_mode=mode_selection["selected"],compressor_enabled=request.compressor_enabled,active_agents=selected,debate_rounds=request.debate_rounds,selected_skill=request.selected_skill)
         database=self._database(); service=ConversationStateService(database); task_state={}; retrieved=""; original_memory=None
