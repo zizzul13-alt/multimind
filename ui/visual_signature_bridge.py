@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 from dataclasses import dataclass
+from functools import lru_cache
 from importlib import import_module
 import logging
 from typing import Optional
@@ -52,7 +53,14 @@ def _warn(exc: Exception) -> None:
     )
 
 
+@lru_cache(maxsize=1)
 def _private_module():
+    """Resolve optional private package once for the lifetime of this process.
+
+    Package availability cannot legitimately change without a process restart,
+    so repeated import attempts during Reflex computed-var evaluation only add
+    startup noise and work while providing no recovery benefit.
+    """
     try:
         return import_module("design_dna.visual_signature_host")
     except Exception as exc:
@@ -67,15 +75,23 @@ def _data_uri(mime_type: str, payload: bytes) -> str:
     return f"data:{mime_type};base64,{encoded}"
 
 
+@lru_cache(maxsize=256)
 def resolve_approved_visual_signature(
     reference_id: str,
 ) -> Optional[ApprovedVisualSignatureProjection]:
-    """Return one final-approved signature or ``None`` on any unsafe state."""
+    """Return one immutable final-approved signature or ``None`` on unsafe state.
+
+    Private registry contents are packaged at process start and cannot change in
+    place, so caching by canonical reference is safe until the next restart.
+    """
+    normalized_reference = str(reference_id or "").strip()
+    if not normalized_reference:
+        return None
     module = _private_module()
     if module is None:
         return None
     try:
-        payload = module.read_approved_signature(str(reference_id or "").strip())
+        payload = module.read_approved_signature(normalized_reference)
         if payload is None or not bool(getattr(payload, "final_approved", False)):
             return None
 
