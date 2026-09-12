@@ -74,3 +74,31 @@ class ConversationStateService:
             self.task_state(session_id),
             authority,
         ) or {}
+
+    def persist_checkpoint(self, session_id, chat_id, debate_data):
+        """Persist and read back one operating-model checkpoint.
+
+        Persistence success means more than issuing an UPDATE: the exact
+        session-scoped chat must be readable afterwards and contain the same
+        product-semantics checkpoint. This stays inside the existing durable
+        chat JSON contract, so backup/restore and user isolation remain owned by
+        the existing database adapter.
+        """
+        updater = getattr(self.db, "update_chat_debate_data", None)
+        getter = getattr(self.db, "get_chat", None)
+        if not callable(updater) or not callable(getter):
+            return False
+        try:
+            encoded = json.dumps(debate_data)
+            if updater(session_id, chat_id, encoded) is not True:
+                return False
+            row = getter(session_id, chat_id)
+            if not isinstance(row, dict):
+                return False
+            raw = row.get("debate_data") or "{}"
+            persisted = json.loads(raw) if isinstance(raw, str) else dict(raw)
+        except (TypeError, ValueError, OSError):
+            return False
+        expected = (debate_data.get("product_semantics") or {})
+        actual = (persisted.get("product_semantics") or {})
+        return bool(expected) and actual == expected
