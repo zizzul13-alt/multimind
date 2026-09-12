@@ -1,6 +1,17 @@
 from types import SimpleNamespace
 
+import pytest
+
 import ui.visual_signature_bridge as bridge
+
+
+@pytest.fixture(autouse=True)
+def _clear_signature_bridge_caches():
+    bridge._private_module.cache_clear()
+    bridge.resolve_approved_visual_signature.cache_clear()
+    yield
+    bridge._private_module.cache_clear()
+    bridge.resolve_approved_visual_signature.cache_clear()
 
 
 def _payload(*, approved=True, placement="bounded_material_frame_outside_text_surface", opacity=0.38):
@@ -61,6 +72,8 @@ def test_unsafe_placement_or_opacity_fails_closed(monkeypatch):
         _payload(placement="surface_overlay", opacity=0.30),
         _payload(placement="bounded_material_frame_outside_text_surface", opacity=0.51),
     ):
+        bridge._private_module.cache_clear()
+        bridge.resolve_approved_visual_signature.cache_clear()
         module = SimpleNamespace(read_approved_signature=lambda _reference_id, payload=payload: payload)
         monkeypatch.setattr(bridge, "import_module", lambda _name, module=module: module)
         assert bridge.resolve_approved_visual_signature("CA21") is None

@@ -14,10 +14,10 @@ import reflex as rx
 from core.application import ChatRequest
 from multimind_reflex.bridge import BufferedUpload, build_host_application
 from multimind_reflex.deliberation_projection import history_snapshots, run_summary
-from multimind_reflex.workspace_dna_state import WorkspaceDnaState
+from multimind_reflex.workspace_signature_state import WorkspaceSignatureState
 
 
-class VerdictHostState(WorkspaceDnaState):
+class VerdictHostState(WorkspaceSignatureState):
     """Presentation extension for independent, persisted human judgment."""
 
     current_user_verdict: str = ""
