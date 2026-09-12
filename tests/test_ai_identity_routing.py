@@ -1,7 +1,11 @@
+import json
+
 from providers.base import BaseProvider
 from core.application import ChatRequest
 from core.identity_application import IdentityFirstApplication
 from core.ai_identity import AI_IDENTITY_OPTIONS, infer_ai_identity
+from database.manager import DatabaseManager
+from multimind_reflex.deliberation_projection import history_snapshots
 
 
 class FakeProvider(BaseProvider):
@@ -115,6 +119,38 @@ def test_multi_ai_debate_preserves_each_identity_separately_from_route():
     assert [item["requested_identity"] for item in participants] == ["gemini", "gpt-oss", "llama"]
     assert [item["effective_identity"] for item in participants] == ["gemini", "gpt-oss", "llama"]
     assert [item["route_provider"] for item in participants] == ["gemini", "groq", "cloudflare"]
+
+
+def test_identity_provenance_survives_database_reload(tmp_path):
+    db_path = tmp_path / "identity.db"
+    db = DatabaseManager(str(db_path))
+    session_id = "identity-session"
+    db.create_session(session_id, "Identity", "thinking")
+    app = IdentityFirstApplication(
+        agents={"gemini": FakeProvider("google-route", model="gemini-2.5-flash", family="gemini")},
+        db=db,
+    )
+    result = app.execute_chat(
+        ChatRequest(
+            original_prompt="persist identity truth",
+            session_id=session_id,
+            session_mode="thinking",
+            active_agents=["gemini"],
+        )
+    )
+
+    assert result.status == "success"
+    assert result.persisted is True
+
+    reopened = DatabaseManager(str(db_path))
+    rows = reopened.get_session_chats(session_id)
+    debate = json.loads(rows[0]["debate_data"])
+    participant = debate["participants"][0]
+    assert participant["requested_identity"] == "gemini"
+    assert participant["effective_identity"] == "gemini"
+    assert participant["route_provider"] == "gemini"
+    projected = history_snapshots(rows)[0]
+    assert "Gemini=success via gemini" in projected["participant_summary"]
 
 
 def test_primary_identity_catalog_contains_no_gateway_brands():
