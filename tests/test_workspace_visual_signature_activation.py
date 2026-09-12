@@ -39,6 +39,10 @@ def test_signature_state_composes_under_verdict_state_and_is_fail_closed():
         assert forbidden not in STATE
     assert "return payload.material_data_uri if payload is not None else \"\"" in STATE
     assert "return str(payload.font_weight) if payload is not None else \"inherit\"" in STATE
+    assert "active_signature_mark_available" in STATE
+    assert "active_signature_mark_shape" in STATE
+    assert "active_signature_mark_width" in STATE
+    assert "active_signature_mark_height" in STATE
 
 
 def test_material_is_bounded_behind_opaque_workspace_zones():
@@ -61,3 +65,22 @@ def test_signature_typography_is_secondary_channel_not_new_renderer():
     assert "active_signature_body_letter_spacing" in SIGNATURE_ENTRY
     assert "rx.App(" not in STATE
     assert "rx.App(" not in SIGNATURE_ENTRY
+
+
+def test_optional_mark_is_one_generic_noninteractive_layer_not_theme_renderers():
+    assert 'data_signature_mark_layer="true"' in SIGNATURE_ENTRY
+    assert "active_signature_mark_pack_id" in SIGNATURE_ENTRY
+    assert "active_signature_mark_shape" in SIGNATURE_ENTRY
+    assert "active_signature_mark_stroke_width" in SIGNATURE_ENTRY
+    assert "active_signature_mark_opacity" in SIGNATURE_ENTRY
+    assert 'border_color=HostState.active_accent' in SIGNATURE_ENTRY
+    assert 'pointer_events="none"' in SIGNATURE_ENTRY
+    assert 'aria_hidden="true"' in SIGNATURE_ENTRY
+    for forbidden in (
+        "<svg",
+        "data:image",
+        "background_image=HostState.active_signature_mark",
+        "cultural_mark",
+        "franchise",
+    ):
+        assert forbidden not in SIGNATURE_ENTRY.casefold()
