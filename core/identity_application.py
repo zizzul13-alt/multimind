@@ -6,12 +6,9 @@ Provider routing stays server-side and cross-identity fallback stays disabled.
 """
 from __future__ import annotations
 
-from dataclasses import replace
-
 from core.ai_identity import AI_IDENTITIES, build_identity_providers
 from core.application import MultiMindApplication
 from core.product_semantics import CapabilityRegistry
-from core.debate import DebateOrchestrator
 from utils.error_handler import error_logger
 
 
@@ -121,6 +118,9 @@ class IdentityFirstApplication(MultiMindApplication):
                 item["effective_identity"] = identity_id if item.get("status") == "success" else ""
                 item["route_provider"] = route
                 item["identity_route_fallback"] = bool(route and route != spec.route_order[0])
+                item["identity_fallback_reason"] = (
+                    "same_identity_route_failure" if item["identity_route_fallback"] else ""
+                )
 
         result["requested_identities"] = list(request.active_agents)
         result["identity_routing"] = {
@@ -131,7 +131,4 @@ class IdentityFirstApplication(MultiMindApplication):
                 for identity_id in request.active_agents
             },
         }
-        product = result.get("product_semantics")
-        if isinstance(product, dict):
-            product["explicit_identities"] = list(request.active_agents)
         return result
