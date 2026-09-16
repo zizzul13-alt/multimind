@@ -4,6 +4,12 @@ Public/application code may import this module. The private DNA implementation
 is loaded lazily so MultiMind remains importable and usable with a boring,
 neutral presentation when that implementation is absent, broken, or
 incompatible.
+
+MusicDNA uses the same host-safe Theme Studio seam.  A music track is an atomic
+identity bundle; the only cross-product axis exposed here is the canonical
+MultiMind archetype.  Web/Information DNA is deliberately ignored for a music
+identity so typography, palette, world, material and interaction voice cannot
+be accidentally mixed apart.
 """
 from __future__ import annotations
 
@@ -14,6 +20,7 @@ from typing import Any, Optional
 
 
 logger = logging.getLogger(__name__)
+_MUSIC_PREFIX = "music:"
 
 
 @dataclass(frozen=True)
@@ -80,6 +87,100 @@ def _optional_import(module_name: str):
         return None
 
 
+def _music_option_snapshots() -> tuple[ThemeStudioDNAOption, ...]:
+    """Return atomic MusicDNA choices without making them a public dependency."""
+    try:
+        from ui.music_dna_bridge import list_music_theme_options
+
+        return tuple(
+            ThemeStudioDNAOption(
+                id=f"{_MUSIC_PREFIX}{item.id}",
+                display_name=f"♫ {item.display_name} — {item.artist}",
+                role="identity",
+                category=f"music:{item.tier}",
+            )
+            for item in list_music_theme_options(include_all=True)
+        )
+    except Exception as exc:
+        _warn("MusicDNA catalog", exc)
+        return ()
+
+
+def _resolve_music_composition(
+    identity_dna_id: str,
+    archetype_id: str,
+) -> Optional[ThemeStudioProjection]:
+    """Resolve one atomic MusicDNA track through one canonical archetype."""
+    if not str(identity_dna_id or "").startswith(_MUSIC_PREFIX):
+        return None
+    track_id = str(identity_dna_id)[len(_MUSIC_PREFIX):].strip()
+    if not track_id:
+        return None
+    try:
+        from ui.music_dna_bridge import realize_music_theme
+
+        plan = realize_music_theme(track_id, archetype_id)
+    except Exception as exc:
+        _warn("MusicDNA realization", exc)
+        return None
+    if plan is None:
+        return None
+
+    spacing_md = {
+        "compact": "0.75rem",
+        "comfortable": "1rem",
+        "spacious": "1.25rem",
+    }.get(plan.density, "1rem")
+    radius_md = {
+        "none": "0px",
+        "small": "4px",
+        "medium": "8px",
+        "large": "12px",
+    }.get(plan.radius, "8px")
+    status_richness = (
+        "rich"
+        if plan.archetype_id in {"command_center", "ai_research_lab", "agent_canvas"}
+        else "standard"
+    )
+
+    return ThemeStudioProjection(
+        identity_dna_id=f"{_MUSIC_PREFIX}{plan.track_id}",
+        web_information_dna_id=None,
+        archetype_id=plan.archetype_id,
+        identity_display_name=f"♫ {plan.display_name} — {plan.artist}",
+        web_information_display_name="MusicDNA atomic · internal axes locked",
+        colors={
+            "background": plan.background,
+            "surface": plan.surface,
+            "text": plan.text,
+            "primary": plan.primary,
+            "accent": plan.accent,
+            "border": plan.border,
+        },
+        typography={
+            "font_family_base": plan.font_family,
+            "font_family_mono": plan.mono_font,
+        },
+        spacing={"sm": "0.5rem", "md": spacing_md, "lg": "1.5rem"},
+        radius={"sm": "2px", "md": radius_md, "lg": radius_md},
+        presentation_policy={
+            "metadata_prominence": "music-dna",
+            "status_richness": status_richness,
+            "navigation_density": plan.mobile_strategy,
+            "secondary_compactness": plan.density == "compact",
+            "information_discoverability": plan.primary_object,
+            "utility_grouping": plan.layout_flow,
+        },
+        identity_projection={
+            "hierarchy_contrast": "strong",
+            "border_stroke_style": "solid",
+            "energy_emphasis": "track-bound",
+            "surface_treatment": plan.layout_flow,
+            "transition_speed": "deliberate",
+        },
+    )
+
+
 def dna_available() -> bool:
     """Return whether the optional Design-DNA runtime can currently be loaded."""
     return _optional_import("dna_quarantine.legacy_ui_dna.resolver") is not None
@@ -99,41 +200,44 @@ def ensure_dna_registered() -> bool:
 
 
 def list_theme_studio_dna_options(role: Optional[str] = None) -> tuple[ThemeStudioDNAOption, ...]:
-    """List registered Theme Studio DNA choices through the optional-package seam.
+    """List Theme Studio choices through the optional-package seam.
 
-    Presentation hosts receive only stable scalar metadata. Private ``DesignDNA``
-    objects never cross the bridge. Missing or incompatible private DNA is a
-    valid empty-catalog state so the neutral presentation remains usable.
+    Registered role-based DNA and atomic MusicDNA share the picker catalog, but
+    music entries stay atomic and are resolved by ``_resolve_music_composition``.
+    Missing/incompatible private packages remain a valid empty-catalog state.
     """
     if role not in {None, "identity", "web_information"}:
         return ()
-    if not ensure_dna_registered():
-        return ()
-    module = _optional_import("dna_quarantine.legacy_ui_dna")
-    if module is None:
-        return ()
-    try:
-        options = []
-        for dna in module.list_dna():
-            dna_role = str(getattr(dna, "role", "") or "")
-            if role is not None and dna_role != role:
-                continue
-            dna_id = str(getattr(dna, "id", "") or "").strip()
-            display_name = str(getattr(dna, "display_name", "") or "").strip()
-            if not dna_id or not display_name:
-                continue
-            options.append(
-                ThemeStudioDNAOption(
-                    id=dna_id,
-                    display_name=display_name,
-                    role=dna_role,
-                    category=str(getattr(dna, "category", "") or ""),
-                )
-            )
-        return tuple(sorted(options, key=lambda item: (item.display_name.lower(), item.id)))
-    except Exception as exc:
-        _warn("Theme Studio DNA catalog", exc)
-        return ()
+
+    options: list[ThemeStudioDNAOption] = []
+    if ensure_dna_registered():
+        module = _optional_import("dna_quarantine.legacy_ui_dna")
+        if module is not None:
+            try:
+                for dna in module.list_dna():
+                    dna_role = str(getattr(dna, "role", "") or "")
+                    if role is not None and dna_role != role:
+                        continue
+                    dna_id = str(getattr(dna, "id", "") or "").strip()
+                    display_name = str(getattr(dna, "display_name", "") or "").strip()
+                    if not dna_id or not display_name:
+                        continue
+                    options.append(
+                        ThemeStudioDNAOption(
+                            id=dna_id,
+                            display_name=display_name,
+                            role=dna_role,
+                            category=str(getattr(dna, "category", "") or ""),
+                        )
+                    )
+            except Exception as exc:
+                _warn("Theme Studio DNA catalog", exc)
+
+    if role in {None, "identity"}:
+        options.extend(_music_option_snapshots())
+
+    deduped = {item.id: item for item in options}
+    return tuple(sorted(deduped.values(), key=lambda item: (item.display_name.lower(), item.id)))
 
 
 def resolve_theme_studio_composition(
@@ -141,13 +245,15 @@ def resolve_theme_studio_composition(
     web_information_dna_id: Optional[str],
     archetype_id: str,
 ) -> Optional[ThemeStudioProjection]:
-    """Resolve a role-based Theme Studio composition into host-safe tokens.
+    """Resolve a Theme Studio composition into host-safe tokens.
 
-    The private Theme Studio remains the owner of DNA-to-theme composition
-    semantics. Reflex/other hosts receive a normalized projection and keep
-    draft/active presentation state locally. Resolution failure degrades to
-    ``None`` rather than making the application unavailable.
+    Music identities are intercepted first and always ignore Web/Information DNA
+    so the track bundle remains atomic.  Non-music identities continue through
+    the existing private Theme Studio owner unchanged.
     """
+    if str(identity_dna_id or "").startswith(_MUSIC_PREFIX):
+        return _resolve_music_composition(identity_dna_id, archetype_id)
+
     if not ensure_dna_registered():
         return None
     module = _optional_import("dna_quarantine.theme_studio.state")
@@ -256,7 +362,6 @@ def theme_studio_available() -> bool:
 
 
 def _render_theme_studio_fallback() -> None:
-    # Streamlit stays a host-only dependency and is imported only for fallback UI.
     import streamlit as st
 
     st.info("Theme Studio is unavailable. MultiMind is using the safe default presentation.")
