@@ -1,6 +1,6 @@
 """Optional public bridge for private MusicDNA × architecture runtime.
 
-The public host receives frozen scalar projections only.  MusicDNA remains
+The public host receives frozen scalar projections only. MusicDNA remains
 private-package owned and MultiMind remains fully operational when the optional
 runtime is absent or incompatible.
 """
@@ -21,6 +21,8 @@ class MusicThemeOption:
     display_name: str
     artist: str
     tier: str
+    reference_id: str
+    topology: str
     source_preview: str
     signature: str
     world: str
@@ -31,6 +33,8 @@ class MusicArchitecturePlan:
     track_id: str
     display_name: str
     artist: str
+    reference_id: str
+    topology: str
     tier: str
     archetype_id: str
     combination_id: str
@@ -79,6 +83,8 @@ def list_music_theme_options(*, include_all: bool = True) -> tuple[MusicThemeOpt
                 display_name=str(item.display_name),
                 artist=str(item.artist),
                 tier=str(item.tier),
+                reference_id=str(item.id).upper(),
+                topology=str(item.world),
                 source_preview=str(item.source_preview),
                 signature=str(item.signature),
                 world=str(item.world),
@@ -113,6 +119,8 @@ def realize_music_theme(track_id: str, archetype_id: str) -> Optional[MusicArchi
             track_id=str(plan.track_id),
             display_name=str(plan.display_name),
             artist=str(plan.artist),
+            reference_id=str(plan.reference_id),
+            topology=str(plan.topology),
             tier=str(plan.tier),
             archetype_id=str(plan.archetype_id),
             combination_id=str(plan.combination_id),
