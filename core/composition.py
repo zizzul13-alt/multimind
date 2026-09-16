@@ -11,9 +11,9 @@ from agents.openrouter import OpenRouterAgent
 from agents.remote_agent import RemoteAgent
 from agents.unified_agent import UnifiedAgent
 from core.compressor import PromptCompressor
+from core.conversation_application import ConversationFirstApplication
 from core.debate import DebateOrchestrator
 from core.file_handler import FileHandler
-from core.identity_application import IdentityFirstApplication
 from core.memory import persist_chat_and_update_memory
 from database.manager import DatabaseManager
 from database.turso_manager import TursoDatabaseManager
@@ -96,7 +96,7 @@ def build_application_for_user(
     debate_factory=DebateOrchestrator,
     persist_chat=persist_chat_and_update_memory,
 ):
-    """Build one user-scoped application boundary for any presentation host."""
+    """Build one user-scoped conversation-first application for any presentation host."""
     user_id = Config.validate_user_id(user_id)
 
     if agents is None:
@@ -110,7 +110,7 @@ def build_application_for_user(
     if db is None and db_factory is None:
         db = build_database_for_user(user_id, database_factory=database_factory)
 
-    return IdentityFirstApplication(
+    return ConversationFirstApplication(
         agents=agents,
         runtime_memories=runtime_memories,
         runtime=runtime,
