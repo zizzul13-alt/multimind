@@ -1,9 +1,10 @@
-"""Presentation-only approved visual-signature extension for the Reflex workspace.
+"""Presentation-only visual-signature extension for the Reflex workspace.
 
-This layer derives material/typography/mark scalars from the already-active
-canonical reference. It owns no application/session/provider/persistence truth.
-Missing or invalid private Design-DNA signatures collapse to neutral empty
-values, leaving the accepted structural workspace unchanged.
+Canonical references keep their approved material/typography/mark payloads.
+Atomic MusicDNA themes reuse the same outer presentation layer only when their
+private runtime provides a real/open asset; otherwise the track survives through
+its typography, palette and archetype topology.  No application/session/
+provider/persistence truth is owned here.
 """
 from __future__ import annotations
 
@@ -11,12 +12,23 @@ import reflex as rx
 
 from multimind_reflex.workspace_dna_state import WorkspaceDnaState
 from ui.visual_signature_bridge import resolve_approved_visual_signature
+from ui.music_dna_bridge import realize_music_theme
 
 
 def _signature(reference_id: str):
     if not str(reference_id or "").strip():
         return None
     return resolve_approved_visual_signature(reference_id)
+
+
+def _music_plan(identity_dna_id: str, archetype_id: str):
+    value = str(identity_dna_id or "").strip()
+    if not value.startswith("music:"):
+        return None
+    track_id = value.split(":", 1)[1].strip()
+    if not track_id:
+        return None
+    return realize_music_theme(track_id, str(archetype_id or "chat_first"))
 
 
 def _mark_dimensions(payload) -> tuple[str, str]:
@@ -29,36 +41,54 @@ def _mark_dimensions(payload) -> tuple[str, str]:
 
 
 class WorkspaceSignatureState(WorkspaceDnaState):
-    """Adds fail-closed visual-signature projections to presentation state."""
+    """Adds fail-closed canonical and MusicDNA visual projections."""
 
     @rx.var
     def active_signature_available(self) -> bool:
-        return _signature(self.active_canonical_reference_id) is not None
+        if _signature(self.active_canonical_reference_id) is not None:
+            return True
+        music = _music_plan(self.active_identity_dna, self.active_archetype)
+        return bool(music is not None and music.asset_url)
 
     @rx.var
     def active_signature_material_data_uri(self) -> str:
         payload = _signature(self.active_canonical_reference_id)
-        return payload.material_data_uri if payload is not None else ""
+        if payload is not None:
+            return payload.material_data_uri
+        music = _music_plan(self.active_identity_dna, self.active_archetype)
+        return music.asset_url if music is not None else ""
 
     @rx.var
     def active_signature_material_opacity(self) -> float:
         payload = _signature(self.active_canonical_reference_id)
-        return payload.material_opacity if payload is not None else 0.0
+        if payload is not None:
+            return payload.material_opacity
+        music = _music_plan(self.active_identity_dna, self.active_archetype)
+        return 0.24 if music is not None and music.asset_url else 0.0
 
     @rx.var
     def active_signature_material_tile_size(self) -> str:
         payload = _signature(self.active_canonical_reference_id)
-        return payload.material_tile_size if payload is not None else "auto"
+        if payload is not None:
+            return payload.material_tile_size
+        music = _music_plan(self.active_identity_dna, self.active_archetype)
+        return "cover" if music is not None and music.asset_url else "auto"
 
     @rx.var
     def active_signature_material_placement_mode(self) -> str:
         payload = _signature(self.active_canonical_reference_id)
-        return payload.material_placement_mode if payload is not None else ""
+        if payload is not None:
+            return payload.material_placement_mode
+        music = _music_plan(self.active_identity_dna, self.active_archetype)
+        return music.layout_flow if music is not None else ""
 
     @rx.var
     def active_signature_font_family(self) -> str:
         payload = _signature(self.active_canonical_reference_id)
-        return payload.font_family if payload is not None else self.active_font_family
+        if payload is not None:
+            return payload.font_family
+        music = _music_plan(self.active_identity_dna, self.active_archetype)
+        return music.font_family if music is not None else self.active_font_family
 
     @rx.var
     def active_signature_heading_font_weight_css(self) -> str:
@@ -132,27 +162,42 @@ class WorkspaceSignatureState(WorkspaceDnaState):
 
     @rx.var
     def draft_signature_available(self) -> bool:
-        return _signature(self.draft_canonical_reference_id) is not None
+        if _signature(self.draft_canonical_reference_id) is not None:
+            return True
+        music = _music_plan(self.draft_identity_dna, self.draft_archetype)
+        return bool(music is not None and music.asset_url)
 
     @rx.var
     def draft_signature_material_data_uri(self) -> str:
         payload = _signature(self.draft_canonical_reference_id)
-        return payload.material_data_uri if payload is not None else ""
+        if payload is not None:
+            return payload.material_data_uri
+        music = _music_plan(self.draft_identity_dna, self.draft_archetype)
+        return music.asset_url if music is not None else ""
 
     @rx.var
     def draft_signature_material_opacity(self) -> float:
         payload = _signature(self.draft_canonical_reference_id)
-        return payload.material_opacity if payload is not None else 0.0
+        if payload is not None:
+            return payload.material_opacity
+        music = _music_plan(self.draft_identity_dna, self.draft_archetype)
+        return 0.24 if music is not None and music.asset_url else 0.0
 
     @rx.var
     def draft_signature_material_tile_size(self) -> str:
         payload = _signature(self.draft_canonical_reference_id)
-        return payload.material_tile_size if payload is not None else "auto"
+        if payload is not None:
+            return payload.material_tile_size
+        music = _music_plan(self.draft_identity_dna, self.draft_archetype)
+        return "cover" if music is not None and music.asset_url else "auto"
 
     @rx.var
     def draft_signature_font_family(self) -> str:
         payload = _signature(self.draft_canonical_reference_id)
-        return payload.font_family if payload is not None else self.draft_font_family
+        if payload is not None:
+            return payload.font_family
+        music = _music_plan(self.draft_identity_dna, self.draft_archetype)
+        return music.font_family if music is not None else self.draft_font_family
 
     @rx.var
     def draft_signature_heading_font_weight_css(self) -> str:
