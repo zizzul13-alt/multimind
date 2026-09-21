@@ -65,17 +65,12 @@ def _theme_studio() -> rx.Component:
                 rx.vstack(
                     rx.heading("MusicDNA", size="5"),
                     rx.text("Pilih dunia musik yang menjadi identitas utama."),
-                    rx.el.select(
-                        rx.foreach(
-                            HostState.music_dna_choices,
-                            lambda choice: rx.el.option(choice, value=choice),
-                        ),
+                    rx.select(
+                        HostState.music_dna_choices,
                         value=HostState.draft_identity_choice,
                         on_change=HostState.set_composed_identity_choice,
                         width="100%",
-                        min_height="2.75rem",
-                        padding="0.5rem 0.75rem",
-                        border_radius="0.5rem",
+                        size="3",
                     ),
                     rx.heading("Architecture", size="5"),
                     rx.text("Pilih bentuk pengalaman MultiMind untuk track tersebut."),
@@ -873,18 +868,18 @@ def _workspace_result_zone() -> rx.Component:
                     HostState.active_music_primary_object,
                     rx.cond(
                         HostState.active_archetype == "command_center",
-                    "Operational result",
-                    rx.cond(
-                        HostState.active_archetype == "ai_research_lab",
-                        "Synthesis / evidence",
+                        "Operational result",
                         rx.cond(
-                            HostState.active_archetype == "agent_canvas",
-                            "Execution topology / result",
+                            HostState.active_archetype == "ai_research_lab",
+                            "Synthesis / evidence",
                             rx.cond(
-                                HostState.active_archetype == "terminal_hacker",
-                                "Execution output",
-                                "Result / deliberation",
-                            ),
+                                HostState.active_archetype == "agent_canvas",
+                                "Execution topology / result",
+                                rx.cond(
+                                    HostState.active_archetype == "terminal_hacker",
+                                    "Execution output",
+                                    "Result / deliberation",
+                                ),
                             ),
                         ),
                     ),
