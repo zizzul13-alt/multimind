@@ -567,7 +567,7 @@ def _music_workspace_desktop_columns():
         HostState.active_music_layout_flow == "state_control_matrix",
         "minmax(0, 1fr) minmax(0, 1fr)",
         rx.cond(
-            HostState.active_music_layout_flow in ["multi_object_desk", "relationship_field"],
+            (HostState.active_music_layout_flow == "multi_object_desk") | (HostState.active_music_layout_flow == "relationship_field"),
             "minmax(16rem, 0.8fr) minmax(0, 1.2fr)",
             "minmax(16rem, 1fr) minmax(0, 1.6fr)",
         ),
