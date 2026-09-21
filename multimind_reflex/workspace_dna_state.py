@@ -478,6 +478,7 @@ class WorkspaceDnaState(LegacyHostState):
             self.draft_archetype = previous
 
     @rx.event
+    @rx.event
     def set_composed_identity_choice(self, value: str):
         unit_id = _choice_id(value)
         music_available = {_choice_id(choice) for choice in self.music_dna_choices}
