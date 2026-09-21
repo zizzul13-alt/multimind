@@ -298,18 +298,20 @@ class WorkspaceDnaState(LegacyHostState):
         self.theme_status = f"Canonical Design-DNA · {plan.display_name}"
         return True
 
-    def _clear_music_contract(self) -> None:
+    def _clear_music_draft(self) -> None:
         for name in (
-            "draft_music_topology", "draft_music_world", "draft_music_signature",
-            "draft_music_combination_id", "draft_music_layout_flow", "draft_music_mobile_strategy",
-            "draft_music_primary_object", "draft_music_primary_action", "draft_music_composer_label",
-            "draft_music_asset_url", "draft_music_asset_credit",
-            "active_music_topology", "active_music_world", "active_music_signature",
-            "active_music_combination_id", "active_music_layout_flow", "active_music_mobile_strategy",
-            "active_music_primary_object", "active_music_primary_action", "active_music_composer_label",
-            "active_music_asset_url", "active_music_asset_credit",
+            "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
+            "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
         ):
-            setattr(self, name, "")
+            setattr(self, f"draft_music_{name}", "")
+
+    def _clear_music_active(self) -> None:
+        for name in (
+            "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
+            "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
+        ):
+            setattr(self, f"active_music_{name}", "")
+
 
     def _copy_music_draft_to_active(self) -> None:
         for name in (
@@ -388,11 +390,12 @@ class WorkspaceDnaState(LegacyHostState):
     def _restore_legacy_draft(self) -> None:
         self.draft_dna_mode = "legacy"
         self._clear_canonical_draft()
-        self._clear_music_contract()
+        self._clear_music_draft()
         if self.draft_identity_dna and self._refresh_theme_draft_from_composition():
             self.theme_status = "Legacy role-based Design-DNA"
             return
         self._set_neutral_theme_draft()
+        self._clear_music_draft()
         self.draft_dna_mode = "legacy"
         self.theme_status = "Safe neutral presentation"
 
