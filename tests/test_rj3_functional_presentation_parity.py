@@ -58,8 +58,9 @@ def test_theme_studio_uses_role_catalogs_not_raw_private_ids():
         "set_draft_web_choice",
     ):
         assert token in STATE or token in SURFACE
-    assert "HostState.identity_dna_choices" in SURFACE
-    assert "HostState.web_dna_choices" in SURFACE
+    assert "HostState.music_dna_choices" in SURFACE
+    assert "HostState.draft_identity_choice" in SURFACE
+    assert "HostState.set_composed_identity_choice" in SURFACE
 
 
 def test_theme_studio_live_preview_consumes_resolved_draft_tokens():
@@ -80,7 +81,8 @@ def test_theme_studio_live_preview_consumes_resolved_draft_tokens():
         "HostState.draft_navigation_density",
     ):
         assert token in SURFACE
-    assert "Isolated composed live preview" in SURFACE
+    assert "Live preview" in SURFACE
+    assert "MusicDNA × Architecture" in SURFACE
     assert "Draft only — active workspace unchanged" in SURFACE
 
 
