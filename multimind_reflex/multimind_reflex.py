@@ -127,6 +127,20 @@ def _theme_studio() -> rx.Component:
                         size="2",
                         color=HostState.draft_text_color,
                     ),
+                    rx.separator(),
+                    rx.heading("MusicDNA × Architecture contract", size="4"),
+                    rx.vstack(
+                        rx.text("Topology: ", HostState.draft_music_topology, size="2"),
+                        rx.text("World: ", HostState.draft_music_world, size="2"),
+                        rx.text("Signature: ", HostState.draft_music_signature, size="2"),
+                        rx.text("Layout flow: ", HostState.draft_music_layout_flow, size="2"),
+                        rx.text("Mobile strategy: ", HostState.draft_music_mobile_strategy, size="2"),
+                        rx.text("Primary object: ", HostState.draft_music_primary_object, size="2"),
+                        rx.text("Primary action: ", HostState.draft_music_primary_action, size="2"),
+                        rx.text("Composer label: ", HostState.draft_music_composer_label, size="2"),
+                        rx.text("Combination: ", HostState.draft_music_combination_id, size="2"),
+                        spacing="1", align="start", width="100%",
+                    ),
                     width="100%",
                     spacing="3",
                 ),
@@ -542,6 +556,58 @@ def _data_ops() -> rx.Component:
     )
 
 
+def _music_workspace_desktop_columns():
+    return rx.cond(
+        HostState.active_music_layout_flow == "state_control_matrix",
+        "minmax(0, 1fr) minmax(0, 1fr)",
+        rx.cond(
+            HostState.active_music_layout_flow in ["multi_object_desk", "relationship_field"],
+            "minmax(16rem, 0.8fr) minmax(0, 1.2fr)",
+            "minmax(16rem, 1fr) minmax(0, 1.6fr)",
+        ),
+    )
+
+
+def _music_workspace_desktop_areas():
+    return rx.cond(
+        HostState.active_music_layout_flow == "state_control_matrix",
+        '"result result" "utility composer" "history history"',
+        rx.cond(
+            HostState.active_music_layout_flow == "evidence_synthesis",
+            '"result utility" "result composer" "history history"',
+            rx.cond(
+                HostState.active_music_layout_flow == "relationship_field",
+                '"composer result" "utility result" "history history"',
+                rx.cond(
+                    HostState.active_music_layout_flow == "instruction_execution",
+                    '"composer" "result" "history" "utility"',
+                    '"utility composer" "utility result" "history history"',
+                ),
+            ),
+        ),
+    )
+
+
+def _music_workspace_mobile_areas():
+    return rx.cond(
+        HostState.active_music_mobile_strategy == "stacked_control",
+        '"result" "composer" "history" "utility"',
+        rx.cond(
+            HostState.active_music_mobile_strategy == "serial_evidence",
+            '"result" "history" "composer" "utility"',
+            rx.cond(
+                HostState.active_music_mobile_strategy == "stacked_entities",
+                '"composer" "result" "utility" "history"',
+                rx.cond(
+                    HostState.active_music_mobile_strategy == "terminal_stack",
+                    '"composer" "result" "history" "utility"',
+                    '"composer" "result" "history" "utility"',
+                ),
+            ),
+        ),
+    )
+
+
 def _workspace_desktop_columns():
     """Finite archetype vocabulary → desktop workspace columns."""
     return rx.cond(
@@ -761,7 +827,11 @@ def _workspace_composer_zone() -> rx.Component:
             _upload_panel(),
             _estimate_panel(),
             rx.button(
-                rx.cond(HostState.busy, "Running…", "Run"),
+                rx.cond(
+                    HostState.active_dna_mode == "music",
+                    HostState.active_music_primary_action,
+                    rx.cond(HostState.busy, "Running…", "Run"),
+                ),
                 on_click=HostState.run_chat,
                 disabled=HostState.busy,
                 width="100%",
@@ -793,7 +863,10 @@ def _workspace_result_zone() -> rx.Component:
         rx.vstack(
             rx.heading(
                 rx.cond(
-                    HostState.active_archetype == "command_center",
+                    HostState.active_dna_mode == "music",
+                    HostState.active_music_primary_object,
+                    rx.cond(
+                        HostState.active_archetype == "command_center",
                     "Operational result",
                     rx.cond(
                         HostState.active_archetype == "ai_research_lab",
@@ -805,6 +878,7 @@ def _workspace_result_zone() -> rx.Component:
                                 HostState.active_archetype == "terminal_hacker",
                                 "Execution output",
                                 "Result / deliberation",
+                            ),
                             ),
                         ),
                     ),
@@ -902,27 +976,43 @@ def _workspace() -> rx.Component:
                 grid_template_columns=rx.breakpoints(
                     initial="minmax(0, 1fr)",
                     lg=rx.cond(
-                        HostState.active_dna_mode == "canonical",
-                        _canonical_workspace_desktop_columns(),
-                        _workspace_desktop_columns(),
+                        HostState.active_dna_mode == "music",
+                        _music_workspace_desktop_columns(),
+                        rx.cond(
+                            HostState.active_dna_mode == "canonical",
+                            _canonical_workspace_desktop_columns(),
+                            _workspace_desktop_columns(),
+                        ),
                     ),
                 ),
                 grid_template_areas=rx.breakpoints(
                     initial=rx.cond(
-                        HostState.active_dna_mode == "canonical",
-                        _canonical_workspace_mobile_areas(),
-                        _workspace_mobile_areas(),
+                        HostState.active_dna_mode == "music",
+                        _music_workspace_mobile_areas(),
+                        rx.cond(
+                            HostState.active_dna_mode == "canonical",
+                            _canonical_workspace_mobile_areas(),
+                            _workspace_mobile_areas(),
+                        ),
                     ),
                     lg=rx.cond(
-                        HostState.active_dna_mode == "canonical",
-                        _canonical_workspace_desktop_areas(),
-                        _workspace_desktop_areas(),
+                        HostState.active_dna_mode == "music",
+                        _music_workspace_desktop_areas(),
+                        rx.cond(
+                            HostState.active_dna_mode == "canonical",
+                            _canonical_workspace_desktop_areas(),
+                            _workspace_desktop_areas(),
+                        ),
                     ),
                 ),
                 gap=rx.cond(
-                    HostState.active_dna_mode == "canonical",
-                    HostState.active_canonical_gap,
-                    "1rem",
+                    HostState.active_dna_mode == "music",
+                    HostState.active_spacing_value,
+                    rx.cond(
+                        HostState.active_dna_mode == "canonical",
+                        HostState.active_canonical_gap,
+                        "1rem",
+                    ),
                 ),
                 width="100%",
                 align_items="start",

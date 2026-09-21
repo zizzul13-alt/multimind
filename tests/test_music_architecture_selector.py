@@ -25,3 +25,23 @@ def test_old_canonical_160_picker_is_not_the_entry_surface():
     assert "Canonical Reference DNA" not in SURFACE
     assert "Canonical 160" not in SURFACE
     assert "MusicDNA × Architecture" in SURFACE
+
+
+def test_music_contract_parameters_are_projected_and_consumed():
+    for field in (
+        "draft_music_topology",
+        "draft_music_world",
+        "draft_music_signature",
+        "draft_music_combination_id",
+        "draft_music_layout_flow",
+        "draft_music_mobile_strategy",
+        "draft_music_primary_object",
+        "draft_music_primary_action",
+        "draft_music_composer_label",
+    ):
+        assert field in STATE
+    assert "MusicDNA × Architecture contract" in SURFACE
+    assert "_music_workspace_desktop_areas" in SURFACE
+    assert "_music_workspace_mobile_areas" in SURFACE
+    assert "active_music_primary_action" in SURFACE
+    assert "active_music_primary_object" in SURFACE

@@ -26,6 +26,16 @@ class MusicThemeOption:
     source_preview: str
     signature: str
     world: str
+    font_family: str
+    mono_font: str
+    background: str
+    surface: str
+    text: str
+    primary: str
+    accent: str
+    border: str
+    asset_url: str
+    asset_credit: str
 
 
 @dataclass(frozen=True)
@@ -88,6 +98,16 @@ def list_music_theme_options(*, include_all: bool = True) -> tuple[MusicThemeOpt
                 source_preview=str(item.source_preview),
                 signature=str(item.signature),
                 world=str(item.world),
+                font_family=str(getattr(item, "font_family", "")),
+                mono_font=str(getattr(item, "mono_font", "")),
+                background=str(getattr(item, "background", "")),
+                surface=str(getattr(item, "surface", "")),
+                text=str(getattr(item, "text", "")),
+                primary=str(getattr(item, "primary", "")),
+                accent=str(getattr(item, "accent", "")),
+                border=str(getattr(item, "border", "")),
+                asset_url=str(getattr(item, "asset_url", "")),
+                asset_credit=str(getattr(item, "asset_credit", "")),
             )
             for item in module.list_music_options(include_all=bool(include_all))
         )
