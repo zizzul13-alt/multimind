@@ -20,17 +20,23 @@ def test_canonical_catalog_is_consumed_through_optional_public_bridge():
     assert "design_dna" not in STATE
 
 
-def test_theme_studio_exposes_searchable_canonical_catalog_and_explicit_legacy_fallback():
+def test_theme_studio_exposes_musicdna_and_architecture_selector():
     for token in (
-        'rx.heading("Canonical Reference DNA"',
-        'rx.badge("Canonical 160"',
-        "HostState.canonical_query",
-        "HostState.filtered_canonical_catalog",
-        "HostState.select_canonical_reference",
-        '"Use legacy role-based composition"',
-        "HostState.use_legacy_dna",
+        "HostState.music_dna_choices",
+        "HostState.draft_identity_choice",
+        "HostState.set_composed_identity_choice",
+        "ARCHETYPES",
+        "HostState.set_composed_archetype",
+        "MusicDNA × Architecture",
     ):
         assert token in SURFACE
+    assert "Canonical 160" not in SURFACE
+
+
+def test_musicdna_catalog_is_private_runtime_owned():
+    assert "list_music_theme_options" in STATE
+    assert "realize_music_theme" in STATE
+    assert "ui.music_dna_bridge" in STATE
 
 
 def test_canonical_apply_is_explicit_and_draft_isolated():
