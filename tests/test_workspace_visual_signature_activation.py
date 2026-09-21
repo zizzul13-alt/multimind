@@ -37,7 +37,7 @@ def test_signature_state_composes_under_verdict_state_and_is_fail_closed():
         "provider_registry",
     ):
         assert forbidden not in STATE
-    assert "return payload.material_data_uri if payload is not None else \"\"" in STATE
+    assert "return music.asset_url if music is not None else \"\"" in STATE
     assert "return str(payload.font_weight) if payload is not None else \"inherit\"" in STATE
     assert "active_signature_mark_available" in STATE
     assert "active_signature_mark_shape" in STATE
