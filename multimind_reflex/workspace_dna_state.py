@@ -30,6 +30,7 @@ from multimind_reflex.state import (
     _choice_id,
     _radius_preset,
 )
+from ui.music_dna_bridge import list_music_theme_options
 from ui.canonical_dna_bridge import (
     list_canonical_reference_options,
     list_host_realizable_reference_ids,
@@ -83,6 +84,7 @@ class WorkspaceDnaState(LegacyHostState):
 
     canonical_catalog: list[dict[str, str]] = _canonical_catalog_snapshots()
     canonical_query: str = ""
+    music_dna_choices: list[str] = []
 
     draft_dna_mode: str = "legacy"
     active_dna_mode: str = "legacy"
@@ -118,6 +120,12 @@ class WorkspaceDnaState(LegacyHostState):
     active_canonical_card_radius: str = "8px"
     active_canonical_font_family: str = "system-ui, -apple-system, sans-serif"
     active_canonical_line_height: str = "1.5"
+
+    @rx.var
+    def music_selector_status(self) -> str:
+        if not self.draft_identity_dna.startswith("music:"):
+            return "No MusicDNA track selected"
+        return f"{self.draft_identity_display_name} × {self.draft_archetype}"
 
     @rx.var
     def filtered_canonical_catalog(self) -> list[dict[str, str]]:
@@ -444,6 +452,7 @@ class WorkspaceDnaState(LegacyHostState):
         self._pending_uploads = []
         self._pending_restore = b""
         self.identity_dna_choices = [_NEUTRAL_IDENTITY_CHOICE]
+        self.music_dna_choices = []
         self.web_dna_choices = [_NONE_WEB_CHOICE]
         self._set_neutral_theme_draft()
         self.draft_dna_mode = "legacy"
