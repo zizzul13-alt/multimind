@@ -122,6 +122,29 @@ class WorkspaceDnaState(LegacyHostState):
     active_canonical_font_family: str = "system-ui, -apple-system, sans-serif"
     active_canonical_line_height: str = "1.5"
 
+    draft_music_topology: str = ""
+    draft_music_world: str = ""
+    draft_music_signature: str = ""
+    draft_music_combination_id: str = ""
+    draft_music_layout_flow: str = ""
+    draft_music_mobile_strategy: str = ""
+    draft_music_primary_object: str = ""
+    draft_music_primary_action: str = ""
+    draft_music_composer_label: str = ""
+    draft_music_asset_url: str = ""
+    draft_music_asset_credit: str = ""
+    active_music_topology: str = ""
+    active_music_world: str = ""
+    active_music_signature: str = ""
+    active_music_combination_id: str = ""
+    active_music_layout_flow: str = ""
+    active_music_mobile_strategy: str = ""
+    active_music_primary_object: str = ""
+    active_music_primary_action: str = ""
+    active_music_composer_label: str = ""
+    active_music_asset_url: str = ""
+    active_music_asset_credit: str = ""
+
     @rx.var
     def music_selector_status(self) -> str:
         if not self.draft_identity_dna.startswith("music:"):
@@ -275,6 +298,41 @@ class WorkspaceDnaState(LegacyHostState):
         self.theme_status = f"Canonical Design-DNA · {plan.display_name}"
         return True
 
+    def _clear_music_contract(self) -> None:
+        for name in (
+            "draft_music_topology", "draft_music_world", "draft_music_signature",
+            "draft_music_combination_id", "draft_music_layout_flow", "draft_music_mobile_strategy",
+            "draft_music_primary_object", "draft_music_primary_action", "draft_music_composer_label",
+            "draft_music_asset_url", "draft_music_asset_credit",
+            "active_music_topology", "active_music_world", "active_music_signature",
+            "active_music_combination_id", "active_music_layout_flow", "active_music_mobile_strategy",
+            "active_music_primary_object", "active_music_primary_action", "active_music_composer_label",
+            "active_music_asset_url", "active_music_asset_credit",
+        ):
+            setattr(self, name, "")
+
+    def _copy_music_draft_to_active(self) -> None:
+        for name in (
+            "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
+            "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
+        ):
+            setattr(self, f"active_music_{name}", getattr(self, f"draft_music_{name}"))
+
+    def _copy_music_active_to_draft(self) -> None:
+        for name in (
+            "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
+            "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
+        ):
+            setattr(self, f"draft_music_{name}", getattr(self, f"active_music_{name}"))
+
+    def _copy_draft_to_active(self):
+        super()._copy_draft_to_active()
+        self._copy_music_draft_to_active()
+
+    def _copy_active_to_draft(self):
+        super()._copy_active_to_draft()
+        self._copy_music_active_to_draft()
+
     def _refresh_music_draft(self) -> bool:
         if not self.draft_identity_dna.startswith("music:"):
             return False
@@ -284,6 +342,7 @@ class WorkspaceDnaState(LegacyHostState):
             self._set_neutral_theme_draft()
             self.theme_status = "MusicDNA realization unavailable; safe neutral presentation"
             return False
+        self.draft_dna_mode = "music"
         self.draft_identity_display_name = plan.display_name
         self.draft_web_display_name = plan.artist or "MusicDNA"
         self.draft_identity_choice = _choice_for_id(
@@ -312,12 +371,24 @@ class WorkspaceDnaState(LegacyHostState):
         self.draft_energy_emphasis = plan.topology
         self.draft_surface_treatment = plan.surface
         self.draft_transition_speed = plan.mobile_strategy
+        self.draft_music_topology = plan.topology
+        self.draft_music_world = plan.world
+        self.draft_music_signature = plan.signature
+        self.draft_music_combination_id = plan.combination_id
+        self.draft_music_layout_flow = plan.layout_flow
+        self.draft_music_mobile_strategy = plan.mobile_strategy
+        self.draft_music_primary_object = plan.primary_object
+        self.draft_music_primary_action = plan.primary_action
+        self.draft_music_composer_label = plan.composer_label
+        self.draft_music_asset_url = plan.asset_url
+        self.draft_music_asset_credit = plan.asset_credit
         self.theme_status = f"MusicDNA × {plan.archetype_id}"
         return True
 
     def _restore_legacy_draft(self) -> None:
         self.draft_dna_mode = "legacy"
         self._clear_canonical_draft()
+        self._clear_music_contract()
         if self.draft_identity_dna and self._refresh_theme_draft_from_composition():
             self.theme_status = "Legacy role-based Design-DNA"
             return
