@@ -65,11 +65,17 @@ def _theme_studio() -> rx.Component:
                 rx.vstack(
                     rx.heading("MusicDNA", size="5"),
                     rx.text("Pilih dunia musik yang menjadi identitas utama."),
-                    rx.select(
-                        HostState.music_dna_choices,
+                    rx.el.select(
+                        rx.foreach(
+                            HostState.music_dna_choices,
+                            lambda choice: rx.el.option(choice, value=choice),
+                        ),
                         value=HostState.draft_identity_choice,
                         on_change=HostState.set_composed_identity_choice,
                         width="100%",
+                        min_height="2.75rem",
+                        padding="0.5rem 0.75rem",
+                        border_radius="0.5rem",
                     ),
                     rx.heading("Architecture", size="5"),
                     rx.text("Pilih bentuk pengalaman MultiMind untuk track tersebut."),
