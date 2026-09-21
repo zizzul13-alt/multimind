@@ -163,6 +163,20 @@ class WorkspaceDnaState(LegacyHostState):
     def canonical_host_ready_total(self) -> int:
         return sum(item.get("host_ready") == "true" for item in self.canonical_catalog)
 
+    def _load_theme_studio_catalog(self):
+        """Load the legacy catalog and the separate MusicDNA identity catalog."""
+        super()._load_theme_studio_catalog()
+        options = list_music_theme_options(include_all=True)
+        self.music_dna_choices = [f"{option.display_name} · music:{option.id}" for option in options]
+        if not self.music_dna_choices:
+            return
+        first = self.music_dna_choices[0]
+        self.draft_identity_choice = first
+        self.draft_identity_dna = _choice_id(first)
+        self._clear_canonical_draft()
+        self._refresh_music_draft()
+        self._copy_draft_to_active()
+
     def _clear_canonical_draft(self) -> None:
         self.draft_canonical_reference_id = ""
         self.draft_canonical_display_name = ""
@@ -466,6 +480,15 @@ class WorkspaceDnaState(LegacyHostState):
     @rx.event
     def set_composed_identity_choice(self, value: str):
         unit_id = _choice_id(value)
+        music_available = {_choice_id(choice) for choice in self.music_dna_choices}
+        if unit_id.startswith("music:") and unit_id in music_available:
+            self.draft_identity_choice = value
+            self.draft_identity_dna = unit_id
+            self.draft_dna_mode = "music"
+            self._clear_canonical_draft()
+            self.canonical_query = ""
+            self._refresh_music_draft()
+            return
         available = {_choice_id(choice) for choice in self.identity_dna_choices}
         if not unit_id or unit_id not in available:
             return
