@@ -31,6 +31,7 @@ from multimind_reflex.state import (
     _radius_preset,
 )
 from ui.music_dna_bridge import list_music_theme_options
+from ui.music_dna_bridge import list_music_theme_options, realize_music_theme
 from ui.canonical_dna_bridge import (
     list_canonical_reference_options,
     list_host_realizable_reference_ids,
@@ -272,6 +273,46 @@ class WorkspaceDnaState(LegacyHostState):
         self.draft_surface_treatment = plan.layout_flow
         self.draft_transition_speed = plan.motion
         self.theme_status = f"Canonical Design-DNA · {plan.display_name}"
+        return True
+
+    def _refresh_music_draft(self) -> bool:
+        if not self.draft_identity_dna.startswith("music:"):
+            return False
+        track_id = self.draft_identity_dna.split(":", 1)[1]
+        plan = realize_music_theme(track_id, self.draft_archetype)
+        if plan is None:
+            self._set_neutral_theme_draft()
+            self.theme_status = "MusicDNA realization unavailable; safe neutral presentation"
+            return False
+        self.draft_identity_display_name = plan.display_name
+        self.draft_web_display_name = plan.artist or "MusicDNA"
+        self.draft_identity_choice = _choice_for_id(
+            self.music_dna_choices, self.draft_identity_dna, self.draft_identity_dna
+        )
+        self.draft_background = plan.background
+        self.draft_surface = plan.surface
+        self.draft_text_color = plan.text
+        self.draft_primary = plan.primary
+        self.draft_accent = plan.accent
+        self.draft_border = plan.border
+        self.draft_font_family = plan.font_family or "system-ui, -apple-system, sans-serif"
+        self.draft_mono_font = plan.mono_font or "monospace"
+        self.draft_radius_value = plan.radius
+        self.draft_spacing_value = "1rem" if plan.density == "comfortable" else "0.75rem"
+        self.draft_radius = _radius_preset(self.draft_radius_value)
+        self.draft_density = plan.density
+        self.draft_metadata_prominence = plan.topology
+        self.draft_status_richness = plan.world
+        self.draft_navigation_density = plan.layout_flow
+        self.draft_secondary_compactness = plan.density == "compact"
+        self.draft_information_discoverability = plan.layout_flow
+        self.draft_utility_grouping = plan.primary_object
+        self.draft_hierarchy_contrast = plan.density
+        self.draft_border_style = "solid"
+        self.draft_energy_emphasis = plan.topology
+        self.draft_surface_treatment = plan.surface
+        self.draft_transition_speed = plan.mobile_strategy
+        self.theme_status = f"MusicDNA × {plan.archetype_id}"
         return True
 
     def _restore_legacy_draft(self) -> None:
