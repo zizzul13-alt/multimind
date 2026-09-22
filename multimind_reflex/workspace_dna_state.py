@@ -30,7 +30,6 @@ from multimind_reflex.state import (
     _choice_id,
     _radius_preset,
 )
-from ui.music_dna_bridge import list_music_theme_options
 from ui.music_dna_bridge import list_music_theme_options, realize_music_theme
 from ui.canonical_dna_bridge import (
     list_canonical_reference_options,
@@ -80,12 +79,31 @@ def _filter_canonical_catalog(
     return result
 
 
+def _music_choice_label(option) -> str:
+    """Stable MusicDNA select label owned by the host presentation layer."""
+    return f"{option.display_name} · music:{option.id}"
+
+
+def _initial_music_dna_choices() -> list[str]:
+    """Host-owned catalog snapshot from private MusicDNA when available.
+
+    Mirrors ``_canonical_catalog_snapshots``: the selector catalog is not
+    discovered solely by the login event. Session state still owns the user's
+    selection; this only seeds the immutable option list for Theme Studio.
+    """
+    try:
+        options = list_music_theme_options(include_all=True)
+    except Exception:
+        return []
+    return [_music_choice_label(option) for option in options]
+
+
 class WorkspaceDnaState(LegacyHostState):
     """Presentation-only canonical extension of the accepted Reflex host state."""
 
     canonical_catalog: list[dict[str, str]] = _canonical_catalog_snapshots()
     canonical_query: str = ""
-    music_dna_choices: list[str] = []
+    music_dna_choices: list[str] = _initial_music_dna_choices()
 
     draft_dna_mode: str = "legacy"
     active_dna_mode: str = "legacy"
@@ -164,445 +182,21 @@ class WorkspaceDnaState(LegacyHostState):
         return sum(item.get("host_ready") == "true" for item in self.canonical_catalog)
 
     def _load_theme_studio_catalog(self):
-        """Load the legacy catalog and the separate MusicDNA identity catalog."""
+        """Reconcile legacy + MusicDNA catalogs after login.
+
+        MusicDNA choices are also seeded at state definition via
+        ``_initial_music_dna_choices`` so Theme Studio is not empty when the
+        private package is already importable. This method remains the
+        refresh path after authentication.
+        """
         super()._load_theme_studio_catalog()
-        options = list_music_theme_options(include_all=True)
-        self.music_dna_choices = [f"{option.display_name} · music:{option.id}" for option in options]
-        if not self.music_dna_choices:
+        choices = _initial_music_dna_choices()
+        self.music_dna_choices = choices
+        if not choices:
             return
-        first = self.music_dna_choices[0]
+        first = choices[0]
         self.draft_identity_choice = first
         self.draft_identity_dna = _choice_id(first)
         self._clear_canonical_draft()
         self._refresh_music_draft()
         self._copy_draft_to_active()
-
-    def _clear_canonical_draft(self) -> None:
-        self.draft_canonical_reference_id = ""
-        self.draft_canonical_display_name = ""
-        self.draft_canonical_fingerprint = ""
-        self.draft_canonical_layout_flow = ""
-        self.draft_canonical_mobile_strategy = ""
-        self.draft_canonical_balance = ""
-        self.draft_canonical_density = ""
-        self.draft_canonical_hierarchy = ""
-        self.draft_canonical_continuity = ""
-        self.draft_canonical_motion = ""
-        self.draft_canonical_gap = "1rem"
-        self.draft_canonical_card_padding = "1rem"
-        self.draft_canonical_card_radius = "8px"
-        self.draft_canonical_font_family = "system-ui, -apple-system, sans-serif"
-        self.draft_canonical_line_height = "1.5"
-
-    def _clear_canonical_active(self) -> None:
-        self.active_canonical_reference_id = ""
-        self.active_canonical_display_name = ""
-        self.active_canonical_fingerprint = ""
-        self.active_canonical_layout_flow = ""
-        self.active_canonical_mobile_strategy = ""
-        self.active_canonical_balance = ""
-        self.active_canonical_density = ""
-        self.active_canonical_hierarchy = ""
-        self.active_canonical_continuity = ""
-        self.active_canonical_motion = ""
-        self.active_canonical_gap = "1rem"
-        self.active_canonical_card_padding = "1rem"
-        self.active_canonical_card_radius = "8px"
-        self.active_canonical_font_family = "system-ui, -apple-system, sans-serif"
-        self.active_canonical_line_height = "1.5"
-
-    def _copy_canonical_draft_to_active(self) -> None:
-        self.active_dna_mode = self.draft_dna_mode
-        self.active_canonical_reference_id = self.draft_canonical_reference_id
-        self.active_canonical_display_name = self.draft_canonical_display_name
-        self.active_canonical_fingerprint = self.draft_canonical_fingerprint
-        self.active_canonical_layout_flow = self.draft_canonical_layout_flow
-        self.active_canonical_mobile_strategy = self.draft_canonical_mobile_strategy
-        self.active_canonical_balance = self.draft_canonical_balance
-        self.active_canonical_density = self.draft_canonical_density
-        self.active_canonical_hierarchy = self.draft_canonical_hierarchy
-        self.active_canonical_continuity = self.draft_canonical_continuity
-        self.active_canonical_motion = self.draft_canonical_motion
-        self.active_canonical_gap = self.draft_canonical_gap
-        self.active_canonical_card_padding = self.draft_canonical_card_padding
-        self.active_canonical_card_radius = self.draft_canonical_card_radius
-        self.active_canonical_font_family = self.draft_canonical_font_family
-        self.active_canonical_line_height = self.draft_canonical_line_height
-
-    def _copy_canonical_active_to_draft(self) -> None:
-        self.draft_dna_mode = self.active_dna_mode
-        self.draft_canonical_reference_id = self.active_canonical_reference_id
-        self.draft_canonical_display_name = self.active_canonical_display_name
-        self.draft_canonical_fingerprint = self.active_canonical_fingerprint
-        self.draft_canonical_layout_flow = self.active_canonical_layout_flow
-        self.draft_canonical_mobile_strategy = self.active_canonical_mobile_strategy
-        self.draft_canonical_balance = self.active_canonical_balance
-        self.draft_canonical_density = self.active_canonical_density
-        self.draft_canonical_hierarchy = self.active_canonical_hierarchy
-        self.draft_canonical_continuity = self.active_canonical_continuity
-        self.draft_canonical_motion = self.active_canonical_motion
-        self.draft_canonical_gap = self.active_canonical_gap
-        self.draft_canonical_card_padding = self.active_canonical_card_padding
-        self.draft_canonical_card_radius = self.active_canonical_card_radius
-        self.draft_canonical_font_family = self.active_canonical_font_family
-        self.draft_canonical_line_height = self.active_canonical_line_height
-
-    def _refresh_canonical_draft(self) -> bool:
-        if not self.draft_canonical_reference_id:
-            return False
-        plan = realize_canonical_reference(
-            self.draft_canonical_reference_id,
-            viewport="desktop",
-            asset_state="off",
-            archetype_id=self.draft_archetype,
-            accessibility_required=True,
-        )
-        if plan is None:
-            self.theme_status = "Canonical realization failed safely; legacy presentation retained"
-            return False
-        try:
-            tokens = project_reflex_tokens(plan)
-        except (TypeError, ValueError):
-            self.theme_status = "Canonical vocabulary unsupported; legacy presentation retained"
-            return False
-
-        self.draft_dna_mode = "canonical"
-        self.draft_canonical_reference_id = plan.reference_id
-        self.draft_canonical_display_name = plan.display_name
-        self.draft_canonical_fingerprint = plan.source_fingerprint
-        self.draft_canonical_layout_flow = plan.layout_flow
-        self.draft_canonical_mobile_strategy = plan.mobile_strategy
-        self.draft_canonical_balance = plan.balance
-        self.draft_canonical_density = plan.density
-        self.draft_canonical_hierarchy = plan.hierarchy
-        self.draft_canonical_continuity = plan.continuity
-        self.draft_canonical_motion = plan.motion
-        self.draft_canonical_gap = tokens.gap
-        self.draft_canonical_card_padding = tokens.card_padding
-        self.draft_canonical_card_radius = tokens.card_radius
-        self.draft_canonical_font_family = tokens.font_family
-        self.draft_canonical_line_height = tokens.line_height
-
-        # Reuse the accepted editable presentation-token seam. Canonical
-        # structural identity remains tracked separately above; these neutral,
-        # accessible tokens ensure Theme Studio and workspace immediately consume
-        # the selected plan without introducing a second rendering engine.
-        self.draft_background = tokens.background
-        self.draft_surface = tokens.surface
-        self.draft_text_color = tokens.text
-        self.draft_primary = tokens.accent
-        self.draft_accent = tokens.accent
-        self.draft_border = tokens.border
-        self.draft_font_family = tokens.font_family
-        self.draft_radius_value = tokens.card_radius
-        self.draft_spacing_value = tokens.card_padding
-        self.draft_radius = _radius_preset(tokens.card_radius)
-        self.draft_density = plan.density
-        self.draft_metadata_prominence = "canonical"
-        self.draft_status_richness = "canonical"
-        self.draft_navigation_density = plan.mobile_strategy
-        self.draft_secondary_compactness = plan.density == "compact"
-        self.draft_information_discoverability = plan.hierarchy
-        self.draft_utility_grouping = plan.layout_flow
-        self.draft_hierarchy_contrast = plan.hierarchy
-        self.draft_border_style = "solid"
-        self.draft_energy_emphasis = plan.balance
-        self.draft_surface_treatment = plan.layout_flow
-        self.draft_transition_speed = plan.motion
-        self.theme_status = f"Canonical Design-DNA · {plan.display_name}"
-        return True
-
-    def _clear_music_draft(self) -> None:
-        for name in (
-            "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
-            "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
-        ):
-            setattr(self, f"draft_music_{name}", "")
-
-    def _clear_music_active(self) -> None:
-        for name in (
-            "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
-            "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
-        ):
-            setattr(self, f"active_music_{name}", "")
-
-
-    def _copy_music_draft_to_active(self) -> None:
-        for name in (
-            "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
-            "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
-        ):
-            setattr(self, f"active_music_{name}", getattr(self, f"draft_music_{name}"))
-
-    def _copy_music_active_to_draft(self) -> None:
-        for name in (
-            "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
-            "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
-        ):
-            setattr(self, f"draft_music_{name}", getattr(self, f"active_music_{name}"))
-
-    def _copy_draft_to_active(self):
-        super()._copy_draft_to_active()
-        self._copy_music_draft_to_active()
-
-    def _copy_active_to_draft(self):
-        super()._copy_active_to_draft()
-        self._copy_music_active_to_draft()
-
-    def _refresh_music_draft(self) -> bool:
-        if not self.draft_identity_dna.startswith("music:"):
-            return False
-        track_id = self.draft_identity_dna.split(":", 1)[1]
-        plan = realize_music_theme(track_id, self.draft_archetype)
-        if plan is None:
-            self._set_neutral_theme_draft()
-            self.theme_status = "MusicDNA realization unavailable; safe neutral presentation"
-            return False
-        self.draft_dna_mode = "music"
-        self.draft_identity_display_name = plan.display_name
-        self.draft_web_display_name = plan.artist or "MusicDNA"
-        self.draft_identity_choice = _choice_for_id(
-            self.music_dna_choices, self.draft_identity_dna, self.draft_identity_dna
-        )
-        self.draft_background = plan.background
-        self.draft_surface = plan.surface
-        self.draft_text_color = plan.text
-        self.draft_primary = plan.primary
-        self.draft_accent = plan.accent
-        self.draft_border = plan.border
-        self.draft_font_family = plan.font_family or "system-ui, -apple-system, sans-serif"
-        self.draft_mono_font = plan.mono_font or "monospace"
-        self.draft_radius_value = plan.radius
-        self.draft_spacing_value = "1rem" if plan.density == "comfortable" else "0.75rem"
-        self.draft_radius = _radius_preset(self.draft_radius_value)
-        self.draft_density = plan.density
-        self.draft_metadata_prominence = plan.topology
-        self.draft_status_richness = plan.world
-        self.draft_navigation_density = plan.layout_flow
-        self.draft_secondary_compactness = plan.density == "compact"
-        self.draft_information_discoverability = plan.layout_flow
-        self.draft_utility_grouping = plan.primary_object
-        self.draft_hierarchy_contrast = plan.density
-        self.draft_border_style = "solid"
-        self.draft_energy_emphasis = plan.topology
-        self.draft_surface_treatment = plan.surface
-        self.draft_transition_speed = plan.mobile_strategy
-        self.draft_music_topology = plan.topology
-        self.draft_music_world = plan.world
-        self.draft_music_signature = plan.signature
-        self.draft_music_combination_id = plan.combination_id
-        self.draft_music_layout_flow = plan.layout_flow
-        self.draft_music_mobile_strategy = plan.mobile_strategy
-        self.draft_music_primary_object = plan.primary_object
-        self.draft_music_primary_action = plan.primary_action
-        self.draft_music_composer_label = plan.composer_label
-        self.draft_music_asset_url = plan.asset_url
-        self.draft_music_asset_credit = plan.asset_credit
-        self.theme_status = f"MusicDNA × {plan.archetype_id}"
-        return True
-
-    def _restore_legacy_draft(self) -> None:
-        self.draft_dna_mode = "legacy"
-        self._clear_canonical_draft()
-        self._clear_music_draft()
-        if self.draft_identity_dna and self._refresh_theme_draft_from_composition():
-            self.theme_status = "Legacy role-based Design-DNA"
-            return
-        self._set_neutral_theme_draft()
-        self._clear_music_draft()
-        self.draft_dna_mode = "legacy"
-        self.theme_status = "Safe neutral presentation"
-
-    @rx.event
-    def refresh_canonical_catalog(self):
-        self.canonical_catalog = _canonical_catalog_snapshots()
-        if self.draft_canonical_reference_id and not any(
-            item["id"] == self.draft_canonical_reference_id
-            and item.get("host_ready") == "true"
-            for item in self.canonical_catalog
-        ):
-            self._restore_legacy_draft()
-
-    @rx.event
-    def set_canonical_query(self, value: str):
-        self.canonical_query = value
-
-    @rx.event
-    def select_canonical_reference(self, reference_id: str):
-        selected = next(
-            (
-                item
-                for item in self.canonical_catalog
-                if item["id"] == reference_id and item.get("host_ready") == "true"
-            ),
-            None,
-        )
-        if selected is None:
-            self.theme_status = "Canonical reference unavailable; legacy presentation retained"
-            return
-        previous_id = self.draft_canonical_reference_id
-        self.draft_canonical_reference_id = selected["id"]
-        self.draft_canonical_display_name = selected["display_name"]
-        if not self._refresh_canonical_draft():
-            self.draft_canonical_reference_id = previous_id
-            if previous_id:
-                self._refresh_canonical_draft()
-            else:
-                self._restore_legacy_draft()
-            return
-
-        # Collapse the long result list to the selected item after a successful
-        # tap. The field remains editable, so finding the next DNA is one tap +
-        # typing rather than another long mobile scroll.
-        self.canonical_query = selected["id"]
-        self.success_message = f"Canonical draft selected: {selected['display_name']}"
-
-    @rx.event
-    def use_legacy_dna(self):
-        self._restore_legacy_draft()
-        self.canonical_query = ""
-        self.success_message = "Legacy role-based presentation selected as draft."
-
-    @rx.event
-    def set_composed_archetype(self, value: str):
-        if value not in ARCHETYPES:
-            return
-        previous = self.draft_archetype
-        self.draft_archetype = value
-        if self.draft_dna_mode == "canonical" and self.draft_canonical_reference_id:
-            if not self._refresh_canonical_draft():
-                self.draft_archetype = previous
-                self._refresh_canonical_draft()
-            return
-        if self.draft_identity_dna and not self._refresh_theme_draft_from_composition():
-            self.draft_archetype = previous
-
-    @rx.event
-    def set_composed_identity_choice(self, value: str):
-        unit_id = _choice_id(value)
-        music_available = {_choice_id(choice) for choice in self.music_dna_choices}
-        if unit_id.startswith("music:") and unit_id in music_available:
-            self.draft_identity_choice = value
-            self.draft_identity_dna = unit_id
-            self.draft_dna_mode = "music"
-            self._clear_canonical_draft()
-            self.canonical_query = ""
-            self._refresh_music_draft()
-            return
-        available = {_choice_id(choice) for choice in self.identity_dna_choices}
-        if not unit_id or unit_id not in available:
-            return
-        self.draft_dna_mode = "legacy"
-        self._clear_canonical_draft()
-        self.canonical_query = ""
-        self.draft_identity_choice = value
-        self.draft_identity_dna = unit_id
-        self._refresh_theme_draft_from_composition()
-
-    @rx.event
-    def set_composed_web_choice(self, value: str):
-        unit_id = _choice_id(value)
-        available = {_choice_id(choice) for choice in self.web_dna_choices}
-        if unit_id and unit_id not in available:
-            return
-        self.draft_dna_mode = "legacy"
-        self._clear_canonical_draft()
-        self.canonical_query = ""
-        self.draft_web_choice = value or _NONE_WEB_CHOICE
-        self.draft_web_dna = unit_id
-        self._refresh_theme_draft_from_composition()
-
-    @rx.event
-    def apply_composed_theme(self):
-        self._copy_draft_to_active()
-        self._copy_canonical_draft_to_active()
-        self.theme_studio_open = False
-        self.current_surface = "workspace"
-        if self.active_dna_mode == "canonical":
-            self.success_message = "Canonical Design-DNA presentation applied."
-        else:
-            self.success_message = "Legacy theme composition applied."
-
-    @rx.event
-    def discard_composed_theme(self):
-        self._copy_active_to_draft()
-        self._copy_canonical_active_to_draft()
-        self.canonical_query = self.draft_canonical_reference_id if self.draft_dna_mode == "canonical" else ""
-        self.success_message = "Presentation draft discarded."
-
-    @rx.event
-    def reset_composed_theme(self):
-        self.draft_dna_mode = "legacy"
-        self._clear_canonical_draft()
-        self.canonical_query = ""
-        identity_ids = {_choice_id(choice) for choice in self.identity_dna_choices}
-        web_ids = {_choice_id(choice) for choice in self.web_dna_choices}
-        if _DEFAULT_IDENTITY_DNA in identity_ids:
-            self.draft_identity_dna = _DEFAULT_IDENTITY_DNA
-        else:
-            candidates = sorted(item for item in identity_ids if item)
-            if not candidates:
-                self._set_neutral_theme_draft()
-                self.draft_dna_mode = "legacy"
-                self.success_message = "Draft reset to safe defaults."
-                return
-            self.draft_identity_dna = candidates[0]
-        self.draft_web_dna = _DEFAULT_WEB_DNA if _DEFAULT_WEB_DNA in web_ids else ""
-        self.draft_archetype = "chat_first"
-        self.draft_identity_choice = _choice_for_id(
-            self.identity_dna_choices,
-            self.draft_identity_dna,
-            _NEUTRAL_IDENTITY_CHOICE,
-        )
-        self.draft_web_choice = _choice_for_id(
-            self.web_dna_choices,
-            self.draft_web_dna,
-            _NONE_WEB_CHOICE,
-        )
-        self._refresh_theme_draft_from_composition()
-        self.success_message = "Draft reset to resolved legacy defaults."
-
-    @rx.event
-    def logout_composed(self):
-        """Mirror accepted logout semantics while clearing canonical presentation state."""
-        if self.busy:
-            self.error_message = "A run is still active."
-            return
-        self.username = ""
-        self.display_username = ""
-        self.user_id = ""
-        self.logged_in = False
-        self.current_surface = "theme"
-        self.sessions = []
-        self.current_session_id = ""
-        self.current_session_name = ""
-        self.current_session_mode = "coding"
-        self.history = []
-        self.prompt = ""
-        self.status_message = ""
-        self.error_message = ""
-        self.success_message = ""
-        self.final_answer = ""
-        self._clear_deliberation_projection()
-        self.warnings = []
-        self.upload_names = []
-        self._runtime_memories = {}
-        self._pending_uploads = []
-        self._pending_restore = b""
-        self.identity_dna_choices = [_NEUTRAL_IDENTITY_CHOICE]
-        self.music_dna_choices = []
-        self.web_dna_choices = [_NONE_WEB_CHOICE]
-        self._set_neutral_theme_draft()
-        self.draft_dna_mode = "legacy"
-        self.active_dna_mode = "legacy"
-        self.canonical_query = ""
-        self._clear_canonical_draft()
-        self._clear_canonical_active()
-        self._copy_draft_to_active()
-
-
-__all__ = [
-    "WorkspaceDnaState",
-    "_canonical_catalog_snapshots",
-    "_filter_canonical_catalog",
-]

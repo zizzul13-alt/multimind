@@ -14,6 +14,23 @@ def test_entry_selector_uses_musicdna_catalog_and_architecture_axis():
     assert "HostState.set_composed_archetype" in SURFACE
 
 
+def test_music_dna_choices_are_seeded_at_state_definition():
+    """Catalog must not depend solely on the login event.
+
+    Architecture uses module-level ARCHETYPES. MusicDNA must mirror the
+    host-owned snapshot pattern used by canonical_catalog so Theme Studio is
+    not empty on first render when private DNA is available.
+    """
+    assert "def _initial_music_dna_choices" in STATE
+    assert "music_dna_choices: list[str] = _initial_music_dna_choices()" in STATE
+    assert "list_music_theme_options" in STATE
+
+
+def test_architecture_change_refreshes_music_draft():
+    assert 'draft_dna_mode == "music"' in STATE
+    assert "_refresh_music_draft" in STATE
+
+
 def test_music_architecture_remains_private_runtime_owned():
     assert "import_module(\"design_dna.music_runtime\")" in BRIDGE
     assert "list_music_architecture_combinations" in BRIDGE
