@@ -3,6 +3,7 @@ from pathlib import Path
 STATE = Path("multimind_reflex/workspace_dna_state.py").read_text(encoding="utf-8")
 SURFACE = Path("multimind_reflex/multimind_reflex.py").read_text(encoding="utf-8")
 BRIDGE = Path("ui/music_dna_bridge.py").read_text(encoding="utf-8")
+CATALOG = Path("multimind_reflex/music_catalog.py").read_text(encoding="utf-8")
 
 
 def test_entry_selector_uses_musicdna_catalog_and_architecture_axis():
@@ -12,6 +13,23 @@ def test_entry_selector_uses_musicdna_catalog_and_architecture_axis():
     assert "HostState.music_dna_choices" in SURFACE
     assert "HostState.set_composed_identity_choice" in SURFACE
     assert "HostState.set_composed_archetype" in SURFACE
+
+
+def test_music_dna_choices_are_seeded_at_state_definition():
+    """Catalog must not depend solely on the login event.
+
+    Architecture uses module-level ARCHETYPES. MusicDNA must mirror the
+    host-owned snapshot pattern used by canonical_catalog so Theme Studio is
+    not empty on first render when private DNA is available.
+    """
+    assert "music_dna_choices: list[str] = initial_music_dna_choices()" in STATE
+    assert "list_music_theme_options" in CATALOG
+    assert "def initial_music_dna_choices" in CATALOG
+
+
+def test_architecture_change_refreshes_music_draft():
+    assert 'draft_dna_mode == "music"' in STATE
+    assert "_refresh_music_draft" in STATE
 
 
 def test_music_architecture_remains_private_runtime_owned():
