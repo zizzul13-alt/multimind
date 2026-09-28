@@ -3,6 +3,7 @@ from pathlib import Path
 STATE = Path("multimind_reflex/workspace_dna_state.py").read_text(encoding="utf-8")
 SURFACE = Path("multimind_reflex/multimind_reflex.py").read_text(encoding="utf-8")
 BRIDGE = Path("ui/music_dna_bridge.py").read_text(encoding="utf-8")
+CATALOG = Path("multimind_reflex/music_catalog.py").read_text(encoding="utf-8")
 
 
 def test_entry_selector_uses_musicdna_catalog_and_architecture_axis():
@@ -21,9 +22,9 @@ def test_music_dna_choices_are_seeded_at_state_definition():
     host-owned snapshot pattern used by canonical_catalog so Theme Studio is
     not empty on first render when private DNA is available.
     """
-    assert "def _initial_music_dna_choices" in STATE
-    assert "music_dna_choices: list[str] = _initial_music_dna_choices()" in STATE
-    assert "list_music_theme_options" in STATE
+    assert "music_dna_choices: list[str] = initial_music_dna_choices()" in STATE
+    assert "list_music_theme_options" in CATALOG
+    assert "def initial_music_dna_choices" in CATALOG
 
 
 def test_architecture_change_refreshes_music_draft():
