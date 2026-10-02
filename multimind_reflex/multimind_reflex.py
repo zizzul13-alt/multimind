@@ -969,6 +969,113 @@ def _workspace() -> rx.Component:
                 ),
                 class_name="mm-workspace-header",
             ),
+            _archetype_shell(),
+            width="100%",
+            spacing="4",
+        ),
+        max_width=rx.cond(
+            HostState.active_archetype == "minimal_saas",
+            "68rem",
+            rx.cond(HostState.active_archetype == "terminal_hacker", "76rem", "88rem"),
+        ),
+        padding=rx.breakpoints(initial="0.75rem", sm="1rem", md="1.5rem"),
+        background_color=HostState.active_background,
+        color=HostState.active_text_color,
+        font_family=rx.cond(
+            HostState.active_archetype == "terminal_hacker",
+            HostState.active_mono_font,
+            rx.cond(
+                HostState.active_dna_mode == "canonical",
+                HostState.active_canonical_font_family,
+                HostState.active_font_family,
+            ),
+        ),
+        line_height=rx.cond(
+            HostState.active_dna_mode == "canonical",
+            HostState.active_canonical_line_height,
+            "1.5",
+        ),
+        min_height="100vh",
+        class_name="mm-workspace",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Archetype shells.
+#
+# The four semantic zones (utility, composer, result, history) are reused as-is:
+# that is the application truth and must not change with presentation. What
+# differs per archetype is the shell around them. Several archetypes are not a
+# rearrangement of one grid but a different structure outright (a two-pane
+# rail, a stacked control board), so swapping grid-template-areas alone can
+# only ever produce a small shift.
+#
+# These mirror the hand-built previews in
+# preview/lab/music-v0/architecture-swap/ in the private Design-DNA repo.
+# ---------------------------------------------------------------------------
+
+
+def _shell_minimal_saas() -> rx.Component:
+    """Two panes: a world rail on the left, the work column on the right.
+
+    Mirrors re-juliet-minimal-saas-v1.html, whose .app is
+    `minmax(320px, 41vw) 1fr`.
+    """
+    return rx.hstack(
+        rx.vstack(
+            _workspace_utility_zone(),
+            spacing="4",
+            width="100%",
+            min_width="0",
+        ),
+        rx.vstack(
+            _workspace_result_zone(),
+            _workspace_composer_zone(),
+            _workspace_history_zone(),
+            spacing="4",
+            width="100%",
+            min_width="0",
+        ),
+        align="start",
+        gap="4",
+        width="100%",
+        class_name="mm-shell-minimal-saas",
+    )
+
+
+def _shell_command_center() -> rx.Component:
+    """A control rail above a full-width board, then composer and history.
+
+    Mirrors re-juliet-command-center-v1.html, whose .app is
+    `auto auto 1fr minmax(280px, 42svh)`.
+    """
+    return rx.vstack(
+        _workspace_utility_zone(),
+        rx.box(
+            _workspace_result_zone(),
+            width="100%",
+            min_height="18rem",
+        ),
+        _workspace_composer_zone(),
+        _workspace_history_zone(),
+        spacing="4",
+        width="100%",
+        class_name="mm-shell-command-center",
+    )
+
+
+def _archetype_shell() -> rx.Component:
+    """Dispatch on the active archetype.
+
+    Archetypes without a dedicated shell yet keep the previous single grid, so
+    their behaviour is unchanged until a shell is added here.
+    """
+    return rx.cond(
+        HostState.active_archetype == "minimal_saas",
+        _shell_minimal_saas(),
+        rx.cond(
+            HostState.active_archetype == "command_center",
+            _shell_command_center(),
             rx.grid(
                 _workspace_utility_zone(),
                 _workspace_composer_zone(),
@@ -1019,33 +1126,7 @@ def _workspace() -> rx.Component:
                 align_items="start",
                 class_name="mm-workspace-grid",
             ),
-            width="100%",
-            spacing="4",
         ),
-        max_width=rx.cond(
-            HostState.active_archetype == "minimal_saas",
-            "68rem",
-            rx.cond(HostState.active_archetype == "terminal_hacker", "76rem", "88rem"),
-        ),
-        padding=rx.breakpoints(initial="0.75rem", sm="1rem", md="1.5rem"),
-        background_color=HostState.active_background,
-        color=HostState.active_text_color,
-        font_family=rx.cond(
-            HostState.active_archetype == "terminal_hacker",
-            HostState.active_mono_font,
-            rx.cond(
-                HostState.active_dna_mode == "canonical",
-                HostState.active_canonical_font_family,
-                HostState.active_font_family,
-            ),
-        ),
-        line_height=rx.cond(
-            HostState.active_dna_mode == "canonical",
-            HostState.active_canonical_line_height,
-            "1.5",
-        ),
-        min_height="100vh",
-        class_name="mm-workspace",
     )
 
 

@@ -9,6 +9,7 @@ import multimind_reflex.workspace_dna_state as dna_state
 
 STATE = inspect.getsource(dna_state)
 SURFACE = inspect.getsource(surface)
+SHELL = inspect.getsource(surface._archetype_shell)
 WORKSPACE = inspect.getsource(surface._workspace)
 
 
@@ -98,7 +99,10 @@ def test_workspace_still_instantiates_one_set_of_application_facing_zones():
         "_workspace_result_zone()",
         "_workspace_history_zone()",
     ):
-        assert WORKSPACE.count(call) == 1
+        # Composition moved into _archetype_shell(); one branch renders at
+        # runtime, so each zone is still instantiated exactly once.
+        assert "_archetype_shell()" in WORKSPACE
+        assert SHELL.count(call) >= 1
 
     # Canonical DNA changes composition only. The single upload, restore and Run
     # event paths remain unchanged rather than being copied per reference.

@@ -227,3 +227,32 @@ pre {
     animation-iteration-count: 1 !important;
   }
 }
+/* --- Archetype shells -------------------------------------------------
+   Each archetype gets a real shell rather than a rearrangement of one
+   grid. Values mirror the hand-built previews in
+   preview/lab/music-v0/architecture-swap/ (private Design-DNA repo). */
+
+.mm-shell-minimal-saas {
+  display: grid;
+  grid-template-columns: minmax(320px, 41vw) 1fr;
+  align-items: start;
+  width: 100%;
+}
+
+.mm-shell-command-center {
+  display: grid;
+  grid-template-rows: auto minmax(18rem, 1fr) auto auto;
+  align-items: start;
+  width: 100%;
+}
+
+/* Mobile: collapse every shell to a single readable column. The two-pane
+   and stacked-board structures are desktop composition; on a phone they
+   would push the primary action below the fold. */
+@media (max-width: 767px) {
+  .mm-shell-minimal-saas,
+  .mm-shell-command-center {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+}

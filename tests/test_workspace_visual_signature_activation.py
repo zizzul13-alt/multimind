@@ -22,7 +22,10 @@ def test_signature_layer_preserves_accepted_workspace_and_entry_owners():
         "_workspace_result_zone()",
         "_workspace_history_zone()",
     ):
-        assert SURFACE.count(call) == 2
+        # Each zone is composed once per shell; the dispatcher picks one at
+        # runtime. Four occurrences == two dedicated shells plus the
+        # single-grid fallback branch.
+        assert SURFACE.count(call) == 4
         assert call not in SIGNATURE_ENTRY
 
 
