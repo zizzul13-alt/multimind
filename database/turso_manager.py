@@ -160,10 +160,13 @@ class TursoDatabaseManager:
             )
             conn.commit()
             rowcount = getattr(cursor, "rowcount", None)
-            if rowcount is not None and rowcount >= 0:
-                return rowcount == 1
-            # libSQL clients may not expose rowcount consistently; verify within
-            # the same user/session namespace rather than assuming success.
+            # libSQL always reports rowcount as a non-negative i64 accumulator,
+            # so it can never mean "unknown" here. Trust it only when it
+            # confirms exactly one affected row; otherwise verify by reading the
+            # row back in the same user/session namespace, so a failed write is
+            # never surfaced to callers as a missing chat.
+            if rowcount == 1:
+                return True
             check = conn.execute(
                 f"SELECT debate_data FROM {CHATS_TABLE} "
                 "WHERE user_id = ? AND session_id = ? AND id = ?",
@@ -315,7 +318,11 @@ class TursoDatabaseManager:
             remote = self._connect()
             committed = False
             try:
-                remote.execute("BEGIN")
+                # No explicit BEGIN: libSQL only opens a transaction
+                # implicitly for DML. Sending a bare "BEGIN" statement leaves
+                # the connection in autocommit, which made rollback() a no-op
+                # and let the DELETE below persist even when a later INSERT
+                # failed. The first DELETE now opens the real transaction.
                 remote.execute(
                     f"DELETE FROM {CHATS_TABLE} WHERE user_id = ?", (self.user_id,)
                 )
@@ -374,8 +381,15 @@ class TursoDatabaseManager:
                 if not committed:
                     try:
                         remote.rollback()
-                    except Exception:
-                        pass
+                    except Exception as rollback_exc:
+                        # A failed rollback means the server may have kept the
+                        # DELETEs. Report it so callers invalidate cached state
+                        # instead of continuing to serve deleted memories.
+                        raise RestoreOperationError(
+                            "Restore failed and the remote database could not be "
+                            "rolled back; existing rows may have been removed.",
+                            database_replaced=True,
+                        ) from rollback_exc
                 raise RestoreOperationError(
                     "Database replacement failed.", database_replaced=committed
                 ) from exc
