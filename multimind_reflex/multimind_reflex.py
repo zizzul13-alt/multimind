@@ -4,6 +4,7 @@ import reflex as rx
 
 from multimind_reflex.state import AGENT_OPTIONS, ARCHETYPES, SKILL_OPTIONS, TEMPLATE_OPTIONS
 from multimind_reflex.workspace_dna_state import WorkspaceDnaState as HostState
+from ui.music_scenes import MusicScene
 
 
 UPLOAD_ID = "rj3_upload"
@@ -1015,42 +1016,91 @@ def _workspace() -> rx.Component:
 # ---------------------------------------------------------------------------
 
 
-def _music_world_rail() -> rx.Component:
-    """The world rail: identity, the music world's copy, and its provenance.
+def _has_scenes():
+    """Whether the active track exposes any A/B/C scenes.
 
-    Mirrors the .world section in re-juliet-minimal-saas-v1.html, which stacks
-    a photo, a brand line, an eyebrow, the title, a thesis paragraph and a row
-    of scene tabs. Reflex has no per-scene concept, so the tabs are omitted
-    rather than faked; everything else maps onto real state.
+    Neither len() nor iteration is available on a state var during render, so
+    this compares the list against an empty list, which Reflex can evaluate.
+    """
+    return HostState.active_music_scenes != []
+
+
+def _active_music_scene():
+    """The currently selected A/B/C scene, or None when the track has none.
+
+    A state var cannot be iterated or measured during render, so the presence
+    check is a comparison and the access is a direct index. Reflex renders each
+    dataclass field as a dict, so the keys are read defensively.
+    """
+    return rx.cond(_has_scenes(), HostState.active_music_scenes[0], None)
+
+
+def _music_scene_tab(scene: MusicScene) -> rx.Component:
+    """One scene switcher button."""
+    return rx.button(
+        rx.vstack(
+            rx.text(scene.key.upper(), size="1"),
+            rx.text(scene.name, size="1"),
+            align="start",
+            spacing="1",
+        ),
+        on_click=lambda: HostState.set_music_scene(scene.key),
+        variant=rx.cond(
+            HostState.active_music_scene_key == scene.key,
+            "solid",
+            "ghost",
+        ),
+        class_name="mm-scene-tab",
+        width="100%",
+    )
+
+
+def _music_scene_tabs() -> rx.Component:
+    """The A/B/C scene switcher, mirroring nav.scene-tabs in the previews.
+
+    rx.foreach is required here: a state var cannot be iterated directly.
+    """
+    return rx.foreach(HostState.active_music_scenes, _music_scene_tab)
+
+
+def _music_world_rail() -> rx.Component:
+    """The world rail, replicating the .world section of the previews.
+
+    Mirrors re-juliet-minimal-saas-v1.html: a photo, a brand line, an eyebrow,
+    the track title, the scene thesis, a switchable A/B/C scene row, and the
+    provenance credit. The preview's scene tabs become real buttons here -- that
+    is the part that makes the world feel switchable rather than static.
     """
     return rx.vstack(
-        # .photo -- the track's own visual, when the runtime supplied one.
+        # .photo -- the selected scene's visual
         rx.cond(
-            HostState.active_music_asset_url != "",
+            _has_scenes(),
             rx.box(
                 rx.image(
-                    src=HostState.active_music_asset_url,
+                    src=_active_music_scene()["photo_url"],
                     alt=HostState.active_music_display_name,
                     width="100%",
+                    class_name="mm-world-photo-img",
+                    style={
+                        "object-position": _active_music_scene()["position"],
+                    },
                 ),
                 class_name="mm-world-photo",
             ),
         ),
-        # .brand + .eyebrow
+        # .brand / .eyebrow
         rx.vstack(
+            rx.text("MULTIMIND / ARCHETYPE SWAP", class_name="mm-world-brand"),
             rx.text(
-                "MULTIMIND / MUSIC DNA",
-                class_name="mm-world-brand",
-            ),
-            rx.text(
-                "MINIMAL SAAS \u00d7 MUSIC DNA",
+                HostState.active_archetype.replace("_", " ").upper()
+                + " \u00d7 MUSIC DNA",
                 class_name="mm-world-eyebrow",
             ),
             align="start",
             spacing="2",
             width="100%",
         ),
-        # .world-copy -- the title and the world's description
+        # .world-copy -- title + the selected scene's thesis
         rx.vstack(
             rx.heading(
                 HostState.active_music_display_name,
@@ -1058,18 +1108,24 @@ def _music_world_rail() -> rx.Component:
                 class_name="mm-world-title",
             ),
             rx.text(
-                HostState.active_music_signature,
+                rx.cond(
+                    _has_scenes(),
+                    _active_music_scene()["thesis"],
+                    HostState.active_music_signature,
+                ),
                 class_name="mm-world-thesis",
             ),
             align="start",
             spacing="3",
             width="100%",
         ),
-        # .credit -- provenance stays visible
+        # .scene-tabs -- switches the world
+        rx.box(_music_scene_tabs(), class_name="mm-scene-tabs", width="100%"),
+        # .credit -- provenance of the visible scene
         rx.cond(
-            HostState.active_music_asset_credit != "",
+            _has_scenes(),
             rx.text(
-                HostState.active_music_asset_credit,
+                _active_music_scene()["credit"],
                 class_name="mm-world-credit",
             ),
         ),
