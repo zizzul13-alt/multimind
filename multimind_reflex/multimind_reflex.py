@@ -994,6 +994,18 @@ def _music_work_column() -> rx.Component:
         spacing="5",
         width="100%",
         class_name="mm-work",
+        # The work pane takes the track's paper ground: this is the light plate
+        # beside the dark world plate.
+        background_color=rx.cond(
+            HostState.active_music_palette is not None,
+            HostState.active_music_palette["paper"],
+            HostState.active_surface,
+        ),
+        color=rx.cond(
+            HostState.active_music_palette is not None,
+            HostState.active_music_palette["ink"],
+            HostState.active_text_color,
+        ),
     )
 
 
@@ -1209,6 +1221,17 @@ def _music_world_rail() -> rx.Component:
     is the part that makes the world feel switchable rather than static.
     """
     return rx.vstack(
+        # The approved CC0 material texture sits behind the world plate, as in
+        # the previews, where the ground is never a flat colour.
+        rx.cond(
+            HostState.active_music_material is not None,
+            rx.image(
+                src=HostState.active_music_material["path"],
+                alt="",
+                width="100%",
+                class_name="mm-world-texture",
+            ),
+        ),
         # .photo -- the selected scene's visual
         rx.cond(
             _has_scenes(),
@@ -1243,6 +1266,11 @@ def _music_world_rail() -> rx.Component:
                 HostState.active_music_display_name,
                 size="8",
                 class_name="mm-world-title",
+                color=rx.cond(
+                    HostState.active_music_palette is not None,
+                    HostState.active_music_palette["paper"],
+                    HostState.active_text_color,
+                ),
             ),
             rx.text(
                 rx.cond(
@@ -1265,6 +1293,15 @@ def _music_world_rail() -> rx.Component:
                 _active_music_scene()["credit"],
                 class_name="mm-world-credit",
             ),
+            rx.cond(
+                HostState.active_music_material is not None,
+                rx.text(
+                    HostState.active_music_material["name"].upper()
+                    + " \u00b7 "
+                    + HostState.active_music_material["license_status"],
+                    class_name="mm-world-credit",
+                ),
+            ),
         ),
         # the utility zone lives under the world copy in this shell
         rx.box(_workspace_utility_zone(), width="100%"),
@@ -1273,6 +1310,19 @@ def _music_world_rail() -> rx.Component:
         min_width="0",
         align="start",
         class_name="mm-world",
+        # The world pane takes the track's own night ground. The private runtime
+        # exposes one background pair, which is dark for a dark track, so the
+        # dark-left / light-right split is carried by the track palette.
+        background_color=rx.cond(
+            HostState.active_music_palette is not None,
+            HostState.active_music_palette["night"],
+            HostState.active_background,
+        ),
+        color=rx.cond(
+            HostState.active_music_palette is not None,
+            HostState.active_music_palette["paper"],
+            HostState.active_text_color,
+        ),
     )
 
 
