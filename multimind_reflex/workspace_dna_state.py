@@ -154,6 +154,8 @@ class WorkspaceDnaState(LegacyHostState):
     draft_music_composer_label: str = ""
     draft_music_asset_url: str = ""
     draft_music_asset_credit: str = ""
+    draft_music_display_name: str = ""
+    draft_music_artist: str = ""
     active_music_topology: str = ""
     active_music_world: str = ""
     active_music_signature: str = ""
@@ -165,6 +167,8 @@ class WorkspaceDnaState(LegacyHostState):
     active_music_composer_label: str = ""
     active_music_asset_url: str = ""
     active_music_asset_credit: str = ""
+    active_music_display_name: str = ""
+    active_music_artist: str = ""
 
     @rx.var
     def music_selector_status(self) -> str:
@@ -337,6 +341,9 @@ class WorkspaceDnaState(LegacyHostState):
         for name in (
             "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
             "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
+            # The realization plan carries these, but they were never promoted to
+            # the active set, so the track's own name was unreachable by the UI.
+            "display_name", "artist",
         ):
             setattr(self, f"draft_music_{name}", "")
 
@@ -409,6 +416,8 @@ class WorkspaceDnaState(LegacyHostState):
         self.draft_surface_treatment = plan.surface
         self.draft_transition_speed = plan.mobile_strategy
         self.draft_music_topology = plan.topology
+        self.draft_music_display_name = plan.display_name
+        self.draft_music_artist = plan.artist
         self.draft_music_world = plan.world
         self.draft_music_signature = plan.signature
         self.draft_music_combination_id = plan.combination_id
