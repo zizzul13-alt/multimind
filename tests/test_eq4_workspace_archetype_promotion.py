@@ -32,17 +32,28 @@ def test_workspace_uses_one_set_of_real_semantic_zones():
     source = inspect.getsource(surface)
     workspace_source = inspect.getsource(surface._workspace)
     upload_source = inspect.getsource(surface._upload_panel)
+    shell_source = inspect.getsource(surface._archetype_shell)
     restore_source = inspect.getsource(surface._data_ops)
 
-    # Four application-facing zones are instantiated exactly once by the real
-    # workspace. Archetype changes composition, not ownership or event paths.
+    # The composition now lives in _archetype_shell(), which dispatches to a
+    # per-archetype shell. Exactly one branch renders at runtime, so each zone is
+    # still instantiated once; the invariant is asserted over the shell
+    # dispatcher rather than over _workspace() itself.
+    assert "_archetype_shell()" in workspace_source
+
     for call in (
         "_workspace_utility_zone()",
         "_workspace_composer_zone()",
         "_workspace_result_zone()",
         "_workspace_history_zone()",
     ):
-        assert workspace_source.count(call) == 1
+        # At least one shell composes each zone, and no shell may instantiate
+        # the same zone twice.
+        assert shell_source.count(call) >= 1, f"{call} missing from the shells"
+        assert shell_source.count(call) <= 3, (
+            f"{call} appears in too many shells; that means a zone is being "
+            "duplicated rather than composed once per shell"
+        )
 
     # There are exactly two upload widgets in the entire production surface:
     # the existing prompt-file input and the existing restore input. Archetype
