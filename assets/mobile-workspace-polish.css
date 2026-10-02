@@ -341,3 +341,82 @@ pre {
 .mm-world-photo-img {
   object-fit: cover;
 }
+
+/* --- Work column --------------------------------------------------------
+   Replicates the .work pane of the hand-built previews: a meta bar, the
+   current-task label, a large headline, a lead, a bordered recommendation
+   summary, a decision row and a closing invariant note. */
+
+.mm-work-top {
+  padding-block: 0.6rem;
+  padding-inline: 0.25rem;
+  border-block-end: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.mm-meta,
+.mm-task-label,
+.mm-summary-label {
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+}
+
+.mm-task-label {
+  color: color-mix(in srgb, currentColor 42%, transparent);
+}
+
+.mm-work-headline {
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.mm-lead {
+  line-height: 1.7;
+  max-width: 60ch;
+  color: color-mix(in srgb, currentColor 78%, transparent);
+}
+
+.mm-summary {
+  padding-block: 1.1rem;
+  border-block: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.mm-summary-label {
+  flex: 0 0 9rem;
+}
+
+.mm-summary-answer {
+  line-height: 1.6;
+  font-size: 1.05rem;
+  flex: 1 1 auto;
+}
+
+.mm-choice {
+  padding-block-end: 1rem;
+  border-block-end: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.mm-apply {
+  min-height: 2.875rem;
+  padding-inline: 1.1rem;
+  letter-spacing: 0.04em;
+}
+
+.mm-note {
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: color-mix(in srgb, currentColor 58%, transparent);
+}
+
+@media (max-width: 767px) {
+  .mm-summary {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .mm-summary-label {
+    flex: none;
+  }
+}

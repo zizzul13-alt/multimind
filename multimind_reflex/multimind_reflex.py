@@ -860,6 +860,143 @@ def _workspace_composer_zone() -> rx.Component:
     )
 
 
+def _music_work_column() -> rx.Component:
+    """The work pane, replicating the .work column of the previews.
+
+    Covers everything the generic result zone leaves out: the session meta bar,
+    the current-task label, the lead, the recommendation summary, the decision
+    row and the closing invariant note. All of it reads real state; nothing is
+    placeholder text.
+    """
+    return rx.vstack(
+        # .top -- session / model / memory meta plus a live status
+        rx.hstack(
+            rx.hstack(
+                rx.text("SESSION / ", size="1", class_name="mm-meta"),
+                rx.text(HostState.current_session_id, size="1"),
+                rx.text(" \u00b7 MEMORY / ", size="1", class_name="mm-meta"),
+                rx.text("ON", size="1"),
+                spacing="1",
+                wrap="wrap",
+                align="center",
+            ),
+            rx.spacer(),
+            rx.badge(
+                rx.cond(HostState.busy, "BUSY", "READY"),
+                variant=rx.cond(HostState.busy, "surface", "soft"),
+                size="1",
+            ),
+            width="100%",
+            align="center",
+            class_name="mm-work-top",
+        ),
+        # .content -- task label, headline, lead
+        rx.vstack(
+            rx.hstack(
+                rx.text("CURRENT TASK / ", class_name="mm-task-label"),
+                rx.text(
+                    rx.cond(
+                        HostState.active_dna_mode == "music",
+                        HostState.active_music_primary_object.upper(),
+                        "WORKSPACE",
+                    ),
+                    class_name="mm-task-label",
+                ),
+                spacing="1",
+                align="center",
+                wrap="wrap",
+                width="100%",
+            ),
+            rx.text(
+                rx.cond(
+                    HostState.active_music_primary_action != "",
+                    HostState.active_music_primary_action,
+                    "Continue the conversation",
+                ),
+                size="7",
+                class_name="mm-work-headline",
+            ),
+            rx.text(
+                HostState.active_music_signature,
+                class_name="mm-lead",
+            ),
+            align="start",
+            spacing="3",
+            width="100%",
+        ),
+        # .summary -- what MultiMind recommends
+        rx.hstack(
+            rx.text(
+                "MULTIMIND RECOMMENDS",
+                class_name="mm-summary-label",
+            ),
+            rx.text(
+                rx.cond(
+                    HostState.active_music_primary_object != "",
+                    HostState.active_music_primary_object,
+                    "Keep the same session, memory and world while changing "
+                    "the presentation.",
+                ),
+                class_name="mm-summary-answer",
+            ),
+            spacing="4",
+            align="start",
+            width="100%",
+            class_name="mm-summary",
+        ),
+        # .choice -- the current selection, and what it costs
+        rx.hstack(
+            rx.vstack(
+                rx.text(
+                    rx.cond(
+                        HostState.current_session_name != "",
+                        HostState.current_session_name,
+                        "Current selection",
+                    ),
+                    weight="bold",
+                    size="3",
+                ),
+                rx.text(
+                    rx.cond(
+                        _has_scenes(),
+                        _active_music_scene()["name"],
+                        HostState.active_music_display_name,
+                    ),
+                    size="1",
+                    class_name="mm-meta",
+                ),
+                align="start",
+                spacing="1",
+            ),
+            rx.spacer(),
+            rx.button(
+                "Apply decision",
+                on_click=HostState.apply_composed_theme,
+                class_name="mm-apply",
+            ),
+            width="100%",
+            align="center",
+            wrap="wrap",
+            class_name="mm-choice",
+        ),
+        # .note -- the invariants, so the rules stay visible
+        rx.text(
+            rx.cond(
+                HostState.active_dna_mode == "music",
+                "Archetype invariant: the shell changes, the internals do not. "
+                "Music invariant: the A/B/C correspondence world is always "
+                "switchable, and provenance stays visible.",
+                "Legacy theme composition. The MusicDNA world rail appears when "
+                "a track is selected.",
+            ),
+            class_name="mm-note",
+        ),
+        spacing="5",
+        width="100%",
+        class_name="mm-work",
+    )
+
+
 def _workspace_result_zone() -> rx.Component:
     return _workspace_zone_card(
         rx.vstack(
@@ -1148,7 +1285,11 @@ def _shell_minimal_saas() -> rx.Component:
     return rx.hstack(
         _music_world_rail(),
         rx.vstack(
-            _workspace_result_zone(),
+            rx.cond(
+                HostState.active_dna_mode == "music",
+                _music_work_column(),
+                _workspace_result_zone(),
+            ),
             _workspace_composer_zone(),
             _workspace_history_zone(),
             spacing="4",
