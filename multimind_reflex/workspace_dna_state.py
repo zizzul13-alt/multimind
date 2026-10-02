@@ -35,7 +35,13 @@ from multimind_reflex.state import (
     _radius_preset,
 )
 from ui.music_dna_bridge import list_music_theme_options, realize_music_theme
-from ui.music_scenes import MusicScene, scenes_for_track
+from ui.materials import MaterialAsset, material_credit, material_for_track
+from ui.music_scenes import (
+    MusicScene,
+    TrackPalette,
+    palette_for_track,
+    scenes_for_track,
+)
 from ui.canonical_dna_bridge import (
     list_canonical_reference_options,
     list_host_realizable_reference_ids,
@@ -158,6 +164,8 @@ class WorkspaceDnaState(LegacyHostState):
     draft_music_display_name: str = ""
     draft_music_scenes: list[MusicScene] = []
     draft_music_scene_key: str = "a"
+    draft_music_palette: TrackPalette | None = None
+    draft_music_material: MaterialAsset | None = None
     draft_music_artist: str = ""
     active_music_topology: str = ""
     active_music_world: str = ""
@@ -173,6 +181,8 @@ class WorkspaceDnaState(LegacyHostState):
     active_music_display_name: str = ""
     active_music_scenes: list[MusicScene] = []
     active_music_scene_key: str = "a"
+    active_music_palette: TrackPalette | None = None
+    active_music_material: MaterialAsset | None = None
     active_music_artist: str = ""
 
     @rx.var
@@ -349,7 +359,7 @@ class WorkspaceDnaState(LegacyHostState):
             # The realization plan carries these, but they were never promoted to
             # the active set, so the track's own name was unreachable by the UI.
             "display_name", "artist",
-            "scenes", "scene_key",
+            "scenes", "scene_key", "palette", "material",
         ):
             setattr(self, f"draft_music_{name}", "")
 
@@ -365,6 +375,10 @@ class WorkspaceDnaState(LegacyHostState):
         for name in (
             "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
             "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
+            # Promoted to the active set as well: without these the world rail
+            # rendered an empty title, no palette and no material, because the
+            # values only ever reached draft_* and never active_*.
+            "display_name", "artist", "scenes", "scene_key", "palette", "material",
         ):
             setattr(self, f"active_music_{name}", getattr(self, f"draft_music_{name}"))
 
@@ -435,6 +449,9 @@ class WorkspaceDnaState(LegacyHostState):
         self.draft_music_artist = plan.artist
         self.draft_music_scenes = list(scenes_for_track(plan.track_id))
         self.draft_music_scene_key = "a"
+        self.draft_music_palette = None
+        self.draft_music_palette = palette_for_track(plan.track_id)
+        self.draft_music_material = material_for_track(plan.track_id)
         self.draft_music_world = plan.world
         self.draft_music_signature = plan.signature
         self.draft_music_combination_id = plan.combination_id
@@ -516,11 +533,23 @@ class WorkspaceDnaState(LegacyHostState):
             return
         previous = self.draft_archetype
         self.draft_archetype = value
+
         if self.draft_dna_mode == "canonical" and self.draft_canonical_reference_id:
             if not self._refresh_canonical_draft():
                 self.draft_archetype = previous
                 self._refresh_canonical_draft()
             return
+
+        # A MusicDNA track makes this a music composition, not a legacy one.
+        # Without this branch the archetype change ran the legacy refresh, which
+        # never touches draft_dna_mode -- so the world rail's palette, material
+        # texture and scene rows stayed inactive even though a track was chosen.
+        if self.draft_identity_dna.startswith("music:"):
+            if not self._refresh_music_draft():
+                self.draft_archetype = previous
+                self._refresh_music_draft()
+            return
+
         if self.draft_identity_dna and not self._refresh_theme_draft_from_composition():
             self.draft_archetype = previous
 

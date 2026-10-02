@@ -420,3 +420,100 @@ pre {
     flex: none;
   }
 }
+
+/* --- Two-tone split + editorial typography -------------------------------
+   The previews depend on a dark world plate beside a light work plate, and on
+   editorial serif headlines at a deliberately extreme scale. Reflex exposes one
+   background/foreground pair for the whole workspace, so the panes carry their
+   own surfaces inline and the type scale lives here. */
+
+.mm-world {
+  align-self: stretch;
+  border-inline-end: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.mm-work {
+  align-self: stretch;
+  border-radius: 2px;
+}
+
+/* Editorial serif for the two headlines. Falls back through a serif stack so
+   the look survives when the music font is a sans. */
+.mm-world-title,
+.mm-work-headline {
+  /* Reflex emits font-family as an inline style per component, which outranks a
+     plain class selector. The editorial serif only sticks with !important. */
+  font-family: "Didot", "Bodoni MT", "Playfair Display", Georgia,
+    "Times New Roman", serif !important;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+/* The world title is the largest type in the layout, as in the preview. */
+.mm-world-title {
+  font-size: clamp(2.6rem, 6.5vw, 4.6rem);
+  line-height: 0.94;
+}
+
+.mm-work-headline {
+  font-size: clamp(1.7rem, 3.4vw, 2.7rem);
+  line-height: 1.02;
+}
+
+/* Body copy sits one step down and is measure-limited for readability. */
+.mm-world-thesis,
+.mm-lead,
+.mm-summary-answer {
+  font-family: inherit;
+  letter-spacing: normal;
+}
+
+/* Mono for the machine-readable strip, as .meta and .status use Plex Mono. */
+.mm-meta,
+.mm-task-label,
+.mm-summary-label {
+  font-family: "IBM Plex Mono", ui-monospace, "Cascadia Code", monospace;
+}
+
+@media (max-width: 767px) {
+  .mm-world {
+    border-inline-end: none;
+    border-block-end: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  }
+
+  .mm-world-title {
+    font-size: clamp(2.1rem, 11vw, 3rem);
+  }
+
+  .mm-work-headline {
+    font-size: clamp(1.5rem, 8vw, 2rem);
+  }
+}
+
+/* --- Material texture ---------------------------------------------------
+   The approved CC0 material sits behind the world plate, low-opacity, the way
+   the previews put a real ground behind the type instead of a flat colour. */
+
+.mm-world {
+  position: relative;
+  isolation: isolate;
+}
+
+.mm-world-texture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.16;
+  filter: grayscale(0.35) contrast(1.05);
+  z-index: -1;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mm-world-texture {
+    background-attachment: fixed;
+  }
+}

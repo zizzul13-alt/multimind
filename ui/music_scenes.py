@@ -18,6 +18,26 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class TrackPalette:
+    """The two-tone ground for one track.
+
+    The hand-built previews define a fixed set of CSS variables per track --
+    `--night` for the world plate, `--paper` for the work plate, `--ink`,
+    `--line`, `--mut`, and an accent. design_dna exposes only one
+    background/foreground pair per realization, and for a dark track both are
+    dark, so the dark-left / light-right split the previews depend on cannot
+    come from there. It is carried here instead.
+    """
+
+    night: str      # world plate ground
+    paper: str      # work plate ground
+    ink: str        # body text
+    line: str       # hairline borders
+    muted: str      # secondary text
+    accent: str     # active scene tab, eyebrows
+
+
+@dataclass(frozen=True)
 class MusicScene:
     """One A/B/C correspondence world for a track."""
 
@@ -27,6 +47,49 @@ class MusicScene:
     photo_url: str
     position: str
     credit: str
+
+
+# Two-tone grounds per track, carried over from the previews. This is what
+# makes the world plate dark beside a light work plate.
+_PALETTES: dict[str, TrackPalette] = {
+    "re-juliet": TrackPalette(
+        night="#121113",
+        paper="#f5f0ea",
+        ink="#221f20",
+        line="#d9ceca",
+        muted="#777071",
+        accent="#bc7f79",
+    ),
+    "you-and-i": TrackPalette(
+        night="#101418",
+        paper="#eef1f0",
+        ink="#1b2124",
+        line="#cfd6d6",
+        muted="#6c767a",
+        accent="#c8842f",
+    ),
+}
+
+# Neutral two-tone for tracks without a hand-built palette: dark plate, warm
+# light plate. Still a split, just not a per-track authored one.
+_DEFAULT_PALETTE = TrackPalette(
+    night="#111418",
+    paper="#f2f1ee",
+    ink="#1e2226",
+    line="#d3d5d4",
+    muted="#72787c",
+    accent="#6b8cff",
+)
+
+
+def palette_for_track(track_id: str) -> TrackPalette:
+    """Return the two-tone palette for a track."""
+    slug = str(track_id or "").strip().casefold()
+    if slug in _PALETTES:
+        return _PALETTES[slug]
+    if slug in {"ti01", "ti1"}:
+        return _PALETTES["re-juliet"]
+    return _DEFAULT_PALETTE
 
 
 # Scenes transcribed from preview/lab/music-v0/architecture-swap/*.html in the
@@ -165,4 +228,9 @@ def scenes_for_track(track_id: str) -> tuple[MusicScene, ...]:
     return _DEFAULT_SCENES
 
 
-__all__ = ["MusicScene", "scenes_for_track"]
+__all__ = [
+    "MusicScene",
+    "TrackPalette",
+    "palette_for_track",
+    "scenes_for_track",
+]
