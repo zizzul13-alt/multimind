@@ -8,7 +8,10 @@ BRIDGE = Path("ui/music_dna_bridge.py").read_text(encoding="utf-8")
 def test_entry_selector_uses_musicdna_catalog_and_architecture_axis():
     assert "music_dna_choices" in STATE
     assert "startswith(\"music:\")" in STATE
-    assert "ARCHETYPES" in SURFACE
+    # The architecture axis is sourced from the private runtime catalog, not a
+    # hardcoded constant, and a broken runtime must surface visibly.
+    assert "HostState.music_dna_archetypes" in SURFACE
+    assert "HostState.music_dna_archetype_error" in SURFACE
     assert "HostState.music_dna_choices" in SURFACE
     assert "HostState.set_composed_identity_choice" in SURFACE
     assert "HostState.set_composed_archetype" in SURFACE

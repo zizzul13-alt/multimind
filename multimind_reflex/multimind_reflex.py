@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from multimind_reflex.state import AGENT_OPTIONS, ARCHETYPES, SKILL_OPTIONS, TEMPLATE_OPTIONS
+from multimind_reflex.state import AGENT_OPTIONS, SKILL_OPTIONS, TEMPLATE_OPTIONS
 from multimind_reflex.workspace_dna_state import WorkspaceDnaState as HostState
 
 
@@ -74,8 +74,18 @@ def _theme_studio() -> rx.Component:
                     ),
                     rx.heading("Architecture", size="5"),
                     rx.text("Pilih bentuk pengalaman MultiMind untuk track tersebut."),
+                    # Surface a broken/absent MusicDNA runtime instead of
+                    # silently presenting an empty picker.
+                    rx.cond(
+                        HostState.music_dna_archetype_error != "",
+                        rx.callout(
+                            HostState.music_dna_archetype_error,
+                            color="red",
+                            icon="triangle_alert",
+                        ),
+                    ),
                     rx.select(
-                        ARCHETYPES,
+                        HostState.music_dna_archetypes,
                         value=HostState.draft_archetype,
                         on_change=HostState.set_composed_archetype,
                         width="100%",

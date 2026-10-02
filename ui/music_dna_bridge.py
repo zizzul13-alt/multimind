@@ -127,6 +127,67 @@ def list_music_architecture_combinations(*, include_all: bool = True) -> tuple[s
         return ()
 
 
+class MusicDNAUnavailable(RuntimeError):
+    """The optional private MusicDNA runtime is absent or failed to load.
+
+    Raised instead of degrading silently so the theme picker can surface a
+    visible error rather than presenting an empty catalog.
+    """
+
+
+def music_dna_unavailable_reason() -> Optional[str]:
+    """Return why MusicDNA is unavailable, or None when it loads cleanly.
+
+    The runtime is an optional private package, so absence is a legitimate
+    deployment state -- but it must never be silent, or a broken install
+    presents as an empty picker with no explanation.
+    """
+    try:
+        module = import_module("design_dna.music_runtime")
+    except Exception as exc:
+        return f"{type(exc).__name__}: {exc}"
+    if not hasattr(module, "list_music_architecture_options"):
+        return (
+            "design_dna.music_runtime does not expose "
+            "list_music_architecture_options (incompatible package version)"
+        )
+    return None
+
+
+def list_music_archetypes(*, include_all: bool = True) -> tuple[str, ...]:
+    """Return the architecture ids that pair with MusicDNA references.
+
+    Sourced from the private runtime so the picker stays in step with the
+    package rather than a hardcoded list. Raises MusicDNAUnavailable when the
+    runtime cannot be loaded, so callers can show the reason.
+    """
+    reason = music_dna_unavailable_reason()
+    if reason is not None:
+        raise MusicDNAUnavailable(f"MusicDNA runtime unavailable -- {reason}")
+    module = import_module("design_dna.music_runtime")
+    return tuple(
+        str(item)
+        for item in module.list_music_architecture_options(include_all=bool(include_all))
+    )
+
+
+def list_music_archetype_ids() -> tuple[str, ...]:
+    """Return the distinct architecture ids, in stable order.
+
+    The runtime exposes the full cross-product ("music:<track>@<archetype>");
+    this reduces it to the unique architectures so the picker can keep its
+    two-dropdown shape.
+    """
+    ids: list[str] = []
+    for combination in list_music_archetypes():
+        if "@" not in combination:
+            continue
+        archetype = combination.rsplit("@", 1)[1].strip()
+        if archetype and archetype not in ids:
+            ids.append(archetype)
+    return tuple(ids)
+
+
 def realize_music_theme(track_id: str, archetype_id: str) -> Optional[MusicArchitecturePlan]:
     module = _optional_import()
     if module is None:
@@ -172,9 +233,13 @@ def realize_music_theme(track_id: str, archetype_id: str) -> Optional[MusicArchi
 
 __all__ = [
     "MusicArchitecturePlan",
+    "MusicDNAUnavailable",
     "MusicThemeOption",
     "list_music_architecture_combinations",
+    "list_music_archetype_ids",
+    "list_music_archetypes",
     "list_music_theme_options",
     "music_dna_available",
+    "music_dna_unavailable_reason",
     "realize_music_theme",
 ]

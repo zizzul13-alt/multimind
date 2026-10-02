@@ -30,8 +30,13 @@ from multimind_reflex.state import (
     _choice_id,
     _radius_preset,
 )
-from ui.music_dna_bridge import list_music_theme_options
-from ui.music_dna_bridge import list_music_theme_options, realize_music_theme
+from ui.music_dna_bridge import (
+    MusicDNAUnavailable,
+    list_music_archetype_ids,
+    list_music_theme_options,
+    music_dna_unavailable_reason,
+    realize_music_theme,
+)
 from ui.canonical_dna_bridge import (
     list_canonical_reference_options,
     list_host_realizable_reference_ids,
@@ -86,6 +91,8 @@ class WorkspaceDnaState(LegacyHostState):
     canonical_catalog: list[dict[str, str]] = _canonical_catalog_snapshots()
     canonical_query: str = ""
     music_dna_choices: list[str] = []
+    music_dna_archetypes: list[str] = []
+    music_dna_archetype_error: str = ""
 
     draft_dna_mode: str = "legacy"
     active_dna_mode: str = "legacy"
@@ -166,9 +173,39 @@ class WorkspaceDnaState(LegacyHostState):
     def _load_theme_studio_catalog(self):
         """Load the legacy catalog and the separate MusicDNA identity catalog."""
         super()._load_theme_studio_catalog()
+        # Load the architecture catalog from the private runtime so the
+        # picker matches the package instead of a hardcoded list. Failure is
+        # recorded and shown, never swallowed.
+        self.music_dna_archetype_error = ""
+        self.music_dna_archetypes = []
+        reason = music_dna_unavailable_reason()
+        if reason is not None:
+            self.music_dna_archetype_error = (
+                "MusicDNA runtime unavailable — architecture catalog could not "
+                f"be loaded ({reason})."
+            )
+        else:
+            try:
+                self.music_dna_archetypes = list(list_music_archetype_ids())
+            except MusicDNAUnavailable as exc:
+                self.music_dna_archetype_error = str(exc)
+            except Exception as exc:
+                self.music_dna_archetype_error = (
+                    "MusicDNA architecture catalog failed to load "
+                    f"({type(exc).__name__}: {exc})."
+                )
+            if not self.music_dna_archetypes and not self.music_dna_archetype_error:
+                self.music_dna_archetype_error = (
+                    "MusicDNA runtime returned an empty architecture catalog."
+                )
+
         options = list_music_theme_options(include_all=True)
         self.music_dna_choices = [f"{option.display_name} · music:{option.id}" for option in options]
         if not self.music_dna_choices:
+            if not self.music_dna_archetype_error:
+                self.music_dna_archetype_error = (
+                    "MusicDNA runtime returned an empty track catalog."
+                )
             return
         first = self.music_dna_choices[0]
         self.draft_identity_choice = first
@@ -465,7 +502,9 @@ class WorkspaceDnaState(LegacyHostState):
 
     @rx.event
     def set_composed_archetype(self, value: str):
-        if value not in ARCHETYPES:
+        # Accept any architecture the runtime advertises, plus the legacy
+        # constant, so a value arriving from a stale client still works.
+        if value not in self.music_dna_archetypes and value not in ARCHETYPES:
             return
         previous = self.draft_archetype
         self.draft_archetype = value

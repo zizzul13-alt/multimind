@@ -25,7 +25,8 @@ def test_theme_studio_exposes_musicdna_and_architecture_selector():
         "HostState.music_dna_choices",
         "HostState.draft_identity_choice",
         "HostState.set_composed_identity_choice",
-        "ARCHETYPES",
+        "HostState.music_dna_archetypes",
+        "HostState.music_dna_archetype_error",
         "HostState.set_composed_archetype",
         "MusicDNA × Architecture",
     ):
