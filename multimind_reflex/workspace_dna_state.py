@@ -16,7 +16,11 @@ it never blocks MultiMind operation.
 """
 from __future__ import annotations
 
+import logging
+
 import reflex as rx
+
+logger = logging.getLogger(__name__)
 
 from multimind_reflex.canonical_projection import project_reflex_tokens
 from multimind_reflex.state import (
@@ -30,7 +34,6 @@ from multimind_reflex.state import (
     _choice_id,
     _radius_preset,
 )
-from ui.music_dna_bridge import list_music_theme_options
 from ui.music_dna_bridge import list_music_theme_options, realize_music_theme
 from ui.canonical_dna_bridge import (
     list_canonical_reference_options,
@@ -43,6 +46,24 @@ from ui.canonical_dna_bridge import (
 # users through a 30-item scroll wall while preserving the full 160-reference
 # catalog behind search.
 _CANONICAL_RESULT_LIMIT = 12
+
+
+def _music_dna_choice_snapshots() -> list[str]:
+    """Snapshot the MusicDNA track catalog at import time.
+
+    Mirrors _canonical_catalog_snapshots. The dropdown must have its options
+    available before the first render: a state var that starts empty and is
+    only populated inside the login event renders an empty picker, because
+    the initial page render happens before that event runs.
+    """
+    try:
+        return [
+            f"{option.display_name} · music:{option.id}"
+            for option in list_music_theme_options(include_all=True)
+        ]
+    except Exception as exc:  # the private runtime is optional
+        logger.warning("MusicDNA catalog snapshot failed; picker will show empty: %s", exc)
+        return []
 
 
 def _canonical_catalog_snapshots() -> list[dict[str, str]]:
@@ -85,7 +106,7 @@ class WorkspaceDnaState(LegacyHostState):
 
     canonical_catalog: list[dict[str, str]] = _canonical_catalog_snapshots()
     canonical_query: str = ""
-    music_dna_choices: list[str] = []
+    music_dna_choices: list[str] = _music_dna_choice_snapshots()
 
     draft_dna_mode: str = "legacy"
     active_dna_mode: str = "legacy"
