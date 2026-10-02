@@ -71,8 +71,16 @@ def get_agents(user_id):
     return build_agents(api_keys)
 
 
+@st.cache_resource
 def get_db_manager(user_id):
-    """Compatibility lifecycle seam; presentation data access stays in the application."""
+    """Compatibility lifecycle seam; presentation data access stays in the application.
+
+    Cached per user so constructing the manager is not repeated on every
+    database access. Each adapter still opens (and closes) its own short-lived
+    connection per operation, so sharing one instance stays safe while
+    avoiding repeated constructor work -- which for the Turso adapter also
+    re-ran its schema DDL over the network.
+    """
     return build_database_for_user(user_id)
 
 
