@@ -311,3 +311,33 @@ pre {
   border-block-start: 1px solid color-mix(in srgb, currentColor 16%, transparent);
   letter-spacing: 0.08em;
 }
+
+/* --- Scene tabs ---------------------------------------------------------
+   Mirrors nav.scene-tabs in the hand-built previews: a bordered row where the
+   active scene is solid and the others are ghost. */
+
+.mm-scene-tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0;
+  margin-top: 1.25rem;
+  border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.mm-scene-tab {
+  border-radius: 0;
+  border-inline-end: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-block-end: 2px solid transparent;
+  text-align: start;
+  padding: 0.6rem 0.75rem;
+  min-height: 2.75rem;
+}
+
+.mm-scene-tab:first-child {
+  border-inline-start: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.mm-world-photo-img {
+  object-fit: cover;
+}

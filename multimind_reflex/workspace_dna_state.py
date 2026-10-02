@@ -35,6 +35,7 @@ from multimind_reflex.state import (
     _radius_preset,
 )
 from ui.music_dna_bridge import list_music_theme_options, realize_music_theme
+from ui.music_scenes import MusicScene, scenes_for_track
 from ui.canonical_dna_bridge import (
     list_canonical_reference_options,
     list_host_realizable_reference_ids,
@@ -155,6 +156,8 @@ class WorkspaceDnaState(LegacyHostState):
     draft_music_asset_url: str = ""
     draft_music_asset_credit: str = ""
     draft_music_display_name: str = ""
+    draft_music_scenes: list[MusicScene] = []
+    draft_music_scene_key: str = "a"
     draft_music_artist: str = ""
     active_music_topology: str = ""
     active_music_world: str = ""
@@ -168,6 +171,8 @@ class WorkspaceDnaState(LegacyHostState):
     active_music_asset_url: str = ""
     active_music_asset_credit: str = ""
     active_music_display_name: str = ""
+    active_music_scenes: list[MusicScene] = []
+    active_music_scene_key: str = "a"
     active_music_artist: str = ""
 
     @rx.var
@@ -344,6 +349,7 @@ class WorkspaceDnaState(LegacyHostState):
             # The realization plan carries these, but they were never promoted to
             # the active set, so the track's own name was unreachable by the UI.
             "display_name", "artist",
+            "scenes", "scene_key",
         ):
             setattr(self, f"draft_music_{name}", "")
 
@@ -361,6 +367,15 @@ class WorkspaceDnaState(LegacyHostState):
             "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
         ):
             setattr(self, f"active_music_{name}", getattr(self, f"draft_music_{name}"))
+
+    @rx.event
+    def set_music_scene(self, key: str):
+        """Switch the world rail to another A/B/C correspondence scene."""
+        for scene in self.draft_music_scenes:
+            if scene.key == key:
+                self.draft_music_scene_key = scene.key
+                self.active_music_scene_key = scene.key
+                return
 
     def _copy_music_active_to_draft(self) -> None:
         for name in (
@@ -418,6 +433,8 @@ class WorkspaceDnaState(LegacyHostState):
         self.draft_music_topology = plan.topology
         self.draft_music_display_name = plan.display_name
         self.draft_music_artist = plan.artist
+        self.draft_music_scenes = list(scenes_for_track(plan.track_id))
+        self.draft_music_scene_key = "a"
         self.draft_music_world = plan.world
         self.draft_music_signature = plan.signature
         self.draft_music_combination_id = plan.combination_id
