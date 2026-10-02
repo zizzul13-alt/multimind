@@ -16,4 +16,10 @@ config = rx.Config(
         "MULTIMIND_CORS_ALLOWED_ORIGINS",
         "http://localhost:3000",
     ),
+    # The hand-built theme previews ship in the private DNA repo and are copied
+    # into the image at /app/preview. Without this Reflex only serves
+    # .web/build/client, so every /preview/... path 404s.
+    custom_statics={
+        "preview": "preview",
+    },
 )
