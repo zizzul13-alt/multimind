@@ -1015,19 +1015,82 @@ def _workspace() -> rx.Component:
 # ---------------------------------------------------------------------------
 
 
+def _music_world_rail() -> rx.Component:
+    """The world rail: identity, the music world's copy, and its provenance.
+
+    Mirrors the .world section in re-juliet-minimal-saas-v1.html, which stacks
+    a photo, a brand line, an eyebrow, the title, a thesis paragraph and a row
+    of scene tabs. Reflex has no per-scene concept, so the tabs are omitted
+    rather than faked; everything else maps onto real state.
+    """
+    return rx.vstack(
+        # .photo -- the track's own visual, when the runtime supplied one.
+        rx.cond(
+            HostState.active_music_asset_url != "",
+            rx.box(
+                rx.image(
+                    src=HostState.active_music_asset_url,
+                    alt=HostState.active_music_display_name,
+                    width="100%",
+                ),
+                class_name="mm-world-photo",
+            ),
+        ),
+        # .brand + .eyebrow
+        rx.vstack(
+            rx.text(
+                "MULTIMIND / MUSIC DNA",
+                class_name="mm-world-brand",
+            ),
+            rx.text(
+                "MINIMAL SAAS \u00d7 MUSIC DNA",
+                class_name="mm-world-eyebrow",
+            ),
+            align="start",
+            spacing="2",
+            width="100%",
+        ),
+        # .world-copy -- the title and the world's description
+        rx.vstack(
+            rx.heading(
+                HostState.active_music_display_name,
+                size="8",
+                class_name="mm-world-title",
+            ),
+            rx.text(
+                HostState.active_music_signature,
+                class_name="mm-world-thesis",
+            ),
+            align="start",
+            spacing="3",
+            width="100%",
+        ),
+        # .credit -- provenance stays visible
+        rx.cond(
+            HostState.active_music_asset_credit != "",
+            rx.text(
+                HostState.active_music_asset_credit,
+                class_name="mm-world-credit",
+            ),
+        ),
+        # the utility zone lives under the world copy in this shell
+        rx.box(_workspace_utility_zone(), width="100%"),
+        spacing="4",
+        width="100%",
+        min_width="0",
+        align="start",
+        class_name="mm-world",
+    )
+
+
 def _shell_minimal_saas() -> rx.Component:
-    """Two panes: a world rail on the left, the work column on the right.
+    """Two panes: the world rail on the left, the work column on the right.
 
     Mirrors re-juliet-minimal-saas-v1.html, whose .app is
-    `minmax(320px, 41vw) 1fr`.
+    `minmax(320px, 41vw) 1fr` with .world and .work as the two panes.
     """
     return rx.hstack(
-        rx.vstack(
-            _workspace_utility_zone(),
-            spacing="4",
-            width="100%",
-            min_width="0",
-        ),
+        _music_world_rail(),
         rx.vstack(
             _workspace_result_zone(),
             _workspace_composer_zone(),

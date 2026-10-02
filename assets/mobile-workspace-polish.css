@@ -256,3 +256,58 @@ pre {
     grid-template-rows: none;
   }
 }
+
+/* --- Music world rail -------------------------------------------------
+   Mirrors the .world section of the hand-built previews: photo, brand line,
+   eyebrow, title, thesis and a provenance credit. */
+
+.mm-world {
+  background: color-mix(in srgb, Canvas 96%, currentColor 4%);
+  border-inline-start: 0.25rem solid color-mix(in srgb, currentColor 22%, transparent);
+  padding: 1.25rem;
+}
+
+.mm-world-photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.mm-world-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mm-world-brand,
+.mm-world-credit,
+.mm-world-eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, currentColor 58%, transparent);
+}
+
+.mm-world-eyebrow {
+  color: color-mix(in srgb, currentColor 42%, transparent);
+}
+
+.mm-world-title {
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.mm-world-thesis {
+  line-height: 1.62;
+  max-width: 46ch;
+  color: color-mix(in srgb, currentColor 82%, transparent);
+}
+
+.mm-world-credit {
+  padding-block-start: 0.75rem;
+  border-block-start: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  letter-spacing: 0.08em;
+}
