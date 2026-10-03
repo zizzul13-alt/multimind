@@ -181,6 +181,14 @@ class WorkspaceDnaState(LegacyHostState):
     active_music_display_name: str = ""
     active_music_scenes: list[MusicScene] = []
     active_music_scene_key: str = "a"
+    active_music_scene: MusicScene | None = None
+    # Plain strings, because Reflex did not propagate the dataclass to the
+    # browser: the scene tabs changed state but the rendered photo, thesis and
+    # credit never moved. Strings serialise reliably, so the rail reads these.
+    active_music_scene_photo: str = ""
+    active_music_scene_thesis: str = ""
+    active_music_scene_credit: str = ""
+    active_music_scene_position: str = "center"
     active_music_palette: TrackPalette | None = None
     active_music_material: MaterialAsset | None = None
     active_music_artist: str = ""
@@ -381,15 +389,44 @@ class WorkspaceDnaState(LegacyHostState):
             "display_name", "artist", "scenes", "scene_key", "palette", "material",
         ):
             setattr(self, f"active_music_{name}", getattr(self, f"draft_music_{name}"))
+        self._resolve_active_scene(self.draft_music_scene_key)
+
+    def _resolve_active_scene(self, key: str) -> None:
+        """Resolve a scene by key in Python and store it on the active set.
+
+        Reflex cannot search a Var for a matching key during render -- a Var
+        exposes no index/find/map operation, only indexing -- so the lookup has
+        to happen here and the result is read as a plain value afterwards.
+        """
+        if not self.draft_music_scenes:
+            self.active_music_scene = None
+            self.active_music_scene_key = "a"
+            self.active_music_scene_photo = ""
+            self.active_music_scene_thesis = ""
+            self.active_music_scene_credit = ""
+            self.active_music_scene_position = "center"
+            return
+
+        def _apply(scene) -> None:
+            self.active_music_scene = scene
+            self.active_music_scene_key = scene.key
+            self.active_music_scene_photo = scene.photo_url
+            self.active_music_scene_thesis = scene.thesis
+            self.active_music_scene_credit = scene.credit
+            self.active_music_scene_position = scene.position or "center"
+
+        for scene in self.draft_music_scenes:
+            if scene.key == key:
+                _apply(scene)
+                return
+        _apply(self.draft_music_scenes[0])
 
     @rx.event
     def set_music_scene(self, key: str):
         """Switch the world rail to another A/B/C correspondence scene."""
-        for scene in self.draft_music_scenes:
-            if scene.key == key:
-                self.draft_music_scene_key = scene.key
-                self.active_music_scene_key = scene.key
-                return
+        self.draft_music_scene_key = key
+        self._resolve_active_scene(key)
+        self._copy_music_draft_to_active()
 
     def _copy_music_active_to_draft(self) -> None:
         for name in (
@@ -667,6 +704,12 @@ class WorkspaceDnaState(LegacyHostState):
         self._pending_restore = b""
         self.identity_dna_choices = [_NEUTRAL_IDENTITY_CHOICE]
         self.music_dna_choices = []
+        self.draft_music_scenes = []
+        self.active_music_scenes = []
+        self.active_music_scene = None
+        self.active_music_scene_photo = ""
+        self.active_music_scene_thesis = ""
+        self.active_music_scene_credit = ""
         self.web_dna_choices = [_NONE_WEB_CHOICE]
         self._set_neutral_theme_draft()
         self.draft_dna_mode = "legacy"

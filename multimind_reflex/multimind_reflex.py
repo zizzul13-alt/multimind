@@ -958,8 +958,8 @@ def _music_work_column() -> rx.Component:
                 ),
                 rx.text(
                     rx.cond(
-                        _has_scenes(),
-                        _active_music_scene()["name"],
+                        _has_scene(),
+                        HostState.active_music_scene_key,
                         HostState.active_music_display_name,
                     ),
                     size="1",
@@ -1165,7 +1165,7 @@ def _workspace() -> rx.Component:
 # ---------------------------------------------------------------------------
 
 
-def _has_scenes():
+def _has_scene():
     """Whether the active track exposes any A/B/C scenes.
 
     Neither len() nor iteration is available on a state var during render, so
@@ -1174,14 +1174,19 @@ def _has_scenes():
     return HostState.active_music_scenes != []
 
 
-def _active_music_scene():
-    """The currently selected A/B/C scene, or None when the track has none.
+def _has_scene():
+    """Whether the active track has a resolved scene."""
+    return HostState.active_music_scene is not None
 
-    A state var cannot be iterated or measured during render, so the presence
-    check is a comparison and the access is a direct index. Reflex renders each
-    dataclass field as a dict, so the keys are read defensively.
+
+def _active_music_scene():
+    """The resolved active scene.
+
+    Resolution happens in Python inside the state (a Var exposes no index or
+    find operation, so the lookup cannot run during render). This only guards
+    the empty case.
     """
-    return rx.cond(_has_scenes(), HostState.active_music_scenes[0], None)
+    return HostState.active_music_scene
 
 
 def _music_scene_tab(scene: MusicScene) -> rx.Component:
@@ -1234,15 +1239,15 @@ def _music_world_rail() -> rx.Component:
         ),
         # .photo -- the selected scene's visual
         rx.cond(
-            _has_scenes(),
+            _has_scene(),
             rx.box(
                 rx.image(
-                    src=_active_music_scene()["photo_url"],
+                    src=HostState.active_music_scene_photo,
                     alt=HostState.active_music_display_name,
                     width="100%",
                     class_name="mm-world-photo-img",
                     style={
-                        "object-position": _active_music_scene()["position"],
+                        "object-position": HostState.active_music_scene_position,
                     },
                 ),
                 class_name="mm-world-photo",
@@ -1274,8 +1279,8 @@ def _music_world_rail() -> rx.Component:
             ),
             rx.text(
                 rx.cond(
-                    _has_scenes(),
-                    _active_music_scene()["thesis"],
+                    _has_scene(),
+                    HostState.active_music_scene_thesis,
                     HostState.active_music_signature,
                 ),
                 class_name="mm-world-thesis",
@@ -1288,9 +1293,9 @@ def _music_world_rail() -> rx.Component:
         rx.box(_music_scene_tabs(), class_name="mm-scene-tabs", width="100%"),
         # .credit -- provenance of the visible scene
         rx.cond(
-            _has_scenes(),
+            _has_scene(),
             rx.text(
-                _active_music_scene()["credit"],
+                HostState.active_music_scene_credit,
                 class_name="mm-world-credit",
             ),
             rx.cond(
