@@ -105,9 +105,7 @@ _SCENES_BY_TRACK: dict[str, tuple[MusicScene, ...]] = {
                 "lampu kota masih hidup, dan versi band terasa hangat "
                 "alih-alih dingin."
             ),
-            photo_url=(
-                "https://unsplash.com/photos/sTM-k3AtML8/download?force=true&w=1800"
-            ),
+            photo_url="/scenes/rainy_window.webp",
             position="center 58%",
             credit="PHOTO \u00b7 RAINY WINDOW \u00b7 UNSPLASH LICENSE",
         ),
@@ -118,9 +116,7 @@ _SCENES_BY_TRACK: dict[str, tuple[MusicScene, ...]] = {
                 "Lebih manusiawi dan akrab: tempat yang masih hangat meski "
                 "hubungan sudah selesai. Nostalgia yang hidup, bukan arsip."
             ),
-            photo_url=(
-                "https://unsplash.com/photos/lsIzsNFtt5Q/download?force=true&w=1800"
-            ),
+            photo_url="/scenes/warm_cafe.webp",
             position="center 52%",
             credit="PHOTO \u00b7 WARM CAFE \u00b7 UNSPLASH LICENSE",
         ),
@@ -131,9 +127,7 @@ _SCENES_BY_TRACK: dict[str, tuple[MusicScene, ...]] = {
                 "Kota yang tetap jalan meski relationship sudah selesai: "
                 "lalu lintas, lampu, dan ritme yang tidak menunggu."
             ),
-            photo_url=(
-                "https://unsplash.com/photos/1L71sPT5XKc/download?force=true&w=1800"
-            ),
+            photo_url="/scenes/city_lights.webp",
             position="center 54%",
             credit="PHOTO \u00b7 RAIN CITY \u00b7 UNSPLASH LICENSE",
         ),
