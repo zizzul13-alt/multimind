@@ -1379,67 +1379,97 @@ def _shell_command_center() -> rx.Component:
     )
 
 
+def _shell_fallback_grid() -> rx.Component:
+    """Shared responsive grid, used when the active archetype has no shell yet.
+
+    Every catalog archetype currently dispatches to a dedicated shell. This stays
+    as the safe default so an archetype without a shell still renders the four
+    zones on the responsive areas/columns rather than collapsing to one column.
+    """
+    return rx.grid(
+        _workspace_utility_zone(),
+        _workspace_composer_zone(),
+        _workspace_result_zone(),
+        _workspace_history_zone(),
+        grid_template_columns=rx.breakpoints(
+            initial="minmax(0, 1fr)",
+            lg=rx.cond(
+                HostState.active_dna_mode == "music",
+                _music_workspace_desktop_columns(),
+                rx.cond(
+                    HostState.active_dna_mode == "canonical",
+                    _canonical_workspace_desktop_columns(),
+                    _workspace_desktop_columns(),
+                ),
+            ),
+        ),
+        grid_template_areas=rx.breakpoints(
+            initial=rx.cond(
+                HostState.active_dna_mode == "music",
+                _music_workspace_mobile_areas(),
+                rx.cond(
+                    HostState.active_dna_mode == "canonical",
+                    _canonical_workspace_mobile_areas(),
+                    _workspace_mobile_areas(),
+                ),
+            ),
+            lg=rx.cond(
+                HostState.active_dna_mode == "music",
+                _music_workspace_desktop_areas(),
+                rx.cond(
+                    HostState.active_dna_mode == "canonical",
+                    _canonical_workspace_desktop_areas(),
+                    _workspace_desktop_areas(),
+                ),
+            ),
+        ),
+        gap=rx.cond(
+            HostState.active_dna_mode == "music",
+            HostState.active_spacing_value,
+            rx.cond(
+                HostState.active_dna_mode == "canonical",
+                HostState.active_canonical_gap,
+                "1rem",
+            ),
+        ),
+        width="100%",
+        align_items="start",
+        class_name="mm-workspace-grid",
+    )
+
+
 def _archetype_shell() -> rx.Component:
     """Dispatch on the active archetype.
 
-    Archetypes without a dedicated shell yet keep the previous single grid, so
-    their behaviour is unchanged until a shell is added here.
+    Every archetype now has its own component tree in shells.py, built from the
+    previews' declared structure rather than a rearranged shared grid. The four
+    semantic zones are reused unchanged inside them.
     """
+    # Built once at import; the dispatch below only selects between them.
+    from multimind_reflex.shells import SHELLS
+
     return rx.cond(
         HostState.active_archetype == "minimal_saas",
         _shell_minimal_saas(),
         rx.cond(
-            HostState.active_archetype == "command_center",
-            _shell_command_center(),
-            rx.grid(
-                _workspace_utility_zone(),
-                _workspace_composer_zone(),
-                _workspace_result_zone(),
-                _workspace_history_zone(),
-                grid_template_columns=rx.breakpoints(
-                    initial="minmax(0, 1fr)",
-                    lg=rx.cond(
-                        HostState.active_dna_mode == "music",
-                        _music_workspace_desktop_columns(),
-                        rx.cond(
-                            HostState.active_dna_mode == "canonical",
-                            _canonical_workspace_desktop_columns(),
-                            _workspace_desktop_columns(),
-                        ),
-                    ),
-                ),
-                grid_template_areas=rx.breakpoints(
-                    initial=rx.cond(
-                        HostState.active_dna_mode == "music",
-                        _music_workspace_mobile_areas(),
-                        rx.cond(
-                            HostState.active_dna_mode == "canonical",
-                            _canonical_workspace_mobile_areas(),
-                            _workspace_mobile_areas(),
-                        ),
-                    ),
-                    lg=rx.cond(
-                        HostState.active_dna_mode == "music",
-                        _music_workspace_desktop_areas(),
-                        rx.cond(
-                            HostState.active_dna_mode == "canonical",
-                            _canonical_workspace_desktop_areas(),
-                            _workspace_desktop_areas(),
-                        ),
-                    ),
-                ),
-                gap=rx.cond(
-                    HostState.active_dna_mode == "music",
-                    HostState.active_spacing_value,
+            HostState.active_archetype == "ai_research_lab",
+            SHELLS["ai_research_lab"](),
+            rx.cond(
+                HostState.active_archetype == "ai_workspace",
+                SHELLS["ai_workspace"](),
+                rx.cond(
+                    HostState.active_archetype == "chat_first",
+                    SHELLS["chat_first"](),
                     rx.cond(
-                        HostState.active_dna_mode == "canonical",
-                        HostState.active_canonical_gap,
-                        "1rem",
+                        HostState.active_archetype == "agent_canvas",
+                        SHELLS["agent_canvas"](),
+                        rx.cond(
+                            HostState.active_archetype == "terminal_hacker",
+                            SHELLS["terminal_hacker"](),
+                            SHELLS["command_center"](),
+                        ),
                     ),
                 ),
-                width="100%",
-                align_items="start",
-                class_name="mm-workspace-grid",
             ),
         ),
     )
@@ -1453,5 +1483,5 @@ def index() -> rx.Component:
     return rx.cond(HostState.logged_in, _authenticated_surface(), _login_panel())
 
 
-app = rx.App(stylesheets=["/mobile-workspace-polish.css"])
+app = rx.App(stylesheets=["/mobile-workspace-polish.css", "/shells.css"])
 app.add_page(index, title="MultiMind AI — Reflex Host")

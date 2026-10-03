@@ -32,28 +32,41 @@ def test_workspace_uses_one_set_of_real_semantic_zones():
     source = inspect.getsource(surface)
     workspace_source = inspect.getsource(surface._workspace)
     upload_source = inspect.getsource(surface._upload_panel)
-    shell_source = inspect.getsource(surface._archetype_shell)
     restore_source = inspect.getsource(surface._data_ops)
 
-    # The composition now lives in _archetype_shell(), which dispatches to a
+    # The composition lives in _archetype_shell(), which dispatches to a
     # per-archetype shell. Exactly one branch renders at runtime, so each zone is
-    # still instantiated once; the invariant is asserted over the shell
-    # dispatcher rather than over _workspace() itself.
+    # still instantiated once. The shells themselves live in shells.py, so that is
+    # where the zone calls are asserted.
     assert "_archetype_shell()" in workspace_source
 
-    for call in (
-        "_workspace_utility_zone()",
-        "_workspace_composer_zone()",
-        "_workspace_result_zone()",
-        "_workspace_history_zone()",
+    import multimind_reflex.shells as shells_mod
+    shell_source = inspect.getsource(shells_mod)
+
+    def zone_uses(src: str, name: str) -> int:
+        """Count how many times a zone is composed.
+
+        shells.py resolves zones through the lazy _zone() helper to avoid a
+        circular import, so a use appears either as a direct call or as a name
+        passed to _zone(). Both spellings count as one composition.
+        """
+        return src.count(f"{name}()") + src.count(f'_zone("{name}")')
+
+    for name in (
+        "_workspace_utility_zone",
+        "_workspace_composer_zone",
+        "_workspace_result_zone",
+        "_workspace_history_zone",
     ):
-        # At least one shell composes each zone, and no shell may instantiate
-        # the same zone twice.
-        assert shell_source.count(call) >= 1, f"{call} missing from the shells"
-        assert shell_source.count(call) <= 3, (
-            f"{call} appears in too many shells; that means a zone is being "
-            "duplicated rather than composed once per shell"
-        )
+        # At least one shell composes each zone, and no shell may compose the same
+        # zone twice.
+        assert zone_uses(shell_source, name) >= 1, f"{name} missing from the shells"
+        for shell_fn in (f for n, f in vars(shells_mod).items() if n.startswith("shell_")):
+            body = inspect.getsource(shell_fn)
+            assert zone_uses(body, name) <= 1, (
+                f"{name} appears more than once in {shell_fn.__name__}; a zone is "
+                "being duplicated inside a shell"
+            )
 
     # There are exactly two upload widgets in the entire production surface:
     # the existing prompt-file input and the existing restore input. Archetype

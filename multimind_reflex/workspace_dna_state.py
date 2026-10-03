@@ -189,6 +189,7 @@ class WorkspaceDnaState(LegacyHostState):
     active_music_scene_thesis: str = ""
     active_music_scene_credit: str = ""
     active_music_scene_position: str = "center"
+    active_music_scene_name: str = ""
     active_music_palette: TrackPalette | None = None
     active_music_material: MaterialAsset | None = None
     active_music_artist: str = ""
@@ -405,6 +406,7 @@ class WorkspaceDnaState(LegacyHostState):
             self.active_music_scene_thesis = ""
             self.active_music_scene_credit = ""
             self.active_music_scene_position = "center"
+            self.active_music_scene_name = ""
             return
 
         def _apply(scene) -> None:
@@ -414,6 +416,10 @@ class WorkspaceDnaState(LegacyHostState):
             self.active_music_scene_thesis = scene.thesis
             self.active_music_scene_credit = scene.credit
             self.active_music_scene_position = scene.position or "center"
+            raw_name = str(getattr(scene, "name", "") or "")
+            if " / " in raw_name:
+                raw_name = raw_name.split(" / ", 1)[1]
+            self.active_music_scene_name = raw_name
 
         for scene in self.draft_music_scenes:
             if scene.key == key:
@@ -710,6 +716,7 @@ class WorkspaceDnaState(LegacyHostState):
         self.active_music_scene_photo = ""
         self.active_music_scene_thesis = ""
         self.active_music_scene_credit = ""
+        self.active_music_scene_name = ""
         self.web_dna_choices = [_NONE_WEB_CHOICE]
         self._set_neutral_theme_draft()
         self.draft_dna_mode = "legacy"

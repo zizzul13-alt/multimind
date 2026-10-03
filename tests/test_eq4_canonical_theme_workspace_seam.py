@@ -10,6 +10,12 @@ import multimind_reflex.workspace_dna_state as dna_state
 STATE = inspect.getsource(dna_state)
 SURFACE = inspect.getsource(surface)
 SHELL = inspect.getsource(surface._archetype_shell)
+
+# The zone composition lives in the per-archetype shells, so the seam has to be
+# asserted across the dispatcher and the module it dispatches to.
+import multimind_reflex.shells as _shells_mod
+
+SHELL_SOURCE = SHELL + inspect.getsource(_shells_mod)
 WORKSPACE = inspect.getsource(surface._workspace)
 
 
@@ -99,10 +105,13 @@ def test_workspace_still_instantiates_one_set_of_application_facing_zones():
         "_workspace_result_zone()",
         "_workspace_history_zone()",
     ):
-        # Composition moved into _archetype_shell(); one branch renders at
-        # runtime, so each zone is still instantiated exactly once.
+        # Composition moved into _archetype_shell(), which dispatches to the
+        # per-archetype shells in shells.py; one branch renders at runtime, so
+        # each zone is still instantiated exactly once per shell.
         assert "_archetype_shell()" in WORKSPACE
-        assert SHELL.count(call) >= 1
+        name = call[:-2]  # drop the call parens
+        uses = SHELL_SOURCE.count(call) + SHELL_SOURCE.count(f'_zone("{name}")')
+        assert uses >= 1, f"{name} is composed by no shell"
 
     # Canonical DNA changes composition only. The single upload, restore and Run
     # event paths remain unchanged rather than being copied per reference.

@@ -1,0 +1,135 @@
+/* ===========================================================================
+   Per-archetype shells, replicated from preview/lab/music-v0/architecture-swap.
+
+   Geometry is copied from each preview's own .app/.lab/.workspace/.chat rules,
+   so the shells differ structurally rather than by colour. The four semantic
+   zones are unchanged; only their container differs.
+   =========================================================================== */
+
+.mm-shell > * { min-width: 0; }
+.mm-top { padding: 14px 20px; border-bottom: 1px solid var(--mm-line, rgba(20,17,18,.12)); }
+.mm-brand { font: 600 .62rem/1 "IBM Plex Mono", monospace; letter-spacing: .16em; text-transform: uppercase; }
+.mm-meta { font: .56rem/1.4 "IBM Plex Mono", monospace; letter-spacing: .09em; color: var(--mm-mut, #77716d); }
+.mm-label { font: .56rem/1.3 "IBM Plex Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--mm-mut, #77716d); }
+.mm-kicker { font: .56rem/1.3 "IBM Plex Mono", monospace; letter-spacing: .15em; text-transform: uppercase; color: var(--mm-accent, #bc7f79); }
+.mm-world-title { font-family: "Kaisei Opti", serif; font-size: clamp(2rem, 4vw, 4.4rem); line-height: .9; margin: 0; }
+.mm-world-thesis { font-size: .8rem; line-height: 1.7; color: inherit; opacity: .84; max-width: 44ch; }
+.mm-world-credit { font: .5rem/1.5 "IBM Plex Mono", monospace; letter-spacing: .1em; text-transform: uppercase; opacity: .62; }
+.mm-world-photo-img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mm-dot { border-radius: 50%; background: #5c5d61; flex: 0 0 auto; }
+.mm-buffer { justify-content: flex-start; padding: 11px 4px; border-bottom: 1px solid var(--mm-line, rgba(20,17,18,.12)); }
+.mm-buffer-active { background: linear-gradient(90deg, rgba(188,127,121,.2), transparent); }
+.mm-buffer-active .mm-dot { background: var(--mm-accent, #bc7f79); box-shadow: 0 0 12px rgba(188,127,121,.6); }
+.mm-buffer-key { font-family: "Kaisei Opti", serif; font-size: .95rem; }
+.mm-buffer-name { font: .58rem/1.3 "IBM Plex Mono", monospace; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+
+/* --- ai_research_lab: .lab { minmax(190px,.78fr) minmax(0,1.7fr) minmax(220px,.9fr) } */
+.mm-shell-ai-research-lab .mm-lab { display: grid; grid-template-columns: minmax(190px,.78fr) minmax(0,1.7fr) minmax(220px,.9fr); gap: 1.5rem; padding: 1.4rem 1.4rem 2rem; align-items: start; }
+.mm-shell-ai-research-lab .mm-intro { padding: 1.5rem 1.4rem 1.1rem; border-bottom: 1px solid var(--mm-line, rgba(20,17,18,.12)); }
+.mm-tabs { display: grid; border-top: 1px solid var(--mm-line, rgba(20,17,18,.12)); }
+.mm-evidence-row { padding: .6rem 0; border-bottom: 1px solid var(--mm-line, rgba(20,17,18,.1)); }
+.mm-ev-key { font: 600 .7rem/1.2 "IBM Plex Mono", monospace; color: var(--mm-accent, #bc7f79); }
+.mm-evidence { font-size: .74rem; line-height: 1.5; }
+.mm-viewport-wrap { position: relative; min-height: 300px; overflow: hidden; border-radius: 4px; background: var(--mm-night, #19161a); }
+.mm-view-ui { position: absolute; inset: auto 0 0 0; color: #f5f0ea; }
+
+/* --- ai_workspace: .workspace { 190px minmax(0,1fr) clamp(300px,26vw,360px) } */
+.mm-shell-ai-workspace > .mm-workspace-3 { display: grid; grid-template-columns: 190px minmax(0,1fr) clamp(300px, 26vw, 360px); gap: 1.5rem; padding: 1.4rem; align-items: start; }
+.mm-shell-ai-workspace .mm-desk { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.mm-shell-ai-workspace .mm-desk-head { grid-column: 1/-1; border-bottom: 1px solid var(--mm-line, rgba(20,17,18,.12)); padding-bottom: .7rem; }
+.mm-shell-ai-workspace .mm-object.wide { grid-column: 1/-1; min-height: 140px; }
+.mm-world-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+.mm-worldpanel-photo { aspect-ratio: 4/5; overflow: hidden; border-radius: 4px; background: var(--mm-night, #19161a); }
+
+/* --- chat_first: .chat { 255px minmax(0,1fr) }, .message { 94px 1fr } */
+.mm-shell-chat-first > .mm-chat { display: grid; grid-template-columns: 255px minmax(0, 1fr); gap: 2rem; padding: 1.5rem 2rem 6rem; align-items: start; }
+.mm-message { display: grid; grid-template-columns: 94px minmax(0, 1fr); gap: 22px; padding: 19px 21px; border: 1px solid var(--mm-line, rgba(20,17,18,.1)); border-radius: 10px; }
+.mm-role { font: .58rem/1.5 "IBM Plex Mono", monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--mm-mut, #77716d); }
+.mm-copy { font-size: .86rem; line-height: 1.6; }
+.mm-copy-small { font: .6rem/1.5 "IBM Plex Mono", monospace; color: var(--mm-accent, #bc7f79); letter-spacing: .06em; }
+.mm-worlds { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--mm-line, rgba(20,17,18,.12)); }
+
+/* --- agent_canvas: open field, absolute core, bottom inspector */
+.mm-shell-agent-canvas { position: relative; min-height: 100svh; display: flex; flex-direction: column; }
+.mm-canvas { position: relative; flex: 1; min-height: 60svh; display: flex; flex-direction: column; padding: 1.5rem; }
+.mm-canvas-title { font-family: "Kaisei Opti", serif; font-size: clamp(2.2rem, 5vw, 5rem); line-height: .9; margin: 0; }
+.mm-wire { position: absolute; left: 8%; right: 8%; height: 1px; background: var(--mm-line, rgba(20,17,18,.14)); }
+.mm-wire-1 { top: 42%; } .mm-wire-2 { top: 52%; } .mm-wire-3 { top: 62%; }
+.mm-core { position: absolute; left: 47%; top: 31%; transform: translate(-50%, -50%); width: 160px; height: 160px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; box-shadow: 0 12px 40px rgba(0,0,0,.24); }
+.mm-core-ui { text-align: center; color: #fff; z-index: 1; }
+.mm-core-key { font: 600 1.6rem/1 "Kaisei Opti", serif; }
+.mm-core-obj { font: .58rem/1.4 "IBM Plex Mono", monospace; letter-spacing: .1em; text-transform: uppercase; opacity: .86; }
+.mm-inspect { position: absolute; left: 7%; right: 7%; bottom: 7%; display: grid; grid-template-columns: 120px 1fr auto; gap: 18px; align-items: start; padding: 14px 16px; border: 1px solid var(--mm-line, rgba(20,17,18,.12)); border-radius: 10px; background: rgba(255,255,255,.72); backdrop-filter: blur(8px); z-index: 5; }
+.mm-inspect-claim { font-size: .8rem; line-height: 1.5; }
+
+/* --- command_center: .app { auto auto 1fr minmax(280px,42svh) } */
+.mm-shell-command-center .mm-board { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(250px, .75fr); gap: 1.5rem; padding: 1.2rem 1.4rem; align-items: start; }
+.mm-shell-command-center .mm-board-head { padding: .8rem 1.4rem; border-bottom: 1px solid var(--mm-line, rgba(20,17,18,.12)); }
+.mm-shell-command-center .mm-board-object { font-family: "Kaisei Opti", serif; font-size: 1.3rem; }
+.mm-shell-command-center .mm-board-photo-wrap { aspect-ratio: 16/10; overflow: hidden; border-radius: 4px; background: var(--mm-night, #19161a); }
+.mm-command-band { padding: 1.4rem; border-top: 1px solid var(--mm-line, rgba(20,17,18,.12)); }
+
+/* --- terminal_hacker: re-juliet-terminal-v1.html ---
+   .app   { grid-template-columns: minmax(220px,29vw) 1fr; background: #090a0d }
+   .side  { grid-template-rows: auto auto 1fr auto; background: #07080ac7 + blur(8px) }
+   .term  { grid-template-rows: auto 1fr; background: linear-gradient(180deg,#07080a8a,#07080ae8) }
+   .photo { filter: saturate(.72) brightness(.42) contrast(1.08) + dual gradients } */
+.mm-shell-terminal-hacker { position: relative; display: grid; grid-template-columns: minmax(220px, 29vw) 1fr; min-height: 100svh; background: #090a0d; color: #f4eee8; font-family: "M PLUS 1p", sans-serif; }
+.mm-shell-terminal-hacker .mm-photo { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
+.mm-shell-terminal-hacker .mm-photo-img { display: block; width: 100%; height: 100%; object-fit: cover; filter: saturate(.72) brightness(.42) contrast(1.08); transform: scale(1.015); }
+.mm-shell-terminal-hacker .mm-photo-shade { position: absolute; inset: 0; background: linear-gradient(90deg, #060709f5 0 29%, #0607099e 48%, #060709c7 100%), linear-gradient(180deg, #07080a38, #07080ad6 80%, #07080af7); }
+.mm-shell-terminal-hacker .mm-side, .mm-shell-terminal-hacker .mm-term { position: relative; z-index: 1; }
+.mm-shell-terminal-hacker .mm-side { display: grid; grid-template-rows: auto auto 1fr auto; gap: 0; padding: 20px 18px 16px; border-right: 1px solid var(--mm-line, rgba(244,238,232,.14)); background: #07080ac7; backdrop-filter: blur(8px); min-height: 100svh; }
+.mm-shell-terminal-hacker .mm-brand { font-family: "IBM Plex Mono", monospace; font-size: .66rem; letter-spacing: .16em; }
+.mm-shell-terminal-hacker .mm-song { margin: 36px 0 22px; }
+.mm-shell-terminal-hacker .mm-kicker { color: #b58c88; font-size: .58rem; letter-spacing: .15em; }
+.mm-shell-terminal-hacker .mm-song-title { font-family: "Kaisei Opti", serif; font-size: clamp(2rem, 4vw, 4.8rem); line-height: .9; margin: 9px 0 10px; }
+.mm-shell-terminal-hacker .mm-song-desc { font-size: .78rem; line-height: 1.65; color: #c8c0bc; max-width: 30ch; }
+.mm-shell-terminal-hacker .mm-buffers { align-self: start; border-top: 1px solid var(--mm-line, rgba(244,238,232,.14)); }
+.mm-shell-terminal-hacker .mm-buffer { display: grid; justify-content: stretch; width: 100%; border: 0; border-bottom: 1px solid var(--mm-line, rgba(244,238,232,.14)); background: transparent; color: #aaa3a0; padding: 13px 3px; font-family: "IBM Plex Mono", monospace; font-size: .60rem; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.mm-shell-terminal-hacker .mm-buffer-key { font-family: "Kaisei Opti", serif; font-size: .92rem; text-transform: none; color: #d9d1cc; }
+.mm-shell-terminal-hacker .mm-buffer-name { font-family: "IBM Plex Mono", monospace; font-size: .60rem; line-height: 1.3; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+.mm-shell-terminal-hacker .mm-buffer-active { color: #fff1e9; background: linear-gradient(90deg, #d0928b1f, transparent); }
+.mm-shell-terminal-hacker .mm-buffer-active .mm-dot { background: #d0928b; box-shadow: 0 0 14px #d0928b9e; }
+.mm-shell-terminal-hacker .mm-foot-wrap { padding-top: 1.1rem; }
+.mm-shell-terminal-hacker .mm-foot { font-family: "IBM Plex Mono", monospace; font-size: .50rem; line-height: 1.55; color: #777f84; text-transform: uppercase; letter-spacing: .09em; }
+.mm-shell-terminal-hacker .mm-term { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; min-height: 100svh; background: linear-gradient(180deg, #07080a8a, #07080ae8); }
+.mm-shell-terminal-hacker .mm-term-top { display: flex; justify-content: space-between; gap: 18px; padding: 15px 20px; border-bottom: 1px solid var(--mm-line, rgba(244,238,232,.14)); font-family: "IBM Plex Mono", monospace; }
+.mm-shell-terminal-hacker .mm-top-line { font-family: "IBM Plex Mono", monospace; font-size: .55rem; line-height: 1; letter-spacing: .1em; text-transform: uppercase; color: #9ea3a6; }
+.mm-shell-terminal-hacker .mm-top-b { font-family: "IBM Plex Mono", monospace; font-size: .55rem; font-weight: 600; line-height: 1; letter-spacing: .1em; color: #eee7e1; }
+.mm-shell-terminal-hacker .mm-screen { min-height: 0; overflow: auto; padding: 22px 22px 130px; min-width: 0; }
+.mm-shell-terminal-hacker .mm-boot { margin-bottom: 22px; }
+.mm-shell-terminal-hacker .mm-boot-line { font-family: "IBM Plex Mono", monospace; font-size: .60rem; line-height: 1.7; color: #8f969a; }
+.mm-shell-terminal-hacker .mm-boot-b { color: #eee7e1; }
+.mm-shell-terminal-hacker .mm-ok { color: #bbd1c5; }
+.mm-shell-terminal-hacker .mm-head { display: grid; grid-template-columns: 130px 1fr; gap: 20px; padding: 17px 0; margin-bottom: 6px; border-top: 1px solid var(--mm-line, rgba(244,238,232,.14)); border-bottom: 1px solid var(--mm-line, rgba(244,238,232,.14)); }
+.mm-shell-terminal-hacker .mm-label { font-family: "IBM Plex Mono", monospace; font-size: .56rem; letter-spacing: .12em; text-transform: uppercase; color: #9c9591; }
+.mm-shell-terminal-hacker .mm-term-name { font-family: "Kaisei Opti", serif; font-size: clamp(1.6rem, 3vw, 3.4rem); line-height: 1; margin: 0; }
+.mm-shell-terminal-hacker .mm-term-thesis { font-size: .80rem; line-height: 1.65; color: #cbc4c0; max-width: 720px; }
+.mm-shell-terminal-hacker .mm-line { display: grid; grid-template-columns: 130px 1fr; gap: 20px; padding: 17px 0; border-bottom: 1px solid rgba(244,238,232,.08); }
+.mm-shell-terminal-hacker .mm-prompt { font-family: "IBM Plex Mono", monospace; font-size: .60rem; color: #a6adb0; }
+.mm-shell-terminal-hacker .mm-prompt-user { color: #cab9b5; }
+.mm-shell-terminal-hacker .mm-prompt-ai { color: #d79a93; }
+.mm-shell-terminal-hacker .mm-out { font-size: clamp(.92rem, 1.35vw, 1.18rem); line-height: 1.65; max-width: 900px; color: #ddd7d3; }
+.mm-shell-terminal-hacker .mm-out-ai { font-family: "Kaisei Opti", serif; font-size: clamp(1rem, 1.45vw, 1.28rem); color: #f1e8e1; border-left: 2px solid #d0928bb8; padding-left: 16px; }
+.mm-shell-terminal-hacker .mm-sys { font-family: "IBM Plex Mono", monospace; font-size: .52rem; letter-spacing: .09em; text-transform: uppercase; color: #747c81; margin-top: 7px; }
+.mm-shell-terminal-hacker .mm-rose { color: #bd817c; }
+.mm-shell-terminal-hacker .mm-message { background: none; border: 0; padding: 12px 0; border-radius: 0; }
+.mm-shell-terminal-hacker .mm-credit { position: absolute; z-index: 2; right: 20px; bottom: 77px; font-family: "IBM Plex Mono", monospace; font-size: .46rem; line-height: 1.45; color: #6f767b; text-align: right; }
+
+/* the terminal and canvas skins are dark by nature */
+.mm-shell-terminal-hacker, .mm-shell-agent-canvas { --mm-accent: #d0928b; --mm-mut: #9f9895; --mm-line: rgba(244,238,232,.14); }
+
+@media (max-width: 900px) {
+  .mm-shell-ai-research-lab .mm-lab,
+  .mm-shell-ai-workspace > .mm-workspace-3,
+  .mm-shell-chat-first > .mm-chat,
+  .mm-shell-command-center .mm-board { grid-template-columns: 1fr; }
+  .mm-shell-terminal-hacker { grid-template-columns: 1fr; }
+  .mm-shell-terminal-hacker .mm-side { border-right: 0; border-bottom: 1px solid var(--mm-line, rgba(244,238,232,.14)); min-height: auto; grid-template-rows: auto auto auto; padding: 15px 15px 0; }
+  .mm-shell-terminal-hacker .mm-song { margin: 19px 0 16px; }
+  .mm-shell-terminal-hacker .mm-buffers { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .mm-shell-terminal-hacker .mm-photo { position: fixed; }
+  .mm-inspect { position: static; grid-template-columns: 1fr; margin: 1rem; }
+  .mm-core { width: 120px; height: 120px; }
+}
