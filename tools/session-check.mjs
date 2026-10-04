@@ -82,4 +82,34 @@ console.log(
       : "the session owns the screen; no generic panel below it"),
 );
 
+
+// Header controls: the preview prints model/memory as static text, but in the
+// live shell both are real controls -- model picks the participant, context
+// picks continue vs standalone.
+const hdr = await page.evaluate(() => {
+  const top = document.querySelector(".mm-term-top");
+  if (!top) return { present: false };
+  return {
+    present: true,
+    text: top.innerText.replace(/\n/g, " | "),
+    selects: [...top.querySelectorAll("select")].map((s) => ({
+      kind: "native",
+      opts: [...s.options].map((o) => o.value),
+      value: s.value,
+    })),
+    combos: [...top.querySelectorAll('[role="combobox"], button[aria-haspopup="listbox"]')].map((b) => ({
+      kind: "radix",
+      label: b.innerText.trim(),
+      aria: b.getAttribute("aria-label"),
+      hasPopup: b.getAttribute("aria-haspopup"),
+    })),
+  };
+});
+
+console.log("\nHEADER");
+console.log("-".repeat(72));
+console.log("text   :", hdr.text ?? "(no header)");
+console.log("selects:", JSON.stringify(hdr.selects ?? []));
+console.log("combos :", JSON.stringify(hdr.combos ?? []));
+
 await browser.close();

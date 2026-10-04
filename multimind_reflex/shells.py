@@ -1514,9 +1514,32 @@ def shell_terminal_hacker() -> rx.Component:
                     align="baseline",
                 ),
                 rx.spacer(),
+                # model / -- the participants actually selected for this run
                 rx.hstack(
-                    rx.text("memory / ", class_name="mm-top-line"),
-                    rx.text("ON", class_name="mm-top-b"),
+                    rx.text("model / ", class_name="mm-top-line"),
+                    rx.select(
+                        HostState.primary_agent_choices,
+                        value=HostState.active_agents[0],
+                        on_change=HostState.set_primary_agent,
+                        class_name="mm-top-select",
+                        width="116px",
+                        height="22px",
+                    ),
+                    spacing="1",
+                    align="baseline",
+                ),
+                # context / -- execution mode: continue carries the session
+                # forward, standalone starts from a clean context
+                rx.hstack(
+                    rx.text("context / ", class_name="mm-top-line"),
+                    rx.select(
+                        ["continue", "standalone"],
+                        value=HostState.context_mode,
+                        on_change=HostState.set_context_mode,
+                        class_name="mm-top-select",
+                        width="116px",
+                        height="22px",
+                    ),
                     spacing="1",
                     align="baseline",
                 ),
@@ -1542,9 +1565,13 @@ def shell_terminal_hacker() -> rx.Component:
                     rx.vstack(
                         rx.heading(
                             rx.cond(
-                                HostState.active_music_scene_name != "",
-                                HostState.active_music_scene_name,
-                                "Rainy Window",
+                                HostState.current_session_name != "",
+                                HostState.current_session_name,
+                                rx.cond(
+                                    HostState.active_music_scene_name != "",
+                                    HostState.active_music_scene_name,
+                                    "Rainy Window",
+                                ),
                             ),
                             class_name="mm-term-name",
                         ),

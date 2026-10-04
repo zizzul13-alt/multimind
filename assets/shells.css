@@ -509,3 +509,27 @@
   white-space: nowrap;
 }
 .mm-shell-terminal-hacker .mm-term { grid-template-rows: auto 1fr auto auto; }
+
+/* --- terminal header controls -------------------------------------------
+   The preview prints `model / GPT-5.6 SOL · memory / ON` as if it were static
+   text. In the live shell both are real controls, so they are styled as
+   terminal chrome rather than as platform dropdowns. */
+.mm-shell-terminal-hacker .mm-top-select {
+  background: #0c0e12;
+  color: #f4eee8;
+  border: 1px solid rgba(244,238,232,.24);
+  border-radius: 2px;
+  font: 500 .58rem/1 "IBM Plex Mono", monospace;
+  letter-spacing: .1em;
+  padding: 0 .35rem;
+  cursor: pointer;
+}
+.mm-shell-terminal-hacker .mm-top-select:focus-visible {
+  outline: 2px solid var(--mm-accent, #d0928b);
+  outline-offset: 1px;
+}
+/* the native chevron is light-on-dark by default in Chromium; keep it faint */
+.mm-shell-terminal-hacker .mm-top-select option {
+  background: #0c0e12;
+  color: #f4eee8;
+}

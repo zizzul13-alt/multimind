@@ -238,6 +238,9 @@ class HostState(rx.State):
     context_mode: str = "continue"
     compressor_enabled: bool = Config.COMPRESSOR_ENABLED
     active_agents: list[str] = list(Config.DEFAULT_AGENTS)
+    # The header select renders a Radix trigger, which shows no text when the
+    # list holds a single option, so the picker carries a leading placeholder row.
+    primary_agent_choices: list[str] = ["-- model --"] + list(Config.DEFAULT_AGENTS)
     debate_rounds: int = Config.DEBATE_ROUNDS_DEFAULT
     selected_skill: str = "default"
 
@@ -571,6 +574,29 @@ class HostState(rx.State):
         self.selected_skill = value or "default"
 
     @rx.event
+    def set_primary_agent(self, agent: str):
+        """Set the agent the terminal header shows.
+
+        The shell header is a single-value select, so it cannot drive the
+        multi-select set_agent_enabled. Keep the full selection intact and only
+        reorder it so the chosen participant leads.
+        """
+        # rx.select passes the rendered label, which for this control is the
+        # uppercased agent name, so normalise before matching the catalog key.
+        agent = str(agent or "").strip().lower()
+        if agent not in AGENT_OPTIONS:
+            # the header select carries a placeholder row; selecting it is a no-op
+            return
+        selected = list(self.active_agents)
+        if agent not in selected:
+            selected.insert(0, agent)
+        else:
+            selected = [agent] + [a for a in selected if a != agent]
+        self.active_agents = selected
+        self.primary_agent_choices = ["-- model --"] + selected
+        self._refresh_estimate()
+
+    @rx.event
     def set_agent_enabled(self, agent: str, enabled: bool):
         if agent not in AGENT_OPTIONS:
             return
@@ -580,6 +606,7 @@ class HostState(rx.State):
         elif not enabled and agent in selected:
             selected.remove(agent)
         self.active_agents = selected or ["gemini"]
+        self.primary_agent_choices = ["-- model --"] + self.active_agents
         self._refresh_estimate()
 
     @rx.event
