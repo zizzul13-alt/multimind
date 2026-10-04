@@ -240,7 +240,7 @@ class HostState(rx.State):
     active_agents: list[str] = list(Config.DEFAULT_AGENTS)
     # The header select renders a Radix trigger, which shows no text when the
     # list holds a single option, so the picker carries a leading placeholder row.
-    primary_agent_choices: list[str] = ["-- model --"] + list(Config.DEFAULT_AGENTS)
+    primary_agent_choices: list[str] = ["-- model --"] + list(AGENT_OPTIONS)
     debate_rounds: int = Config.DEBATE_ROUNDS_DEFAULT
     selected_skill: str = "default"
 
@@ -593,7 +593,7 @@ class HostState(rx.State):
         else:
             selected = [agent] + [a for a in selected if a != agent]
         self.active_agents = selected
-        self.primary_agent_choices = ["-- model --"] + selected
+        self.primary_agent_choices = ["-- model --"] + list(AGENT_OPTIONS)
         self._refresh_estimate()
 
     @rx.event
@@ -606,7 +606,7 @@ class HostState(rx.State):
         elif not enabled and agent in selected:
             selected.remove(agent)
         self.active_agents = selected or ["gemini"]
-        self.primary_agent_choices = ["-- model --"] + self.active_agents
+        self.primary_agent_choices = ["-- model --"] + list(AGENT_OPTIONS)
         self._refresh_estimate()
 
     @rx.event

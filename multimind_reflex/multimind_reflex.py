@@ -158,9 +158,11 @@ def _theme_studio() -> rx.Component:
                 rx.button("Apply Composition", on_click=HostState.apply_composed_theme, size="3", class_name="mm-touch-target"),
                 rx.button("Discard", on_click=HostState.discard_composed_theme, variant="soft", class_name="mm-touch-target"),
                 rx.button("Reset", on_click=HostState.reset_composed_theme, variant="ghost", class_name="mm-touch-target"),
-                rx.cond(
-                    HostState.current_session_id != "",
-                    rx.button("Back to workspace", on_click=HostState.return_to_workspace, variant="outline", class_name="mm-touch-target"),
+                rx.button(
+                    "Back to workspace",
+                    on_click=HostState.return_to_workspace,
+                    variant="outline",
+                    class_name="mm-touch-target",
                 ),
                 wrap="wrap",
                 width="100%",
