@@ -222,6 +222,282 @@ def _lab_tabs() -> rx.Component:
     )
 
 
+# --------------------------------------------------------------------------
+# Session renderers, one per shell shape.
+#
+# terminal_hacker already reads the live deliberation. The other six shells have
+# a region in their preview that is shaped for it -- messages in chat_first,
+# evidence rows in research_lab, threads in ai_workspace, state rows in
+# command_center, agent cards in agent_canvas, the answer in minimal_saas -- and
+# they were all still showing placeholder copy. Each renderer below fills the
+# region the preview already declares, from the same critique state.
+# --------------------------------------------------------------------------
+
+
+def _turn_identity(turn: dict):
+    """The speaker of a turn: the agent for a response, the requester otherwise."""
+    return rx.cond(
+        turn["status"] == "success",
+        turn["effective_identity_label"],
+        turn["requested_identity_label"],
+    )
+
+
+def _turn_body(turn: dict):
+    """The text of a turn, falling back to the provider that answered."""
+    return rx.cond(
+        turn["status"] == "success",
+        turn["text"],
+        turn["text"],
+    )
+
+
+def _verdict() -> rx.Component:
+    """The closing verdict, or a placeholder when nothing has run yet."""
+    return rx.cond(
+        HostState.current_system_verdict != "",
+        HostState.current_system_verdict,
+        rx.cond(
+            HostState.current_critiques != [],
+            "deliberation in progress",
+            "no result yet",
+        ),
+    )
+
+
+def _session_title() -> rx.Component:
+    """The name of the attached session, over the preview's literal."""
+    return rx.text(
+        rx.cond(
+            HostState.current_session_name != "",
+            HostState.current_session_name,
+            "REJULIET-04",
+        )
+    )
+
+
+def _participants() -> rx.Component:
+    """The agents taking part, over the catalog default."""
+    return rx.cond(
+        HostState.current_participants != [],
+        rx.foreach(
+            HostState.current_participants,
+            lambda p: rx.text(
+                rx.cond(
+                    p["model"] != "",
+                    p["model"],
+                    p["requested_provider"],
+                ),
+                class_name="mm-participant",
+            ),
+        ),
+        rx.text("no participants yet", class_name="mm-participant"),
+    )
+
+
+# --- chat_first: the messages column -------------------------------------
+
+
+def _chat_turn(turn: dict) -> rx.Component:
+    """One exchange as the preview's `.message you` / `.message assistant`."""
+    from_user = turn["status"] == "success"
+    return rx.box(
+        rx.hstack(
+            rx.text(
+                _turn_identity(turn),
+                class_name="mm-role",
+            ),
+            rx.vstack(
+                rx.text(_turn_body(turn), class_name="mm-copy"),
+                rx.text(
+                    rx.cond(
+                        from_user,
+                        "instruction sent",
+                        "result / " + turn["status"],
+                    ),
+                    class_name="mm-copy-small",
+                ),
+                spacing="1",
+                align="start",
+                width="100%",
+            ),
+            gap="4",
+            align="start",
+            class_name=rx.cond(from_user, "mm-message mm-message-you", "mm-message"),
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
+def _chat_messages() -> rx.Component:
+    return rx.cond(
+        HostState.current_critiques != [],
+        rx.box(
+            rx.foreach(HostState.current_critiques, _chat_turn),
+            class_name="mm-messages-body",
+            width="100%",
+        ),
+        rx.text(
+            "Issue an instruction to begin the correspondence.",
+            class_name="mm-empty",
+        ),
+    )
+
+
+# --- research_lab: the evidence column -----------------------------------
+
+
+def _evidence_turn(turn: dict) -> rx.Component:
+    """One turn as an evidence row, the way the preview cites its sources."""
+    return rx.box(
+        rx.hstack(
+            rx.text(turn["round"], class_name="mm-ev-key"),
+            rx.vstack(
+                rx.text(_turn_identity(turn), class_name="mm-ev-who"),
+                rx.text(_turn_body(turn), class_name="mm-evidence"),
+                spacing="1",
+                align="start",
+                width="100%",
+            ),
+            spacing="2",
+            align="start",
+            class_name="mm-evidence-row",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
+def _evidence_set() -> rx.Component:
+    return rx.cond(
+        HostState.current_critiques != [],
+        rx.box(
+            rx.foreach(HostState.current_critiques, _evidence_turn),
+            class_name="mm-evidence-set",
+            width="100%",
+        ),
+        rx.text("no evidence collected yet", class_name="mm-empty"),
+    )
+
+
+# --- ai_workspace: the thread column -------------------------------------
+
+
+def _thread_turn(turn: dict) -> rx.Component:
+    """One turn as a thread row: who spoke, and what they said."""
+    return rx.box(
+        rx.hstack(
+            rx.text(turn["participant_id"], class_name="mm-thread-key"),
+            rx.vstack(
+                rx.text(_turn_identity(turn), class_name="mm-thread-who"),
+                rx.text(_turn_body(turn), class_name="mm-thread-text"),
+                spacing="1",
+                align="start",
+                width="100%",
+            ),
+            spacing="2",
+            align="start",
+            class_name="mm-thread",
+            width="100%",
+        ),
+        width="100%",
+    )
+
+
+def _threads() -> rx.Component:
+    return rx.cond(
+        HostState.current_critiques != [],
+        rx.box(
+            rx.foreach(HostState.current_critiques, _thread_turn),
+            class_name="mm-threads",
+            width="100%",
+        ),
+        rx.text("no threads yet", class_name="mm-empty"),
+    )
+
+
+# --- command_center: the state rows and the decision ---------------------
+
+
+def _state_row(turn: dict) -> rx.Component:
+    """One turn as a state row, with the provider that actually answered."""
+    return rx.hstack(
+        rx.text(turn["round"], class_name="mm-state-key"),
+        rx.text(_turn_identity(turn), class_name="mm-state-who"),
+        rx.spacer(),
+        rx.text(
+            rx.cond(
+                turn["actual_provider"] != "",
+                turn["actual_provider"],
+                turn["status"],
+            ),
+            class_name="mm-state-provider",
+        ),
+        align="center",
+        gap="2",
+        class_name="mm-state-row",
+        width="100%",
+    )
+
+
+def _state_rows() -> rx.Component:
+    return rx.cond(
+        HostState.current_critiques != [],
+        rx.box(
+            rx.foreach(HostState.current_critiques, _state_row),
+            class_name="mm-state-rows",
+            width="100%",
+        ),
+        rx.text("board idle", class_name="mm-empty"),
+    )
+
+
+def _decision() -> rx.Component:
+    """The decision block, which the preview keeps beside the state rows."""
+    return rx.vstack(
+        rx.text("DECISION", class_name="mm-label"),
+        rx.text(_verdict(), class_name="mm-decision"),
+        spacing="2",
+        align="start",
+        class_name="mm-decision-block",
+        width="100%",
+    )
+
+
+# --- agent_canvas: the agent cards on the canvas -------------------------
+
+
+def _agent_card(participant: dict) -> rx.Component:
+    """One participant as the canvas's labelled node."""
+    return rx.box(
+        rx.text(participant["participant_id"], class_name="mm-cap-id"),
+        rx.text(
+            rx.cond(
+                participant["model"] != "",
+                participant["model"],
+                participant["requested_provider"],
+            ),
+            class_name="mm-cap-name",
+        ),
+        class_name="mm-cap",
+        width="100%",
+    )
+
+
+def _agent_cards() -> rx.Component:
+    return rx.cond(
+        HostState.current_participants != [],
+        rx.box(
+            rx.foreach(HostState.current_participants, _agent_card),
+            class_name="mm-caps",
+            width="100%",
+        ),
+        rx.text("no agents on the canvas", class_name="mm-empty"),
+    )
+
+
+
 def shell_ai_research_lab() -> rx.Component:
     return rx.vstack(
         _top_bar(
@@ -340,6 +616,15 @@ def shell_ai_research_lab() -> rx.Component:
                         "observations / current buffer",
                         class_name="mm-tag",
                     ),
+                    # the observations are the live deliberation, cited per turn
+                    rx.cond(
+                        HostState.current_critiques != [],
+                        rx.box(
+                            rx.foreach(HostState.current_critiques, _evidence_turn),
+                            class_name="mm-evidence-set",
+                            width="100%",
+                        ),
+                    ),
                     rx.heading(
                         "What survives the swap?",
                         class_name="mm-right-title",
@@ -392,7 +677,9 @@ def shell_ai_research_lab() -> rx.Component:
                             "provisional synthesis",
                             class_name="mm-synth-label",
                         ),
-                        rx.text(
+
+                    # the synthesis carries the session verdict once one exists
+                    _verdict(),                        rx.text(
                             "Keep the rain visible. The interface should feel "
                             "like evidence from a relationship, not a "
                             "laboratory skin pasted over a song.",
@@ -502,9 +789,22 @@ def shell_ai_workspace() -> rx.Component:
                         class_name="mm-label",
                     ),
                     rx.heading(
-                        "One session.\nSeveral working objects.",
+                        rx.cond(
+                            HostState.current_session_name != "",
+                            HostState.current_session_name + "\nWorking objects.",
+                            "One session.\nSeveral working objects.",
+                        ),
                         white_space="pre-line",
                         class_name="mm-desk-title",
+                    ),
+                    # once a run exists, the live threads take the first object
+                    rx.cond(
+                        HostState.current_critiques != [],
+                        rx.box(
+                            rx.foreach(HostState.current_critiques, _thread_turn),
+                            class_name="mm-threads",
+                            width="100%",
+                        ),
                     ),
                     rx.text(
                         "representation changes / state held",
@@ -757,12 +1057,17 @@ def shell_chat_first() -> rx.Component:
                     class_name="mm-rail-copy",
                 ),
                 rx.box(
-                    rx.text("session held", class_name="mm-truth"),
-                    rx.text("world bound", class_name="mm-truth"),
+                    rx.text("session / ", class_name="mm-truth"),
+                    _session_title(),
                     rx.text(
-                        "model identity truthful",
+                        rx.cond(
+                            HostState.current_critiques != [],
+                            "turns held",
+                            "no turns yet",
+                        ),
                         class_name="mm-truth",
                     ),
+                    rx.text("world bound", class_name="mm-truth"),
                     class_name="mm-truth-box",
                     width="100%",
                 ),
@@ -819,29 +1124,33 @@ def shell_chat_first() -> rx.Component:
                         class_name="mm-world-title",
                         width="100%",
                     ),
-                    rx.box(
-                        _chat_message(
-                            "YOU / 21:07",
-                            "\u201cIf we compare another model, keep the "
-                            "same feeling. Don\u2019t reset the room.\u201d",
-                            "mm-copy",
+                    rx.cond(
+                        HostState.current_critiques != [],
+                        # the live correspondence replaces the sample exchange
+                        rx.box(
+                            rx.foreach(HostState.current_critiques, _chat_turn),
+                            class_name="mm-messages",
+                            width="100%",
                         ),
-                        _chat_message(
-                            "SOL / 21:07",
-                            "I\u2019ll keep the session, memory, and the "
-                            "emotional world intact. The model may change "
-                            "later; the correspondence does not have to "
-                            "start over.",
-                            "mm-copy small",
+                        # before a run, the preview's own exchange is the sample
+                        rx.box(
+                            _chat_message(
+                                "YOU / 21:07",
+                                "\u201cIf we compare another model, keep the "
+                                "same feeling. Don\u2019t reset the room.\u201d",
+                                "mm-copy",
+                            ),
+                            _chat_message(
+                                "SOL / 21:07",
+                                "I\u2019ll keep the session, memory, and the "
+                                "emotional world intact. The model may change "
+                                "later; the correspondence does not have to "
+                                "start over.",
+                                "mm-copy small",
+                            ),
+                            class_name="mm-messages",
+                            width="100%",
                         ),
-                        _chat_message(
-                            "SOL / NOW",
-                            "\u201cSame thread. Different view. Nothing "
-                            "important was discarded.\u201d",
-                            "mm-copy",
-                        ),
-                        class_name="mm-messages",
-                        width="100%",
                     ),
                     _chat_worlds(),
                     rx.text(
@@ -1054,6 +1363,10 @@ def shell_agent_canvas() -> rx.Component:
             _canvas_nodes(),
             rx.box(
                 rx.text("SESSION CORE", class_name="mm-core-title"),
+                # the core names the session and the agents on the canvas
+                _session_title(),
+                    # the canvas nodes name the agents actually on it
+                    _agent_cards(),
                 rx.text(
                     "memory held",
                     class_name="mm-core-sub",
@@ -1235,6 +1548,15 @@ def shell_command_center() -> rx.Component:
                     rx.text("live state", class_name="mm-label"),
                     class_name="mm-board-head",
                     width="100%",
+                ),
+                # the board's rows are the live deliberation, one per turn
+                rx.cond(
+                    HostState.current_critiques != [],
+                    rx.box(
+                        rx.foreach(HostState.current_critiques, _state_row),
+                        class_name="mm-state-rows",
+                        width="100%",
+                    ),
                 ),
                 _command_state_row(
                     "session continuity",
