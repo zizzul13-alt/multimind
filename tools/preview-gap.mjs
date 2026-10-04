@@ -153,7 +153,15 @@ for (const [arch, stem] of Object.entries(ALIAS)) {
 await browser.close();
 
 // --- compare ---
-const norm = (v) => String(v ?? "").toLowerCase().replace(/["']/g, "").trim();
+const norm = (v) =>
+  String(v ?? "")
+    .toLowerCase()
+    .replace(/["']/g, "")
+    // Chromium serializes computed numbers with a leading zero (0.86) while
+    // the previews author them without one (.86). Same value, so compare
+    // the canonical form.
+    .replace(/(^|[\s(,])0\./g, "$1.")
+    .trim();
 const hexOf = (css) => {
   const m = norm(css).match(/#([0-9a-f]{6})/);
   if (m) return m[1];

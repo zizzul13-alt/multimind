@@ -1,3 +1,7 @@
+assets/external/
+.states
+.web
+*.py[cod]
 __pycache__/
 *.pyc
 .pytest_cache/
