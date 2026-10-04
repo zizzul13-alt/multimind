@@ -16,6 +16,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ui import track_briefs
+
 
 @dataclass(frozen=True)
 class TrackPalette:
@@ -82,14 +84,66 @@ _DEFAULT_PALETTE = TrackPalette(
 )
 
 
+def _fade(hex_color: str, alpha: float) -> str:
+    """A translucent ink over the same hue, for borders and muted text.
+
+    The previews derive line/muted from the ground, so rather than inventing
+    fixed greys -- which would make two tracks look alike -- the value is
+    expressed as the ground's own colour at partial opacity.
+    """
+    c = (hex_color or "").strip()
+    if not c.startswith("#"):
+        return f"rgba(128,128,128,{alpha})"
+    h = c[1:]
+    if len(h) == 3:
+        h = "".join(ch * 2 for ch in h)
+    if len(h) == 8:
+        h = h[:6]
+    if len(h) != 6:
+        return f"rgba(128,128,128,{alpha})"
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({r},{g},{b},{alpha})"
+
+
 def palette_for_track(track_id: str) -> TrackPalette:
-    """Return the two-tone palette for a track."""
+    """Return the two-tone palette for a track.
+
+    Hand-built shells win, then the per-track brief extracted from the track's
+    own preview, then the neutral pair. The ti01 special case that borrowed
+    Re:Juliet's palette is gone: Night Train is a different track with a
+    different ground, and it reads as Night Train.
+    """
     slug = str(track_id or "").strip().casefold()
     if slug in _PALETTES:
         return _PALETTES[slug]
-    if slug in {"ti01", "ti1"}:
+
+    brief = track_briefs.BRIEFS.get(slug)
+    if brief is not None and (brief.paper or brief.night):
+        ground = brief.night or brief.paper
+        return TrackPalette(
+            paper=brief.paper or ground,
+            night=ground,
+            ink=brief.ink or "",
+            line=_fade(ground, 0.16),
+            muted=_fade(ground, 0.62),
+            accent=brief.accent or _fade(brief.ink or ground, 0.42),
+        )
+
+    if slug in {"ti10", "re-juliet", "rejuliet"}:
         return _PALETTES["re-juliet"]
     return _DEFAULT_PALETTE
+
+
+def brief_for_track(track_id: str) -> "track_briefs.TrackBrief | None":
+    """The hand-authored brief for a track, when its preview exists."""
+    slug = str(track_id or "").strip().casefold()
+    brief = track_briefs.BRIEFS.get(slug)
+    if brief is not None:
+        return brief
+    # ti10 is Re:Juliet, whose brief lives under the juliet preview
+    if slug in {"ti10", "re-juliet", "rejuliet"}:
+        return track_briefs.BRIEFS.get("ti10")
+    return None
 
 
 # Scenes transcribed from preview/lab/music-v0/architecture-swap/*.html in the
@@ -175,6 +229,35 @@ _SCENES_BY_TRACK: dict[str, tuple[MusicScene, ...]] = {
     ),
 }
 
+# Single-world plates.
+#
+# These tracks show one world in their preview rather than an A/B/C switch, so
+# their rail fell through to the neutral scenes and rendered a blank plate. The
+# photographs are the ones their own preview files credit.
+_SINGLE_SCENES: dict[str, tuple[MusicScene, ...]] = {
+    "ti01": (
+        MusicScene(
+            key="a",
+            name="Night Train",
+            thesis="",
+            photo_url="/scenes/night_train.webp",
+            position="center 52%",
+            credit="PHOTO \u00b7 NIGHT TRAIN \u00b7 UNSPLASH LICENSE",
+        ),
+    ),
+    "ti06": (
+        MusicScene(
+            key="a",
+            name="Koromogae",
+            thesis="",
+            photo_url="/scenes/night_drive.webp",
+            position="center 55%",
+            credit="PHOTO \u00b7 LATE SET \u00b7 UNSPLASH LICENSE",
+        ),
+    ),
+}
+
+
 # Neutral fallback so every track still gets a switchable world rail.
 _DEFAULT_SCENES = (
     MusicScene(
@@ -215,9 +298,12 @@ def scenes_for_track(track_id: str) -> tuple[MusicScene, ...]:
     if slug in _SCENES_BY_TRACK:
         return _SCENES_BY_TRACK[slug]
 
-    # ti01 is the first Track T-I entry and the one the previews were built for.
-    if slug in {"ti01", "ti1"}:
+    # ti01 is Night Train, ti10 is Re:Juliet. They are different tracks with
+    # different previews; mapping both to the Re:Juliet world was a bug.
+    if slug in {"ti10", "ti1o", "re-juliet", "rejuliet"}:
         return _SCENES_BY_TRACK["re-juliet"]
+    if slug in _SINGLE_SCENES:
+        return _SINGLE_SCENES[slug]
 
     return _DEFAULT_SCENES
 
