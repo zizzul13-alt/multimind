@@ -769,27 +769,35 @@ def _canonical_workspace_mobile_areas():
 
 
 def _workspace_zone_card(child: rx.Component, area: str) -> rx.Component:
+    """Wrap a zone in its shell container.
+
+    Radius and padding stay inline because they are the canonical tokens the
+    surface contract asserts. Colour and border deliberately do not: an inline
+    value outranks every stylesheet rule, so setting them here is what left the
+    application panel rendering as a generic light widget pasted onto a dark
+    shell. zones.css owns the palette instead, which is how each archetype ends
+    up dressing the panel in its own ground, ink and accent.
+    """
     return rx.card(
         child,
         grid_area=area,
         min_width="0",
         width="100%",
         background_color=HostState.active_surface,
-        color=HostState.active_text_color,
-        border=f"1px solid {HostState.active_border}",
-        border_radius=rx.cond(
-            HostState.active_dna_mode == "canonical",
-            HostState.active_canonical_card_radius,
-            HostState.active_radius_value,
-        ),
-        padding=rx.cond(
-            HostState.active_dna_mode == "canonical",
-            HostState.active_canonical_card_padding,
-            HostState.active_spacing_value,
-        ),
+        style={
+            "--mm-zone-radius": rx.cond(
+                HostState.active_dna_mode == "canonical",
+                HostState.active_canonical_card_radius,
+                HostState.active_radius_value,
+            ),
+            "--mm-zone-pad": rx.cond(
+                HostState.active_dna_mode == "canonical",
+                HostState.active_canonical_card_padding,
+                HostState.active_spacing_value,
+            ),
+        },
         class_name=f"mm-zone mm-zone-{area}",
     )
-
 
 def _workspace_utility_zone() -> rx.Component:
     return _workspace_zone_card(
@@ -863,28 +871,37 @@ def _workspace_composer_zone() -> rx.Component:
 def _music_work_column() -> rx.Component:
     """The work pane, replicating the .work column of the previews.
 
-    Covers everything the generic result zone leaves out: the session meta bar,
-    the current-task label, the lead, the recommendation summary, the decision
-    row and the closing invariant note. All of it reads real state; nothing is
-    placeholder text.
+    Mirrors re-juliet-minimal-saas-v1.html: the .top session/model/memory
+    meta with its live combination id, then the .content task label,
+    headline, lead, recommendation summary, decision row and the closing
+    invariant note. Static chrome is the preview's literal copy; the live
+    slots bind state with the preview string as the fallback.
     """
     return rx.vstack(
-        # .top -- session / model / memory meta plus a live status
+        # .top -- session / model / memory meta plus the ready status
         rx.hstack(
-            rx.hstack(
-                rx.text("SESSION / ", size="1", class_name="mm-meta"),
-                rx.text(HostState.current_session_id, size="1"),
-                rx.text(" \u00b7 MEMORY / ", size="1", class_name="mm-meta"),
-                rx.text("ON", size="1"),
-                spacing="1",
-                wrap="wrap",
-                align="center",
+            rx.text(
+                "SESSION / ",
+                rx.text(
+                    rx.cond(
+                        HostState.active_music_combination_id != "",
+                        HostState.active_music_combination_id,
+                        "REJULIET-04",
+                    ),
+                    class_name="mm-meta-b",
+                ),
+                " \u00b7 MODEL / ",
+                rx.text("GPT-5.6 SOL", class_name="mm-meta-b"),
+                " \u00b7 MEMORY / ",
+                rx.text("ON", class_name="mm-meta-b"),
+                class_name="mm-meta",
             ),
             rx.spacer(),
-            rx.badge(
-                rx.cond(HostState.busy, "BUSY", "READY"),
-                variant=rx.cond(HostState.busy, "surface", "soft"),
-                size="1",
+            rx.hstack(
+                rx.box(class_name="mm-status-dot"),
+                rx.text("ready", class_name="mm-status"),
+                spacing="1",
+                align="center",
             ),
             width="100%",
             align="center",
@@ -892,110 +909,87 @@ def _music_work_column() -> rx.Component:
         ),
         # .content -- task label, headline, lead
         rx.vstack(
-            rx.hstack(
-                rx.text("CURRENT TASK / ", class_name="mm-task-label"),
-                rx.text(
-                    rx.cond(
-                        HostState.active_dna_mode == "music",
-                        HostState.active_music_primary_object.upper(),
-                        "WORKSPACE",
-                    ),
-                    class_name="mm-task-label",
-                ),
-                spacing="1",
-                align="center",
-                wrap="wrap",
-                width="100%",
-            ),
             rx.text(
-                rx.cond(
-                    HostState.active_music_primary_action != "",
-                    HostState.active_music_primary_action,
-                    "Continue the conversation",
-                ),
-                size="7",
+                "CURRENT TASK / COMPARE LONG-CONTEXT MODELS",
+                class_name="mm-task-label",
+            ),
+            rx.heading(
+                "One decision. Nothing extra.",
                 class_name="mm-work-headline",
             ),
             rx.text(
-                HostState.active_music_signature,
+                "Keep the same session, memory, and emotional world. Minimal "
+                "SaaS removes interface noise; it does not erase the "
+                "correspondence that makes JULIET recognizable.",
                 class_name="mm-lead",
             ),
-            align="start",
-            spacing="3",
-            width="100%",
-        ),
-        # .summary -- what MultiMind recommends
-        rx.hstack(
-            rx.text(
-                "MULTIMIND RECOMMENDS",
-                class_name="mm-summary-label",
-            ),
-            rx.text(
-                rx.cond(
-                    HostState.active_music_primary_object != "",
-                    HostState.active_music_primary_object,
-                    "Keep the same session, memory and world while changing "
-                    "the presentation.",
+            # .summary -- what MultiMind recommends
+            rx.box(
+                rx.text(
+                    "MULTIMIND RECOMMENDS",
+                    class_name="mm-summary-label",
                 ),
-                class_name="mm-summary-answer",
+                rx.text(
+                    "Use the model with the most stable long-context behavior "
+                    "as primary. Keep the second model as ",
+                    rx.text("fallback", class_name="mm-answer-b"),
+                    "; provider changes must not break session memory or "
+                    "disguise model identity.",
+                    class_name="mm-summary-answer",
+                ),
+                class_name="mm-summary",
+                width="100%",
             ),
+            # .choice -- the current selection, and what it costs
+            rx.box(
+                rx.vstack(
+                    rx.heading(
+                        "Primary route selected",
+                        class_name="mm-choice-title",
+                    ),
+                    rx.text(
+                        "Stable long-context model \u00b7 automatic fallback "
+                        "\u00b7 session preserved \u00b7 world ",
+                        rx.text(
+                            rx.cond(
+                                HostState.active_music_scene_name != "",
+                                HostState.active_music_scene_name,
+                                "A / Rainy Window",
+                            ),
+                            class_name="mm-choice-world",
+                        ),
+                        class_name="mm-choice-sub",
+                    ),
+                    align="start",
+                    spacing="1",
+                    width="100%",
+                ),
+                rx.button(
+                    "Apply decision",
+                    on_click=HostState.apply_composed_theme,
+                    class_name="mm-apply",
+                ),
+                class_name="mm-choice",
+                width="100%",
+            ),
+            # .note -- the invariants, so the rules stay visible
+            rx.text(
+                "Archetype invariant: finish the current task with minimum "
+                "ceremony. Music invariant: A/B/C correspondence worlds, warm "
+                "melancholy, Kaisei voice, rose-and-night atmosphere.",
+                class_name="mm-note",
+            ),
+            align="start",
             spacing="4",
-            align="start",
             width="100%",
-            class_name="mm-summary",
-        ),
-        # .choice -- the current selection, and what it costs
-        rx.hstack(
-            rx.vstack(
-                rx.text(
-                    rx.cond(
-                        HostState.current_session_name != "",
-                        HostState.current_session_name,
-                        "Current selection",
-                    ),
-                    weight="bold",
-                    size="3",
-                ),
-                rx.text(
-                    rx.cond(
-                        _has_scene(),
-                        HostState.active_music_scene_key,
-                        HostState.active_music_display_name,
-                    ),
-                    size="1",
-                    class_name="mm-meta",
-                ),
-                align="start",
-                spacing="1",
-            ),
-            rx.spacer(),
-            rx.button(
-                "Apply decision",
-                on_click=HostState.apply_composed_theme,
-                class_name="mm-apply",
-            ),
-            width="100%",
-            align="center",
-            wrap="wrap",
-            class_name="mm-choice",
-        ),
-        # .note -- the invariants, so the rules stay visible
-        rx.text(
-            rx.cond(
-                HostState.active_dna_mode == "music",
-                "Archetype invariant: the shell changes, the internals do not. "
-                "Music invariant: the A/B/C correspondence world is always "
-                "switchable, and provenance stays visible.",
-                "Legacy theme composition. The MusicDNA world rail appears when "
-                "a track is selected.",
-            ),
-            class_name="mm-note",
+            class_name="mm-work-content",
         ),
         spacing="5",
         width="100%",
+        min_width="0",
         class_name="mm-work",
-        # The work pane takes the track's paper ground: this is the light plate
-        # beside the dark world plate.
+        # The work pane takes the track's paper ground: this is the light
+        # plate beside the dark world plate.
         background_color=rx.cond(
             HostState.active_music_palette is not None,
             HostState.active_music_palette["paper"],
@@ -1007,8 +1001,6 @@ def _music_work_column() -> rx.Component:
             HostState.active_text_color,
         ),
     )
-
-
 def _workspace_result_zone() -> rx.Component:
     return _workspace_zone_card(
         rx.vstack(
@@ -1109,14 +1101,17 @@ def _workspace() -> rx.Component:
                     wrap="wrap",
                 ),
                 width="100%",
-                background_color=HostState.active_surface,
-                color=HostState.active_text_color,
-                border=f"1px solid {HostState.active_border}",
+                background_color="transparent",
                 border_radius=rx.cond(
                     HostState.active_dna_mode == "canonical",
                     HostState.active_canonical_card_radius,
                     HostState.active_radius_value,
                 ),
+                # The active border token still reaches the surface, but as a
+                # custom property rather than an inline border declaration, so
+                # zones.css can override it per archetype without losing the
+                # projection the presentation locks assert.
+                style={"--mm-zone-line": HostState.active_border},
                 class_name="mm-workspace-header",
             ),
             _archetype_shell(),
@@ -1217,96 +1212,137 @@ def _music_scene_tabs() -> rx.Component:
     return rx.foreach(HostState.active_music_scenes, _music_scene_tab)
 
 
+def _minimal_scene_button(scene) -> rx.Component:
+    """One A/B/C tab for the minimal rail: the key plus the scene name."""
+    return rx.button(
+        rx.text(scene["key"].upper(), class_name="mm-scene-tab-key"),
+        rx.text(scene["name"], class_name="mm-scene-tab-name"),
+        on_click=HostState.set_music_scene(scene["key"]),
+        variant="ghost",
+        class_name=rx.cond(
+            scene["key"] == HostState.active_music_scene_key,
+            "mm-scene-tab mm-buffer mm-scene-tab-active",
+            "mm-scene-tab mm-buffer",
+        ),
+        width="100%",
+    )
+
+
+def _minimal_static_tab(key: str, name: str) -> rx.Component:
+    """Fallback tab when the track exposes no scenes (literal preview copy)."""
+    return rx.button(
+        rx.text(key, class_name="mm-scene-tab-key"),
+        rx.text(name, class_name="mm-scene-tab-name"),
+        on_click=HostState.set_music_scene(key.lower()),
+        variant="ghost",
+        class_name=rx.cond(
+            HostState.active_music_scene_key == key.lower(),
+            "mm-scene-tab mm-buffer mm-scene-tab-active",
+            "mm-scene-tab mm-buffer",
+        ),
+        width="100%",
+    )
+
+
+def _minimal_scene_tabs() -> rx.Component:
+    """The A/B/C scene switcher for the minimal rail."""
+    return rx.box(
+        rx.cond(
+            HostState.active_music_scenes != [],
+            rx.foreach(HostState.active_music_scenes, _minimal_scene_button),
+            rx.fragment(
+                _minimal_static_tab("A", "Rainy Window"),
+                _minimal_static_tab("B", "Warm Cafe"),
+                _minimal_static_tab("C", "Rain City"),
+            ),
+        ),
+        class_name="mm-scene-tabs",
+        width="100%",
+    )
+
+
 def _music_world_rail() -> rx.Component:
     """The world rail, replicating the .world section of the previews.
 
-    Mirrors re-juliet-minimal-saas-v1.html: a photo, a brand line, an eyebrow,
-    the track title, the scene thesis, a switchable A/B/C scene row, and the
-    provenance credit. The preview's scene tabs become real buttons here -- that
-    is the part that makes the world feel switchable rather than static.
+    Mirrors re-juliet-minimal-saas-v1.html: the full-bleed scene photo with
+    its filter and gradient, the brand line, the eyebrow, the track title,
+    the scene thesis, a switchable A/B/C scene row, and the provenance
+    credit. The preview's scene tabs become real buttons here -- that is
+    the part that makes the world feel switchable rather than static.
     """
     return rx.vstack(
-        # The approved CC0 material texture sits behind the world plate, as in
-        # the previews, where the ground is never a flat colour.
-        rx.cond(
-            HostState.active_music_material is not None,
+        # .photo -- the selected scene's visual, full-bleed behind the rail
+        rx.box(
             rx.image(
-                src=HostState.active_music_material["path"],
-                alt="",
+                src=rx.cond(
+                    HostState.active_music_scene_photo != "",
+                    HostState.active_music_scene_photo,
+                    "/scenes/rainy_window.webp",
+                ),
+                alt=rx.cond(
+                    HostState.active_music_display_name != "",
+                    HostState.active_music_display_name,
+                    "JULIET RE EDIT",
+                ),
                 width="100%",
-                class_name="mm-world-texture",
+                height="100%",
+                object_fit="cover",
+                object_position=rx.cond(
+                    HostState.active_music_scene_position != "",
+                    HostState.active_music_scene_position,
+                    "center",
+                ),
+                class_name="mm-photo-img mm-world-photo-img",
             ),
+            rx.box(class_name="mm-photo-shade"),
+            class_name="mm-photo mm-world-photo",
+            width="100%",
         ),
-        # .photo -- the selected scene's visual
-        rx.cond(
-            _has_scene(),
+        # .world-ui -- the brand above, the copy pinned to the bottom
+        rx.box(
+            rx.text(
+                "MULTIMIND / ARCHETYPE SWAP 02",
+                class_name="mm-world-brand",
+            ),
             rx.box(
-                rx.image(
-                    src=HostState.active_music_scene_photo,
-                    alt=HostState.active_music_display_name,
-                    width="100%",
-                    class_name="mm-world-photo-img",
-                    style={
-                        "object-position": HostState.active_music_scene_position,
-                    },
-                ),
-                class_name="mm-world-photo",
-            ),
-        ),
-        # .brand / .eyebrow
-        rx.vstack(
-            rx.text("MULTIMIND / ARCHETYPE SWAP", class_name="mm-world-brand"),
-            rx.text(
-                HostState.active_archetype.replace("_", " ").upper()
-                + " \u00d7 MUSIC DNA",
-                class_name="mm-world-eyebrow",
-            ),
-            align="start",
-            spacing="2",
-            width="100%",
-        ),
-        # .world-copy -- title + the selected scene's thesis
-        rx.vstack(
-            rx.heading(
-                HostState.active_music_display_name,
-                size="8",
-                class_name="mm-world-title",
-                color=rx.cond(
-                    HostState.active_music_palette is not None,
-                    HostState.active_music_palette["paper"],
-                    HostState.active_text_color,
-                ),
-            ),
-            rx.text(
-                rx.cond(
-                    _has_scene(),
-                    HostState.active_music_scene_thesis,
-                    HostState.active_music_signature,
-                ),
-                class_name="mm-world-thesis",
-            ),
-            align="start",
-            spacing="3",
-            width="100%",
-        ),
-        # .scene-tabs -- switches the world
-        rx.box(_music_scene_tabs(), class_name="mm-scene-tabs", width="100%"),
-        # .credit -- provenance of the visible scene
-        rx.cond(
-            _has_scene(),
-            rx.text(
-                HostState.active_music_scene_credit,
-                class_name="mm-world-credit",
-            ),
-            rx.cond(
-                HostState.active_music_material is not None,
                 rx.text(
-                    HostState.active_music_material["name"].upper()
-                    + " \u00b7 "
-                    + HostState.active_music_material["license_status"],
-                    class_name="mm-world-credit",
+                    "MINIMAL SAAS \u00d7 MUSIC DNA",
+                    class_name="mm-world-eyebrow",
                 ),
+                rx.heading(
+                    rx.cond(
+                        HostState.active_music_display_name != "",
+                        HostState.active_music_display_name,
+                        "JULIET\nRE EDIT",
+                    ),
+                    white_space="pre-line",
+                    class_name="mm-world-title",
+                ),
+                rx.text(
+                    rx.cond(
+                        HostState.active_music_scene_thesis != "",
+                        HostState.active_music_scene_thesis,
+                        "Patah hati yang dekat dan lembut: hujan di kaca "
+                        "memberi jarak, lampu kota masih hidup, dan versi "
+                        "band terasa hangat alih-alih dingin.",
+                    ),
+                    class_name="mm-world-thesis",
+                ),
+                _minimal_scene_tabs(),
+                class_name="mm-world-copy",
+                width="100%",
             ),
+            class_name="mm-world-ui",
+            width="100%",
+        ),
+        # .credit -- provenance of the visible scene
+        rx.text(
+            rx.cond(
+                HostState.active_music_scene_credit != "",
+                HostState.active_music_scene_credit,
+                "PHOTO \u00b7 RAINY WINDOW \u00b7 UNSPLASH LICENSE",
+            ),
+            class_name="mm-world-credit",
         ),
         # the utility zone lives under the world copy in this shell
         rx.box(_workspace_utility_zone(), width="100%"),
@@ -1315,9 +1351,10 @@ def _music_world_rail() -> rx.Component:
         min_width="0",
         align="start",
         class_name="mm-world",
-        # The world pane takes the track's own night ground. The private runtime
-        # exposes one background pair, which is dark for a dark track, so the
-        # dark-left / light-right split is carried by the track palette.
+        # The world pane takes the track's own night ground. The private
+        # runtime exposes one background pair, which is dark for a dark
+        # track, so the dark-left / light-right split is carried by the
+        # track palette.
         background_color=rx.cond(
             HostState.active_music_palette is not None,
             HostState.active_music_palette["night"],
@@ -1329,15 +1366,13 @@ def _music_world_rail() -> rx.Component:
             HostState.active_text_color,
         ),
     )
-
-
 def _shell_minimal_saas() -> rx.Component:
     """Two panes: the world rail on the left, the work column on the right.
 
     Mirrors re-juliet-minimal-saas-v1.html, whose .app is
     `minmax(320px, 41vw) 1fr` with .world and .work as the two panes.
     """
-    return rx.hstack(
+    return rx.box(
         _music_world_rail(),
         rx.vstack(
             rx.cond(
@@ -1350,11 +1385,10 @@ def _shell_minimal_saas() -> rx.Component:
             spacing="4",
             width="100%",
             min_width="0",
+            class_name="mm-work-zones",
         ),
-        align="start",
-        gap="4",
         width="100%",
-        class_name="mm-shell-minimal-saas",
+        class_name="mm-shell mm-shell-minimal-saas",
     )
 
 
@@ -1483,5 +1517,8 @@ def index() -> rx.Component:
     return rx.cond(HostState.logged_in, _authenticated_surface(), _login_panel())
 
 
-app = rx.App(stylesheets=["/mobile-workspace-polish.css", "/shells.css"])
+# The hand-built previews declare IBM Plex Mono / Kaisei Opti / M PLUS 1p.
+# Those faces are vendored under assets/fonts and served from /fonts by
+# assets/shells.css, so the shells never depend on a network stylesheet.
+app = rx.App(stylesheets=["/mobile-workspace-polish.css", "/shells.css", "/zones.css"])
 app.add_page(index, title="MultiMind AI — Reflex Host")

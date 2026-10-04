@@ -187,6 +187,7 @@ class WorkspaceDnaState(LegacyHostState):
     # credit never moved. Strings serialise reliably, so the rail reads these.
     active_music_scene_photo: str = ""
     active_music_scene_thesis: str = ""
+    active_music_scene_name: str = ""
     active_music_scene_credit: str = ""
     active_music_scene_position: str = "center"
     active_music_scene_name: str = ""
@@ -404,9 +405,9 @@ class WorkspaceDnaState(LegacyHostState):
             self.active_music_scene_key = "a"
             self.active_music_scene_photo = ""
             self.active_music_scene_thesis = ""
+            self.active_music_scene_name = ""
             self.active_music_scene_credit = ""
             self.active_music_scene_position = "center"
-            self.active_music_scene_name = ""
             return
 
         def _apply(scene) -> None:
@@ -414,6 +415,7 @@ class WorkspaceDnaState(LegacyHostState):
             self.active_music_scene_key = scene.key
             self.active_music_scene_photo = scene.photo_url
             self.active_music_scene_thesis = scene.thesis
+            self.active_music_scene_name = scene.name
             self.active_music_scene_credit = scene.credit
             self.active_music_scene_position = scene.position or "center"
             raw_name = str(getattr(scene, "name", "") or "")

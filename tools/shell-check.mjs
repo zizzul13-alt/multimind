@@ -19,7 +19,7 @@ const SHELLS = {
   ai_workspace: { root: ".mm-shell-ai-workspace", world: ".mm-worldpanel-photo", work: ".mm-workspace-3" },
   chat_first: { root: ".mm-shell-chat-first", world: ".mm-worlds", work: ".mm-messages" },
   agent_canvas: { root: ".mm-shell-agent-canvas", world: ".mm-core", work: ".mm-inspect" },
-  command_center: { root: ".mm-shell-command-center", world: ".mm-board-photo-wrap", work: ".mm-board" },
+  command_center: { root: ".mm-shell-command-center", world: ".mm-ground-photo", work: ".mm-board" },
 };
 
 const browser = await chromium.launch();
@@ -40,6 +40,7 @@ async function findArchBox() {
 }
 
 await page.goto(BASE, { waitUntil: "networkidle" });
+await page.waitForSelector('button[role="combobox"], input[type="text"]', { timeout: 20000 });
 const lb = page.locator('input[type="text"]');
 const lbtn = page.getByRole("button", { name: /login/i });
 if (await lbtn.count()) { await lb.fill(process.env.MM_USER ?? "izzul"); await lbtn.click(); }
@@ -58,7 +59,12 @@ for (const [arch, sel] of Object.entries(SHELLS)) {
   const lb2 = page.locator('input[type="text"]');
   const lbtn2 = page.getByRole("button", { name: /login/i });
   if (await lbtn2.count()) { await lb2.fill(process.env.MM_USER ?? "izzul"); await lbtn2.click(); }
-  await page.waitForSelector('button[role="combobox"]', { timeout: 20000 });
+  await page.waitForSelector('button[role="combobox"], input[type="text"]', { timeout: 20000 });
+  if (await page.locator('input[type="text"]').count()) {
+    await page.locator('input[type="text"]').fill(USER);
+    await page.getByRole("button", { name: /login/i }).click();
+    await page.waitForSelector('button[role="combobox"]', { timeout: 20000 });
+  }
   await page.locator('button[role="combobox"]').first().click();
   await page.waitForTimeout(450);
   await page.getByRole("option", { name: new RegExp(TRACK, "i") }).first().click();

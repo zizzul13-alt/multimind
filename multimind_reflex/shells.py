@@ -26,88 +26,130 @@ def _has_scene() -> bool:
     return HostState.active_music_scene is not None
 
 
-def _world_photo(class_name: str = "mm-world-photo", style: dict | None = None) -> rx.Component:
-    """The selected scene photo, or nothing when the track has no scenes."""
+# --------------------------------------------------------------------------
+# Shared pieces: photo plates, live scene slots, the A/B/C switchers.
+#
+# Every preview binds the same way: static chrome is the file's literal copy
+# and the live slots read HostState with the preview string as the fallback,
+# exactly like shell_terminal_hacker does.
+# --------------------------------------------------------------------------
+
+_THESIS_A = (
+    "Patah hati yang dekat dan lembut: hujan di kaca memberi jarak, "
+    "lampu kota masih hidup, dan versi band terasa hangat alih-alih dingin."
+)
+
+
+def _live_scene_name(fallback: str = "Rainy Window"):
+    """The selected scene's name, or the preview's literal scene."""
     return rx.cond(
-        _has_scene(),
+        HostState.active_music_scene_name != "",
+        HostState.active_music_scene_name,
+        fallback,
+    )
+
+
+def _live_scene_thesis(fallback: str = _THESIS_A):
+    """The selected scene's thesis, or the preview's Indonesian copy."""
+    return rx.cond(
+        HostState.active_music_scene_thesis != "",
+        HostState.active_music_scene_thesis,
+        fallback,
+    )
+
+
+def _live_scene_credit(fallback: str):
+    """The visible scene's provenance line."""
+    return rx.cond(
+        HostState.active_music_scene_credit != "",
+        HostState.active_music_scene_credit,
+        fallback,
+    )
+
+
+def _live_combination(fallback: str = "REJULIET-04"):
+    """The session combination id, or the preview's literal session."""
+    return rx.cond(
+        HostState.active_music_combination_id != "",
+        HostState.active_music_combination_id,
+        fallback,
+    )
+
+
+def _photo_box(
+    extra_class: str,
+    fallback_src: str,
+    fallback_position: str = "center",
+) -> rx.Component:
+    """The selected scene photo with the preview's literal fallback plate."""
+    return rx.box(
         rx.image(
-            src=HostState.active_music_scene_photo,
-            alt=HostState.active_music_display_name,
+            src=rx.cond(
+                HostState.active_music_scene_photo != "",
+                HostState.active_music_scene_photo,
+                fallback_src,
+            ),
+            alt=rx.cond(
+                HostState.active_music_display_name != "",
+                HostState.active_music_display_name,
+                "JULIET RE EDIT",
+            ),
             width="100%",
             height="100%",
             object_fit="cover",
-            object_position=HostState.active_music_scene_position,
-            class_name=f"{class_name}-img",
-            style=style or {},
+            object_position=rx.cond(
+                HostState.active_music_scene_position != "",
+                HostState.active_music_scene_position,
+                fallback_position,
+            ),
+            class_name="mm-photo-img mm-world-photo-img",
         ),
+        rx.box(class_name="mm-photo-shade"),
+        class_name="mm-photo mm-world-photo " + extra_class,
+        width="100%",
     )
 
 
-def _world_copy(kicker: str, title: str, show_thesis: bool = True) -> rx.Component:
-    """Kicker + serif title + the scene thesis, as the previews set them."""
-    return rx.vstack(
-        rx.text(kicker, class_name="mm-kicker"),
-        rx.heading(title, class_name="mm-world-title"),
+def _top_bar(brand: str, lead: str) -> rx.Component:
+    """The preview .top: the brand left, the track lead plus live meta right."""
+    return rx.hstack(
+        rx.text(brand, class_name="mm-brand"),
+        rx.spacer(),
+        rx.vstack(
+            rx.text(lead, class_name="mm-meta-lead"),
+            rx.text(
+                "SESSION / ",
+                rx.text(_live_combination(), class_name="mm-meta-b"),
+                " \u00b7 MODEL / ",
+                rx.text("GPT-5.6 SOL", class_name="mm-meta-b"),
+                " \u00b7 MEMORY / ",
+                rx.text("ON", class_name="mm-meta-b"),
+                class_name="mm-meta",
+            ),
+            align="end",
+            spacing="1",
+        ),
+        width="100%",
+        align="center",
+        class_name="mm-top",
+    )
+
+
+def _title(
+    fallback: str = "JULIET\nRE EDIT",
+    class_name: str = "mm-world-title",
+) -> rx.Component:
+    """The track title: live display name over the preview's literal title."""
+    return rx.heading(
         rx.cond(
-            _has_scene() if show_thesis else False,
-            rx.text(HostState.active_music_scene_thesis, class_name="mm-world-thesis"),
+            HostState.active_music_display_name != "",
+            HostState.active_music_display_name,
+            fallback,
         ),
-        spacing="2",
-        align="start",
-        width="100%",
+        white_space="pre-line",
+        class_name=class_name,
     )
 
-
-def _credit() -> rx.Component:
-    return rx.cond(
-        _has_scene(),
-        rx.text(HostState.active_music_scene_credit, class_name="mm-world-credit"),
-    )
-
-
-def _scene_tab_button(scene: MusicScene) -> rx.Component:
-    """One A/B/C buffer button. The previews label these a/b/c plus a slug."""
-    return rx.button(
-        rx.hstack(
-            rx.box(class_name="mm-dot", width="7px", height="7px"),
-            rx.text(scene["key"].upper(), class_name="mm-buffer-key"),
-            rx.text(scene["name"], class_name="mm-buffer-name"),
-            spacing="2",
-            align="center",
-        ),
-        on_click=HostState.set_music_scene(scene["key"]),
-        variant="ghost",
-        class_name=rx.cond(
-            scene["key"] == HostState.active_music_scene_key,
-            "mm-buffer mm-buffer-active",
-            "mm-buffer",
-        ),
-        width="100%",
-    )
-
-
-def _scene_switcher(variant: str = "buffers") -> rx.Component:
-    """The A/B/C world switcher.
-
-    `variant` mirrors how the preview styles it: buffers is a vertical list with
-    a dot per world, tabs is a bordered row, worlds is a three-up strip.
-    """
-    # rx.foreach takes no class_name, so the styled container wraps it.
-    return rx.box(
-        rx.foreach(
-            HostState.active_music_scenes,
-            lambda scene: _scene_tab_button(scene),
-        ),
-        class_name=f"mm-{variant}",
-        width="100%",
-    )
-
-
-# --------------------------------------------------------------------------
-# ai_research_lab -- three columns, left tabs, centre viewport, right evidence.
-#
-# .lab { grid-template-columns: minmax(190px,.78fr) minmax(0,1.7fr) minmax(220px,.9fr) }
-# --------------------------------------------------------------------------
 
 def _zone(name: str):
     """Fetch a zone component lazily.
@@ -121,29 +163,118 @@ def _zone(name: str):
     return getattr(host, name)()
 
 
+# --------------------------------------------------------------------------
+# ai_research_lab -- three columns, left tabs, centre viewport, right evidence.
+#
+# Mirrors re-juliet-research-lab-v1.html:
+# .lab { grid-template-columns: minmax(190px,.78fr) minmax(0,1.7fr) minmax(220px,.9fr) }
+# --------------------------------------------------------------------------
+
+
+def _lab_live_tab(scene) -> rx.Component:
+    """One evidence-set tab: the dot, the key, and the world slug."""
+    return rx.button(
+        rx.box(class_name="mm-dot", width="7px", height="7px"),
+        rx.text(scene["key"].upper(), class_name="mm-tab-strong"),
+        rx.text(scene["name"], class_name="mm-tab-slug"),
+        on_click=HostState.set_music_scene(scene["key"]),
+        variant="ghost",
+        class_name=rx.cond(
+            scene["key"] == HostState.active_music_scene_key,
+            "mm-tab mm-buffer mm-tab-active",
+            "mm-tab mm-buffer",
+        ),
+        width="100%",
+    )
+
+
+def _lab_static_tab(key: str, slug: str) -> rx.Component:
+    """Fallback tab when the track exposes no scenes (literal preview copy)."""
+    return rx.button(
+        rx.box(class_name="mm-dot", width="7px", height="7px"),
+        rx.text(key, class_name="mm-tab-strong"),
+        rx.text(slug, class_name="mm-tab-slug"),
+        on_click=HostState.set_music_scene(key.lower()),
+        variant="ghost",
+        class_name=rx.cond(
+            HostState.active_music_scene_key == key.lower(),
+            "mm-tab mm-buffer mm-tab-active",
+            "mm-tab mm-buffer",
+        ),
+        width="100%",
+    )
+
+
+def _lab_tabs() -> rx.Component:
+    """The evidence-set / world-buffers switcher."""
+    return rx.box(
+        rx.cond(
+            HostState.active_music_scenes != [],
+            rx.foreach(HostState.active_music_scenes, _lab_live_tab),
+            rx.fragment(
+                _lab_static_tab("A", "rainy.window"),
+                _lab_static_tab("B", "warm.cafe"),
+                _lab_static_tab("C", "rain.city"),
+            ),
+        ),
+        class_name="mm-tabs",
+        width="100%",
+    )
+
+
 def shell_ai_research_lab() -> rx.Component:
     return rx.vstack(
-        rx.hstack(
-            rx.text("MultiMind", class_name="mm-brand"),
-            rx.spacer(),
-            rx.text(HostState.active_music_display_name, class_name="mm-meta"),
-            width="100%",
-            align="center",
-            class_name="mm-top",
+        _top_bar(
+            "MULTIMIND / ARCHETYPE SWAP 03",
+            "RESEARCH LAB \u00d7 MUSIC DNA",
         ),
-        # .intro -- a two-up eyebrow band above the lab
+        # .intro -- the eyebrow band above the lab
         rx.box(
-            _world_copy("RESEARCH LAB / MUSIC DNA × EVIDENCE", rx.cond(HostState.active_music_world != "", HostState.active_music_world, "A/B/C worlds")),
+            rx.box(
+                rx.text(
+                    "investigate evidence \u00b7 build a conclusion",
+                    class_name="mm-eyebrow",
+                ),
+                _title(),
+                class_name="mm-intro-copy",
+                width="100%",
+            ),
+            rx.text(
+                "Same correspondence, same three emotional worlds. This time "
+                "the work is not arranged as a hero image or a chat column: "
+                "the world itself sits in the middle as evidence to inspect.",
+                class_name="mm-intro-side",
+            ),
             class_name="mm-intro",
             width="100%",
         ),
         rx.box(
             rx.hstack(
-                # left: the world tabs plus the claim
+                # left: the world tabs plus the working hypothesis
                 rx.vstack(
-                    rx.text("ACTIVE WORLD", class_name="mm-label"),
-                    _scene_switcher("tabs"),
-                    rx.box(_zone("_workspace_utility_zone"), class_name="mm-left-claim", width="100%"),
+                    rx.text(
+                        "evidence set / world buffers",
+                        class_name="mm-tag",
+                    ),
+                    _lab_tabs(),
+                    rx.box(
+                        rx.text(
+                            "working hypothesis",
+                            class_name="mm-note-label",
+                        ),
+                        rx.text(
+                            "Jarak terasa lembut, bukan dingin. Hujan "
+                            "berfungsi sebagai batas tipis antara dua orang "
+                            "yang masih saling terbaca.",
+                            class_name="mm-claim",
+                        ),
+                        class_name="mm-claim-box",
+                        width="100%",
+                    ),
+                    rx.box(
+                        _zone("_workspace_utility_zone"),
+                        width="100%",
+                    ),
                     spacing="3",
                     class_name="mm-lab-left",
                     width="100%",
@@ -151,19 +282,49 @@ def shell_ai_research_lab() -> rx.Component:
                 # centre: the viewport, which is where the photo lives
                 rx.vstack(
                     rx.box(
-                        _world_photo("mm-viewport"),
+                        _photo_box(
+                            "mm-viewport-photo",
+                            "/scenes/rainy_window.webp",
+                        ),
                         rx.vstack(
                             rx.hstack(
-                                rx.text("VIEWPORT", class_name="mm-label"),
+                                rx.text(
+                                    "primary evidence viewport",
+                                    class_name="mm-tag mm-tag-light",
+                                ),
                                 rx.spacer(),
-                                rx.text(HostState.active_music_scene_key.upper(), class_name="mm-view-state"),
+                                rx.text(
+                                    "inspect / compare / annotate",
+                                    class_name="mm-view-state",
+                                ),
+                                width="100%",
+                                align="center",
                             ),
-                            rx.text(HostState.active_music_signature, class_name="mm-view-copy"),
-                            rx.cond(_has_scene(), _credit()),
-                            padding="4",
+                            rx.spacer(),
+                            rx.box(
+                                rx.heading(
+                                    _live_scene_name(),
+                                    class_name="mm-view-name",
+                                ),
+                                rx.text(
+                                    _live_scene_thesis(),
+                                    class_name="mm-view-thesis",
+                                ),
+                                rx.text(
+                                    _live_scene_credit(
+                                        "PHOTO \u00b7 RAINY WINDOW "
+                                        "\u00b7 UNSPLASH LICENSE",
+                                    ),
+                                    class_name="mm-caption",
+                                ),
+                                class_name="mm-view-copy",
+                                width="100%",
+                            ),
+                            align="stretch",
                             spacing="2",
                             class_name="mm-view-ui",
                             width="100%",
+                            height="100%",
                         ),
                         class_name="mm-viewport-wrap",
                         width="100%",
@@ -173,21 +334,72 @@ def shell_ai_research_lab() -> rx.Component:
                     class_name="mm-lab-viewport",
                     width="100%",
                 ),
-                # right: evidence rows and synthesis
+                # right: the observations and the provisional synthesis
                 rx.vstack(
-                    rx.text("EVIDENCE", class_name="mm-label"),
-                    rx.foreach(
-                        HostState.active_music_scenes,
-                        lambda s: rx.box(
-                            rx.hstack(
-                                rx.text(s["key"].upper(), class_name="mm-ev-key"),
-                                rx.text(s["thesis"][:60], class_name="mm-evidence"),
-                                spacing="2",
-                                align="start",
+                    rx.text(
+                        "observations / current buffer",
+                        class_name="mm-tag",
+                    ),
+                    rx.heading(
+                        "What survives the swap?",
+                        class_name="mm-right-title",
+                    ),
+                    rx.box(
+                        rx.box(
+                            rx.text(
+                                "emotional signal",
+                                class_name="mm-ev-key",
+                            ),
+                            rx.text(
+                                "Warm melancholy; distance without emotional "
+                                "erasure.",
+                                class_name="mm-evidence",
                             ),
                             class_name="mm-evidence-row",
                             width="100%",
                         ),
+                        rx.box(
+                            rx.text(
+                                "conversation invariant",
+                                class_name="mm-ev-key",
+                            ),
+                            rx.text(
+                                "Same session, same memory, same "
+                                "correspondence. Only the projection changes.",
+                                class_name="mm-evidence",
+                            ),
+                            class_name="mm-evidence-row",
+                            width="100%",
+                        ),
+                        rx.box(
+                            rx.text(
+                                "archetype invariant",
+                                class_name="mm-ev-key",
+                            ),
+                            rx.text(
+                                "Inspect evidence, compare interpretations, "
+                                "then form a conclusion.",
+                                class_name="mm-evidence",
+                            ),
+                            class_name="mm-evidence-row",
+                            width="100%",
+                        ),
+                        class_name="mm-evidence-list",
+                        width="100%",
+                    ),
+                    rx.box(
+                        rx.text(
+                            "provisional synthesis",
+                            class_name="mm-synth-label",
+                        ),
+                        rx.text(
+                            "Keep the rain visible. The interface should feel "
+                            "like evidence from a relationship, not a "
+                            "laboratory skin pasted over a song.",
+                            class_name="mm-synth",
+                        ),
+                        class_name="mm-synthesis",
+                        width="100%",
                     ),
                     spacing="3",
                     class_name="mm-lab-right",
@@ -210,26 +422,73 @@ def shell_ai_research_lab() -> rx.Component:
 # --------------------------------------------------------------------------
 # ai_workspace -- three columns, the middle one a two-up object desk.
 #
+# Mirrors re-juliet-ai-workspace-v1.html:
 # .workspace { grid-template-columns: 190px minmax(0,1fr) clamp(300px,26vw,360px) }
 # .desk      { grid-template-columns: 1fr 1fr }  with .wide spanning both
 # --------------------------------------------------------------------------
 
 
+def _shelf_live_button(scene) -> rx.Component:
+    """One shelf world button: the key plus the scene name."""
+    return rx.button(
+        rx.text(scene["key"].upper(), class_name="mm-wb-key"),
+        rx.text(scene["name"], class_name="mm-wb-name"),
+        on_click=HostState.set_music_scene(scene["key"]),
+        variant="ghost",
+        class_name=rx.cond(
+            scene["key"] == HostState.active_music_scene_key,
+            "mm-wb mm-buffer mm-wb-active",
+            "mm-wb mm-buffer",
+        ),
+        width="100%",
+    )
+
+
+def _shelf_static_button(key: str, name: str) -> rx.Component:
+    """Fallback shelf button (literal preview copy)."""
+    return rx.button(
+        rx.text(key, class_name="mm-wb-key"),
+        rx.text(name, class_name="mm-wb-name"),
+        on_click=HostState.set_music_scene(key.lower()),
+        variant="ghost",
+        class_name=rx.cond(
+            HostState.active_music_scene_key == key.lower(),
+            "mm-wb mm-buffer mm-wb-active",
+            "mm-wb mm-buffer",
+        ),
+        width="100%",
+    )
+
+
+def _shelf_worlds() -> rx.Component:
+    """The shelf's world switcher."""
+    return rx.box(
+        rx.cond(
+            HostState.active_music_scenes != [],
+            rx.foreach(HostState.active_music_scenes, _shelf_live_button),
+            rx.fragment(
+                _shelf_static_button("A", "Rainy Window"),
+                _shelf_static_button("B", "Warm Cafe"),
+                _shelf_static_button("C", "Rain City"),
+            ),
+        ),
+        class_name="mm-world-buttons",
+        width="100%",
+    )
+
+
 def shell_ai_workspace() -> rx.Component:
     return rx.vstack(
-        rx.hstack(
-            rx.text("MultiMind", class_name="mm-brand"),
-            rx.spacer(),
-            rx.text(HostState.active_music_combination_id, class_name="mm-meta"),
-            width="100%",
-            align="center",
-            class_name="mm-top",
+        _top_bar(
+            "MULTIMIND / ARCHETYPE SWAP 06",
+            "AI WORKSPACE \u00d7 MUSIC DNA",
         ),
         rx.hstack(
             # shelf: the world switcher
             rx.vstack(
-                rx.text("SHELF", class_name="mm-label"),
-                _scene_switcher("world-buttons"),
+                rx.text("workspace object / world", class_name="mm-label"),
+                _title(),
+                _shelf_worlds(),
                 rx.box(_zone("_workspace_utility_zone"), width="100%"),
                 spacing="3",
                 class_name="mm-shelf",
@@ -237,33 +496,161 @@ def shell_ai_workspace() -> rx.Component:
             ),
             # desk: the two-up object board
             rx.vstack(
-                rx.hstack(
-                    rx.text(rx.cond(HostState.active_music_primary_object != "", HostState.active_music_primary_object, "OBJECT"), class_name="mm-desk-head"),
-                    rx.spacer(),
-                    rx.text(rx.cond(HostState.active_music_primary_action != "", HostState.active_music_primary_action, ""), class_name="mm-meta"),
-                    width="100%",
-                    align="end",
-                    class_name="mm-desk-head",
-                ),
-                rx.box(_zone("_workspace_result_zone"), class_name="mm-object wide", width="100%"),
                 rx.box(
-                    rx.text(HostState.active_music_primary_action, class_name="mm-thread"),
+                    rx.text(
+                        "active multi-object desk",
+                        class_name="mm-label",
+                    ),
+                    rx.heading(
+                        "One session.\nSeveral working objects.",
+                        white_space="pre-line",
+                        class_name="mm-desk-title",
+                    ),
+                    rx.text(
+                        "representation changes / state held",
+                        class_name="mm-chip",
+                    ),
+                    class_name="mm-desk-head",
+                    width="100%",
+                ),
+                rx.box(
+                    rx.hstack(
+                        rx.text(
+                            "Object 01 / conversation",
+                            class_name="mm-obj-meta",
+                        ),
+                        rx.spacer(),
+                        rx.text("attached", class_name="mm-chip"),
+                        width="100%",
+                        align="center",
+                    ),
+                    rx.heading("The thread", class_name="mm-object-title"),
+                    rx.box(
+                        rx.text("you", class_name="mm-thread-role"),
+                        rx.text(
+                            "\u201cKeep the feeling, but compare another "
+                            "route.\u201d",
+                            class_name="mm-thread-copy",
+                        ),
+                        class_name="mm-thread",
+                        width="100%",
+                    ),
+                    rx.box(
+                        rx.text("assistant", class_name="mm-thread-role"),
+                        rx.text(
+                            "\u201cI can change the working surface without "
+                            "resetting what this correspondence already "
+                            "knows.\u201d",
+                            class_name="mm-thread-copy",
+                        ),
+                        class_name="mm-thread",
+                        width="100%",
+                    ),
                     class_name="mm-object",
                     width="100%",
                 ),
-                rx.box(_zone("_workspace_history_zone"), class_name="mm-object wide", width="100%"),
+                rx.box(
+                    rx.hstack(
+                        rx.text(
+                            "Object 02 / memory",
+                            class_name="mm-obj-meta",
+                        ),
+                        rx.spacer(),
+                        rx.text("3 anchors", class_name="mm-chip"),
+                        width="100%",
+                        align="center",
+                    ),
+                    rx.heading(
+                        "What must survive",
+                        class_name="mm-object-title",
+                    ),
+                    rx.text(
+                        "Warm melancholy, not cold sadness.",
+                        class_name="mm-memory-line",
+                    ),
+                    rx.text(
+                        "A / B / C remain bound worlds, not generic themes.",
+                        class_name="mm-memory-line",
+                    ),
+                    rx.text(
+                        "Model identity stays truthful across fallback.",
+                        class_name="mm-memory-line",
+                    ),
+                    class_name="mm-object",
+                    width="100%",
+                ),
+                rx.box(
+                    rx.hstack(
+                        rx.text(
+                            "Object 03 / model compare",
+                            class_name="mm-obj-meta",
+                        ),
+                        rx.spacer(),
+                        rx.text("workspace view", class_name="mm-chip"),
+                        width="100%",
+                        align="center",
+                    ),
+                    rx.heading(
+                        "Compare without leaving the room.",
+                        class_name="mm-object-title",
+                    ),
+                    rx.text(
+                        "The archetype is now about manipulating several "
+                        "persistent objects at once: conversation, memory, "
+                        "model result, files, and world state. The song is "
+                        "not reduced to a decorative skin; it determines how "
+                        "those objects feel and relate.",
+                        class_name="mm-object-copy",
+                    ),
+                    class_name="mm-object wide",
+                    width="100%",
+                ),
+                rx.box(
+                    _zone("_workspace_result_zone"),
+                    class_name="mm-object wide",
+                    width="100%",
+                ),
+                rx.box(
+                    _zone("_workspace_history_zone"),
+                    class_name="mm-object wide",
+                    width="100%",
+                ),
                 spacing="3",
                 class_name="mm-desk",
                 width="100%",
             ),
             # worldpanel: the photo and its copy
             rx.vstack(
-                rx.box(_world_photo("mm-worldpanel"), class_name="mm-worldpanel-photo", width="100%"),
-                rx.vstack(
-                    _world_copy("WORLD PANEL", rx.cond(HostState.active_music_world != "", HostState.active_music_world, "A/B/C")),
-                    _credit(),
-                    spacing="3",
-                    class_name="mm-worldpanel-copy",
+                rx.box(
+                    _photo_box(
+                        "mm-worldpanel-photo",
+                        "/scenes/rainy_window.webp",
+                        "center 58%",
+                    ),
+                    rx.box(
+                        rx.text(
+                            "ambient world object / right edge field",
+                            class_name="mm-label mm-label-light",
+                        ),
+                        rx.heading(
+                            _live_scene_name(),
+                            class_name="mm-worldpanel-name",
+                        ),
+                        rx.text(
+                            _live_scene_thesis(),
+                            class_name="mm-worldpanel-thesis",
+                        ),
+                        class_name="mm-world-copy",
+                        width="100%",
+                    ),
+                    rx.text(
+                        _live_scene_credit(
+                            "PHOTO \u00b7 RAINY LIGHTS \u00b7 DEFI22 "
+                            "\u00b7 WIKIMEDIA COMMONS \u00b7 CC BY-SA 4.0",
+                        ),
+                        class_name="mm-credit",
+                    ),
+                    class_name="mm-worldpanel-photo-wrap",
                     width="100%",
                 ),
                 rx.box(_zone("_workspace_composer_zone"), width="100%"),
@@ -282,79 +669,207 @@ def shell_ai_workspace() -> rx.Component:
 
 
 # --------------------------------------------------------------------------
-# chat_first -- a 255px rail beside the thread; worlds sit over the composer.
+# chat_first -- a 255px rail beside the thread; the world lives behind it.
 #
+# Mirrors re-juliet-chat-first-v1.html:
 # .chat { grid-template-columns: 255px minmax(0,1fr) }
 # .message { grid-template-columns: 94px minmax(0,1fr) }
 # --------------------------------------------------------------------------
 
-_ROLE_W = "94px"
 
-
-def _chat_line(role: str, copy: str, note: str = "") -> rx.Component:
-    return rx.hstack(
-        rx.box(rx.text(role, class_name="mm-role"), class_name="mm-role-cell", width=_ROLE_W),
-        rx.vstack(
-            rx.text(copy, class_name="mm-copy"),
-            rx.cond(note != "", rx.text(note, class_name="mm-copy-small")),
-            spacing="1",
-            align="start",
-            class_name="mm-copy-cell",
-            width="100%",
+def _chat_worlds_live_button(scene) -> rx.Component:
+    """One world button over the thread: the key plus the scene name."""
+    return rx.button(
+        rx.text(scene["key"].upper(), class_name="mm-worlds-key"),
+        rx.text(scene["name"], class_name="mm-worlds-name"),
+        on_click=HostState.set_music_scene(scene["key"]),
+        variant="ghost",
+        class_name=rx.cond(
+            scene["key"] == HostState.active_music_scene_key,
+            "mm-world-btn mm-buffer mm-worlds-active",
+            "mm-world-btn mm-buffer",
         ),
-        align="start",
-        class_name=rx.cond(role == "you", "mm-message mm-message-you", "mm-message"),
+        width="100%",
+    )
+
+
+def _chat_worlds_static_button(key: str, name: str) -> rx.Component:
+    """Fallback world button (literal preview copy)."""
+    return rx.button(
+        rx.text(key, class_name="mm-worlds-key"),
+        rx.text(name, class_name="mm-worlds-name"),
+        on_click=HostState.set_music_scene(key.lower()),
+        variant="ghost",
+        class_name=rx.cond(
+            HostState.active_music_scene_key == key.lower(),
+            "mm-world-btn mm-buffer mm-worlds-active",
+            "mm-world-btn mm-buffer",
+        ),
+        width="100%",
+    )
+
+
+def _chat_worlds() -> rx.Component:
+    """The world switcher pinned over the thread."""
+    return rx.box(
+        rx.cond(
+            HostState.active_music_scenes != [],
+            rx.foreach(
+                HostState.active_music_scenes,
+                _chat_worlds_live_button,
+            ),
+            rx.fragment(
+                _chat_worlds_static_button("A", "Rainy Window"),
+                _chat_worlds_static_button("B", "Warm Cafe"),
+                _chat_worlds_static_button("C", "Rain City"),
+            ),
+        ),
+        class_name="mm-worlds",
+        width="100%",
+    )
+
+
+def _chat_message(role: str, copy: str, copy_class: str) -> rx.Component:
+    """One correspondence row: the role gutter beside the copy."""
+    return rx.box(
+        rx.text(role, class_name="mm-role"),
+        rx.text(copy, class_name=copy_class),
+        class_name="mm-message",
         width="100%",
     )
 
 
 def shell_chat_first() -> rx.Component:
     return rx.vstack(
-        rx.hstack(
-            rx.text("MultiMind", class_name="mm-brand"),
-            rx.spacer(),
-            rx.text(HostState.active_music_display_name, class_name="mm-meta"),
-            width="100%",
-            align="center",
-            class_name="mm-top",
+        _top_bar(
+            "MULTIMIND / ARCHETYPE SWAP 07",
+            "CHAT-FIRST \u00d7 MUSIC DNA",
         ),
         rx.hstack(
-            # rail: the thread summary and the world switch
+            # rail: the conversation identity and the thread history
             rx.vstack(
-                rx.text("THREAD", class_name="mm-label"),
-                rx.text(HostState.active_music_signature, class_name="mm-thread-world"),
-                _scene_switcher("worlds"),
+                rx.text("conversation identity", class_name="mm-label"),
+                _title(),
+                rx.text(
+                    "The architecture finally returns to the simplest mental "
+                    "model: I converse. No dashboard, no canvas, no terminal. "
+                    "The thread itself is the primary object.",
+                    class_name="mm-rail-copy",
+                ),
+                rx.box(
+                    rx.text("session held", class_name="mm-truth"),
+                    rx.text("world bound", class_name="mm-truth"),
+                    rx.text(
+                        "model identity truthful",
+                        class_name="mm-truth",
+                    ),
+                    class_name="mm-truth-box",
+                    width="100%",
+                ),
                 rx.box(_zone("_workspace_history_zone"), width="100%"),
                 spacing="3",
                 class_name="mm-rail",
                 width="100%",
             ),
-            # the conversation itself
+            # the conversation itself, with the world behind it
             rx.vstack(
-                rx.text(HostState.active_music_display_name, class_name="mm-eyebrow"),
-                _chat_line("you", HostState.active_music_primary_action, "instruction sent"),
-                _chat_line(
-                    "multimind",
-                    HostState.active_music_signature,
-                    "result / correspondence preserved",
+                rx.box(
+                    rx.text(
+                        "conversation / correspondence / one continuous thread",
+                        class_name="mm-eyebrow",
+                    ),
+                    rx.heading(
+                        "Stay in the thread.",
+                        class_name="mm-thread-title",
+                    ),
+                    rx.text(
+                        "Chat-first does not mean generic bubbles. Re:Juliet "
+                        "treats conversation as correspondence: restrained, "
+                        "intimate, and continuous, while the world lives "
+                        "behind the thread instead of being forced into a "
+                        "hero block.",
+                        class_name="mm-thread-lede",
+                    ),
+                    class_name="mm-thread-head",
+                    width="100%",
                 ),
-                _chat_line("you", rx.cond(HostState.active_music_composer_label != "", HostState.active_music_composer_label, "continue"), "instruction accepted"),
-                _chat_line(
-                    "multimind",
-                    rx.cond(HostState.active_music_world != "", HostState.active_music_world, "world held"),
-                    "state held",
+                rx.box(
+                    _photo_box(
+                        "mm-thread-world-photo",
+                        "/scenes/rainy_window.webp",
+                        "center 58%",
+                    ),
+                    rx.box(
+                        rx.box(
+                            rx.text(
+                                "world / behind the correspondence",
+                                class_name="mm-label mm-label-light",
+                            ),
+                            rx.heading(
+                                _live_scene_name(),
+                                class_name="mm-world-name",
+                            ),
+                            class_name="mm-world-title-copy",
+                            width="100%",
+                        ),
+                        rx.text(
+                            _live_scene_thesis(),
+                            class_name="mm-world-thesis",
+                        ),
+                        class_name="mm-world-title",
+                        width="100%",
+                    ),
+                    rx.box(
+                        _chat_message(
+                            "YOU / 21:07",
+                            "\u201cIf we compare another model, keep the "
+                            "same feeling. Don\u2019t reset the room.\u201d",
+                            "mm-copy",
+                        ),
+                        _chat_message(
+                            "SOL / 21:07",
+                            "I\u2019ll keep the session, memory, and the "
+                            "emotional world intact. The model may change "
+                            "later; the correspondence does not have to "
+                            "start over.",
+                            "mm-copy small",
+                        ),
+                        _chat_message(
+                            "SOL / NOW",
+                            "\u201cSame thread. Different view. Nothing "
+                            "important was discarded.\u201d",
+                            "mm-copy",
+                        ),
+                        class_name="mm-messages",
+                        width="100%",
+                    ),
+                    _chat_worlds(),
+                    rx.text(
+                        _live_scene_credit(
+                            "PHOTO \u00b7 RAINY LIGHTS \u00b7 DEFI22 "
+                            "\u00b7 WIKIMEDIA COMMONS \u00b7 CC BY-SA 4.0",
+                        ),
+                        class_name="mm-credit",
+                    ),
+                    class_name="mm-thread-world",
+                    width="100%",
                 ),
-                rx.spacer(),
-                rx.text("reply-note", class_name="mm-reply-note"),
+                rx.text(
+                    "CHAT-FIRST invariant: the next action is always another "
+                    "turn in the conversation. World selection changes the "
+                    "atmosphere attached to the thread, not the identity of "
+                    "the session.",
+                    class_name="mm-reply-note",
+                ),
+                rx.box(_zone("_workspace_result_zone"), width="100%"),
                 spacing="4",
-                class_name="mm-messages",
+                class_name="mm-thread",
                 width="100%",
             ),
             align="start",
             class_name="mm-chat",
             width="100%",
         ),
-        rx.box(_zone("_workspace_result_zone"), width="100%"),
         _zone("_workspace_composer_zone"),
         spacing="0",
         width="100%",
@@ -363,73 +878,226 @@ def shell_chat_first() -> rx.Component:
 
 
 # --------------------------------------------------------------------------
-# agent_canvas -- an open canvas with an absolutely positioned core, a wire
-# network behind it, and an inspector strip pinned to the bottom.
+# agent_canvas -- an open canvas with a session core, three world nodes on
+# wires, and an inspector strip pinned to the bottom.
 #
+# Mirrors re-juliet-agent-canvas-v1.html:
 # .core    { position:absolute; left:47%; top:31%; 160px circle }
 # .inspect { position:absolute; left:7%; right:7%; bottom:7%; 120px 1fr auto }
 # --------------------------------------------------------------------------
 
 
+def _canvas_live_node(scene) -> rx.Component:
+    """One world entity on the wires, with its own scene photo."""
+    key = scene["key"]
+    return rx.button(
+        rx.box(
+            rx.image(
+                src=rx.cond(
+                    scene["photo_url"] != "",
+                    scene["photo_url"],
+                    rx.cond(
+                        key == "b",
+                        "/scenes/warm_cafe.webp",
+                        rx.cond(
+                            key == "c",
+                            "/scenes/city_lights.webp",
+                            "/scenes/rainy_window.webp",
+                        ),
+                    ),
+                ),
+                alt=scene["name"],
+                width="100%",
+                height="100%",
+                object_fit="cover",
+                object_position=rx.cond(
+                    scene["position"] != "",
+                    scene["position"],
+                    "center",
+                ),
+                class_name="mm-photo-img mm-world-photo-img",
+            ),
+            rx.box(class_name="mm-photo-shade"),
+            class_name="mm-node-photo mm-world-photo",
+            width="100%",
+            height="100%",
+        ),
+        rx.box(
+            rx.text(
+                key.upper(),
+                " / world entity",
+                class_name="mm-node-id",
+            ),
+            rx.text(scene["name"], class_name="mm-node-name"),
+            class_name="mm-node-cap",
+            width="100%",
+        ),
+        on_click=HostState.set_music_scene(key),
+        variant="ghost",
+        class_name=rx.cond(
+            key == HostState.active_music_scene_key,
+            rx.cond(
+                key == "a",
+                "mm-node mm-buffer mm-node-a mm-node-active",
+                rx.cond(
+                    key == "b",
+                    "mm-node mm-buffer mm-node-b mm-node-active",
+                    "mm-node mm-buffer mm-node-c mm-node-active",
+                ),
+            ),
+            rx.cond(
+                key == "a",
+                "mm-node mm-buffer mm-node-a",
+                rx.cond(
+                    key == "b",
+                    "mm-node mm-buffer mm-node-b",
+                    "mm-node mm-buffer mm-node-c",
+                ),
+            ),
+        ),
+    )
+
+
+def _canvas_static_node(node: str, name: str, src: str) -> rx.Component:
+    """Fallback world entity (literal preview copy with the local plate)."""
+    return rx.button(
+        rx.box(
+            rx.image(
+                src=src,
+                alt=name,
+                width="100%",
+                height="100%",
+                object_fit="cover",
+                class_name="mm-photo-img mm-world-photo-img",
+            ),
+            rx.box(class_name="mm-photo-shade"),
+            class_name="mm-node-photo mm-world-photo",
+            width="100%",
+            height="100%",
+        ),
+        rx.box(
+            rx.text(
+                node,
+                " / world entity",
+                class_name="mm-node-id",
+            ),
+            rx.text(name, class_name="mm-node-name"),
+            class_name="mm-node-cap",
+            width="100%",
+        ),
+        on_click=HostState.set_music_scene(node.lower()),
+        variant="ghost",
+        class_name=rx.cond(
+            HostState.active_music_scene_key == node.lower(),
+            "mm-node mm-buffer mm-node-%s mm-node-active" % node.lower(),
+            "mm-node mm-buffer mm-node-%s" % node.lower(),
+        ),
+    )
+
+
+def _canvas_nodes() -> rx.Component:
+    """The three world entities on the wires."""
+    return rx.box(
+        rx.cond(
+            HostState.active_music_scenes != [],
+            rx.foreach(HostState.active_music_scenes, _canvas_live_node),
+            rx.fragment(
+                _canvas_static_node(
+                    "A",
+                    "Rainy Window",
+                    "/scenes/rainy_window.webp",
+                ),
+                _canvas_static_node(
+                    "B",
+                    "Warm Cafe",
+                    "/scenes/warm_cafe.webp",
+                ),
+                _canvas_static_node(
+                    "C",
+                    "Rain City",
+                    "/scenes/city_lights.webp",
+                ),
+            ),
+        ),
+        class_name="mm-net",
+        width="100%",
+    )
+
+
 def shell_agent_canvas() -> rx.Component:
     return rx.box(
         # .top
-        rx.hstack(
-            rx.text("MultiMind", class_name="mm-brand"),
-            rx.spacer(),
-            rx.text(HostState.active_music_combination_id, class_name="mm-meta"),
-            width="100%",
-            align="center",
-            class_name="mm-top",
+        _top_bar(
+            "MULTIMIND / ARCHETYPE SWAP 04",
+            "AGENT CANVAS \u00d7 MUSIC DNA",
         ),
         # .canvas -- the open field
         rx.box(
-            rx.vstack(
-                rx.text("AGENT CANVAS", class_name="mm-kicker"),
-                rx.heading(rx.cond(HostState.active_music_world != "", HostState.active_music_world, "CANVAS"), class_name="mm-canvas-title"),
-                spacing="2",
-                align="start",
+            rx.box(
+                rx.text(
+                    "entities \u00b7 relationships \u00b7 emotional worlds",
+                    class_name="mm-kicker",
+                ),
+                _title(class_name="mm-canvas-title"),
+                rx.text(
+                    "The correspondence is no longer a column. It becomes a "
+                    "small relationship field: one session core, three "
+                    "emotional worlds, and links that stay alive while the "
+                    "active world changes.",
+                    class_name="mm-canvas-lede",
+                ),
                 class_name="mm-canvas-copy",
             ),
-            # .net -- the three wires, then the core over them
-            rx.box(class_name="mm-wire mm-wire-1", width="100%", height="2px"),
-            rx.box(class_name="mm-wire mm-wire-2", width="100%", height="2px"),
-            rx.box(class_name="mm-wire mm-wire-3", width="100%", height="2px"),
+            rx.box(class_name="mm-wire mm-wire-1", width="100%"),
+            rx.box(class_name="mm-wire mm-wire-2", width="100%"),
+            rx.box(class_name="mm-wire mm-wire-3", width="100%"),
+            _canvas_nodes(),
             rx.box(
-                rx.vstack(
-                    rx.text(HostState.active_music_scene_key.upper(), class_name="mm-core-key"),
-                    rx.text(rx.cond(HostState.active_music_primary_object != "", HostState.active_music_primary_object, ""), class_name="mm-core-obj"),
-                    spacing="1",
-                    align="center",
-                    class_name="mm-core-ui",
+                rx.text("SESSION CORE", class_name="mm-core-title"),
+                rx.text(
+                    "memory held",
+                    class_name="mm-core-sub",
                 ),
-                _world_photo("mm-core"),
+                rx.text(
+                    "identity truthful",
+                    class_name="mm-core-sub",
+                ),
                 class_name="mm-core",
             ),
-            rx.spacer(),
+            # .inspect -- the strip along the bottom
+            rx.box(
+                rx.text("selected entity", class_name="mm-inspect-lab"),
+                rx.box(
+                    rx.heading(
+                        _live_scene_name(),
+                        class_name="mm-inspect-name",
+                    ),
+                    rx.text(
+                        _live_scene_thesis(),
+                        class_name="mm-inspect-thesis",
+                    ),
+                    class_name="mm-inspect-claim-cell",
+                    width="100%",
+                ),
+                rx.text(
+                    "RELATION / correspondence \u2192 session core",
+                    class_name="mm-inspect-rel",
+                ),
+                rx.text(
+                    "STATE / active \u00b7 preserved",
+                    class_name="mm-inspect-rel",
+                ),
+                class_name="mm-inspect",
+                width="100%",
+            ),
+            rx.text(
+                _live_scene_credit(
+                    "PHOTO \u00b7 RAINY WINDOW \u00b7 UNSPLASH LICENSE",
+                ),
+                class_name="mm-credit",
+            ),
             width="100%",
             class_name="mm-canvas",
-        ),
-        # .inspect -- the strip along the bottom
-        rx.hstack(
-            rx.box(rx.text("LAB", class_name="mm-label"), class_name="mm-inspect-lab", width="120px"),
-            rx.vstack(
-                rx.text(HostState.active_music_signature, class_name="mm-inspect-claim"),
-                rx.cond(_has_scene(), _credit()),
-                spacing="1",
-                align="start",
-                class_name="mm-inspect-claim-cell",
-                width="100%",
-            ),
-            rx.box(
-                rx.hstack(rx.text("REL", class_name="mm-label"), spacing="2", align="center"),
-                class_name="mm-inspect-rel",
-                width="100%",
-            ),
-            align="start",
-            gap="5",
-            class_name="mm-inspect",
-            width="100%",
         ),
         _zone("_workspace_composer_zone"),
         class_name="mm-shell mm-shell-agent-canvas",
@@ -437,59 +1105,251 @@ def shell_agent_canvas() -> rx.Component:
 
 
 # --------------------------------------------------------------------------
-# command_center -- a four-row board: board-head, board, then a fixed lower
-# band at 42svh.
+# command_center -- intro, control board, then the world field below.
 #
+# Mirrors re-juliet-command-center-v1.html:
 # .app { grid-template-rows: auto auto 1fr minmax(280px,42svh) }
 # --------------------------------------------------------------------------
 
 
+def _command_live_world(scene) -> rx.Component:
+    """One world control: the dot, the scene name, and its live state."""
+    return rx.button(
+        rx.box(class_name="mm-dot", width="8px", height="8px"),
+        rx.text(scene["name"], class_name="mm-worlds-name"),
+        rx.text(
+            rx.cond(
+                scene["key"] == HostState.active_music_scene_key,
+                "active",
+                "standby",
+            ),
+            class_name="mm-worlds-state",
+        ),
+        on_click=HostState.set_music_scene(scene["key"]),
+        variant="ghost",
+        class_name=rx.cond(
+            scene["key"] == HostState.active_music_scene_key,
+            "mm-cc-world mm-buffer mm-cc-world-active",
+            "mm-cc-world mm-buffer",
+        ),
+        width="100%",
+    )
+
+
+def _command_static_world(key: str, name: str) -> rx.Component:
+    """Fallback world control (literal preview copy)."""
+    return rx.button(
+        rx.box(class_name="mm-dot", width="8px", height="8px"),
+        rx.text(name, class_name="mm-worlds-name"),
+        rx.text(
+            rx.cond(
+                HostState.active_music_scene_key == key.lower(),
+                "active",
+                "standby",
+            ),
+            class_name="mm-worlds-state",
+        ),
+        on_click=HostState.set_music_scene(key.lower()),
+        variant="ghost",
+        class_name=rx.cond(
+            HostState.active_music_scene_key == key.lower(),
+            "mm-cc-world mm-buffer mm-cc-world-active",
+            "mm-cc-world mm-buffer",
+        ),
+        width="100%",
+    )
+
+
+def _command_worlds() -> rx.Component:
+    """The world-state switcher beside the intro copy."""
+    return rx.box(
+        rx.cond(
+            HostState.active_music_scenes != [],
+            rx.foreach(HostState.active_music_scenes, _command_live_world),
+            rx.fragment(
+                _command_static_world("A", "A \u00b7 Rainy Window"),
+                _command_static_world("B", "B \u00b7 Warm Cafe"),
+                _command_static_world("C", "C \u00b7 Rain City"),
+            ),
+        ),
+        class_name="mm-worlds",
+        width="100%",
+    )
+
+
+def _command_state_row(
+    key: str,
+    value: str,
+    pill: str,
+    pill_ok: bool = False,
+) -> rx.Component:
+    """One live-state row on the correspondence control board."""
+    return rx.box(
+        rx.text(key, class_name="mm-state-key"),
+        rx.text(value, class_name="mm-state-value"),
+        rx.text(
+            pill,
+            class_name="mm-pill mm-pill-ok" if pill_ok else "mm-pill",
+        ),
+        class_name="mm-state-row",
+        width="100%",
+    )
+
+
 def shell_command_center() -> rx.Component:
     return rx.vstack(
-        rx.hstack(
-            rx.text("MultiMind", class_name="mm-brand"),
-            rx.spacer(),
-            rx.text(HostState.active_music_display_name, class_name="mm-meta"),
-            width="100%",
-            align="center",
-            class_name="mm-top",
+        _top_bar(
+            "MULTIMIND / ARCHETYPE SWAP 05",
+            "COMMAND CENTER \u00d7 MUSIC DNA",
         ),
-        # .board-head
-        rx.hstack(
-            rx.text("BOARD", class_name="mm-label"),
-            rx.spacer(),
-            rx.text(rx.cond(HostState.active_music_primary_object != "", HostState.active_music_primary_object, ""), class_name="mm-board-object"),
+        # .intro -- the title beside the world-state switcher
+        rx.box(
+            rx.box(
+                rx.text(
+                    "observe / control / preserve correspondence",
+                    class_name="mm-eyebrow",
+                ),
+                _title(),
+                rx.text(
+                    "The system is operational, but the emotional world is "
+                    "not reduced to telemetry. Command Center owns system "
+                    "state and intervention; JULIET still owns atmosphere, "
+                    "typography, and the meaning of A / B / C.",
+                    class_name="mm-intro-side",
+                ),
+                class_name="mm-intro-copy",
+                width="100%",
+            ),
+            _command_worlds(),
+            class_name="mm-intro",
             width="100%",
-            align="end",
-            class_name="mm-board-head",
         ),
-        # .board -- the switcher and the photo share the row
+        # .control -- the board beside the operator decision
         rx.hstack(
-            rx.box(_zone("_workspace_result_zone"), class_name="mm-board-main", width="100%"),
-            rx.vstack(
-                rx.box(_world_photo("mm-board-photo"), class_name="mm-board-photo-wrap", width="100%"),
-                rx.text(rx.cond(HostState.active_music_world != "", HostState.active_music_world, "WORLD"), class_name="mm-board-world"),
-                _scene_switcher("buffers"),
-                _credit(),
-                spacing="3",
-                class_name="mm-board-side",
+            rx.box(
+                rx.box(
+                    rx.heading(
+                        "Correspondence control",
+                        class_name="mm-board-title",
+                    ),
+                    rx.text("live state", class_name="mm-label"),
+                    class_name="mm-board-head",
+                    width="100%",
+                ),
+                _command_state_row(
+                    "session continuity",
+                    "REJULIET-04 remains attached across provider changes",
+                    "HELD",
+                    pill_ok=True,
+                ),
+                _command_state_row(
+                    "model identity",
+                    "GPT-5.6 SOL shown truthfully at presentation layer",
+                    "TRUE",
+                    pill_ok=True,
+                ),
+                _command_state_row(
+                    "fallback route",
+                    "provider may change without resetting conversation state",
+                    "AUTO",
+                ),
+                rx.box(
+                    rx.text("world signal", class_name="mm-state-key"),
+                    rx.text(
+                        rx.cond(
+                            HostState.active_music_scene_name != "",
+                            HostState.active_music_scene_name,
+                            "A / Rainy Window \u00b7 close, gentle, rain on "
+                            "glass",
+                        ),
+                        class_name="mm-state-value",
+                    ),
+                    rx.text(
+                        "LIVE",
+                        class_name="mm-pill mm-pill-ok",
+                    ),
+                    class_name="mm-state-row",
+                    width="100%",
+                ),
+                rx.box(
+                    _zone("_workspace_result_zone"),
+                    width="100%",
+                ),
+                class_name="mm-board",
+                width="100%",
+            ),
+            rx.box(
+                rx.text(
+                    "operator intervention",
+                    class_name="mm-label",
+                ),
+                rx.heading(
+                    "Keep the thread.\nChange the vehicle.",
+                    white_space="pre-line",
+                    class_name="mm-decision-title",
+                ),
+                rx.text(
+                    "Compare models, inspect state, or trigger fallback "
+                    "without flattening the correspondence into generic "
+                    "operations UI.",
+                    class_name="mm-decision-copy",
+                ),
+                rx.text(
+                    "Preserve session \u2192",
+                    class_name="mm-decision-action",
+                ),
+                class_name="mm-decision",
                 width="100%",
             ),
             align="start",
-            gap="4",
-            class_name="mm-board",
+            class_name="mm-control",
             width="100%",
         ),
-        # the 42svh band: controls and composer
+        # .ground -- the world field on the lower horizon
+        rx.box(
+            _photo_box(
+                "mm-ground-photo",
+                "/scenes/rainy_window.webp",
+                "center 58%",
+            ),
+            rx.box(
+                rx.box(
+                    rx.text(
+                        "world field / lower horizon",
+                        class_name="mm-label mm-label-light",
+                    ),
+                    rx.heading(
+                        _live_scene_name(),
+                        class_name="mm-ground-name",
+                    ),
+                    class_name="mm-ground-title-copy",
+                    width="100%",
+                ),
+                rx.text(
+                    _live_scene_thesis(),
+                    class_name="mm-ground-thesis",
+                ),
+                class_name="mm-ground-copy",
+                width="100%",
+            ),
+            rx.text(
+                _live_scene_credit(
+                    "PHOTO \u00b7 RAINY LIGHTS \u00b7 DEFI22 "
+                    "\u00b7 WIKIMEDIA COMMONS \u00b7 CC BY-SA 4.0",
+                ),
+                class_name="mm-credit",
+            ),
+            class_name="mm-ground",
+            width="100%",
+        ),
         rx.vstack(
             rx.box(_zone("_workspace_utility_zone"), width="100%"),
             _zone("_workspace_composer_zone"),
+            _zone("_workspace_history_zone"),
             spacing="3",
-            class_name="mm-command-band",
+            class_name="mm-command-zones",
             width="100%",
-            min_height="42svh",
         ),
-        _zone("_workspace_history_zone"),
         spacing="0",
         width="100%",
         class_name="mm-shell mm-shell-command-center",
@@ -597,45 +1457,26 @@ def _terminal_line(
 
 
 def shell_terminal_hacker() -> rx.Component:
-    return rx.box(
-        # .photo -- the selected scene photo, full-bleed behind the shell.
-        rx.box(
-            rx.cond(
-                HostState.active_music_scene_photo != "",
-                rx.image(
-                    src=HostState.active_music_scene_photo,
-                    alt=rx.cond(
-                        HostState.active_music_display_name != "",
-                        HostState.active_music_display_name,
-                        "JULIET RE EDIT",
-                    ),
-                    width="100%",
-                    height="100%",
-                    object_fit="cover",
-                    object_position=rx.cond(
-                        HostState.active_music_scene_position != "",
-                        HostState.active_music_scene_position,
-                        "center",
-                    ),
-                    class_name="mm-photo-img mm-world-photo-img",
-                ),
-            ),
-            rx.box(class_name="mm-photo-shade"),
-            class_name="mm-photo mm-world-photo",
-        ),
-        # .side
-        rx.box(
+    """The session *is* the screen.
+
+    The preview puts the running deliberation in `.term > .screen`: a boot line,
+    the active world, then one article per turn, alternating `you@juliet:~$` and
+    `multimind>`. The composer is a fixed strip at the bottom of the viewport
+    rather than a panel below the content.
+
+    So the session state lands here instead of in a separate card underneath:
+    HostState.current_critiques drives the articles, the session name drives the
+    header, and the composer is fixed. The semantic zones stay available for the
+    session list and backup, which are the one thing the preview does not place
+    inside the terminal.
+    """
+    return rx.hstack(
+        # ---- .side: identity and the A/B/C world switcher -------------------
+        rx.vstack(
             rx.text("MULTIMIND / ARCHETYPE SWAP 01", class_name="mm-brand"),
             rx.box(
                 rx.text("TERMINAL / HACKER \u00d7 MUSIC DNA", class_name="mm-kicker"),
-                rx.heading(
-                    rx.cond(
-                        HostState.active_music_display_name != "",
-                        HostState.active_music_display_name,
-                        "JULIET RE EDIT",
-                    ),
-                    class_name="mm-song-title",
-                ),
+                _title(),
                 rx.text(
                     "Same session, same memories, same three emotional worlds. "
                     "The mental model changes: issue instructions, inspect output, "
@@ -644,90 +1485,61 @@ def shell_terminal_hacker() -> rx.Component:
                 ),
                 class_name="mm-song",
                 width="100%",
+                spacing="2",
             ),
-            # .buffers
-            _terminal_buffers(),
-            rx.box(
-                rx.text(
-                    "archetype invariant / issue instruction \u2192 observe execution",
-                    class_name="mm-foot",
-                ),
-                rx.text(
-                    "music invariant / romantic correspondence \u00b7 warm melancholy \u00b7 A/B/C worlds",
-                    class_name="mm-foot",
-                ),
-                class_name="mm-foot-wrap",
-                width="100%",
+            rx.box(_terminal_buffers(), width="100%"),
+            rx.text(
+                "archetype invariant / issue instruction \u2192 observe execution",
+                class_name="mm-foot",
             ),
+            spacing="4",
             class_name="mm-side",
             width="100%",
         ),
-        # .term
-        rx.box(
-            rx.box(
-                rx.text(
-                    "session / ",
+        # ---- .term: the session ------------------------------------------
+        rx.vstack(
+            # .top -- which session is attached, and the run configuration
+            rx.hstack(
+                rx.hstack(
+                    rx.text("session / ", class_name="mm-top-line"),
                     rx.text(
                         rx.cond(
-                            HostState.active_music_combination_id != "",
-                            HostState.active_music_combination_id,
+                            HostState.current_session_name != "",
+                            HostState.current_session_name,
                             "REJULIET-04",
                         ),
                         class_name="mm-top-b",
                     ),
-                    class_name="mm-top-line",
+                    spacing="1",
+                    align="baseline",
                 ),
                 rx.spacer(),
-                rx.text(
-                    "model / ",
-                    rx.text("GPT-5.6 SOL", class_name="mm-top-b"),
-                    " \u00b7 memory / ",
+                rx.hstack(
+                    rx.text("memory / ", class_name="mm-top-line"),
                     rx.text("ON", class_name="mm-top-b"),
-                    class_name="mm-top-line",
+                    spacing="1",
+                    align="baseline",
                 ),
                 width="100%",
                 align="center",
                 class_name="mm-term-top",
             ),
-            # .screen
+            # .screen -- the session transcript
             rx.box(
-                rx.box(
-                    rx.text(
-                        "multimind@juliet:~$ session attach ",
-                        rx.text(
-                            rx.cond(
-                                HostState.active_music_combination_id != "",
-                                HostState.active_music_combination_id,
-                                "REJULIET-04",
-                            ),
-                            class_name="mm-boot-b",
-                        ),
-                        class_name="mm-boot-line",
-                    ),
-                    rx.text(
-                        rx.text("[ok]", class_name="mm-ok"),
-                        " memory restored \u00b7 correspondence preserved \u00b7 world buffer ",
-                        rx.text(
-                            rx.cond(
-                                HostState.active_music_scene_key != "",
-                                HostState.active_music_scene_key.upper(),
-                                "A",
-                            ),
-                            class_name="mm-rose",
-                        ),
-                        " mounted",
-                        class_name="mm-boot-line",
+                # the boot line, echoing the attached session
+                rx.text(
+                    "multimind@juliet:~$ session attach "
+                    + rx.cond(
+                        HostState.current_session_name != "",
+                        HostState.current_session_name,
+                        "REJULIET-04",
                     ),
                     class_name="mm-boot",
-                    width="100%",
                 ),
-                rx.box(
-                    rx.box(
-                        rx.text("ACTIVE BUFFER", class_name="mm-label"),
-                        class_name="mm-head-label",
-                        width="130px",
-                    ),
-                    rx.box(
+                # .head -- the active world, which is what the session is set to
+                rx.hstack(
+                    rx.box(rx.text("ACTIVE BUFFER", class_name="mm-label"), width="130px"),
+                    rx.vstack(
                         rx.heading(
                             rx.cond(
                                 HostState.active_music_scene_name != "",
@@ -740,123 +1552,129 @@ def shell_terminal_hacker() -> rx.Component:
                             rx.cond(
                                 HostState.active_music_scene_thesis != "",
                                 HostState.active_music_scene_thesis,
-                                "Patah hati yang dekat dan lembut: hujan di kaca memberi jarak, "
-                                "lampu kota masih hidup, dan versi band terasa hangat alih-alih dingin.",
+                                "Patah hati yang dekat dan lembut: hujan di kaca memberi "
+                                "jarak, lampu kota masih hidup, dan versi band terasa "
+                                "hangat alih-alih dingin.",
                             ),
                             class_name="mm-term-thesis",
                         ),
-                        class_name="mm-head-body",
+                        spacing="2",
+                        align="start",
                         width="100%",
                     ),
+                    gap="5",
+                    align="start",
                     class_name="mm-head",
                     width="100%",
                 ),
-                _terminal_line(
-                    "you@juliet:~$",
-                    "mm-prompt mm-prompt-user",
-                    rx.text(
-                        rx.cond(
-                            HostState.active_music_primary_action != "",
-                            HostState.active_music_primary_action,
-                            "compare --models long-context --keep-world",
-                        ),
-                        class_name="mm-out",
-                    ),
-                    rx.text(
-                        "instruction accepted \u00b7 buffer ",
-                        rx.text(
-                            rx.cond(
-                                HostState.active_music_scene_key != "",
-                                HostState.active_music_scene_key.upper(),
-                                "A",
+                # one article per turn of the live deliberation
+                rx.box(
+                    rx.foreach(HostState.current_critiques, _session_turn),
+                    width="100%",
+                    class_name="mm-transcript",
+                ),
+                # the verdict closes the transcript, as it does in the preview
+                rx.cond(
+                    HostState.current_system_verdict != "",
+                    rx.box(
+                        rx.hstack(
+                            rx.box(
+                                rx.text("multimind>", class_name="mm-prompt ai"),
+                                width="130px",
                             ),
-                            class_name="mm-rose",
-                        ),
-                        class_name="mm-sys",
-                    ),
-                ),
-                _terminal_line(
-                    "multimind>",
-                    "mm-prompt mm-prompt-ai",
-                    rx.text(
-                        rx.cond(
-                            HostState.active_music_signature != "",
-                            HostState.active_music_signature,
-                            "Untuk kerja panjang, pilih model yang paling stabil. Model kedua tetap "
-                            "fallback; identitas model tidak boleh dipalsukan, dan world JULIET "
-                            "tidak ikut hilang ketika rute berpindah.",
-                        ),
-                        class_name="mm-out mm-out-ai",
-                    ),
-                    rx.text(
-                        "result / correspondence preserved",
-                        class_name="mm-sys",
-                    ),
-                    line_class="mm-line mm-line-ai",
-                ),
-                _terminal_line(
-                    "you@juliet:~$",
-                    "mm-prompt mm-prompt-user",
-                    rx.text(
-                        rx.cond(
-                            HostState.active_music_composer_label != "",
-                            HostState.active_music_composer_label,
-                            "fallback --provider auto --preserve session",
-                        ),
-                        class_name="mm-out",
-                    ),
-                    rx.text(
-                        "instruction accepted \u00b7 no state reset",
-                        class_name="mm-sys",
-                    ),
-                ),
-                _terminal_line(
-                    "multimind>",
-                    "mm-prompt mm-prompt-ai",
-                    rx.text(
-                        rx.cond(
-                            HostState.active_music_primary_object != "",
-                            HostState.active_music_primary_object,
-                            "Fallback boleh terjadi tanpa memutus hubungan antar-pesan. Yang berpindah "
-                            "adalah kendaraan. Keputusan, konteks penting, dan nada percakapan tetap dibawa.",
-                        ),
-                        class_name="mm-out mm-out-ai",
-                    ),
-                    rx.text(
-                        "result / state held \u00b7 world ",
-                        rx.text(
-                            rx.cond(
-                                HostState.active_music_scene_key != "",
-                                HostState.active_music_scene_key.upper(),
-                                "A",
+                            rx.vstack(
+                                rx.text(
+                                    HostState.current_system_verdict,
+                                    class_name="mm-out",
+                                ),
+                                rx.text(
+                                    "result / correspondence preserved",
+                                    class_name="mm-sys",
+                                ),
+                                spacing="1",
+                                align="start",
+                                class_name="mm-line-body",
+                                width="100%",
                             ),
-                            class_name="mm-rose",
+                            gap="5",
+                            align="start",
+                            class_name="mm-line ai",
+                            width="100%",
                         ),
-                        class_name="mm-sys",
+                        width="100%",
                     ),
-                    line_class="mm-line mm-line-ai",
                 ),
-                rx.box(_zone("_workspace_result_zone"), width="100%"),
                 width="100%",
                 class_name="mm-screen",
             ),
+            # the composer sits at the foot of the viewport, as in the preview
+            rx.hstack(
+                rx.box(rx.text("you@juliet:~$", class_name="mm-sig"), width="130px"),
+                rx.text_area(
+                    placeholder="Issue an instruction without breaking the correspondence\u2026",
+                    value=HostState.prompt,
+                    on_change=HostState.set_prompt,
+                    class_name="mm-prompt-input",
+                    width="100%",
+                ),
+                rx.button(
+                    "Run \u21b5",
+                    on_click=HostState.run_chat,
+                    class_name="mm-run",
+                ),
+                align="center",
+                gap="3",
+                width="100%",
+                class_name="mm-composer",
+            ),
+            # the session list and backup are the one thing the preview keeps
+            # outside the terminal, so they stay addressable without displacing it
             rx.box(_zone("_workspace_history_zone"), width="100%"),
-            rx.box(_zone("_workspace_composer_zone"), width="100%"),
-            rx.box(_zone("_workspace_utility_zone"), width="100%"),
+            spacing="0",
             class_name="mm-term",
             width="100%",
         ),
-        # .credit -- provenance of the visible scene.
-        rx.text(
-            rx.cond(
-                HostState.active_music_scene_credit != "",
-                HostState.active_music_scene_credit,
-                "PHOTO \u00b7 RAINY WINDOW \u00b7 UNSPLASH LICENSE",
-            ),
-            class_name="mm-credit",
-        ),
+        align="start",
+        gap="0",
         width="100%",
         class_name="mm-shell mm-shell-terminal-hacker",
+    )
+
+
+def _session_turn(turn: dict) -> rx.Component:
+    """One turn of the live session, rendered as the preview's `.line` article.
+
+    The preview alternates `you@juliet:~$` and `multimind>`; each row shows the
+    instruction or the response, with the system status underneath.
+    """
+    label = rx.cond(turn["status"] == "success", turn["effective_identity_label"], "multimind>")
+    prompt_text = rx.cond(
+        turn["status"] == "success",
+        turn["requested_identity_label"] + ":~$",
+        "multimind>",
+    )
+    sys_line = rx.cond(
+        turn["status"] == "success",
+        "instruction accepted \u00b7 " + turn["actual_provider"],
+        "result / " + turn["status"],
+    )
+    return rx.hstack(
+        rx.box(rx.text(prompt_text, class_name="mm-prompt"), width="130px"),
+        rx.vstack(
+            rx.text(
+                rx.cond(turn["status"] == "success", turn["requested_provider"], turn["text"]),
+                class_name="mm-out",
+            ),
+            rx.text(sys_line, class_name="mm-sys"),
+            spacing="1",
+            align="start",
+            class_name="mm-line-body",
+            width="100%",
+        ),
+        gap="5",
+        align="start",
+        class_name="mm-line",
+        width="100%",
     )
 
 

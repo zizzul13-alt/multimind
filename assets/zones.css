@@ -1,0 +1,352 @@
+/* ===========================================================================
+   The application panel, dressed by the shell.
+
+   The four semantic zones (utility, composer, result, history) are the real
+   MultiMind surface -- sessions, prompt, model pickers, upload, run. They used
+   to carry inline background/colour/border values, which beat every stylesheet
+   rule, so they rendered as a generic light widget pasted onto shells that are
+   otherwise dark and specific. _workspace_zone_card now leaves the look to the
+   shell, and this file supplies it.
+
+   Each shell declares its own palette, so a terminal composer is a dark mono
+   panel and a research-lab composer is cream serif -- same widgets, same
+   handlers, same persistence, presentation follows the shell.
+   =========================================================================== */
+
+.mm-zone {
+  background: var(--mm-zone-bg, transparent);
+  color: var(--mm-zone-ink, inherit);
+  border: 1px solid var(--mm-zone-line, rgba(20,17,18,.12));
+  border-radius: var(--mm-zone-radius, 4px);
+  padding: var(--mm-zone-pad, 1rem);
+  font-family: var(--mm-zone-body, inherit);
+  box-shadow: none;
+}
+
+/* The zone owns its text colour, so headings and prose inherit rather than
+   keeping the global text token. */
+.mm-zone h1, .mm-zone h2, .mm-zone h3, .mm-zone h4, .mm-zone h5 {
+  color: var(--mm-zone-ink, inherit);
+  font-family: var(--mm-zone-display, inherit);
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+
+.mm-zone p, .mm-zone span, .mm-zone label, .mm-zone div {
+  color: inherit;
+}
+
+/* --- inputs ------------------------------------------------------------- */
+
+.mm-zone input:not([type="checkbox"]):not([type="radio"]),
+.mm-zone select,
+.mm-zone textarea {
+  background: var(--mm-field-bg, rgba(255,255,255,.6));
+  color: var(--mm-field-ink, inherit);
+  border: 1px solid var(--mm-field-line, rgba(20,17,18,.18));
+  border-radius: var(--mm-field-radius, 3px);
+  font-family: var(--mm-zone-body, inherit);
+  font-size: .78rem;
+  padding: .55rem .7rem;
+  width: 100%;
+}
+
+.mm-zone textarea { min-height: 8rem; line-height: 1.6; resize: vertical; }
+
+.mm-zone input::placeholder, .mm-zone textarea::placeholder {
+  color: var(--mm-mut, currentColor);
+  opacity: .6;
+}
+
+.mm-zone input:focus-visible,
+.mm-zone select:focus-visible,
+.mm-zone textarea:focus-visible {
+  outline: 2px solid var(--mm-accent, currentColor);
+  outline-offset: 1px;
+}
+
+/* --- checkboxes and radios ---------------------------------------------- */
+
+.mm-zone label:has(input[type="checkbox"]),
+.mm-zone label:has(input[type="radio"]) {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .3rem 0;
+  font-size: .74rem;
+  font-family: var(--mm-zone-body, inherit);
+}
+
+.mm-zone input[type="checkbox"],
+.mm-zone input[type="radio"] {
+  accent-color: var(--mm-accent, currentColor);
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+/* --- buttons ------------------------------------------------------------ */
+
+.mm-zone button {
+  background: var(--mm-btn-bg, transparent);
+  color: var(--mm-btn-ink, inherit);
+  border: 1px solid var(--mm-btn-line, rgba(20,17,18,.2));
+  border-radius: var(--mm-btn-radius, 3px);
+  font-family: var(--mm-zone-body, inherit);
+  font-size: .74rem;
+  letter-spacing: .04em;
+  padding: .6rem .9rem;
+  transition: .14s;
+}
+
+.mm-zone button:hover { background: var(--mm-btn-bg-hover, rgba(20,17,18,.05)); }
+
+/* the primary run action is the one saturated surface in the panel */
+.mm-zone .mm-zone-run,
+.mm-zone button[data-slot="base"]:last-of-type {
+  background: var(--mm-accent, currentColor);
+  color: var(--mm-on-accent, #fff);
+  border-color: transparent;
+  font-weight: 500;
+}
+
+.mm-zone .mm-zone-run:hover { filter: brightness(1.06); }
+
+/* --- misc --------------------------------------------------------------- */
+
+.mm-zone hr, .mm-zone [role="separator"] {
+  border-color: var(--mm-zone-line, rgba(20,17,18,.12));
+  margin: .8rem 0;
+}
+
+.mm-zone table { color: inherit; }
+.mm-zone th { font-family: var(--mm-zone-body, inherit); font-weight: 500; opacity: .8; }
+.mm-zone td, .mm-zone th { border-color: var(--mm-zone-line, rgba(20,17,18,.12)); }
+
+/* the badge/notice surfaces */
+.mm-zone [data-state="on"], .mm-zone .mm-badge {
+  background: var(--mm-zone-line, rgba(20,17,18,.08));
+  color: inherit;
+  border-color: transparent;
+}
+
+/* ===========================================================================
+   Per-shell palette. Every shell sets these on its own root, so the zones and
+   their widgets resolve to that shell's ground, ink, accent and field colours.
+   Values are taken from the corresponding preview file.
+   =========================================================================== */
+
+/* terminal_hacker -- dark ground, mono chrome, rose accent */
+.mm-shell-terminal-hacker {
+  --mm-zone-bg: #07080ac7;
+  --mm-zone-ink: #f4eee8;
+  --mm-zone-line: rgba(244,238,232,.14);
+  --mm-zone-radius: 2px;
+  --mm-zone-pad: .9rem;
+  --mm-zone-body: "IBM Plex Mono", monospace;
+  --mm-zone-display: "Kaisei Opti", serif;
+  --mm-field-bg: #0c0e12;
+  --mm-field-ink: #f4eee8;
+  --mm-field-line: rgba(244,238,232,.2);
+  --mm-btn-bg: rgba(244,238,232,.06);
+  --mm-btn-ink: #f4eee8;
+  --mm-btn-line: rgba(244,238,232,.22);
+  --mm-btn-bg-hover: rgba(244,238,232,.12);
+  --mm-accent: #d0928b;
+  --mm-on-accent: #1a0f0e;
+}
+
+/* agent_canvas -- paper ground, display serif, rose accent */
+.mm-shell-agent-canvas {
+  --mm-zone-bg: #f5efe9ed;
+  --mm-zone-ink: #241b18;
+  --mm-zone-line: rgba(36,27,24,.14);
+  --mm-zone-radius: 3px;
+  --mm-zone-pad: .9rem;
+  --mm-zone-body: "IBM Plex Mono", monospace;
+  --mm-zone-display: "Kaisei Opti", serif;
+  --mm-field-bg: #fffdfa;
+  --mm-field-ink: #241b18;
+  --mm-field-line: rgba(36,27,24,.2);
+  --mm-btn-bg: rgba(36,27,24,.04);
+  --mm-btn-ink: #241b18;
+  --mm-btn-line: rgba(36,27,24,.22);
+  --mm-btn-bg-hover: rgba(36,27,24,.09);
+  --mm-accent: #bc7773;
+  --mm-on-accent: #fff;
+}
+
+/* research_lab -- cream ground, rose accent */
+.mm-shell-ai-research-lab {
+  --mm-zone-bg: #f2eee9;
+  --mm-zone-ink: #171315;
+  --mm-zone-line: #cfc4c0;
+  --mm-zone-radius: 3px;
+  --mm-zone-pad: 1rem;
+  --mm-zone-body: "M PLUS 1p", sans-serif;
+  --mm-zone-display: "Kaisei Opti", serif;
+  --mm-field-bg: #fffdfa;
+  --mm-field-ink: #171315;
+  --mm-field-line: #cfc4c0;
+  --mm-btn-bg: rgba(23,19,21,.04);
+  --mm-btn-ink: #171315;
+  --mm-btn-line: #cfc4c0;
+  --mm-btn-bg-hover: rgba(23,19,21,.09);
+  --mm-accent: #b87375;
+  --mm-on-accent: #fff;
+}
+
+/* ai_workspace -- warm paper */
+.mm-shell-ai-workspace {
+  --mm-zone-bg: #efeae4;
+  --mm-zone-ink: #171413;
+  --mm-zone-line: #cbc1ba;
+  --mm-zone-radius: 4px;
+  --mm-zone-pad: 1rem;
+  --mm-zone-body: "M PLUS 1p", sans-serif;
+  --mm-zone-display: "Kaisei Opti", serif;
+  --mm-field-bg: #fffdfa;
+  --mm-field-ink: #171413;
+  --mm-field-line: #cbc1ba;
+  --mm-btn-bg: rgba(23,20,19,.04);
+  --mm-btn-ink: #171413;
+  --mm-btn-line: #cbc1ba;
+  --mm-btn-bg-hover: rgba(23,20,19,.09);
+  --mm-accent: #b86f72;
+  --mm-on-accent: #fff;
+}
+
+/* chat_first -- cream ground, soft rose */
+.mm-shell-chat-first {
+  --mm-zone-bg: #f1ece6;
+  --mm-zone-ink: #181413;
+  --mm-zone-line: #ccc2bb;
+  --mm-zone-radius: 10px;
+  --mm-zone-pad: 1rem;
+  --mm-zone-body: "M PLUS 1p", sans-serif;
+  --mm-zone-display: "Kaisei Opti", serif;
+  --mm-field-bg: #fffdfa;
+  --mm-field-ink: #181413;
+  --mm-field-line: #ccc2bb;
+  --mm-btn-bg: rgba(24,20,19,.04);
+  --mm-btn-ink: #181413;
+  --mm-btn-line: #ccc2bb;
+  --mm-btn-bg-hover: rgba(24,20,19,.09);
+  --mm-accent: #b86f72;
+  --mm-on-accent: #fff;
+}
+
+/* command_center -- cream ground, stacked board */
+.mm-shell-command-center {
+  --mm-zone-bg: #f2eee8;
+  --mm-zone-ink: #181514;
+  --mm-zone-line: #cfc7c0;
+  --mm-zone-radius: 4px;
+  --mm-zone-pad: 1rem;
+  --mm-zone-body: "M PLUS 1p", sans-serif;
+  --mm-zone-display: "Kaisei Opti", serif;
+  --mm-field-bg: #fffdfa;
+  --mm-field-ink: #181514;
+  --mm-field-line: #cfc7c0;
+  --mm-btn-bg: rgba(24,21,20,.04);
+  --mm-btn-ink: #181514;
+  --mm-btn-line: #cfc7c0;
+  --mm-btn-bg-hover: rgba(24,21,20,.09);
+  --mm-accent: #b86f72;
+  --mm-on-accent: #fff;
+}
+
+/* minimal_saas -- its rail is dark, so the work column's zones read as paper */
+.mm-shell-minimal-saas {
+  --mm-zone-bg: #f5f0ea;
+  --mm-zone-ink: #221f20;
+  --mm-zone-line: #d9ceca;
+  --mm-zone-radius: 4px;
+  --mm-zone-pad: 1rem;
+  --mm-zone-body: "M PLUS 1p", sans-serif;
+  --mm-zone-display: "Kaisei Opti", serif;
+  --mm-field-bg: #fffdfa;
+  --mm-field-ink: #221f20;
+  --mm-field-line: #d9ceca;
+  --mm-btn-bg: rgba(34,31,32,.04);
+  --mm-btn-ink: #221f20;
+  --mm-btn-line: #d9ceca;
+  --mm-btn-bg-hover: rgba(34,31,32,.09);
+  --mm-accent: #bc7f79;
+  --mm-on-accent: #fff;
+}
+
+
+/* ===========================================================================
+   The workspace header and page ground.
+
+   The header card sits outside the zones, and the page wrapper carried the
+   global background token, so on the cream shells both stayed dark navy -- the
+   last generic-looking surfaces. They are driven from the same per-shell
+   variables as the zones.
+   =========================================================================== */
+
+.mm-workspace {
+  background: var(--mm-page-bg, transparent);
+  color: var(--mm-zone-ink, inherit);
+}
+
+.mm-workspace-header {
+  background: var(--mm-header-bg, transparent);
+  color: var(--mm-zone-ink, inherit);
+  border: 1px solid var(--mm-zone-line, rgba(20,17,18,.12));
+  font-family: var(--mm-zone-body, inherit);
+}
+
+.mm-workspace-header h1, .mm-workspace-header h2, .mm-workspace-header h3 {
+  color: var(--mm-zone-ink, inherit);
+  font-family: var(--mm-zone-display, inherit);
+}
+
+.mm-workspace-header .mm-readable { color: var(--mm-zone-ink, inherit); opacity: .78; }
+
+@media (max-width: 900px) {
+  .mm-zone { padding: .8rem; }
+}
+
+
+/* page ground and header surface, per shell */
+.mm-shell-terminal-hacker { --mm-page-bg: #090a0d; --mm-header-bg: #07080ac7; }
+.mm-shell-agent-canvas { --mm-page-bg: #f3eee8; --mm-header-bg: #f5efe9ed; }
+.mm-shell-ai-research-lab { --mm-page-bg: #f2eee9; --mm-header-bg: #f2eee9; }
+.mm-shell-ai-workspace { --mm-page-bg: #efeae4; --mm-header-bg: #efeae4; }
+.mm-shell-chat-first { --mm-page-bg: #f1ece6; --mm-header-bg: #f1ece6; }
+.mm-shell-command-center { --mm-page-bg: #f2eee8; --mm-header-bg: #f2eee8; }
+.mm-shell-minimal-saas { --mm-page-bg: #f5f0ea; --mm-header-bg: #f5f0ea; }
+
+/* The workspace is the shell's ancestor, so it declares the ground itself,
+   selected by which shell it contains. That lets the header and zones resolve
+   --mm-page-bg / --mm-header-bg without !important. */
+.mm-workspace:has(.mm-shell-terminal-hacker) { --mm-page-bg: #090a0d; --mm-header-bg: #07080ac7; }
+.mm-workspace:has(.mm-shell-agent-canvas) { --mm-page-bg: #f3eee8; --mm-header-bg: #f5efe9ed; }
+.mm-workspace:has(.mm-shell-ai-research-lab) { --mm-page-bg: #f2eee9; --mm-header-bg: #f2eee9; }
+.mm-workspace:has(.mm-shell-ai-workspace) { --mm-page-bg: #efeae4; --mm-header-bg: #efeae4; }
+.mm-workspace:has(.mm-shell-chat-first) { --mm-page-bg: #f1ece6; --mm-header-bg: #f1ece6; }
+.mm-workspace:has(.mm-shell-command-center) { --mm-page-bg: #f2eee8; --mm-header-bg: #f2eee8; }
+.mm-workspace:has(.mm-shell-minimal-saas) { --mm-page-bg: #f5f0ea; --mm-header-bg: #f5f0ea; }
+
+/* The zone carries background_color inline -- the presentation locks require the
+   surface token to reach it so the signature material layer cannot show through.
+   An inline value outranks an ordinary rule, so the per-shell ground is applied
+   here with !important. It is scoped to the shell subtree, so one archetype's
+   palette can never leak into another. */
+.mm-shell-ai-research-lab .mm-zone,
+.mm-shell-ai-workspace .mm-zone,
+.mm-shell-chat-first .mm-zone,
+.mm-shell-command-center .mm-zone,
+.mm-shell-minimal-saas .mm-zone,
+.mm-shell-agent-canvas .mm-zone,
+.mm-shell-terminal-hacker .mm-zone { background: var(--mm-zone-bg) !important; }
+
+/* Same reason for the page ground and the header card: both carry the active
+   token inline so the presentation locks see the projection, and an inline value
+   outranks an ordinary rule. Scoped per shell, so no archetype leaks into another. */
+/* The workspace still carries background_color inline for the presentation
+   locks, so its ground is the one value that has to be overridden explicitly.
+   zones.css declares --mm-page-bg on .mm-workspace via :has() above. */
+.mm-workspace { background: var(--mm-page-bg) !important; }
