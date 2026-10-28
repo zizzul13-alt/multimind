@@ -15,6 +15,6 @@ config = rx.Config(
     backend_port=int(os.getenv("MULTIMIND_BACKEND_PORT", "4000")),
     cors_allowed_origins=_csv_env(
         "MULTIMIND_CORS_ALLOWED_ORIGINS",
-        "http://localhost:4000,http://localhost:*",
+        "http://localhost:3000",
     ),
 )
