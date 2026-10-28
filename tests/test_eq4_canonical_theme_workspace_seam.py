@@ -22,11 +22,11 @@ def test_canonical_catalog_is_consumed_through_optional_public_bridge():
 
 def test_theme_studio_exposes_musicdna_and_architecture_selector():
     for token in (
-        "HostState.music_dna_choices",
-        "HostState.draft_identity_choice",
-        "HostState.set_composed_identity_choice",
+        "WorkspaceDnaState.music_dna_choices",
+        "WorkspaceDnaState.draft_identity_choice",
+        "WorkspaceDnaState.set_composed_identity_choice",
         "ARCHETYPES",
-        "HostState.set_composed_archetype",
+        "WorkspaceDnaState.set_composed_archetype",
         "MusicDNA × Architecture",
     ):
         assert token in SURFACE
@@ -92,13 +92,18 @@ def test_canonical_workspace_uses_finite_structural_vocabulary_not_reference_ids
 
 
 def test_workspace_still_instantiates_one_set_of_application_facing_zones():
+    # The four zones are composed by _workspace_zone_grid(), rendered once by
+    # _workspace(). Each helper is therefore instantiated exactly once, and the
+    # workspace reaches the grid exactly once.
+    grid_source = inspect.getsource(surface._workspace_zone_grid)
     for call in (
         "_workspace_utility_zone()",
         "_workspace_composer_zone()",
         "_workspace_result_zone()",
         "_workspace_history_zone()",
     ):
-        assert WORKSPACE.count(call) == 1
+        assert grid_source.count(call) == 1
+    assert WORKSPACE.count("_workspace_zone_grid()") == 1
 
     # Canonical DNA changes composition only. The single upload, restore and Run
     # event paths remain unchanged rather than being copied per reference.

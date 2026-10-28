@@ -108,6 +108,19 @@ class WorkspaceDnaState(LegacyHostState):
     canonical_query: str = ""
     music_dna_choices: list[str] = _music_dna_choice_snapshots()
 
+    # Seed the identity selector to the first MusicDNA track so the picker is
+    # populated on first render. Without this the select renders empty because
+    # draft_identity_choice stays neutral (which matches no music option) until
+    # the login event runs _load_theme_studio_catalog().
+    draft_identity_choice: str = (
+        _music_dna_choice_snapshots()[0] if _music_dna_choice_snapshots() else _NEUTRAL_IDENTITY_CHOICE
+    )
+    draft_identity_dna: str = (
+        _choice_id(draft_identity_choice)
+        if draft_identity_choice != _NEUTRAL_IDENTITY_CHOICE
+        else ""
+    )
+
     draft_dna_mode: str = "legacy"
     active_dna_mode: str = "legacy"
 
@@ -149,6 +162,11 @@ class WorkspaceDnaState(LegacyHostState):
     draft_music_combination_id: str = ""
     draft_music_layout_flow: str = ""
     draft_music_mobile_strategy: str = ""
+    draft_music_desktop_columns: str = ""
+    draft_music_mobile_columns: str = ""
+    draft_music_world_min_height: str = ""
+    draft_music_shell_padding_bottom: str = ""
+    draft_music_blur: str = ""
     draft_music_primary_object: str = ""
     draft_music_primary_action: str = ""
     draft_music_composer_label: str = ""
@@ -160,6 +178,11 @@ class WorkspaceDnaState(LegacyHostState):
     active_music_combination_id: str = ""
     active_music_layout_flow: str = ""
     active_music_mobile_strategy: str = ""
+    active_music_desktop_columns: str = ""
+    active_music_mobile_columns: str = ""
+    active_music_world_min_height: str = ""
+    active_music_shell_padding_bottom: str = ""
+    active_music_blur: str = ""
     active_music_primary_object: str = ""
     active_music_primary_action: str = ""
     active_music_composer_label: str = ""
@@ -344,6 +367,8 @@ class WorkspaceDnaState(LegacyHostState):
         for name in (
             "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
             "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
+            "desktop_columns", "mobile_columns", "world_min_height", "shell_padding_bottom",
+            "blur",
         ):
             setattr(self, f"active_music_{name}", "")
 
@@ -352,6 +377,8 @@ class WorkspaceDnaState(LegacyHostState):
         for name in (
             "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
             "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
+            "desktop_columns", "mobile_columns", "world_min_height", "shell_padding_bottom",
+            "blur",
         ):
             setattr(self, f"active_music_{name}", getattr(self, f"draft_music_{name}"))
 
@@ -359,6 +386,8 @@ class WorkspaceDnaState(LegacyHostState):
         for name in (
             "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
             "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
+            "desktop_columns", "mobile_columns", "world_min_height", "shell_padding_bottom",
+            "blur",
         ):
             setattr(self, f"draft_music_{name}", getattr(self, f"active_music_{name}"))
 
@@ -414,6 +443,11 @@ class WorkspaceDnaState(LegacyHostState):
         self.draft_music_combination_id = plan.combination_id
         self.draft_music_layout_flow = plan.layout_flow
         self.draft_music_mobile_strategy = plan.mobile_strategy
+        self.draft_music_desktop_columns = plan.desktop_columns
+        self.draft_music_mobile_columns = plan.mobile_columns
+        self.draft_music_world_min_height = plan.world_min_height
+        self.draft_music_shell_padding_bottom = plan.shell_padding_bottom
+        self.draft_music_blur = plan.blur
         self.draft_music_primary_object = plan.primary_object
         self.draft_music_primary_action = plan.primary_action
         self.draft_music_composer_label = plan.composer_label
@@ -494,6 +528,14 @@ class WorkspaceDnaState(LegacyHostState):
             if not self._refresh_canonical_draft():
                 self.draft_archetype = previous
                 self._refresh_canonical_draft()
+            return
+        # Music mode must re-realize from the music runtime; the legacy
+        # composition path would overwrite the per-track theme with the older
+        # role-based palette.
+        if self.draft_dna_mode == "music" and self.draft_identity_dna:
+            if not self._refresh_music_draft():
+                self.draft_archetype = previous
+                self._refresh_music_draft()
             return
         if self.draft_identity_dna and not self._refresh_theme_draft_from_composition():
             self.draft_archetype = previous

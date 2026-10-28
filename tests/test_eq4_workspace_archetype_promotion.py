@@ -31,18 +31,26 @@ def test_workspace_structurally_consumes_all_seven_archetypes():
 def test_workspace_uses_one_set_of_real_semantic_zones():
     source = inspect.getsource(surface)
     workspace_source = inspect.getsource(surface._workspace)
+    zone_grid_source = inspect.getsource(surface._workspace_zone_grid)
     upload_source = inspect.getsource(surface._upload_panel)
     restore_source = inspect.getsource(surface._data_ops)
 
     # Four application-facing zones are instantiated exactly once by the real
     # workspace. Archetype changes composition, not ownership or event paths.
+    #
+    # The zones are composed by _workspace_zone_grid(), which _workspace()
+    # renders — so each zone helper is called exactly once from the grid, and
+    # _workspace() reaches the grid exactly once. Asserting against the grid
+    # keeps the invariant (one instantiation, no per-archetype copies) without
+    # locking the private helper that composes them.
     for call in (
         "_workspace_utility_zone()",
         "_workspace_composer_zone()",
         "_workspace_result_zone()",
         "_workspace_history_zone()",
     ):
-        assert workspace_source.count(call) == 1
+        assert zone_grid_source.count(call) == 1
+    assert workspace_source.count("_workspace_zone_grid()") == 1
 
     # There are exactly two upload widgets in the entire production surface:
     # the existing prompt-file input and the existing restore input. Archetype

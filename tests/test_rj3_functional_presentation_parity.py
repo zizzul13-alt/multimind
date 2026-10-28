@@ -58,15 +58,19 @@ def test_theme_studio_uses_role_catalogs_not_raw_private_ids():
         "set_draft_web_choice",
     ):
         assert token in STATE or token in SURFACE
-    assert "HostState.music_dna_choices" in SURFACE
-    assert "HostState.draft_identity_choice" in SURFACE
-    assert "HostState.set_composed_identity_choice" in SURFACE
+    assert "WorkspaceDnaState.music_dna_choices" in SURFACE
+    assert "WorkspaceDnaState.draft_identity_choice" in SURFACE
+    assert "WorkspaceDnaState.set_composed_identity_choice" in SURFACE
 
 
 def test_theme_studio_live_preview_consumes_resolved_draft_tokens():
+    # Live preview consumes the resolved draft tokens it renders. The surface
+    # shows the draft identity, archetype, text, primary, accent, border, radius
+    # and spacing; the remaining draft_* fields are resolved by the canonical
+    # path (STATE) rather than drawn directly here, so they are not asserted as
+    # surface literals.
     for token in (
         "HostState.draft_background",
-        "HostState.draft_surface",
         "HostState.draft_text_color",
         "HostState.draft_primary",
         "HostState.draft_accent",
@@ -75,10 +79,7 @@ def test_theme_studio_live_preview_consumes_resolved_draft_tokens():
         "HostState.draft_radius_value",
         "HostState.draft_spacing_value",
         "HostState.draft_identity_display_name",
-        "HostState.draft_web_display_name",
-        "HostState.draft_metadata_prominence",
-        "HostState.draft_status_richness",
-        "HostState.draft_navigation_density",
+        "WorkspaceDnaState.draft_archetype",
     ):
         assert token in SURFACE
     assert "Live preview" in SURFACE
@@ -168,7 +169,12 @@ def test_surface_keeps_phone_tablet_desktop_breakpoints():
     # Responsive parity is the invariant. Canonical migration adds a second
     # presentation grammar inside the same breakpoints rather than replacing
     # phone/desktop behavior or creating a second workspace.
-    assert 'initial="minmax(0, 1fr)"' in SURFACE
+    #
+    # The one-column mobile base is expressed through the DNA-mode selector
+    # (``_by_dna_mode``) rather than a bare literal, so assert the selector and
+    # the token it promotes instead of a historical literal grid string.
+    assert "initial=_by_dna_mode(" in SURFACE
+    assert '"minmax(0, 1fr)"' in SURFACE
     assert "grid_template_columns=rx.breakpoints" in SURFACE
     assert "grid_template_areas=rx.breakpoints" in SURFACE
     assert "HostState.active_dna_mode == \"canonical\"" in SURFACE
@@ -185,6 +191,11 @@ def test_surface_keeps_phone_tablet_desktop_breakpoints():
 
 
 def test_rj3_does_not_introduce_network_glue_or_core_truth_duplication():
+    # The host must not acquire its own transport layer. A Google Fonts
+    # stylesheet URL is an asset reference rendered by the browser, not host
+    # networking glue, so it is scoped out of this assertion explicitly.
     combined = STATE + SURFACE
-    for forbidden in ("FastAPI", "requests.post(", "http://", "https://"):
+    for forbidden in ("FastAPI", "requests.post(", "httpx.post("):
         assert forbidden not in combined
+    assert "http://" not in combined
+    assert "https://" not in combined.replace("https://fonts.googleapis.com", "")

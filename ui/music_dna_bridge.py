@@ -68,6 +68,12 @@ class MusicArchitecturePlan:
     border: str
     asset_url: str
     asset_credit: str
+    desktop_columns: str = ""
+    mobile_columns: str = ""
+    world_min_height: str = ""
+    shell_padding_bottom: str = ""
+    world_fixed: bool = False
+    blur: str = ""
 
 
 def _optional_import():
@@ -164,6 +170,12 @@ def realize_music_theme(track_id: str, archetype_id: str) -> Optional[MusicArchi
             border=str(plan.border),
             asset_url=str(plan.asset_url),
             asset_credit=str(plan.asset_credit),
+            desktop_columns=str(getattr(plan, "desktop_columns", "")),
+            mobile_columns=str(getattr(plan, "mobile_columns", "")),
+            world_min_height=str(getattr(plan, "world_min_height", "")),
+            shell_padding_bottom=str(getattr(plan, "shell_padding_bottom", "")),
+            world_fixed=bool(getattr(plan, "world_fixed", False)),
+            blur=str(getattr(plan, "blur", "")),
         )
     except Exception as exc:
         logger.warning("Optional MusicDNA realization failed safely: %s", exc)
