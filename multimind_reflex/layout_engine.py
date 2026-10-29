@@ -31,10 +31,15 @@ except Exception:  # pragma: no cover — DNA offline during bare tests
     get_track_theme = lambda _tid: None  # noqa: E731
 
 def _load_tokens() -> dict[str, Any]:
-    flat = Path("F:/hermes/cache/scratch/layout_tokens_flat.json")
-    if flat.exists():
-        return json.loads(flat.read_text(encoding="utf-8"))
-    # v1 raw format fallback
+    env = os.getenv("MULTIMIND_LAYOUT_TOKENS", "")
+    candidates = [
+        Path(env) if env else None,
+        Path("F:/hermes/cache/scratch/layout_tokens_flat.json"),
+        Path(__file__).resolve().parent.parent.parent.parent / "cache" / "scratch" / "layout_tokens_flat.json",
+    ]
+    for p in candidates:
+        if p and p.exists():
+            return json.loads(p.read_text(encoding="utf-8"))
     raw = Path("F:/hermes/cache/scratch/layout_tokens.json")
     if raw.exists():
         data = json.loads(raw.read_text(encoding="utf-8"))
@@ -47,8 +52,7 @@ def _load_tokens() -> dict[str, Any]:
                 "grid": (pf.get("grid_template_columns") or [""])[0],
                 "sections": pf.get("grid_containers", []),
                 "breakpoints": pf.get("breakpoints", []),
-                "header_variant": "fullscreen" if any(
-                    ".window" in str(c) for c in pf.get("grid_containers", [])) else "compact",
+                "header_variant": "fullscreen" if any(".window" in str(c) for c in pf.get("grid_containers", [])) else "compact",
             }
         return out
     return {}
