@@ -190,6 +190,8 @@ class HostState(rx.State):
     draft_utility_grouping: str = "standard"
     draft_hierarchy_contrast: str = "strong"
     draft_border_style: str = "solid"
+    draft_layout_grid: str = ""
+    draft_layout_breakpoints: str = ""
     draft_energy_emphasis: str = "balanced"
     draft_surface_treatment: str = "flat"
     draft_transition_speed: str = "deliberate"

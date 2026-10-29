@@ -23,6 +23,7 @@ import reflex as rx
 logger = logging.getLogger(__name__)
 
 from multimind_reflex.canonical_projection import project_reflex_tokens
+from multimind_reflex.layout_engine import compose_layout
 from multimind_reflex.state import (
     ARCHETYPES,
     HostState as LegacyHostState,
@@ -399,6 +400,16 @@ class WorkspaceDnaState(LegacyHostState):
         super()._copy_active_to_draft()
         self._copy_music_active_to_draft()
 
+    def _resolve_layout_grid(self, track_id: str) -> str:
+        """Project the per-track layout grid from Design-DNA tokens."""
+        spec = compose_layout(track_id, self.draft_archetype)
+        return spec.get("grid") or ""
+
+    def _resolve_layout_breakpoints(self, track_id: str) -> str:
+        spec = compose_layout(track_id, self.draft_archetype)
+        bps = spec.get("breakpoints") or []
+        return ",".join(bps)
+
     def _refresh_music_draft(self) -> bool:
         if not self.draft_identity_dna.startswith("music:"):
             return False
@@ -437,13 +448,15 @@ class WorkspaceDnaState(LegacyHostState):
         self.draft_energy_emphasis = plan.topology
         self.draft_surface_treatment = plan.surface
         self.draft_transition_speed = plan.mobile_strategy
+        self.draft_layout_grid = self._resolve_layout_grid(track_id)
+        self.draft_layout_breakpoints = self._resolve_layout_breakpoints(track_id)
         self.draft_music_topology = plan.topology
         self.draft_music_world = plan.world
         self.draft_music_signature = plan.signature
         self.draft_music_combination_id = plan.combination_id
         self.draft_music_layout_flow = plan.layout_flow
         self.draft_music_mobile_strategy = plan.mobile_strategy
-        self.draft_music_desktop_columns = plan.desktop_columns
+        self.draft_music_desktop_columns = self.draft_layout_grid or plan.desktop_columns
         self.draft_music_mobile_columns = plan.mobile_columns
         self.draft_music_world_min_height = plan.world_min_height
         self.draft_music_shell_padding_bottom = plan.shell_padding_bottom
