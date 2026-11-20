@@ -13,3 +13,4 @@ Pillow>=10.0.0
 bleach>=6.0.0
 libsql==0.1.11
 requests
+greenlet>=3.0.0
