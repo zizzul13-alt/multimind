@@ -517,3 +517,55 @@ pre {
     background-attachment: fixed;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   MusicDNA motion
+   Derived from the hand-built preview designs: a slow ambient drift, a short
+   glide for the world layer, and a light pass for the photo treatment.
+   All are disabled under prefers-reduced-motion above.
+   --------------------------------------------------------------------------- */
+
+@keyframes mm-music-drift {
+  from {
+    transform: translate3d(-1.5%, -1%, 0) scale(1.014);
+  }
+  to {
+    transform: translate3d(1.5%, 1%, 0) scale(1.02);
+  }
+}
+
+@keyframes mm-music-glide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -1.5%, 0);
+  }
+}
+
+@keyframes mm-music-light-pass {
+  0% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.38;
+  }
+  100% {
+    opacity: 0.22;
+  }
+}
+
+.mm-workspace .mm-music-photo {
+  animation: mm-music-drift 52s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.mm-workspace .mm-music-world {
+  animation: mm-music-glide 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.mm-workspace .mm-music-light {
+  animation: mm-music-light-pass 7.4s linear infinite;
+  will-change: opacity;
+}

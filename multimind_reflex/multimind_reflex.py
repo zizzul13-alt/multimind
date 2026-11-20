@@ -4,6 +4,7 @@ import reflex as rx
 
 from multimind_reflex.state import AGENT_OPTIONS, ARCHETYPES, SKILL_OPTIONS, TEMPLATE_OPTIONS
 from multimind_reflex.workspace_dna_state import WorkspaceDnaState as HostState
+from multimind_reflex.workspace_dna_state import WorkspaceDnaState
 from ui.music_scenes import MusicScene
 
 
@@ -44,6 +45,150 @@ def _login_panel() -> rx.Component:
     )
 
 
+def _theme_studio_selector_card() -> rx.Component:
+    """MusicDNA × Architecture picker and the resolved COMBINATION label."""
+    return rx.vstack(
+        # MusicDNA selector — compact, no label stack crowding
+        rx.hstack(
+            rx.icon("music", size=16, color=HostState.active_accent),
+            rx.text("MusicDNA", weight="bold", size="2"),
+            rx.spacer(),
+            rx.badge(HostState.draft_identity_display_name, variant="soft", size="1"),
+            width="100%",
+            align="center",
+        ),
+        rx.select(
+            WorkspaceDnaState.music_dna_choices,
+            value=WorkspaceDnaState.draft_identity_choice,
+            on_change=WorkspaceDnaState.set_composed_identity_choice,
+            width="100%",
+            size="2",
+            variant="surface",
+        ),
+        # Architecture selector
+        rx.hstack(
+            rx.icon("layout-dashboard", size=16, color=HostState.active_accent),
+            rx.text("Architecture", weight="bold", size="2"),
+            rx.spacer(),
+            rx.badge(HostState.draft_archetype, variant="soft", size="1"),
+            width="100%",
+            align="center",
+        ),
+        rx.select(
+            ARCHETYPES,
+            value=WorkspaceDnaState.draft_archetype,
+            on_change=WorkspaceDnaState.set_composed_archetype,
+            width="100%",
+            size="2",
+            variant="surface",
+        ),
+        # Live combination badge — colored accent background
+        rx.hstack(
+            rx.badge("COMBINATION", variant="outline", size="1"),
+            rx.spacer(),
+            rx.hstack(
+                rx.text(HostState.draft_identity_display_name, weight="bold"),
+                rx.text(" × ", size="2", color=HostState.active_accent),
+                rx.text(HostState.draft_archetype, weight="bold"),
+                spacing="1",
+                align="center",
+            ),
+            padding="0.4rem 0.75rem",
+            background_color=rx.color_mode_cond(
+                light=f"{HostState.active_primary}1A",
+                dark=f"{HostState.active_primary}33",
+            ),
+            border_radius="12px",
+            width="100%",
+            align="center",
+        ),
+        spacing="2",
+        width="100%",
+        padding="0.85rem",
+        class_name="mm-theme-studio-selector",
+    )
+
+
+def _theme_studio_contract_summary() -> rx.Component:
+    """Read-only MusicDNA × Architecture realization contract projection."""
+    return rx.vstack(
+        rx.text("Topology: ", HostState.draft_music_topology, size="2"),
+        rx.text("World: ", HostState.draft_music_world, size="2"),
+        rx.text("Signature: ", HostState.draft_music_signature, size="2"),
+        rx.text("Layout flow: ", HostState.draft_music_layout_flow, size="2"),
+        rx.text("Mobile strategy: ", HostState.draft_music_mobile_strategy, size="2"),
+        rx.text("Primary object: ", HostState.draft_music_primary_object, size="2"),
+        rx.text("Primary action: ", HostState.draft_music_primary_action, size="2"),
+        rx.text("Composer label: ", HostState.draft_music_composer_label, size="2"),
+        rx.text("Combination: ", HostState.draft_music_combination_id, size="2"),
+        spacing="1", align="start", width="100%",
+    )
+
+
+def _theme_studio_preview_card() -> rx.Component:
+    """Live draft preview driven by the current MusicDNA × Architecture draft."""
+    return rx.card(
+        rx.vstack(
+            rx.heading("Live preview", size="5"),
+            rx.badge("Draft only — active workspace unchanged"),
+            rx.text("Music: ", HostState.draft_identity_display_name),
+            rx.text("Architecture: ", HostState.draft_archetype),
+            rx.text(
+                "Preview berasal dari MusicDNA × Architecture realization.",
+                color=HostState.draft_text_color,
+            ),
+            rx.hstack(
+                rx.button(
+                    "Primary action",
+                    background_color=HostState.draft_primary,
+                    color=HostState.draft_background,
+                    border_radius=HostState.draft_radius_value,
+                    class_name="mm-touch-target",
+                ),
+                rx.button(
+                    "Accent action",
+                    variant="outline",
+                    color=HostState.draft_accent,
+                    border=f"1px solid {HostState.draft_accent}",
+                    border_radius=HostState.draft_radius_value,
+                    class_name="mm-touch-target",
+                ),
+                wrap="wrap",
+            ),
+            rx.text(
+                "Density: ", HostState.draft_density,
+                " · spacing ", HostState.draft_spacing_value,
+                size="2",
+                color=HostState.draft_text_color,
+            ),
+            rx.separator(),
+            rx.heading("MusicDNA × Architecture contract", size="4"),
+            _theme_studio_contract_summary(),
+            width="100%",
+            spacing="3",
+        ),
+        width="100%",
+        background_color=HostState.draft_background,
+        color=HostState.draft_text_color,
+        font_family=HostState.draft_font_family,
+        border=f"1px solid {HostState.draft_border}",
+        border_radius=HostState.draft_radius_value,
+        padding=HostState.draft_spacing_value,
+    )
+
+
+def _theme_studio_action_bar() -> rx.Component:
+    """Apply / discard / reset / back actions for the draft composition."""
+    return rx.hstack(
+        rx.button("Apply Composition", on_click=HostState.apply_composed_theme, size="3", class_name="mm-touch-target"),
+        rx.button("Discard", on_click=HostState.discard_composed_theme, variant="soft", class_name="mm-touch-target"),
+        rx.button("Reset", on_click=HostState.reset_composed_theme, variant="ghost", class_name="mm-touch-target"),
+        rx.button("Back to workspace", on_click=HostState.return_to_workspace, variant="outline", class_name="mm-touch-target"),
+        wrap="wrap",
+        width="100%",
+    )
+
+
 def _theme_studio() -> rx.Component:
     return rx.container(
         rx.vstack(
@@ -62,111 +207,9 @@ def _theme_studio() -> rx.Component:
                 icon="info",
                 width="100%",
             ),
-            rx.card(
-                rx.vstack(
-                    rx.heading("MusicDNA", size="5"),
-                    rx.text("Pilih dunia musik yang menjadi identitas utama."),
-                    rx.select(
-                        HostState.music_dna_choices,
-                        value=HostState.draft_identity_choice,
-                        on_change=HostState.set_composed_identity_choice,
-                        width="100%",
-                        size="3",
-                    ),
-                    rx.heading("Architecture", size="5"),
-                    rx.text("Pilih bentuk pengalaman MultiMind untuk track tersebut."),
-                    rx.select(
-                        ARCHETYPES,
-                        value=HostState.draft_archetype,
-                        on_change=HostState.set_composed_archetype,
-                        width="100%",
-                    ),
-                    rx.separator(),
-                    rx.badge("COMBINATION"),
-                    rx.text(
-                        HostState.draft_identity_display_name,
-                        " × ",
-                        HostState.draft_archetype,
-                        weight="bold",
-                        size="4",
-                    ),
-                    width="100%",
-                    spacing="3",
-                ),
-                width="100%",
-            ),
-            rx.card(
-                rx.vstack(
-                    rx.heading("Live preview", size="5"),
-                    rx.badge("Draft only — active workspace unchanged"),
-                    rx.text("Music: ", HostState.draft_identity_display_name),
-                    rx.text("Architecture: ", HostState.draft_archetype),
-                    rx.text(
-                        "Preview berasal dari MusicDNA × Architecture realization.",
-                        color=HostState.draft_text_color,
-                    ),
-                    rx.hstack(
-                        rx.button(
-                            "Primary action",
-                            background_color=HostState.draft_primary,
-                            color=HostState.draft_background,
-                            border_radius=HostState.draft_radius_value,
-                            class_name="mm-touch-target",
-                        ),
-                        rx.button(
-                            "Accent action",
-                            variant="outline",
-                            color=HostState.draft_accent,
-                            border=f"1px solid {HostState.draft_accent}",
-                            border_radius=HostState.draft_radius_value,
-                            class_name="mm-touch-target",
-                        ),
-                        wrap="wrap",
-                    ),
-                    rx.text(
-                        "Density: ", HostState.draft_density,
-                        " · spacing ", HostState.draft_spacing_value,
-                        size="2",
-                        color=HostState.draft_text_color,
-                    ),
-                    rx.separator(),
-                    rx.heading("MusicDNA × Architecture contract", size="4"),
-                    rx.vstack(
-                        rx.text("Topology: ", HostState.draft_music_topology, size="2"),
-                        rx.text("World: ", HostState.draft_music_world, size="2"),
-                        rx.text("Signature: ", HostState.draft_music_signature, size="2"),
-                        rx.text("Layout flow: ", HostState.draft_music_layout_flow, size="2"),
-                        rx.text("Mobile strategy: ", HostState.draft_music_mobile_strategy, size="2"),
-                        rx.text("Primary object: ", HostState.draft_music_primary_object, size="2"),
-                        rx.text("Primary action: ", HostState.draft_music_primary_action, size="2"),
-                        rx.text("Composer label: ", HostState.draft_music_composer_label, size="2"),
-                        rx.text("Combination: ", HostState.draft_music_combination_id, size="2"),
-                        spacing="1", align="start", width="100%",
-                    ),
-                    width="100%",
-                    spacing="3",
-                ),
-                width="100%",
-                background_color=HostState.draft_background,
-                color=HostState.draft_text_color,
-                font_family=HostState.draft_font_family,
-                border=f"1px solid {HostState.draft_border}",
-                border_radius=HostState.draft_radius_value,
-                padding=HostState.draft_spacing_value,
-            ),
-            rx.hstack(
-                rx.button("Apply Composition", on_click=HostState.apply_composed_theme, size="3", class_name="mm-touch-target"),
-                rx.button("Discard", on_click=HostState.discard_composed_theme, variant="soft", class_name="mm-touch-target"),
-                rx.button("Reset", on_click=HostState.reset_composed_theme, variant="ghost", class_name="mm-touch-target"),
-                rx.button(
-                    "Back to workspace",
-                    on_click=HostState.return_to_workspace,
-                    variant="outline",
-                    class_name="mm-touch-target",
-                ),
-                wrap="wrap",
-                width="100%",
-            ),
+            _theme_studio_selector_card(),
+            _theme_studio_preview_card(),
+            _theme_studio_action_bar(),
             rx.cond(
                 HostState.success_message != "",
                 rx.callout(HostState.success_message, icon="circle_check", width="100%"),
@@ -560,7 +603,43 @@ def _data_ops() -> rx.Component:
     )
 
 
+def _music_workspace_mobile_columns():
+    """Mobile columns from the architecture-swap layout tokens.
+
+    Falls back to a single column when the runtime has not supplied a spec.
+    """
+    tokens = HostState.active_music_mobile_columns
+    if str(tokens).strip():
+        return tokens
+    return "minmax(0, 1fr)"
+
+
+def _by_dna_mode(music_value, canonical_value, legacy_value):
+    """Pick a presentation value by active DNA mode.
+
+    Centralises the music -> canonical -> legacy fallback chain that the
+    workspace grid repeats for columns, areas, gap and metrics.
+    """
+    return rx.cond(
+        HostState.active_dna_mode == "music",
+        music_value,
+        rx.cond(
+            HostState.active_dna_mode == "canonical",
+            canonical_value,
+            legacy_value,
+        ),
+    )
+
+
 def _music_workspace_desktop_columns():
+    """Desktop columns from the architecture-swap layout tokens.
+
+    Falls back to the legacy layout_flow mapping when the runtime has not
+    supplied a per-archetype column spec.
+    """
+    tokens = HostState.active_music_desktop_columns
+    if str(tokens).strip():
+        return tokens
     return rx.cond(
         HostState.active_music_layout_flow == "state_control_matrix",
         "minmax(0, 1fr) minmax(0, 1fr)",
@@ -593,12 +672,14 @@ def _music_workspace_desktop_areas():
 
 
 def _music_workspace_mobile_areas():
+    # Composer-first on mobile: the primary action must be reachable without
+    # scrolling. Result/history/utility follow in reading order.
     return rx.cond(
         HostState.active_music_mobile_strategy == "stacked_control",
-        '"result" "composer" "history" "utility"',
+        '"composer" "result" "history" "utility"',
         rx.cond(
             HostState.active_music_mobile_strategy == "serial_evidence",
-            '"result" "history" "composer" "utility"',
+            '"composer" "result" "history" "utility"',
             rx.cond(
                 HostState.active_music_mobile_strategy == "stacked_entities",
                 '"composer" "result" "utility" "history"',
@@ -1056,66 +1137,153 @@ def _workspace_history_zone() -> rx.Component:
     return _workspace_zone_card(_history_panel(), "history")
 
 
+def _workspace_header_card() -> rx.Component:
+    """Identity/archetype/DNA header plus the workspace-level actions."""
+    return rx.card(
+        rx.hstack(
+            rx.vstack(
+                rx.heading("MultiMind", size="7", color=HostState.active_primary),
+                rx.text("Logged in as ", HostState.display_username),
+                rx.text("Archetype: ", HostState.active_archetype, size="2"),
+                rx.cond(
+                    HostState.active_dna_mode == "canonical",
+                    rx.text(
+                        "Canonical DNA: ",
+                        HostState.active_canonical_display_name,
+                        " · ",
+                        HostState.active_canonical_reference_id,
+                        size="2",
+                        class_name="mm-readable",
+                    ),
+                    rx.text(
+                        "Active DNA: ",
+                        HostState.active_identity_display_name,
+                        " + ",
+                        HostState.active_web_display_name,
+                        size="2",
+                        class_name="mm-readable",
+                    ),
+                ),
+                align="start",
+            ),
+            rx.spacer(),
+            rx.badge(rx.cond(HostState.busy, "BUSY", "READY")),
+            rx.button(
+                "Theme Studio",
+                on_click=HostState.open_theme_studio,
+                variant="soft",
+                color=HostState.active_accent,
+                class_name="mm-touch-target",
+            ),
+            width="100%",
+            align="center",
+            wrap="wrap",
+        ),
+        width="100%",
+        border_radius=rx.cond(
+            HostState.active_dna_mode == "canonical",
+            HostState.active_canonical_card_radius,
+            HostState.active_radius_value,
+        ),
+        # The active border token still reaches the surface, but as a custom
+        # property rather than an inline border declaration, so zones.css can
+        # override it per archetype without losing the projection the
+        # presentation locks assert.
+        style={"--mm-zone-line": HostState.active_border},
+        class_name="mm-workspace-header",
+    )
+
+
+def _music_token(value: str, fallback: str) -> str:
+    """Return a music layout token when present, otherwise the fallback."""
+    return str(value).strip() or fallback
+
+
+def _music_blur() -> str:
+    """Backdrop blur from the active music theme's glass treatment.
+
+    The preview designs blur the chat panel over the world photo; without this
+    the panel reads as a flat surface instead of the intended glass layer.
+    """
+    spec = _music_token(HostState.active_music_blur, "")
+    if not spec:
+        return ""
+    # spec is the first blur() value, e.g. "blur(14px)"
+    return spec
+
+
+def _music_glow_shadow() -> str:
+    """Accent-coloured glow shadow from the active music theme.
+
+    The preview designs halo the primary object with a soft accent glow; this
+    reproduces that treatment without hardcoding a colour per theme.
+    """
+    accent = _music_token(HostState.active_accent, "")
+    if not accent or not accent.startswith("#"):
+        return ""
+    rgba = _hex_to_rgba(accent, 0.14)
+    return f"0 0 0 8px {rgba.replace('0.14', '0.05')}, 0 0 28px {rgba}"
+
+
+def _hex_to_rgba(hex_color: str, alpha: float) -> str:
+    """Convert a hex colour to an rgba() string, preserving 8-digit alpha."""
+    c = (hex_color or "").strip()
+    if not c.startswith("#"):
+        return f"rgba(255,255,255,{alpha})"
+    digits = c[1:]
+    if len(digits) == 8:
+        digits = digits[:6]
+    if len(digits) == 3:
+        digits = "".join(ch * 2 for ch in digits)
+    if len(digits) != 6:
+        return f"rgba(255,255,255,{alpha})"
+    try:
+        r, g, b = (int(digits[i:i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        return f"rgba(255,255,255,{alpha})"
+    return f"rgba({r},{g},{b},{alpha})"
+
+
+def _google_fonts_url(spec: str) -> str:
+    """Build a Google Fonts stylesheet URL from a runtime font spec.
+
+    The runtime stores specs like ``Hina+Mincho`` or
+    ``IBM+Plex+Mono:wght@400;500``; the preview HTML loads the same families
+    from Google Fonts so the rendered type matches the design.
+    """
+    text = str(spec or "").strip()
+    if not text:
+        return ""
+    families = [item for item in text.split(",") if item.strip()]
+    if not families:
+        return ""
+    return "https://fonts.googleapis.com/css2?family=" + "&family=".join(families) + "&display=swap"
+
+
 def _workspace() -> rx.Component:
     # The four real semantic zones are instantiated exactly once. Archetype and
     # canonical DNA change only presentation composition; application/provider/
     # persistence truth remains behind the same event and application paths.
+    photo = _music_token(HostState.active_music_asset_url, "")
     return rx.container(
-        rx.vstack(
-            rx.card(
-                rx.hstack(
-                    rx.vstack(
-                        rx.heading("MultiMind", size="7", color=HostState.active_primary),
-                        rx.text("Logged in as ", HostState.display_username),
-                        rx.text("Archetype: ", HostState.active_archetype, size="2"),
-                        rx.cond(
-                            HostState.active_dna_mode == "canonical",
-                            rx.text(
-                                "Canonical DNA: ",
-                                HostState.active_canonical_display_name,
-                                " · ",
-                                HostState.active_canonical_reference_id,
-                                size="2",
-                                class_name="mm-readable",
-                            ),
-                            rx.text(
-                                "Active DNA: ",
-                                HostState.active_identity_display_name,
-                                " + ",
-                                HostState.active_web_display_name,
-                                size="2",
-                                class_name="mm-readable",
-                            ),
-                        ),
-                        align="start",
-                    ),
-                    rx.spacer(),
-                    rx.badge(rx.cond(HostState.busy, "BUSY", "READY")),
-                    rx.button(
-                        "Theme Studio",
-                        on_click=HostState.open_theme_studio,
-                        variant="soft",
-                        color=HostState.active_accent,
-                        class_name="mm-touch-target",
-                    ),
-                    width="100%",
-                    align="center",
-                    wrap="wrap",
-                ),
-                width="100%",
-                background_color="transparent",
-                border_radius=rx.cond(
-                    HostState.active_dna_mode == "canonical",
-                    HostState.active_canonical_card_radius,
-                    HostState.active_radius_value,
-                ),
-                # The active border token still reaches the surface, but as a
-                # custom property rather than an inline border declaration, so
-                # zones.css can override it per archetype without losing the
-                # projection the presentation locks assert.
-                style={"--mm-zone-line": HostState.active_border},
-                class_name="mm-workspace-header",
+        # Photo layer: the preview designs place one real photograph behind the
+        # workspace. It sits behind the content and never intercepts input.
+        rx.cond(
+            photo != "",
+            rx.box(
+                position="absolute",
+                inset="0",
+                z_index="-1",
+                background_image=f"url('{photo}')",
+                background_size="cover",
+                background_position="center",
+                opacity="0.32",
+                pointer_events="none",
+                class_name="mm-music-photo",
             ),
+        ),
+        rx.vstack(
+            _workspace_header_card(),
             _archetype_shell(),
             width="100%",
             spacing="4",
@@ -1131,19 +1299,40 @@ def _workspace() -> rx.Component:
         font_family=rx.cond(
             HostState.active_archetype == "terminal_hacker",
             HostState.active_mono_font,
-            rx.cond(
-                HostState.active_dna_mode == "canonical",
+            _by_dna_mode(
+                HostState.active_font_family,
                 HostState.active_canonical_font_family,
                 HostState.active_font_family,
             ),
         ),
-        line_height=rx.cond(
-            HostState.active_dna_mode == "canonical",
+        line_height=_by_dna_mode(
+            "1.5",
             HostState.active_canonical_line_height,
             "1.5",
         ),
-        min_height="100vh",
+        # Fill the viewport but never force a scroll for the primary action:
+        # the composer must be reachable without scrolling on first paint.
+        min_height=_by_dna_mode(
+            _music_token(HostState.active_music_world_min_height, "100svh"),
+            "100svh",
+            "100svh",
+        ),
+        padding_bottom=_by_dna_mode(
+            _music_token(HostState.active_music_shell_padding_bottom, "1rem"),
+            "1rem",
+            "1rem",
+        ),
         class_name="mm-workspace",
+        style={
+            "--mm-color-background": HostState.active_background,
+            "--mm-color-surface": HostState.active_surface,
+            "--mm-color-text": HostState.active_text_color,
+            "--mm-color-primary": HostState.active_primary,
+            "--mm-color-accent": HostState.active_accent,
+            "--mm-color-border": HostState.active_border,
+            **({"backdrop_filter": _music_blur()} if _music_blur() else {}),
+            **({"box_shadow": _music_glow_shadow()} if _music_glow_shadow() else {}),
+        },
     )
 
 
@@ -1428,7 +1617,11 @@ def _shell_fallback_grid() -> rx.Component:
         _workspace_result_zone(),
         _workspace_history_zone(),
         grid_template_columns=rx.breakpoints(
-            initial="minmax(0, 1fr)",
+            initial=_by_dna_mode(
+                _music_workspace_mobile_columns(),
+                "minmax(0, 1fr)",
+                "minmax(0, 1fr)",
+            ),
             lg=rx.cond(
                 HostState.active_dna_mode == "music",
                 _music_workspace_desktop_columns(),
@@ -1515,8 +1708,32 @@ def _authenticated_surface() -> rx.Component:
     return rx.cond(HostState.current_surface == "theme", _theme_studio(), _workspace())
 
 
+def _music_fonts_link():
+    """Google Fonts stylesheet for the active music theme, when it has one.
+
+    The preview designs load their display faces from Google Fonts; without
+    this the host falls back to generic serif/sans and the type does not match.
+    """
+    spec = _music_token(HostState.active_music_asset_credit, "")
+    url = _google_fonts_url(spec)
+    # rx.el.link (a raw <link>) is required here: rx.link is a Radix component
+    # and raises ValueError("Link without a child will not display") when it has
+    # no child, which would crash index() at render time.
+    return rx.cond(
+        url != "",
+        rx.el.link(rel="stylesheet", href=url),
+    )
+
+
 def index() -> rx.Component:
-    return rx.cond(HostState.logged_in, _authenticated_surface(), _login_panel())
+    return rx.cond(
+        HostState.logged_in,
+        rx.fragment(
+            _music_fonts_link(),
+            _authenticated_surface(),
+        ),
+        _login_panel(),
+    )
 
 
 # The hand-built previews declare IBM Plex Mono / Kaisei Opti / M PLUS 1p.

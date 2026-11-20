@@ -39,6 +39,9 @@ def _assert_neutral_fallback():
     assert bridge.dna_available() is False
     assert bridge.ensure_dna_registered() is False
     assert bridge.resolve_source_dna("anything") is None
+    # The MusicDNA catalog is reached through ui.music_dna_bridge, which carries
+    # its own import_module binding. With the private runtime absent that path
+    # also degrades to empty, so the whole picker catalog is empty here.
     assert bridge.list_theme_studio_dna_options("identity") == ()
     assert bridge.list_theme_studio_dna_options("web_information") == ()
     assert bridge.resolve_theme_studio_composition("identity", None, "chat_first") is None
@@ -58,13 +61,29 @@ def _assert_neutral_fallback():
     assert bridge.theme_studio_available() is False
 
 
+def _block_private_runtime(monkeypatch, importer):
+    """Apply *importer* to every module that can reach the private runtime.
+
+    The bridge's own monkeypatch is not enough: ``ui.music_dna_bridge`` holds a
+    separate ``import_module`` binding, so without patching it the real
+    editable-installed design_dna leaks in and the "private package absent"
+    contract these tests describe cannot be exercised.
+    """
+    monkeypatch.setattr(bridge, "import_module", importer)
+    try:
+        import ui.music_dna_bridge as music_bridge
+    except Exception:  # pragma: no cover - the module is always present here
+        return
+    monkeypatch.setattr(music_bridge, "import_module", importer)
+
+
 def test_missing_private_dna_is_a_valid_boring_fallback(monkeypatch):
-    monkeypatch.setattr(bridge, "import_module", _missing_private_package)
+    _block_private_runtime(monkeypatch, _missing_private_package)
     _assert_neutral_fallback()
 
 
 def test_broken_or_incompatible_private_import_is_a_valid_boring_fallback(monkeypatch):
-    monkeypatch.setattr(bridge, "import_module", _broken_private_package)
+    _block_private_runtime(monkeypatch, _broken_private_package)
     _assert_neutral_fallback()
 
 
@@ -86,6 +105,7 @@ def test_private_runtime_operation_failures_do_not_escape_bridge(monkeypatch):
         raise ModuleNotFoundError(name)
 
     monkeypatch.setattr(bridge, "import_module", importer)
+    _block_private_runtime(monkeypatch, importer)
     assert bridge.dna_available() is True
     assert bridge.ensure_dna_registered() is False
     assert bridge.list_theme_studio_dna_options("identity") == ()
@@ -152,6 +172,14 @@ def test_theme_studio_catalog_and_projection_cross_bridge_as_host_safe_values(mo
         raise ModuleNotFoundError(name)
 
     monkeypatch.setattr(bridge, "import_module", importer)
+    # The MusicDNA catalog is a separate import path; the host-safe values the
+    # assertion below checks come from the legacy/theme-studio modules, so the
+    # music bridge must not contribute its editable-installed catalog here.
+    try:
+        import ui.music_dna_bridge as music_bridge
+        monkeypatch.setattr(music_bridge, "import_module", _missing_private_package)
+    except Exception:  # pragma: no cover
+        pass
 
     identity_options = bridge.list_theme_studio_dna_options("identity")
     assert [item.id for item in identity_options] == ["japan-print-ink", "rinpa-decorative-spatial"]

@@ -12,6 +12,7 @@ config = rx.Config(
     app_module_import="multimind_reflex.mobile_entry",
     api_url=os.getenv("MULTIMIND_API_URL", "http://localhost:8000"),
     deploy_url=os.getenv("MULTIMIND_DEPLOY_URL", "http://localhost:3000"),
+    backend_port=int(os.getenv("MULTIMIND_BACKEND_PORT", "8000")),
     cors_allowed_origins=_csv_env(
         "MULTIMIND_CORS_ALLOWED_ORIGINS",
         "http://localhost:3000",

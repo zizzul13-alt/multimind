@@ -1,0 +1,3 @@
+# Isolated experiment only. Deliberately does not modify the repository root
+# requirements or establish a production pinning policy.
+streamlit>=1.37,<2

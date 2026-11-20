@@ -23,6 +23,7 @@ import reflex as rx
 logger = logging.getLogger(__name__)
 
 from multimind_reflex.canonical_projection import project_reflex_tokens
+from multimind_reflex.layout_engine import compose_layout
 from multimind_reflex.state import (
     ARCHETYPES,
     HostState as LegacyHostState,
@@ -115,6 +116,19 @@ class WorkspaceDnaState(LegacyHostState):
     canonical_query: str = ""
     music_dna_choices: list[str] = _music_dna_choice_snapshots()
 
+    # Seed the identity selector to the first MusicDNA track so the picker is
+    # populated on first render. Without this the select renders empty because
+    # draft_identity_choice stays neutral (which matches no music option) until
+    # the login event runs _load_theme_studio_catalog().
+    draft_identity_choice: str = (
+        _music_dna_choice_snapshots()[0] if _music_dna_choice_snapshots() else _NEUTRAL_IDENTITY_CHOICE
+    )
+    draft_identity_dna: str = (
+        _choice_id(draft_identity_choice)
+        if draft_identity_choice != _NEUTRAL_IDENTITY_CHOICE
+        else ""
+    )
+
     draft_dna_mode: str = "legacy"
     active_dna_mode: str = "legacy"
 
@@ -156,6 +170,11 @@ class WorkspaceDnaState(LegacyHostState):
     draft_music_combination_id: str = ""
     draft_music_layout_flow: str = ""
     draft_music_mobile_strategy: str = ""
+    draft_music_desktop_columns: str = ""
+    draft_music_mobile_columns: str = ""
+    draft_music_world_min_height: str = ""
+    draft_music_shell_padding_bottom: str = ""
+    draft_music_blur: str = ""
     draft_music_primary_object: str = ""
     draft_music_primary_action: str = ""
     draft_music_composer_label: str = ""
@@ -173,6 +192,11 @@ class WorkspaceDnaState(LegacyHostState):
     active_music_combination_id: str = ""
     active_music_layout_flow: str = ""
     active_music_mobile_strategy: str = ""
+    active_music_desktop_columns: str = ""
+    active_music_mobile_columns: str = ""
+    active_music_world_min_height: str = ""
+    active_music_shell_padding_bottom: str = ""
+    active_music_blur: str = ""
     active_music_primary_object: str = ""
     active_music_primary_action: str = ""
     active_music_composer_label: str = ""
@@ -377,6 +401,8 @@ class WorkspaceDnaState(LegacyHostState):
         for name in (
             "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
             "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
+            "desktop_columns", "mobile_columns", "world_min_height", "shell_padding_bottom",
+            "blur",
         ):
             setattr(self, f"active_music_{name}", "")
 
@@ -389,6 +415,8 @@ class WorkspaceDnaState(LegacyHostState):
             # rendered an empty title, no palette and no material, because the
             # values only ever reached draft_* and never active_*.
             "display_name", "artist", "scenes", "scene_key", "palette", "material",
+            "desktop_columns", "mobile_columns", "world_min_height", "shell_padding_bottom",
+            "blur",
         ):
             setattr(self, f"active_music_{name}", getattr(self, f"draft_music_{name}"))
         self._resolve_active_scene(self.draft_music_scene_key)
@@ -440,6 +468,8 @@ class WorkspaceDnaState(LegacyHostState):
         for name in (
             "topology", "world", "signature", "combination_id", "layout_flow", "mobile_strategy",
             "primary_object", "primary_action", "composer_label", "asset_url", "asset_credit",
+            "desktop_columns", "mobile_columns", "world_min_height", "shell_padding_bottom",
+            "blur",
         ):
             setattr(self, f"draft_music_{name}", getattr(self, f"active_music_{name}"))
 
@@ -450,6 +480,16 @@ class WorkspaceDnaState(LegacyHostState):
     def _copy_active_to_draft(self):
         super()._copy_active_to_draft()
         self._copy_music_active_to_draft()
+
+    def _resolve_layout_grid(self, track_id: str) -> str:
+        """Project the per-track layout grid from Design-DNA tokens."""
+        spec = compose_layout(track_id, self.draft_archetype)
+        return spec.get("grid") or ""
+
+    def _resolve_layout_breakpoints(self, track_id: str) -> str:
+        spec = compose_layout(track_id, self.draft_archetype)
+        bps = spec.get("breakpoints") or []
+        return ",".join(bps)
 
     def _refresh_music_draft(self) -> bool:
         if not self.draft_identity_dna.startswith("music:"):
@@ -489,6 +529,8 @@ class WorkspaceDnaState(LegacyHostState):
         self.draft_energy_emphasis = plan.topology
         self.draft_surface_treatment = plan.surface
         self.draft_transition_speed = plan.mobile_strategy
+        self.draft_layout_grid = self._resolve_layout_grid(track_id)
+        self.draft_layout_breakpoints = self._resolve_layout_breakpoints(track_id)
         self.draft_music_topology = plan.topology
         self.draft_music_display_name = plan.display_name
         self.draft_music_artist = plan.artist
@@ -502,6 +544,11 @@ class WorkspaceDnaState(LegacyHostState):
         self.draft_music_combination_id = plan.combination_id
         self.draft_music_layout_flow = plan.layout_flow
         self.draft_music_mobile_strategy = plan.mobile_strategy
+        self.draft_music_desktop_columns = self.draft_layout_grid or plan.desktop_columns
+        self.draft_music_mobile_columns = plan.mobile_columns
+        self.draft_music_world_min_height = plan.world_min_height
+        self.draft_music_shell_padding_bottom = plan.shell_padding_bottom
+        self.draft_music_blur = plan.blur
         self.draft_music_primary_object = plan.primary_object
         self.draft_music_primary_action = plan.primary_action
         self.draft_music_composer_label = plan.composer_label
@@ -584,12 +631,13 @@ class WorkspaceDnaState(LegacyHostState):
                 self.draft_archetype = previous
                 self._refresh_canonical_draft()
             return
-
-        # A MusicDNA track makes this a music composition, not a legacy one.
-        # Without this branch the archetype change ran the legacy refresh, which
-        # never touches draft_dna_mode -- so the world rail's palette, material
-        # texture and scene rows stayed inactive even though a track was chosen.
-        if self.draft_identity_dna.startswith("music:"):
+        # Music mode must re-realize from the music runtime; the legacy
+        # composition path would overwrite the per-track theme with the older
+        # role-based palette. A "music:" identity also counts when the mode flag
+        # has not been set yet, because the legacy refresh never touches it.
+        if (
+            self.draft_dna_mode == "music" and self.draft_identity_dna
+        ) or self.draft_identity_dna.startswith("music:"):
             if not self._refresh_music_draft():
                 self.draft_archetype = previous
                 self._refresh_music_draft()

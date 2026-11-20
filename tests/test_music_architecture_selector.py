@@ -9,9 +9,9 @@ def test_entry_selector_uses_musicdna_catalog_and_architecture_axis():
     assert "music_dna_choices" in STATE
     assert "startswith(\"music:\")" in STATE
     assert "ARCHETYPES" in SURFACE
-    assert "HostState.music_dna_choices" in SURFACE
-    assert "HostState.set_composed_identity_choice" in SURFACE
-    assert "HostState.set_composed_archetype" in SURFACE
+    assert "WorkspaceDnaState.music_dna_choices" in SURFACE
+    assert "WorkspaceDnaState.set_composed_identity_choice" in SURFACE
+    assert "WorkspaceDnaState.set_composed_archetype" in SURFACE
 
 
 def test_music_architecture_remains_private_runtime_owned():

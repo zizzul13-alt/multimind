@@ -154,8 +154,12 @@ class HostState(rx.State):
 
     # Theme Studio presentation state. Draft never changes application truth.
     theme_studio_open: bool = True
-    dna_runtime_available: bool = False
-    private_theme_studio_available: bool = False
+    # Seed DNA availability at class definition so a page refresh (session
+    # restored from storage, without re-running the login event) still knows the
+    # optional private runtime is present. Without this the banner reports
+    # "unavailable" until the user logs in again.
+    dna_runtime_available: bool = dna_available()
+    private_theme_studio_available: bool = theme_studio_available()
     identity_dna_choices: list[str] = [_NEUTRAL_IDENTITY_CHOICE]
     web_dna_choices: list[str] = [_NONE_WEB_CHOICE]
     draft_identity_choice: str = _NEUTRAL_IDENTITY_CHOICE
@@ -186,6 +190,8 @@ class HostState(rx.State):
     draft_utility_grouping: str = "standard"
     draft_hierarchy_contrast: str = "strong"
     draft_border_style: str = "solid"
+    draft_layout_grid: str = ""
+    draft_layout_breakpoints: str = ""
     draft_energy_emphasis: str = "balanced"
     draft_surface_treatment: str = "flat"
     draft_transition_speed: str = "deliberate"

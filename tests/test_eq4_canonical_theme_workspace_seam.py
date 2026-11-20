@@ -29,11 +29,11 @@ def test_canonical_catalog_is_consumed_through_optional_public_bridge():
 
 def test_theme_studio_exposes_musicdna_and_architecture_selector():
     for token in (
-        "HostState.music_dna_choices",
-        "HostState.draft_identity_choice",
-        "HostState.set_composed_identity_choice",
+        "WorkspaceDnaState.music_dna_choices",
+        "WorkspaceDnaState.draft_identity_choice",
+        "WorkspaceDnaState.set_composed_identity_choice",
         "ARCHETYPES",
-        "HostState.set_composed_archetype",
+        "WorkspaceDnaState.set_composed_archetype",
         "MusicDNA × Architecture",
     ):
         assert token in SURFACE

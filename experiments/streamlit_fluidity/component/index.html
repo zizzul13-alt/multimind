@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;font:14px system-ui;background:#171821;color:#f4f1ff}.box{border:1px solid #5b21b6;border-radius:12px;padding:12px}.preview{margin:10px 0;padding:16px;border:3px solid #7c3aed;border-radius:14px;transition:all .12s ease}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}button{background:#7c3aed;color:white;border:0;border-radius:7px;padding:8px 10px;font-weight:600;cursor:pointer}.drag{display:inline-block;background:#30235a;border-radius:8px;padding:8px;cursor:grab;user-select:none}label{font-size:12px}
+</style></head><body><div class="box"><b>Bounded client-local surface (Component v1 compatibility path)</b><div class="preview" id="preview">Live preview responds locally while dragging the range or dragging the pill.</div><div class="row"><label>Radius <input id="radius" type="range" min="0" max="32" value="14"></label><label>Color <input id="color" type="color" value="#7c3aed"></label><span class="drag" id="drag" draggable="true">Drag me</span><button id="apply">Apply to Python</button></div></div>
+<script>
+const q=id=>document.getElementById(id), preview=q('preview');let x=0;
+function local(){preview.style.borderRadius=q('radius').value+'px';preview.style.borderColor=q('color').value;}
+function send(type,data){parent.postMessage({isStreamlitMessage:true,type,...data},'*')}
+q('radius').oninput=local;q('color').oninput=local;
+q('drag').ondragend=e=>{x=Math.round(e.clientX);q('drag').style.transform='translateX('+Math.min(100,Math.max(-100,x-200))+'px)'};
+q('apply').onclick=()=>send('streamlit:setComponentValue',{value:{color:q('color').value,radius:+q('radius').value,x}});
+addEventListener('message',e=>{if(e.data.type==='streamlit:render'){send('streamlit:setFrameHeight',{height:document.body.scrollHeight+8})}});
+send('streamlit:componentReady',{apiVersion:1});local();
+</script></body></html>

@@ -54,7 +54,12 @@ def test_reflex_surface_has_responsive_breakpoints_without_pixel_parity_claim():
     # RJ5 protects responsive semantics, not one historical literal grid. Both
     # the accepted archetype grammar and canonical DNA grammar must share the
     # same one-column mobile base and lg promotion seam.
-    assert 'initial="minmax(0, 1fr)"' in REFLEX_SURFACE
+    #
+    # The mobile base is promoted through the DNA-mode selector (``_by_dna_mode``)
+    # rather than written as a bare literal, so assert the selector and the token
+    # it promotes.
+    assert "initial=_by_dna_mode(" in REFLEX_SURFACE
+    assert '"minmax(0, 1fr)"' in REFLEX_SURFACE
     assert "grid_template_columns=rx.breakpoints" in REFLEX_SURFACE
     assert "grid_template_areas=rx.breakpoints" in REFLEX_SURFACE
     assert "HostState.active_dna_mode == \"canonical\"" in REFLEX_SURFACE

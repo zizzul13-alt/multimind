@@ -1,26 +1,61 @@
-"""Persistent user-verdict + AI-identity presentation wiring for Reflex.
+"""Persistent user-verdict + conversation operating-model wiring for Reflex.
 
 The accepted workspace remains the single rendering implementation. This module
-binds it to identity-aware state and keeps provider/model route detail secondary.
-Application/persistence truth remains behind MultiMindApplication.
+adds independent Auto/Manual work-mode and AI selection controls while preserving
+identity-first participant provenance and verdict/history behavior.
 """
 from __future__ import annotations
 
 import reflex as rx
 
 import multimind_reflex.multimind_reflex as workspace
-from core.ai_identity import AI_IDENTITY_LABELS, AI_IDENTITY_OPTIONS
+from core.ai_identity import AI_IDENTITY_LABELS, DISCOVERABLE_AI_IDENTITY_OPTIONS
 from multimind_reflex.identity_state import IdentityVerdictHostState
 
 
 HostState = IdentityVerdictHostState
 workspace.HostState = HostState
-workspace.AGENT_OPTIONS = list(AI_IDENTITY_OPTIONS)
+workspace.AGENT_OPTIONS = list(DISCOVERABLE_AI_IDENTITY_OPTIONS)
 
 
 def _execution_controls() -> rx.Component:
     return rx.vstack(
         rx.heading("Execution", size="4"),
+        rx.hstack(
+            rx.vstack(
+                rx.text("Work mode policy", size="2"),
+                rx.select(
+                    ["manual", "auto"],
+                    value=HostState.work_mode_policy,
+                    on_change=HostState.set_work_mode_policy,
+                ),
+                align="start",
+            ),
+            rx.vstack(
+                rx.text("AI selection", size="2"),
+                rx.select(
+                    ["manual", "auto"],
+                    value=HostState.ai_selection_policy,
+                    on_change=HostState.set_ai_selection_policy,
+                ),
+                align="start",
+            ),
+            rx.vstack(
+                rx.text("Auto AI count", size="2"),
+                rx.select(
+                    ["1", "2", "3", "4", "5", "6"],
+                    value=HostState.auto_ai_count.to_string(),
+                    on_change=HostState.set_auto_ai_count,
+                ),
+                align="start",
+            ),
+            width="100%",
+            wrap="wrap",
+        ),
+        rx.text(
+            "Manual work mode keeps the session mode. Auto infers Coding / Research / Thinking. AI selection is independent.",
+            size="1",
+        ),
         rx.hstack(
             rx.radio(
                 ["continue", "standalone"],
@@ -45,13 +80,13 @@ def _execution_controls() -> rx.Component:
                     checked=HostState.active_agents.contains(identity_id),
                     on_change=lambda enabled, identity_id=identity_id: HostState.set_agent_enabled(identity_id, enabled),
                 )
-                for identity_id in AI_IDENTITY_OPTIONS
+                for identity_id in DISCOVERABLE_AI_IDENTITY_OPTIONS
             ],
             wrap="wrap",
             width="100%",
         ),
         rx.text(
-            "Infrastructure routes are resolved automatically. Route/model details remain visible in result provenance.",
+            "Auto chooses only identities with truthful runtime routes. Manual identity remains authoritative; infrastructure routing cannot silently change AI identity.",
             size="1",
         ),
         rx.hstack(
@@ -116,14 +151,8 @@ def _participant_card(participant) -> rx.Component:
                 participant["identity_route_fallback"],
                 rx.callout("Same-AI route fallback was used.", icon="info", width="100%"),
             ),
-            rx.cond(
-                participant["model"] != "",
-                rx.text("Model: ", participant["model"], size="2"),
-            ),
-            rx.cond(
-                participant["route_provider"] != "",
-                rx.text("Route: ", participant["route_provider"], size="2"),
-            ),
+            rx.cond(participant["model"] != "", rx.text("Model: ", participant["model"], size="2")),
+            rx.cond(participant["route_provider"] != "", rx.text("Route: ", participant["route_provider"], size="2")),
             rx.cond(participant["role"] != "", rx.text("Role: ", participant["role"], size="2")),
             rx.cond(
                 participant["text"] != "",
@@ -175,18 +204,9 @@ def _history_panel() -> rx.Component:
                         row["participant_summary"] != "",
                         rx.text("AI participants: ", row["participant_summary"], size="2"),
                     ),
-                    rx.cond(
-                        row["judge_provider"] != "",
-                        rx.text("Judge route: ", row["judge_provider"], size="2"),
-                    ),
-                    rx.cond(
-                        row["system_verdict"] != "",
-                        rx.text("System winner: ", row["system_verdict"], size="2", weight="bold"),
-                    ),
-                    rx.cond(
-                        row["user_verdict"] != "",
-                        rx.text("Your winner: ", row["user_verdict"], size="2", weight="bold"),
-                    ),
+                    rx.cond(row["judge_provider"] != "", rx.text("Judge route: ", row["judge_provider"], size="2")),
+                    rx.cond(row["system_verdict"] != "", rx.text("System winner: ", row["system_verdict"], size="2", weight="bold")),
+                    rx.cond(row["user_verdict"] != "", rx.text("Your winner: ", row["user_verdict"], size="2", weight="bold")),
                     align="start",
                     width="100%",
                 ),
