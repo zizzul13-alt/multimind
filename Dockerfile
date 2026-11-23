@@ -28,7 +28,7 @@ RUN mkdir -p /app/data/users /app/data/shared \
 # The static frontend is built into the image. Skip Reflex's frontend compile
 # and package-install path at runtime; serve the baked static bundle through
 # the single-port ASGI host instead.
-ENV REFLEX_SKIP_COMPILE=true
+ENV __REFLEX_SKIP_COMPILE=true
 
 # Reflex 0.8.22 otherwise initializes its web workspace and runs Bun dependency
 # installation on first container start. That install was SIGKILLed at Railway
