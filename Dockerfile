@@ -22,7 +22,7 @@ RUN python -m pip install --no-cache-dir -r requirements.txt
 COPY . .
 RUN mkdir -p /app/data/users /app/data/shared \
     && python -m compileall -q core multimind_reflex ui utils database \
-    && REFLEX_SSR=false REFLEX_TELEMETRY_ENABLED=false reflex compile --no-rich
+    && REFLEX_SSR=false reflex compile --no-rich
 
 # Reflex 0.8.22 otherwise initializes its web workspace and runs Bun dependency
 # installation on first container start. That install was SIGKILLed at Railway
