@@ -3,7 +3,8 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    REFLEX_SSR=false
 
 WORKDIR /app
 
@@ -21,14 +22,26 @@ RUN python -m pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 RUN mkdir -p /app/data/users /app/data/shared \
-    && python -m compileall -q core multimind_reflex ui utils database
+    && python -m compileall -q core multimind_reflex ui utils database \
+    && reflex export --frontend-only --no-zip --no-ssr --loglevel debug
+
+# The static frontend is built into the image. Skip Reflex's frontend compile
+# and package-install path at runtime; serve the baked static bundle through
+# the single-port ASGI host instead.
+ENV __REFLEX_SKIP_COMPILE=true \
+    __REFLEX_MOUNT_FRONTEND_COMPILED_APP=true
+
+# Reflex 0.8.22 otherwise initializes its web workspace and runs Bun dependency
+# installation on first container start. That install was SIGKILLed at Railway
+# Free's 512 MiB runtime ceiling. Precompile/cache the frontend in the image
+# build so routine runtime startup does not need to resolve/install packages.
 
 # Persistence topology belongs to the deployment host rather than the generic
 # image. /app/data remains available for the current SQLite/fallback runtime;
 # a host may mount durable storage there when that deployment requires it.
-EXPOSE 3000 8000
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/_health', timeout=3).read()" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/_health', timeout=3).read()" || exit 1
 
 CMD ["reflex", "run", "--env", "prod"]
