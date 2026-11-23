@@ -25,6 +25,11 @@ RUN mkdir -p /app/data/users /app/data/shared \
     && python -m compileall -q core multimind_reflex ui utils database \
     && reflex export --frontend-only --no-zip --no-ssr --loglevel debug
 
+# The static frontend is built into the image. Skip Reflex's frontend compile
+# and package-install path at runtime; serve the baked static bundle through
+# the single-port ASGI host instead.
+ENV REFLEX_SKIP_COMPILE=true
+
 # Reflex 0.8.22 otherwise initializes its web workspace and runs Bun dependency
 # installation on first container start. That install was SIGKILLed at Railway
 # Free's 512 MiB runtime ceiling. Precompile/cache the frontend in the image
